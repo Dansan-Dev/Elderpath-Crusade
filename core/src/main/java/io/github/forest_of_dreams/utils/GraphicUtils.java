@@ -5,13 +5,14 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 
 public class GraphicUtils {
-    public static Texture pixel;
 
-    static {
+    public static Texture getPixelTexture(Color color) {
+        Texture pixel;
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
+        pixmap.setColor(color);
         pixmap.fill();
         pixel = new Texture(pixmap);
         pixmap.dispose();
+        return pixel;
     }
 }

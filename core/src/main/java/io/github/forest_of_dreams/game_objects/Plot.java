@@ -1,22 +1,42 @@
 package io.github.forest_of_dreams.game_objects;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 
-public class Plot {
+public class Plot implements Renderable {
     private Color color;
-    private int width;
-    private int height;
     private int x;
     private int y;
+    private int z = 0;
+    private int width;
+    private int height;
 
-    public Plot(Color color, int width, int height, int x, int y) {
+    public Plot(Color color, int x, int y, int width, int height) {
         this.color = color;
-        this.width = width;
-        this.height = height;
         this.x = x;
         this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public Plot(Color color, int x, int y, int width, int height, int z) {
+        this.color = color;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.width = width;
+        this.height = height;
+    }
+
+    public int getZ() {
+        return z;
+    }
+
+    public void setZ(int z) {
+        this.z = z;
     }
 
     public Color getColor() {
@@ -70,6 +90,6 @@ public class Plot {
     }
 
     public void render(SpriteBatch batch) {
-        batch.draw(GraphicUtils.pixel, x, y, width, height);
+        batch.draw(GraphicUtils.getPixelTexture(color), x, y, width, height);
     }
 }
