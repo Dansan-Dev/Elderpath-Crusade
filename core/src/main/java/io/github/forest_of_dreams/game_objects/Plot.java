@@ -1,4 +1,5 @@
 package io.github.forest_of_dreams.game_objects;
+import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
@@ -12,7 +13,6 @@ public class Plot extends HigherOrderTexture {
 
     public Plot(int x, int y, TextureObject plot, TextureObject plotDirt) {
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
-        System.out.println("this.getBounds().getX() = " + this.getBounds().getX());
         int width = getBounds().getWidth();
         int height = getBounds().getHeight();
         plotDecorFront = EmptyTexture.get(x, y, width, height);
@@ -24,6 +24,15 @@ public class Plot extends HigherOrderTexture {
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
         this.plotDecorFront = plotDecorFront;
         this.plotDecorBack = plotDecorBack;
+        plotConstruction(plot, plotDirt);
+    }
+
+    public Plot(int x, int y) {
+        plot = new TextureObject(Color.valueOf("#32943a"), 0, 0, 60, 60);
+        plotDirt = new TextureObject(Color.BROWN, 0, -30, 60, 30);
+        setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
+        plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
+        plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotConstruction(plot, plotDirt);
     }
 
