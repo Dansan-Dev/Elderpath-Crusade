@@ -41,9 +41,9 @@ public class TextureObject extends BaseTexture {
         bounds.setY(y);
     }
 
-    public boolean isHovered() {
-        int x = getX();
-        int y = getY();
+    public boolean isHovered(int relX, int relY) {
+        int x = getX() + relX;
+        int y = getY() + relY;
         int width = getWidth();
         int height = getHeight();
         float mouseX = Gdx.input.getX();
@@ -53,16 +53,33 @@ public class TextureObject extends BaseTexture {
 
     @Override
     public void render(SpriteBatch batch, int zLevel) {
+        if (zLevel != z) return;
         Box bounds = getBounds();
         int[] renderPos = calculatePos();
-        if (zLevel != z) return;
-        Color renderedColor = (hoverColor != null && isHovered()) ?
-            hoverColor : this.color;
+        Color renderedColor = (hoverColor != null && isHovered(0, 0)) ?
+            hoverColor : color;
 
         batch.draw(
             GraphicUtils.getPixelTexture(renderedColor),
             renderPos[0],
             renderPos[1],
+            bounds.getWidth(),
+            bounds.getHeight()
+        );
+    }
+
+    @Override
+    public void render(SpriteBatch batch, int zLevel, int x, int y) {
+        if (zLevel != z) return;
+        Box bounds = getBounds();
+        int[] renderBasePos = calculatePos();
+        Color renderedColor = (hoverColor != null && isHovered(x, y)) ?
+            hoverColor : color;
+
+        batch.draw(
+            GraphicUtils.getPixelTexture(renderedColor),
+            x + renderBasePos[0],
+            y + renderBasePos[1],
             bounds.getWidth(),
             bounds.getHeight()
         );

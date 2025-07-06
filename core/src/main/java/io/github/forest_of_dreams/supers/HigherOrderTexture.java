@@ -25,4 +25,10 @@ public abstract class HigherOrderTexture extends AbstractTexture implements Rend
         List<Renderable> renderables = getRenderables();
         renderables.forEach(r -> r.render(batch, zLevel));
     }
+
+    @Override
+    public void render(SpriteBatch batch, int zLevel, int x, int y) {
+        List<Renderable> renderables = getRenderables();
+        renderables.forEach(r -> r.render(batch, zLevel, x, y));
+    }
 }

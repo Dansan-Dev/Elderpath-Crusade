@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,22 +19,22 @@ public class GraphicsManager {
     public void render(SpriteBatch batch) {
         for(int i = minZ; i <= maxZ; i++) {
             for(Renderable r : renderables) {
-                r.render(batch, i);
+                if (r instanceof HigherOrderTexture) r.render(batch, i, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
+                else r.render(batch, i);
             }
         }
     }
 
-    public void addRenderable(Renderable renderable) {
-        List<Integer> renderableZs = renderable.getZs();
-        int renderableMaxZ = renderableZs.stream()
-            .max(Integer::compareTo)
-            .orElse(0);
-        int renderableMinZ = renderableZs.stream()
-            .min(Integer::compareTo)
-            .orElse(0);
-        if(renderableMaxZ > maxZ) maxZ = renderableMaxZ;
-        if(renderableMinZ < minZ) minZ = renderableMinZ;
+    public void updateMinMaxZ() {
+        minZ = 0;
+        maxZ = 0;
+        for (Renderable r : renderables) {
+            tryMinMaxZBoundary(r);
+        }
+    }
 
+    public void addRenderable(Renderable renderable) {
+        tryMinMaxZBoundary(renderable);
         renderables.add(renderable);
     }
 
@@ -47,5 +48,17 @@ public class GraphicsManager {
 
     public void removeRenderables(List<Renderable> renderables) {
         renderables.forEach(this::removeRenderable);
+    }
+
+    private void tryMinMaxZBoundary(Renderable r) {
+        List<Integer> renderableZs = r.getZs();
+        int renderableMaxZ = renderableZs.stream()
+            .max(Integer::compareTo)
+            .orElse(0);
+        int renderableMinZ = renderableZs.stream()
+            .min(Integer::compareTo)
+            .orElse(0);
+        if(renderableMaxZ > maxZ) maxZ = renderableMaxZ;
+        if(renderableMinZ < minZ) minZ = renderableMinZ;
     }
 }

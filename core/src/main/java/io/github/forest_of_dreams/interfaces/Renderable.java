@@ -13,4 +13,5 @@ public interface Renderable {
 
     public List<Integer> getZs();
     public void render(SpriteBatch batch, int zLevel);
+    public void render(SpriteBatch batch, int zLevel, int x, int y);
 }

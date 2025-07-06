@@ -22,13 +22,13 @@ public class Main extends ApplicationAdapter {
     public void create() {
         batch = new SpriteBatch();
         graphicsManager = new GraphicsManager();
-        Board board = new Board(60, 60);
-        graphicsManager.addRenderable(board);
+        Board board = new Board(60, 60, 40, 40);
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
-                board.replacePos(row, col, new Plot(0, 0));
+                board.replacePos(row, col, new Plot(0, 0, 40, 40));
             }
         }
+        graphicsManager.addRenderable(board);
 //        List<Renderable> plots = List.of(
 //            new TextureObject(Color.BLUE, 175, 100, 100, 100, -1),
 //            new TextureObject(Color.YELLOW, 200, 150, 100, 100),
