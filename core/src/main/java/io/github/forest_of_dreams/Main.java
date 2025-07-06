@@ -8,6 +8,7 @@ import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
+import io.github.forest_of_dreams.managers.SettingsManager;
 
 import java.util.List;
 
@@ -20,14 +21,16 @@ public class Main extends ApplicationAdapter {
     public void create() {
         batch = new SpriteBatch();
         graphicsManager = new GraphicsManager();
-        Board board = new Board(60, 60, 40, 40);
+        int[] screen_center = SettingsManager.getScreenCenter();
+        int[] board_size = new int[]{41*5, 41*7}; //TODO: Fix so that plots don't have spaces in between
+        Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, 40, 40);
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
                 board.replacePos(row, col, new Plot(0, 0, 40, 40));
             }
         }
-        SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.CENTER);
-        sprObj.setSprite("images/gobu_walk.png", 0, 8, 32, 24, 32, 24);
+        SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.BOTTOM);
+        sprObj.setSprite("images/gobu_walk.png", 0, 6, 32, 32, 40, 48);
         graphicsManager.addRenderable(sprObj);
         graphicsManager.addRenderable(board);
 //        List<Renderable> plots = List.of(

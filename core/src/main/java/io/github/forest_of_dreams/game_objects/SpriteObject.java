@@ -54,7 +54,7 @@ public class SpriteObject extends AbstractTexture implements Renderable {
         };
         Box bounds = getBounds();
         int marginWidthSize = (int)(bounds.getWidth() - sprite.getWidth()) / 2;
-        int marginHeightSize = (int)(bounds.getHeight() - sprite.getHeight()) / 2;
+        int marginHeightSize = bounds.getHeight() / 2;
         return new int[]{marginWidthSize * vector[0], marginHeightSize * vector[1]};
     }
 
