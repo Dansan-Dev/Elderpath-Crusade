@@ -4,10 +4,8 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
-import io.github.forest_of_dreams.game_objects.Board;
-import io.github.forest_of_dreams.game_objects.EmptyTexture;
-import io.github.forest_of_dreams.game_objects.Plot;
-import io.github.forest_of_dreams.game_objects.TextureObject;
+import io.github.forest_of_dreams.enums.SpriteBoxPos;
+import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 
@@ -28,6 +26,9 @@ public class Main extends ApplicationAdapter {
                 board.replacePos(row, col, new Plot(0, 0, 40, 40));
             }
         }
+        SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.CENTER);
+        sprObj.setSprite("images/gobu_walk.png", 0, 8, 32, 24, 32, 24);
+        graphicsManager.addRenderable(sprObj);
         graphicsManager.addRenderable(board);
 //        List<Renderable> plots = List.of(
 //            new TextureObject(Color.BLUE, 175, 100, 100, 100, -1),
