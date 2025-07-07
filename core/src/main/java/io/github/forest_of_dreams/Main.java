@@ -1,14 +1,17 @@
 package io.github.forest_of_dreams;
 
 import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
+import io.github.forest_of_dreams.enums.settings.SoundType;
 import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
+import io.github.forest_of_dreams.managers.SoundManager;
 
 import java.util.List;
 
@@ -19,9 +22,18 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
+        SettingsManager.initialize();
+
+        SettingsManager.sound.setMusicVolume(3);
+        SettingsManager.sound.setMasterVolume(7);
+        SoundManager.queueMusic("Evening_Harmony.mp3");
+        SoundManager.queueMusic("Forgotten_Biomes.mp3");
+        SoundManager.transition();
+        SoundManager.playSound("01_chest_open_1.wav");
+
         batch = new SpriteBatch();
         graphicsManager = new GraphicsManager();
-        int[] screen_center = SettingsManager.getScreenCenter();
+        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
         int[] board_size = new int[]{41*5, 41*7}; //TODO: Fix so that plots don't have spaces in between
         Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, 40, 40);
         for(int row = 0; row < 7; row++) {
@@ -46,15 +58,18 @@ public class Main extends ApplicationAdapter {
 //        graphicsManager.addRenderables(
 //            plots
 //        );
-//        graphicsManager.addRenderable(new Plot(100, 100, plot, plotDirt));
     }
 
     @Override
     public void render() {
+        // RENDER
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         batch.begin();
         graphicsManager.render(batch);
         batch.end();
+
+        // SOUND
+        SoundManager.update();
     }
 
     @Override
