@@ -50,8 +50,6 @@ public class SoundManager {
 
 
     public static void update() {
-        System.out.println("I AM HERE");
-
         float musicVolume = SettingsManager.sound.getVolumeScale(SoundType.Music);
         if (isTransitioning) {
             float timeDelta = (Gdx.graphics.getDeltaTime() * SettingsManager.getFPS());

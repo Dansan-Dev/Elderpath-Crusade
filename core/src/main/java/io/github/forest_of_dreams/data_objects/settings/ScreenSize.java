@@ -5,8 +5,6 @@ import com.badlogic.gdx.Graphics;
 import lombok.Getter;
 
 public class ScreenSize {
-    private static final Graphics graphics = Gdx.graphics;
-
     @Getter
     private int[] currentSize = new int[]{1280, 720};
     @Getter
@@ -18,12 +16,13 @@ public class ScreenSize {
 
     public void setNonFullscreenSize(int width, int height) {
         nonFullscreenSize = new int[]{width, height};
-        if (!graphics.isFullscreen()) {
+        if (!Gdx.graphics.isFullscreen()) {
             updateToNonFullscreenSize();
         }
     }
 
     public void toggleFullscreen() {
+        Graphics graphics = Gdx.graphics;
         if (!graphics.isFullscreen()) {
             currentSize = new int[]{graphics.getWidth(), graphics.getHeight()};
             graphics.setFullscreenMode(graphics.getDisplayMode());
@@ -35,6 +34,6 @@ public class ScreenSize {
 
     private void updateToNonFullscreenSize() {
         currentSize = nonFullscreenSize;
-        graphics.setWindowedMode(currentSize[0], currentSize[1]);
+        Gdx.graphics.setWindowedMode(currentSize[0], currentSize[1]);
     }
 }

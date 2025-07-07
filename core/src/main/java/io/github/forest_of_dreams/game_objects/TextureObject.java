@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.BaseTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import lombok.Getter;
@@ -48,6 +49,16 @@ public class TextureObject extends BaseTexture {
         int height = getHeight();
         float mouseX = Gdx.input.getX();
         float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
+        if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
+            System.out.println("MOUSE (x, y) = (" + mouseX + ", " + mouseY + ")");
+            System.out.println("Texture (x, y) = (" + x + ", " + y + ")");
+        }
+
+        float scaleX = (float)Gdx.graphics.getWidth() / SettingsManager.screenSize.getCurrentSize()[0];
+        float scaleY = (float)Gdx.graphics.getHeight() / SettingsManager.screenSize.getCurrentSize()[1];
+        mouseX /= scaleX;
+        mouseY /= scaleY;
+
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 
