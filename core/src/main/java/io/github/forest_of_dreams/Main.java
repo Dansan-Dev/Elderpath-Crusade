@@ -6,12 +6,11 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
-import io.github.forest_of_dreams.enums.settings.SoundType;
 import io.github.forest_of_dreams.game_objects.*;
-import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.SoundManager;
+import io.github.forest_of_dreams.utils.GraphicUtils;
 
 import java.util.List;
 
@@ -75,5 +74,6 @@ public class Main extends ApplicationAdapter {
     @Override
     public void dispose() {
         batch.dispose();
+        GraphicUtils.dispose();
     }
 }
