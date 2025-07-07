@@ -29,9 +29,11 @@ public class Plot extends HigherOrderTexture {
 
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(Color.valueOf("#32943a"), 0, 0, width, height);
-        Color c = plot.getColor().cpy().lerp(Color.BLACK, 0.5f);
-        plot.setHoverColor(c);
-        plotDirt = new TextureObject(Color.BROWN, 0, -(height/2), width, height/2);
+        Color hoverColor = plot.getColor().cpy().lerp(Color.BLACK, 0.5f);
+        Color clickColor = plot.getColor().cpy().lerp(Color.WHITE, 0.5f);
+        plot.setHoverColor(hoverColor);
+        plot.setClickColor(clickColor);
+        plotDirt = new TextureObject(Color.valueOf("#473101"), 0, -(height/2), width, height/2);
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
         plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());

@@ -64,7 +64,7 @@ public class Board extends HigherOrderTexture {
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
-                renderable.render(batch, zLevel, x + col*(PLOT_WIDTH+1), y + row*(PLOT_HEIGHT+1));
+                renderable.render(batch, zLevel, x + col*(PLOT_WIDTH), y + row*(PLOT_HEIGHT));
             }
         }
     }

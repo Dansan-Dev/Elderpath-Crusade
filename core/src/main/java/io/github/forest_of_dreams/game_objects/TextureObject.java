@@ -10,12 +10,11 @@ import io.github.forest_of_dreams.utils.GraphicUtils;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter @Setter
 public class TextureObject extends BaseTexture {
     private Color color;
     private Color hoverColor = null;
+    private Color clickColor = null;
 
 
     public TextureObject(Color color, int x, int y, int width, int height) {
@@ -67,8 +66,17 @@ public class TextureObject extends BaseTexture {
         if (zLevel != z) return;
         Box bounds = getBounds();
         int[] renderPos = calculatePos();
-        Color renderedColor = (hoverColor != null && isHovered(0, 0)) ?
-            hoverColor : color;
+
+        Color renderedColor;
+        if (isHovered(0, 0)) {
+            if (Gdx.input.isButtonPressed(0) && clickColor != null) {
+                renderedColor = clickColor;
+            } else if (hoverColor != null) {
+                renderedColor = hoverColor;
+            } else {
+                renderedColor = color;
+            }
+        } else renderedColor = color;
 
         batch.draw(
             GraphicUtils.getPixelTexture(renderedColor),
@@ -84,8 +92,17 @@ public class TextureObject extends BaseTexture {
         if (zLevel != z) return;
         Box bounds = getBounds();
         int[] renderBasePos = calculatePos();
-        Color renderedColor = (hoverColor != null && isHovered(x, y)) ?
-            hoverColor : color;
+
+        Color renderedColor;
+        if (isHovered(x, y)) {
+            if (Gdx.input.isButtonPressed(0) && clickColor != null) {
+                renderedColor = clickColor;
+            } else if (hoverColor != null) {
+                renderedColor = hoverColor;
+            } else {
+                renderedColor = color;
+            }
+        } else renderedColor = color;
 
         batch.draw(
             GraphicUtils.getPixelTexture(renderedColor),
