@@ -33,13 +33,14 @@ public class Main extends ApplicationAdapter {
         batch = new SpriteBatch();
         graphicsManager = new GraphicsManager();
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int[] board_size = new int[]{41*5, 41*7}; //TODO: Fix so that plots don't have spaces in between
+        int[] board_size = new int[]{40*5, 40*7}; //TODO: Fix so that plots don't have spaces in between
         Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, 40, 40);
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
                 board.replacePos(row, col, new Plot(0, 0, 40, 40));
             }
         }
+
         SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.BOTTOM);
         sprObj.setSprite("images/gobu_walk.png", 0, 6, 32, 32, 40, 48);
         graphicsManager.addRenderable(sprObj);

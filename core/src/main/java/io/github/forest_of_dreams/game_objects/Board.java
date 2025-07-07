@@ -5,6 +5,8 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
+import java.util.Arrays;
+
 public class Board extends HigherOrderTexture {
     private final int ROWS = 7;
     private final int COLS = 5;
@@ -39,7 +41,7 @@ public class Board extends HigherOrderTexture {
 
     public void replacePos(int row, int col, Renderable newRenderable) {
         if (newRenderable.getBounds().getWidth() != PLOT_WIDTH
-            || newRenderable.getBounds().getHeight() != PLOT_HEIGHT) throw new IllegalArgumentException("Renderable must be 60x60");
+            || newRenderable.getBounds().getHeight() != PLOT_HEIGHT) throw new IllegalArgumentException("Renderable must be in PLOT size");
 
         Renderable renderable = board[row][col];
         getRenderables().remove(renderable);
