@@ -86,6 +86,7 @@ public class Main extends ApplicationAdapter {
 
         // SOUND
         SoundManager.update();
+        graphicsManager.unpause();
     }
 
     @Override
