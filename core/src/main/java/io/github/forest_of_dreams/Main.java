@@ -1,8 +1,7 @@
 package io.github.forest_of_dreams;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
@@ -11,6 +10,7 @@ import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.SoundManager;
 import io.github.forest_of_dreams.utils.GraphicUtils;
+import io.github.forest_of_dreams.utils.SpriteCreator;
 
 import java.util.List;
 
@@ -42,7 +42,15 @@ public class Main extends ApplicationAdapter {
         }
 
         SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.BOTTOM);
-        sprObj.setSprite("images/gobu_walk.png", 0, 6, 32, 32, 40, 48);
+
+        sprObj.addAnimation(List.of(
+            SpriteCreator.makeSprite("images/gobu_walk.png", 0, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 32, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 64, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 96, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 128, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 160, 6, 32, 32, 40, 48)
+        ), 6);
         graphicsManager.addRenderable(sprObj);
         graphicsManager.addRenderable(board);
 //        List<Renderable> plots = List.of(
