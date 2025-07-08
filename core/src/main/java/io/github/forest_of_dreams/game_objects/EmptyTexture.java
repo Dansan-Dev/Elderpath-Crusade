@@ -19,5 +19,5 @@ public class EmptyTexture extends TextureObject {
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel) {}
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused) {}
 }

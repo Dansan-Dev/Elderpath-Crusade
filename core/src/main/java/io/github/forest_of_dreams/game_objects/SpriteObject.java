@@ -23,7 +23,7 @@ public class SpriteObject extends AbstractTexture implements Renderable {
     @Setter
     private int updatesPerSecond;
     private float updateCounter = 0;
-    private boolean isPaused = false;
+    private boolean isAnimationPaused = false;
 
     public SpriteObject(int x, int y, int width, int height, int z, SpriteBoxPos spriteBoxPos) {
         setBounds(new Box(x, y, width, height));
@@ -99,7 +99,7 @@ public class SpriteObject extends AbstractTexture implements Renderable {
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel) {
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         if (zLevel != z) return;
         int[] margin = calculateMargin();
         draw(
@@ -111,7 +111,7 @@ public class SpriteObject extends AbstractTexture implements Renderable {
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel, int x, int y) {
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
         if (zLevel != z) return;
         if (currentSpriteFrame == -1) return;
         int[] margin = calculateMargin();
@@ -134,10 +134,10 @@ public class SpriteObject extends AbstractTexture implements Renderable {
     }
 
     public void pauseAnimation() {
-        isPaused = true;
+        isAnimationPaused = true;
     }
 
     public void unpauseAnimation() {
-        isPaused = false;
+        isAnimationPaused = false;
     }
 }

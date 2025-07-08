@@ -9,10 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class InputManager {
-    @Getter
-    private static final Map<InputKey, InputFunction> inputKeyMappings = new HashMap<>();
-    @Getter
-    private static final Map<InputKey, Boolean> inputKeysPressed = new HashMap<>();
+    @Getter private static final Map<InputKey, InputFunction> inputKeyMappings = new HashMap<>();
+    @Getter private static final Map<InputKey, Boolean> inputKeysPressed = new HashMap<>();
 
     public static void initialize() {
         for (InputKey key : InputKey.values()) {

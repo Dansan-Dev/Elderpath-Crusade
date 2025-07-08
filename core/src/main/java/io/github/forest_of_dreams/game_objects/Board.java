@@ -52,21 +52,21 @@ public class Board extends HigherOrderTexture {
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel) {
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
-                renderable.render(batch, zLevel, col*PLOT_WIDTH, row*PLOT_HEIGHT);
+                renderable.render(batch, zLevel, isPaused, col*PLOT_WIDTH, row*PLOT_HEIGHT);
             }
         }
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel, int x, int y) {
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
-                renderable.render(batch, zLevel, x + col*(PLOT_WIDTH), y + row*(PLOT_HEIGHT));
+                renderable.render(batch, zLevel, isPaused, x + col*(PLOT_WIDTH), y + row*(PLOT_HEIGHT));
             }
         }
     }

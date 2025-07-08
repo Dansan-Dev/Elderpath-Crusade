@@ -12,6 +12,6 @@ public interface Renderable {
     public void setBounds(Box bounds);
 
     public List<Integer> getZs();
-    public void render(SpriteBatch batch, int zLevel);
-    public void render(SpriteBatch batch, int zLevel, int x, int y);
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused);
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y);
 }

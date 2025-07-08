@@ -46,12 +46,12 @@ public class PauseScreen implements Renderable {
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel) {
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         int[] screenSize = SettingsManager.screenSize.getCurrentSize();
         background.setBounds(new Box(0, 0, screenSize[0], screenSize[1]));
-        background.render(batch, zLevel);
+        background.render(batch, zLevel, isPaused);
     }
 
     @Override
-    public void render(SpriteBatch batch, int zLevel, int x, int y) {}
+    public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {}
 }

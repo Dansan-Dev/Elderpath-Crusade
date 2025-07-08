@@ -85,14 +85,14 @@ public class Main extends ApplicationAdapter {
             .filter(Map.Entry::getValue)
             .forEach(e -> {
                     switch (e.getKey()) {
-                        case MOUSE_LEFT -> System.out.println("M-LEFT");
-                        case MOUSE_RIGHT -> System.out.println("M-RIGHT");
-                        case ENTER -> System.out.println("ENTER");
+                        case MOUSE_LEFT -> { if (!GameManager.isPaused()) System.out.println("M-LEFT"); }
+                        case MOUSE_RIGHT -> { if (!GameManager.isPaused()) System.out.println("M-RIGHT"); }
+                        case ENTER -> { if (!GameManager.isPaused()) System.out.println("ENTER"); }
                         case ESCAPE -> {
                             if (graphicsManager.isPaused()) {
-                                graphicsManager.unpause();
+                                GameManager.unpause(graphicsManager);
                             } else {
-                                graphicsManager.pause();
+                                GameManager.pause(graphicsManager);
                             }
                         }
                     }

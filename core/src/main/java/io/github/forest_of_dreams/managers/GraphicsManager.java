@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GraphicsManager {
-    private final List<Renderable> renderables;
-    private final List<Renderable> uiRenderables;
+    @Getter private final List<Renderable> renderables;
+    @Getter private final List<Renderable> uiRenderables;
     private final PauseScreen pauseScreen = new PauseScreen();
     private int maxZ = 0;
     private int minZ = 0;
@@ -44,14 +44,14 @@ public class GraphicsManager {
 
     public void render(SpriteBatch batch) {
         renderGameGraphics(batch);
-        if (isPaused) pauseScreen.render(batch, 10);
+        if (isPaused) pauseScreen.render(batch, 10, isPaused);
     }
 
     private void renderGameGraphics(SpriteBatch batch) {
         for(int i = minZ; i <= maxZ; i++) {
             for(Renderable r : renderables) {
-                if (r instanceof HigherOrderTexture) r.render(batch, i, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
-                else r.render(batch, i);
+                if (r instanceof HigherOrderTexture) r.render(batch, i, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
+                else r.render(batch, i, isPaused);
             }
         }
     }
