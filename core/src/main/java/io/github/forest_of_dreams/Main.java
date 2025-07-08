@@ -1,18 +1,21 @@
 package io.github.forest_of_dreams;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
+import io.github.forest_of_dreams.enums.settings.InputKey;
 import io.github.forest_of_dreams.game_objects.*;
-import io.github.forest_of_dreams.managers.GraphicsManager;
-import io.github.forest_of_dreams.managers.SettingsManager;
-import io.github.forest_of_dreams.managers.SoundManager;
+import io.github.forest_of_dreams.managers.*;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 
 import java.util.List;
+import java.util.Map;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
@@ -76,17 +79,100 @@ public class Main extends ApplicationAdapter {
 //        );
     }
 
-    @Override
-    public void render() {
-        // RENDER
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+    private void handleInput() {
+        Map<InputKey, Boolean> inputKeysPressed = InputManager.getInputKeysPressed();
+        inputKeysPressed.entrySet().stream()
+            .filter(Map.Entry::getValue)
+            .forEach(e -> {
+                    switch (e.getKey()) {
+                        case MOUSE_LEFT -> System.out.println("M-LEFT");
+                        case MOUSE_RIGHT -> System.out.println("M-RIGHT");
+                        case ENTER -> System.out.println("ENTER");
+                        case ESCAPE -> {
+                            if (graphicsManager.isPaused()) {
+                                graphicsManager.unpause();
+                            } else {
+                                graphicsManager.pause();
+                            }
+                        }
+                    }
+                }
+            );
+    }
+
+    public void blurredDraw(SpriteBatch batch) {
+        // CLEAR
+        ShaderProgram blurShader = ShaderManager.getBlurShader();
+        FrameBuffer fboA = ShaderManager.getFboA();
+        FrameBuffer fboB = ShaderManager.getFboB();
+
+        fboA.begin();
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         batch.begin();
+        batch.setShader(null); // Use normal shader for initial render
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         graphicsManager.render(batch);
         batch.end();
 
+        fboA.end();
+
+        // HORIZONTAL
+        fboB.begin();
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        batch.setShader(blurShader);
+        blurShader.setUniformf("u_blurSize", 1f / Gdx.graphics.getWidth());
+        blurShader.setUniformf("u_direction", 1f, 0f);
+        batch.draw(fboA.getColorBufferTexture(),
+            0, 0,
+            Gdx.graphics.getWidth(),
+            Gdx.graphics.getHeight(),
+            0, 0, 1, 1);
+        batch.end();
+        fboB.end();
+
+        // VERTICAL
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        batch.setShader(blurShader);
+        blurShader.setUniformf("u_blurSize", 1f / Gdx.graphics.getHeight());
+        blurShader.setUniformf("u_direction", 0f, 1f);
+        batch.draw(fboB.getColorBufferTexture(),
+            0, 0,
+            Gdx.graphics.getWidth(),
+            Gdx.graphics.getHeight(),
+            0, 0, 1, 1);
+        batch.end();
+
+        batch.setShader(null);
+    }
+
+    public void draw(SpriteBatch batch) {
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        graphicsManager.render(batch);
+        batch.end();
+    }
+
+    @Override
+    public void render() {
+
+        // Input
+        InputManager.checkInput();
+        handleInput();
+
+        // RENDER
+        if (graphicsManager.isPaused()) blurredDraw(batch);
+        else draw(batch);
+//        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+//        batch.begin();
+//        graphicsManager.render(batch);
+//        batch.end();
+
         // SOUND
         SoundManager.update();
-        graphicsManager.unpause();
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.game_objects.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
@@ -12,14 +13,19 @@ import java.util.List;
 
 public class GraphicsManager {
     private final List<Renderable> renderables;
+    private final List<Renderable> uiRenderables;
+    private final PauseScreen pauseScreen = new PauseScreen();
     private int maxZ = 0;
     private int minZ = 0;
+    @Getter private boolean isPaused = false;
 
     public GraphicsManager() {
         renderables = new ArrayList<>();
+        uiRenderables = new ArrayList<>();
     }
 
     public void pause() {
+        isPaused = true;
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
             .forEach(
@@ -28,6 +34,7 @@ public class GraphicsManager {
     }
 
     public void unpause() {
+        isPaused = false;
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
             .forEach(
@@ -37,6 +44,7 @@ public class GraphicsManager {
 
     public void render(SpriteBatch batch) {
         renderGameGraphics(batch);
+        if (isPaused) pauseScreen.render(batch, 10);
     }
 
     private void renderGameGraphics(SpriteBatch batch) {
