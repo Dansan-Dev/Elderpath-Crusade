@@ -8,12 +8,14 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
+import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.enums.settings.InputKey;
 import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.managers.*;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,23 +83,20 @@ public class Main extends ApplicationAdapter {
 
     private void handleInput() {
         Map<InputKey, Boolean> inputKeysPressed = InputManager.getInputKeysPressed();
+        Map<InputHandlerData, Object> data = getInputHandlerData();
         inputKeysPressed.entrySet().stream()
             .filter(Map.Entry::getValue)
             .forEach(e -> {
-                    switch (e.getKey()) {
-                        case MOUSE_LEFT -> { if (!GameManager.isPaused()) System.out.println("M-LEFT"); }
-                        case MOUSE_RIGHT -> { if (!GameManager.isPaused()) System.out.println("M-RIGHT"); }
-                        case ENTER -> { if (!GameManager.isPaused()) System.out.println("ENTER"); }
-                        case ESCAPE -> {
-                            if (graphicsManager.isPaused()) {
-                                GameManager.unpause(graphicsManager);
-                            } else {
-                                GameManager.pause(graphicsManager);
-                            }
-                        }
-                    }
+                    InputManager.activateInputHandler(e.getKey(), data);
                 }
             );
+    }
+
+    private Map<InputHandlerData, Object> getInputHandlerData() {
+        Map<InputHandlerData, Object> data = new HashMap<>();
+        data.put(InputHandlerData.IS_PAUSED, graphicsManager.isPaused());
+        data.put(InputHandlerData.GRAPHICS_MANAGER, graphicsManager);
+        return data;
     }
 
     public void blurredDraw(SpriteBatch batch) {

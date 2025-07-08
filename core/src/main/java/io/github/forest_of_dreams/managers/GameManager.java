@@ -9,11 +9,13 @@ public class GameManager {
     public static void pause(GraphicsManager graphicsManager) {
         isPaused = true;
         pauseGraphics(graphicsManager);
+        pauseInputHandlers();
     }
 
     public static void unpause(GraphicsManager graphicsManager) {
         isPaused = false;
         unpauseGraphics(graphicsManager);
+        pauseInputHandlers();
     }
 
     private static void pauseGraphics(GraphicsManager graphicsManager) {
@@ -22,5 +24,13 @@ public class GameManager {
 
     private static void unpauseGraphics(GraphicsManager graphicsManager) {
         graphicsManager.unpause();
+    }
+
+    private static void pauseInputHandlers() {
+        InputManager.setPaused(true);
+    }
+
+    private static void unpauseInputHandlers() {
+        InputManager.setPaused(false);
     }
 }
