@@ -43,13 +43,21 @@ public class Main extends ApplicationAdapter {
 
         SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.BOTTOM);
 
-        sprObj.addAnimation(List.of(
+        sprObj.addAnimation("walk", List.of(
             SpriteCreator.makeSprite("images/gobu_walk.png", 0, 6, 32, 32, 40, 48),
             SpriteCreator.makeSprite("images/gobu_walk.png", 32, 6, 32, 32, 40, 48),
             SpriteCreator.makeSprite("images/gobu_walk.png", 64, 6, 32, 32, 40, 48),
             SpriteCreator.makeSprite("images/gobu_walk.png", 96, 6, 32, 32, 40, 48),
             SpriteCreator.makeSprite("images/gobu_walk.png", 128, 6, 32, 32, 40, 48),
             SpriteCreator.makeSprite("images/gobu_walk.png", 160, 6, 32, 32, 40, 48)
+        ), 6);
+        sprObj.addAnimation("hurt", List.of(
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 0, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 32, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 64, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 96, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 128, 6, 32, 32, 40, 48),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 160, 6, 32, 32, 40, 48)
         ), 6);
         graphicsManager.addRenderable(sprObj);
         graphicsManager.addRenderable(board);

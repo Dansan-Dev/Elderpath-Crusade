@@ -9,18 +9,21 @@ import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import lombok.Setter;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SpriteObject extends AbstractTexture implements Renderable {
     @Setter
-    private Sprite currentSprite = null;
-    private List<Sprite> sprites = new ArrayList<>();
+    private int currentSpriteFrame = -1;
+    private List<Sprite> currentAnimation = null;
+    private Map<String, List<Sprite>> animationMap = new HashMap<>();
     protected int z;
     private final SpriteBoxPos spriteBoxPos;
     @Setter
     private int updatesPerSecond;
     private float updateCounter = 0;
+    private boolean isPaused = false;
 
     public SpriteObject(int x, int y, int width, int height, int z, SpriteBoxPos spriteBoxPos) {
         setBounds(new Box(x, y, width, height));
@@ -29,7 +32,7 @@ public class SpriteObject extends AbstractTexture implements Renderable {
     }
 
     public void nextSprite() {
-        if (sprites.size() < 2) return;
+        if (currentAnimation.size() < 2) return;
         float threshold = 1f / updatesPerSecond;
         if (updatesPerSecond > 0) {
             if (updateCounter < threshold) {
@@ -37,17 +40,27 @@ public class SpriteObject extends AbstractTexture implements Renderable {
                 return;
             }
             updateCounter = 0;
-            setCurrentSprite(sprites.remove(0));
-            sprites.add(currentSprite);
+            currentSpriteFrame = (currentSpriteFrame + 1) % currentAnimation.size();
         }
     }
 
-    public void addAnimation(List<Sprite> sprites, int updatesPerSecond) {
+    public void addAnimation(String name, List<Sprite> sprites, int updatesPerSecond) {
         setUpdatesPerSecond(updatesPerSecond);
-        for (Sprite sprite : sprites) {
-            this.sprites.add(sprite);
-            if (currentSprite == null) currentSprite = sprite;
+        animationMap.put(name, sprites);
+        if (currentAnimation == null) {
+            currentAnimation = sprites;
+            currentSpriteFrame = 0;
         }
+    }
+
+    public void setAnimation(String name) {
+        if (!animationMap.containsKey(name)) return;
+        currentAnimation = animationMap.get(name);
+        currentSpriteFrame = 0;
+    }
+
+    private Sprite getCurrentSprite() {
+        return currentAnimation.get(currentSpriteFrame);
     }
 
 //    public void setSize(int width, int height) {
@@ -75,7 +88,7 @@ public class SpriteObject extends AbstractTexture implements Renderable {
             case RIGHT -> new int[]{2, 1};
         };
         Box bounds = getBounds();
-        int marginWidthSize = (int)(bounds.getWidth() - currentSprite.getWidth()) / 2;
+        int marginWidthSize = (int)(bounds.getWidth() - getCurrentSprite().getWidth()) / 2;
         int marginHeightSize = bounds.getHeight() / 2;
         return new int[]{marginWidthSize * vector[0], marginHeightSize * vector[1]};
     }
@@ -94,29 +107,37 @@ public class SpriteObject extends AbstractTexture implements Renderable {
             getX() + margin[0],
             getY() + margin[1]
         );
-        nextSprite();
+        if (!isPaused) nextSprite();
     }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, int x, int y) {
         if (zLevel != z) return;
-        if (currentSprite == null) return;
+        if (currentSpriteFrame == -1) return;
         int[] margin = calculateMargin();
         draw(
             batch,
             x + getX() + margin[0],
             y + getY() + margin[1]
         );
-        nextSprite();
+        if (!isPaused) nextSprite();
     }
 
     private void draw(SpriteBatch batch, int x, int y) {
         batch.draw(
-            currentSprite,
+            getCurrentSprite(),
             x,
             y,
-            currentSprite.getWidth(),
-            currentSprite.getHeight()
+            getCurrentSprite().getWidth(),
+            getCurrentSprite().getHeight()
         );
+    }
+
+    public void pauseAnimation() {
+        isPaused = true;
+    }
+
+    public void unpauseAnimation() {
+        isPaused = false;
     }
 }
