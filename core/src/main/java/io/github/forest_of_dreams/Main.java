@@ -12,6 +12,7 @@ import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.enums.settings.InputKey;
 import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.managers.*;
+import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 
@@ -66,6 +67,7 @@ public class Main extends ApplicationAdapter {
         ), 6);
         graphicsManager.addRenderable(sprObj);
         graphicsManager.addRenderable(board);
+        graphicsManager.addUIRenderable(new PauseMenuHint());
 //        List<Renderable> plots = List.of(
 //            new TextureObject(Color.BLUE, 175, 100, 100, 100, -1),
 //            new TextureObject(Color.YELLOW, 200, 150, 100, 100),

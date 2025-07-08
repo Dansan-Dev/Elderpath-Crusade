@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.game_objects.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import lombok.Getter;
 
@@ -13,7 +14,7 @@ import java.util.List;
 
 public class GraphicsManager {
     @Getter private final List<Renderable> renderables;
-    @Getter private final List<Renderable> uiRenderables;
+    @Getter private final List<UIRenderable> uiRenderables;
     @Getter
     private final PauseScreen pauseScreen = new PauseScreen();
     private int maxZ = 0;
@@ -45,7 +46,12 @@ public class GraphicsManager {
 
     public void render(SpriteBatch batch) {
         renderGameGraphics(batch);
+        renderUI(batch);
         if (isPaused) pauseScreen.render(batch, 10, isPaused);
+    }
+
+    public void renderUI(SpriteBatch batch) {
+        uiRenderables.forEach(r -> r.renderUI(batch, isPaused));
     }
 
     public void renderPauseUI(SpriteBatch batch) {
@@ -77,6 +83,10 @@ public class GraphicsManager {
 
     public void addRenderables(List<Renderable> renderables) {
         renderables.forEach(this::addRenderable);
+    }
+
+    public void addUIRenderable(UIRenderable renderable) {
+        uiRenderables.add(renderable);
     }
 
     public void removeRenderable(Renderable renderable) {

@@ -10,8 +10,7 @@ public interface UIRenderable {
     public void setParent(Box parent);
     public Box getBounds();
     public void setBounds(Box bounds);
-    public List<Integer> getZs();
 
-    public void renderUI(SpriteBatch batch, int zLevel, boolean isPaused);
-    public void renderUI(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y);
+    public void renderUI(SpriteBatch batch, boolean isPaused);
+    public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y);
 }

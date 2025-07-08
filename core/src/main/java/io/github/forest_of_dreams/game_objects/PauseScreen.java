@@ -9,12 +9,13 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.SettingsManager;
+import io.github.forest_of_dreams.supers.AbstractTexture;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
-public class PauseScreen implements Renderable {
+public class PauseScreen extends AbstractTexture implements Renderable {
     private final Color backgroundColor = new Color(0, 0, 0, 0.6f);
     private final Color textColor = new Color(1, 1, 1, 1);
     private final TextureObject background;
@@ -54,26 +55,6 @@ public class PauseScreen implements Renderable {
                     screenCenterY + (options.size()-1)*(distance/2) - i*distance
                 );
             });
-
-    }
-
-    @Override
-    public Box getParent() {
-        return null;
-    }
-
-    @Override
-    public void setParent(Box parent) {
-
-    }
-
-    @Override
-    public Box getBounds() {
-        return null;
-    }
-
-    @Override
-    public void setBounds(Box bounds) {
 
     }
 
