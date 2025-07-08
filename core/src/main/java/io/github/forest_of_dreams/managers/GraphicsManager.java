@@ -14,6 +14,7 @@ import java.util.List;
 public class GraphicsManager {
     @Getter private final List<Renderable> renderables;
     @Getter private final List<Renderable> uiRenderables;
+    @Getter
     private final PauseScreen pauseScreen = new PauseScreen();
     private int maxZ = 0;
     private int minZ = 0;
@@ -45,6 +46,11 @@ public class GraphicsManager {
     public void render(SpriteBatch batch) {
         renderGameGraphics(batch);
         if (isPaused) pauseScreen.render(batch, 10, isPaused);
+    }
+
+    public void renderPauseUI(SpriteBatch batch) {
+        if (!isPaused) return;
+        pauseScreen.renderPauseUI(batch);
     }
 
     private void renderGameGraphics(SpriteBatch batch) {

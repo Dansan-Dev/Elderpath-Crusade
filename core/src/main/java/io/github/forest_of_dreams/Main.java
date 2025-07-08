@@ -38,7 +38,7 @@ public class Main extends ApplicationAdapter {
         batch = new SpriteBatch();
         graphicsManager = new GraphicsManager();
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int[] board_size = new int[]{40*5, 40*7}; //TODO: Fix so that plots don't have spaces in between
+        int[] board_size = new int[]{40*5, 40*7};
         Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, 40, 40);
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
@@ -155,6 +155,12 @@ public class Main extends ApplicationAdapter {
         batch.end();
     }
 
+    public void drawPauseUI(SpriteBatch batch) {
+        batch.begin();
+        graphicsManager.renderPauseUI(batch);
+        batch.end();
+    }
+
     @Override
     public void render() {
 
@@ -165,6 +171,7 @@ public class Main extends ApplicationAdapter {
         // RENDER
         if (graphicsManager.isPaused()) blurredDraw(batch);
         else draw(batch);
+        drawPauseUI(batch);
 //        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
 //        batch.begin();
 //        graphicsManager.render(batch);

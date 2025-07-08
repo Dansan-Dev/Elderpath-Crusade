@@ -1,13 +1,19 @@
 package io.github.forest_of_dreams.utils;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.utils.ObjectMap;
 
 public class GraphicUtils {
     private static final ObjectMap<Color, Texture> textureCache = new ObjectMap<>();
 
+
+    public static BitmapFont getBitmapFontFromFile(String filename) {
+        return new BitmapFont(Gdx.files.internal("ui/" + filename));
+    }
 
     public static Texture getPixelTexture(Color color) {
         Texture pixel = textureCache.get(color);
