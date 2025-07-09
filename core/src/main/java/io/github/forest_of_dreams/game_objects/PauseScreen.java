@@ -7,6 +7,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.Text;
+import io.github.forest_of_dreams.data_objects.TextList;
+import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
@@ -21,41 +24,37 @@ public class PauseScreen extends AbstractTexture implements Renderable {
     private final TextureObject background;
     private final LabelStyle headerStyle;
     private final LabelStyle listStyle;
-    private final Label header;
-    private final List<Label> options;
+    private final Text header;
+    private final TextList options = new TextList();
 
     public PauseScreen() {
         background = new TextureObject(backgroundColor, 0, 0, 100, 100);
         background.setColor(backgroundColor);
         background.setZ(10);
 
-        Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
-        headerStyle = skin.get("window", LabelStyle.class);
-        listStyle = skin.get("default", LabelStyle.class);
-
         int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
         int screenCenterY = SettingsManager.screenSize.getScreenCenter()[1];
         int screenHeight = SettingsManager.screenSize.getCurrentSize()[1];
 
-        header = new Label("PAUSED", headerStyle);
-        header.setPosition(screenCenterX - (header.getWidth() / 2), screenHeight - 100);
+        this.header = new Text(
+            "PAUSED",
+            FontType.WINDOW,
+            0,
+            screenHeight - 200,
+            0
+        );
+        header.setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
+        header.setY(screenHeight - 100);
+        header.update();
 
-        options = new ArrayList<>();
-        options.add(new Label("Resume", listStyle));
-        options.add(new Label("Settings", listStyle));
-        options.add(new Label("Exit", listStyle));
+        Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        headerStyle = skin.get("window", LabelStyle.class);
+        listStyle = skin.get("default", LabelStyle.class);
 
-        IntStream.range(0, options.size()).
-            forEach(i -> {
-                Label label = options.get(i);
-                label.setColor(textColor);
-                float distance = 50;
-                label.setPosition(
-                    screenCenterX - (label.getWidth() / 2),
-                    screenCenterY + (options.size()-1)*(distance/2) - i*distance
-                );
-            });
-
+        options.addText(new Text("Resume", FontType.DEFAULT, 0, 0, 0));
+        options.addText(new Text("Settings", FontType.DEFAULT, 0, 0, 0));
+        options.addText(new Text("Exit", FontType.DEFAULT, 0, 0, 0));
+        options.alignTextAcrossYAxis(50, screenCenterX, screenCenterY);
     }
 
     @Override
@@ -64,8 +63,8 @@ public class PauseScreen extends AbstractTexture implements Renderable {
     }
 
     public void renderPauseUI(SpriteBatch batch) {
-        header.draw(batch, 1);
-        options.forEach(l -> l.draw(batch, 1));
+        header.render(batch, 0, false);
+        options.getRenderables().forEach(l -> l.render(batch, 0, false));
     }
 
     @Override
