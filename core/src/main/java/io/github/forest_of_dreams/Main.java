@@ -26,7 +26,7 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
-        SettingsManager.initialize();
+        GameManager.initialize();
 
         SettingsManager.sound.setMusicVolume(3);
         SettingsManager.sound.setMasterVolume(7);

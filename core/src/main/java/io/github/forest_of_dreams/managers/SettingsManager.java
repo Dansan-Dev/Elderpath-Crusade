@@ -14,8 +14,6 @@ public class SettingsManager {
 
     public static void initialize() {
         language.initialize();
-        InputManager.initialize();
-        ShaderManager.initialize();
     }
 
     public static int getScreenWidth() {

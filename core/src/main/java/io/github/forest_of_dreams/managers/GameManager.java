@@ -1,9 +1,17 @@
 package io.github.forest_of_dreams.managers;
 
+import io.github.forest_of_dreams.game_objects.PauseScreen;
 import lombok.Getter;
 
 public class GameManager {
     @Getter private static boolean isPaused = false;
+
+    public static void initialize() {
+        SettingsManager.initialize();
+        PauseScreen.initialize();
+        ShaderManager.initialize();
+        InputManager.initialize();
+    }
 
     public static void pause() {
         isPaused = true;

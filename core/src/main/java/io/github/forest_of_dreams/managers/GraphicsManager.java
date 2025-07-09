@@ -14,8 +14,6 @@ import java.util.List;
 public class GraphicsManager {
     @Getter private static final List<Renderable> renderables = new ArrayList<>();;
     @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
-    @Getter
-    private static final PauseScreen pauseScreen = new PauseScreen();
     private static int maxZ = 0;
     private static int minZ = 0;
     @Getter private static boolean isPaused = false;
@@ -41,7 +39,7 @@ public class GraphicsManager {
     public static void render(SpriteBatch batch) {
         renderGameGraphics(batch);
         renderUI(batch);
-        if (isPaused) pauseScreen.render(batch, 10, isPaused);
+        if (isPaused) PauseScreen.render(batch, 10, isPaused);
     }
 
     public static void renderUI(SpriteBatch batch) {
@@ -50,7 +48,7 @@ public class GraphicsManager {
 
     public static void renderPauseUI(SpriteBatch batch) {
         if (!isPaused) return;
-        pauseScreen.renderPauseUI(batch);
+        PauseScreen.renderPauseUI(batch);
     }
 
     private static void renderGameGraphics(SpriteBatch batch) {
