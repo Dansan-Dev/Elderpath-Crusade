@@ -20,7 +20,7 @@ public class PauseMenuHint extends AbstractTexture implements UIRenderable {
         Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         style = skin.get("window", LabelStyle.class);
         text = new Label("ESC", style);
-        text.setPosition(20, SettingsManager.getScreenHeight() - 30);
+        text.setPosition(20, SettingsManager.screenSize.getScreenHeight() - 30);
         text.setColor(Color.WHITE);
     }
 

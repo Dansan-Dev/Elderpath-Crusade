@@ -7,27 +7,26 @@ import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
 public class PauseSettingsPage extends HigherOrderTexture {
+    private final Text header = new Text(
+        "SETTINGS",
+        FontType.WINDOW,
+        0,
+        SettingsManager.screenSize.getScreenHeight() - 200,
+        0,
+        Color.WHITE
+    );;
+
     public PauseSettingsPage() {
-        addHeader();
+        getRenderables().add(header);
+        update();
     }
 
-    private void addHeader() {
-        Text header = new Text(
-            "SETTINGS",
-            FontType.WINDOW,
-            0,
-            SettingsManager.screenSize.getCurrentSize()[1] - 200,
-            0,
-            Color.WHITE
-        );
-
+    public void update() {
         int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
-        int screenHeight = SettingsManager.screenSize.getCurrentSize()[1];
+        int screenHeight = SettingsManager.screenSize.getScreenHeight();
 
         header.getBounds().setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
         header.getBounds().setY(screenHeight - 100);
         header.update();
-
-        getRenderables().add(header);
     }
 }

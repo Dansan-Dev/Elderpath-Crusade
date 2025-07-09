@@ -89,8 +89,8 @@ public class Text extends AbstractTexture implements Renderable, ClickableEffect
         float mouseX = Gdx.input.getX();
         float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
 
-        float scaleX = (float)Gdx.graphics.getWidth() / SettingsManager.screenSize.getCurrentSize()[0];
-        float scaleY = (float)Gdx.graphics.getHeight() / SettingsManager.screenSize.getCurrentSize()[1];
+        float scaleX = (float)Gdx.graphics.getWidth() / SettingsManager.screenSize.getScreenWidth();
+        float scaleY = (float)Gdx.graphics.getHeight() / SettingsManager.screenSize.getScreenHeight();
         mouseX /= scaleX;
         mouseY /= scaleY;
         mouseX = (float) Math.floor(mouseX);

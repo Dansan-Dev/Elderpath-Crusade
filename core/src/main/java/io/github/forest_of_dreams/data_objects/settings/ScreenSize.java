@@ -5,7 +5,6 @@ import com.badlogic.gdx.Graphics;
 import lombok.Getter;
 
 public class ScreenSize {
-    @Getter
     private int[] currentSize = new int[]{1280, 720};
     @Getter
     private int[] nonFullscreenSize = currentSize;
@@ -35,5 +34,25 @@ public class ScreenSize {
     private void updateToNonFullscreenSize() {
         currentSize = nonFullscreenSize;
         Gdx.graphics.setWindowedMode(currentSize[0], currentSize[1]);
+    }
+
+    public int getScreenWidth() {
+        return Gdx.graphics.getWidth();//screenSize.getCurrentSize()[0];
+    }
+
+    public int getScreenHeight() {
+        return Gdx.graphics.getHeight();//screenSize.getCurrentSize()[1];
+    }
+
+    public int[] getScreenSize() {
+        return new int[]{getScreenWidth(), getScreenHeight()};
+    }
+
+    public int getScreenConfiguredWidth() {
+        return currentSize[0];
+    }
+
+    public int getScreenConfiguredHeight() {
+        return currentSize[1];
     }
 }

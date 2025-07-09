@@ -5,8 +5,6 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
-import java.util.Arrays;
-
 public class Board extends HigherOrderTexture {
     private final int ROWS = 7;
     private final int COLS = 5;
@@ -21,7 +19,7 @@ public class Board extends HigherOrderTexture {
         board = new Renderable[ROWS][COLS];
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
-                Renderable renderable = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, 60, 60);
+                Renderable renderable = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
                 board[row][col] = renderable;
 
                 getRenderables().add(renderable);

@@ -13,36 +13,23 @@ import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
 public class PauseMenuPage extends HigherOrderTexture {
 
+    private final TextList options = new TextList();;
+    private final Text header = new Text(
+        "PAUSED",
+        FontType.WINDOW,
+        0,
+        SettingsManager.screenSize.getScreenHeight() - 200,
+        0,
+        Color.WHITE
+    );;
+
     public PauseMenuPage() {
-        addHeader();
-        addOptions();
-    }
-
-    private void addHeader() {
-        Text header = new Text(
-            "PAUSED",
-            FontType.WINDOW,
-            0,
-            SettingsManager.screenSize.getCurrentSize()[1] - 200,
-            0,
-            Color.WHITE
-        );
-
-        int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
-        int screenHeight = SettingsManager.screenSize.getCurrentSize()[1];
-
-        header.getBounds().setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
-        header.getBounds().setY(screenHeight - 100);
-        header.update();
-
         getRenderables().add(header);
+        addOptions();
+        update();
     }
 
     private void addOptions() {
-        int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
-        int screenCenterY = SettingsManager.screenSize.getScreenCenter()[1];
-
-        TextList options = new TextList();
         options.addText(
             new Text("Resume", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
                 .withHoverColor(Color.YELLOW)
@@ -64,9 +51,20 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withOnClick(() -> Gdx.app.exit())
         );
 
-        options.alignTextAcrossYAxis(50, screenCenterX, screenCenterY);
-
-
         getRenderables().add(options);
+    }
+
+    public void update() {
+        int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
+        int screenCenterY = SettingsManager.screenSize.getScreenCenter()[1];
+        int screenHeight = SettingsManager.screenSize.getScreenHeight();
+
+        // Header
+        header.getBounds().setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
+        header.getBounds().setY(screenHeight - 100);
+        header.update();
+
+        // Options
+        options.alignTextAcrossYAxis(50, screenCenterX, screenCenterY);
     }
 }

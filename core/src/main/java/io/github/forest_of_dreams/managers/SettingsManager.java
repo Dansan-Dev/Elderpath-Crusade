@@ -16,11 +16,7 @@ public class SettingsManager {
         language.initialize();
     }
 
-    public static int getScreenWidth() {
-        return screenSize.getCurrentSize()[0];
-    }
 
-    public static int getScreenHeight() {
-        return screenSize.getCurrentSize()[1];
-    }
+
+
 }

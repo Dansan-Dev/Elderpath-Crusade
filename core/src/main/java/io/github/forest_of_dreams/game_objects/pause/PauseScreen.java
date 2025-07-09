@@ -5,15 +5,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.TextureObject;
-import io.github.forest_of_dreams.game_objects.pause.pages.PauseMenuPage;
-import io.github.forest_of_dreams.game_objects.pause.pages.PauseSettingsPage;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
-import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Map;
 
 /**
  * To add new pages:
@@ -39,7 +34,7 @@ public class PauseScreen extends AbstractTexture {
     }
 
     public static void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        int[] screenSize = SettingsManager.screenSize.getCurrentSize();
+        int[] screenSize = SettingsManager.screenSize.getScreenSize();
         background.setBounds(new Box(0, 0, screenSize[0], screenSize[1]));
         background.render(batch, zLevel, isPaused);
     }

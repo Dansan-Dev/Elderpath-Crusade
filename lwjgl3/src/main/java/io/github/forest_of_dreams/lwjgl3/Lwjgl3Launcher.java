@@ -2,6 +2,8 @@ package io.github.forest_of_dreams.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 import io.github.forest_of_dreams.Main;
 import io.github.forest_of_dreams.managers.SettingsManager;
 
@@ -29,10 +31,12 @@ public class Lwjgl3Launcher {
         //// useful for testing performance, but can also be very stressful to some hardware.
         //// You may also need to configure GPU drivers to fully disable Vsync; this can cause screen tearing.
 
-        int width = SettingsManager.screenSize.getCurrentSize()[0];
-        int height = SettingsManager.screenSize.getCurrentSize()[1];
+        int width = SettingsManager.screenSize.getScreenConfiguredWidth();
+        int height = SettingsManager.screenSize.getScreenConfiguredHeight();
+        configuration.setResizable(false);  // This prevents window resizing
+        configuration.setWindowSizeLimits(width, height, width, height);
         configuration.setWindowedMode(width, height);
-//        configuration.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+
         //// You can change these files; they are in lwjgl3/src/main/resources/ .
         //// They can also be loaded from the root of assets/ .
         configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");

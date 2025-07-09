@@ -24,20 +24,20 @@ public class ShaderManager {
         createFbos();
     }
 
-    private static void createFbos() {
+    public static void createFbos() {
         if (fboA != null) fboA.dispose();
         if (fboB != null) fboB.dispose();
 
         fboA = new FrameBuffer(
             Pixmap.Format.RGBA8888,
-            SettingsManager.getScreenWidth(),
-            SettingsManager.getScreenHeight(),
+            SettingsManager.screenSize.getScreenWidth(),
+            SettingsManager.screenSize.getScreenHeight(),
             false
         );
         fboB = new FrameBuffer(
             Pixmap.Format.RGBA8888,
-            SettingsManager.getScreenWidth(),
-            SettingsManager.getScreenHeight(),
+            SettingsManager.screenSize.getScreenWidth(),
+            SettingsManager.screenSize.getScreenHeight(),
             false
         );
     }
