@@ -13,7 +13,6 @@ import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
 public class PauseMenuPage extends HigherOrderTexture {
 
-    private final TextList options = new TextList();;
     private final Text header = new Text(
         "PAUSED",
         FontType.WINDOW,
@@ -21,7 +20,8 @@ public class PauseMenuPage extends HigherOrderTexture {
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
         Color.WHITE
-    );;
+    );
+    private final TextList options = new TextList();
 
     public PauseMenuPage() {
         getRenderables().add(header);
