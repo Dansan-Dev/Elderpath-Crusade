@@ -8,6 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
+import io.github.forest_of_dreams.interfaces.ClickableEffect;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
@@ -17,7 +18,7 @@ import lombok.Setter;
 
 import java.util.List;
 
-public class Text extends AbstractTexture implements Renderable{
+public class Text extends AbstractTexture implements Renderable, ClickableEffect {
     @Getter @Setter
     private String text;
     @Getter @Setter
@@ -32,6 +33,8 @@ public class Text extends AbstractTexture implements Renderable{
     private Color color;
     private Color hoverColor = null;
     private Color clickColor = null;
+
+    private Runnable onClick = null;
 
     public Text(String text, FontType fontType, int x, int y, int z, Color color) {
         this.text = text;
@@ -53,6 +56,11 @@ public class Text extends AbstractTexture implements Renderable{
         return this;
     }
 
+    public Text withOnClick(Runnable onClick) {
+        setClickableEffect(onClick);
+        return this;
+    }
+
     public void update() {
         style = skin.get(fontType.getFontName(), Label.LabelStyle.class);
         label = new Label(text, style);
@@ -62,6 +70,8 @@ public class Text extends AbstractTexture implements Renderable{
         getBounds().setWidth((int)label.getWidth());
         getBounds().setHeight((int)label.getHeight());
     }
+
+
 
     public void setCenterX() {
         getBounds().setX((int)(SettingsManager.screenSize.getScreenCenter()[0] - (label.getWidth() / 2)));
@@ -108,7 +118,10 @@ public class Text extends AbstractTexture implements Renderable{
         update();
         if (isHovered(0, 0)) {
             if (hoverColor != null) label.setColor(hoverColor);
-            if (isClicked() && clickColor != null) label.setColor(clickColor);
+            if (isClicked()) {
+                if (clickColor != null) label.setColor(clickColor);
+                onClick();
+            }
         }
         label.draw(batch, 1);
         label.setColor(color);
@@ -125,5 +138,14 @@ public class Text extends AbstractTexture implements Renderable{
         }
         label.draw(batch, 1);
         label.setColor(color);
+    }
+
+    @Override
+    public void setClickableEffect(Runnable onClick) {
+        this.onClick = onClick;
+    }
+
+    public void onClick() {
+        this.onClick.run();
     }
 }
