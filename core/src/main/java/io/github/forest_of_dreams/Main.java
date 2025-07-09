@@ -35,33 +35,36 @@ public class Main extends ApplicationAdapter {
         SoundManager.transition();
         SoundManager.playSound("01_chest_open_1.wav");
 
+        int plot_width = 40;
+        int plot_height = 40;
+
         batch = new SpriteBatch();
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int[] board_size = new int[]{40*5, 40*7};
-        Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, 40, 40);
+        int[] board_size = new int[]{plot_width*5, plot_height*7};
+        Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, plot_width, plot_height);
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
-                board.replacePos(row, col, new Plot(0, 0, 40, 40));
+                board.replacePos(row, col, new Plot(0, 0, plot_width, plot_height));
             }
         }
 
-        SpriteObject sprObj = new SpriteObject(60, 60, 40, 40, 1, SpriteBoxPos.BOTTOM);
+        SpriteObject sprObj = new SpriteObject(60, 60, plot_width, plot_height, 1, SpriteBoxPos.BOTTOM);
 
         sprObj.addAnimation("walk", List.of(
-            SpriteCreator.makeSprite("images/gobu_walk.png", 0, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 32, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 64, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 96, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 128, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 160, 6, 32, 32, 40, 48)
+            SpriteCreator.makeSprite("images/gobu_walk.png", 0, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 32, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 64, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 96, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 128, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_walk.png", 160, 6, 32, 32, plot_width, (int)(plot_height * 1.2f))
         ), 6);
         sprObj.addAnimation("hurt", List.of(
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 0, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 32, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 64, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 96, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 128, 6, 32, 32, 40, 48),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 160, 6, 32, 32, 40, 48)
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 0, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 32, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 64, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 96, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 128, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
+            SpriteCreator.makeSprite("images/gobu_hurt.png", 160, 6, 32, 32, plot_width, (int)(plot_height * 1.2f))
         ), 6);
         GraphicsManager.addRenderable(sprObj);
         GraphicsManager.addRenderable(board);
