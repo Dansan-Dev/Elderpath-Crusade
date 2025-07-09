@@ -41,19 +41,24 @@ public class PauseScreen extends AbstractTexture implements Renderable {
             FontType.WINDOW,
             0,
             screenHeight - 200,
-            0
+            0,
+            Color.WHITE
         );
-        header.setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
-        header.setY(screenHeight - 100);
+        header.getBounds().setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
+        header.getBounds().setY(screenHeight - 100);
         header.update();
 
         Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         headerStyle = skin.get("window", LabelStyle.class);
         listStyle = skin.get("default", LabelStyle.class);
 
-        options.addText(new Text("Resume", FontType.DEFAULT, 0, 0, 0));
-        options.addText(new Text("Settings", FontType.DEFAULT, 0, 0, 0));
-        options.addText(new Text("Exit", FontType.DEFAULT, 0, 0, 0));
+        for (String text : List.of("Resume", "Settings", "Exit")) {
+            options.addText(
+                new Text(text, FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+                    .withHoverColor(Color.YELLOW)
+                    .withClickColor(Color.BLUE)
+            );
+        }
         options.alignTextAcrossYAxis(50, screenCenterX, screenCenterY);
     }
 

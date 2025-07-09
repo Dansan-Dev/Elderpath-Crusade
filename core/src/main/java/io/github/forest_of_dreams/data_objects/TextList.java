@@ -37,10 +37,8 @@ public class TextList extends HigherOrderTexture {
             .forEach(i -> {
                 Text text = (Text) getRenderables().get(i);
                 Label label = text.getLabel();
-                label.setPosition(
-                    centerX - (label.getWidth()/2),
-                    startY - i*offset
-                );
+                text.getBounds().setX((int) (centerX - (label.getWidth()/2)));
+                text.getBounds().setY(startY - i*offset);
             });
     }
 }

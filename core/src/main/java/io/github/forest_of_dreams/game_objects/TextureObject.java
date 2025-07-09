@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
-import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.BaseTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
@@ -63,6 +62,10 @@ public class TextureObject extends BaseTexture {
         return isInXRange && isInYRange;
     }
 
+    private boolean isClicked() {
+        return Gdx.input.isButtonPressed(0);
+    }
+
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         if (zLevel != z) return;
@@ -71,7 +74,7 @@ public class TextureObject extends BaseTexture {
 
         Color renderedColor;
         if (isHovered(0, 0)) {
-            if (Gdx.input.isButtonPressed(0) && clickColor != null) {
+            if (isClicked() && clickColor != null) {
                 renderedColor = clickColor;
             } else if (hoverColor != null) {
                 renderedColor = hoverColor;
