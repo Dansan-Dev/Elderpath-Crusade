@@ -146,6 +146,6 @@ public class Text extends AbstractTexture implements Renderable, ClickableEffect
     }
 
     public void onClick() {
-        this.onClick.run();
+        if (onClick != null) onClick.run();
     }
 }

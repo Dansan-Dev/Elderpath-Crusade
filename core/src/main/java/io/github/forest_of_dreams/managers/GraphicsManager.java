@@ -1,6 +1,5 @@
 package io.github.forest_of_dreams.managers;
 
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.game_objects.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
@@ -13,20 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GraphicsManager {
-    @Getter private final List<Renderable> renderables;
-    @Getter private final List<UIRenderable> uiRenderables;
+    @Getter private static final List<Renderable> renderables = new ArrayList<>();;
+    @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
     @Getter
-    private final PauseScreen pauseScreen = new PauseScreen();
-    private int maxZ = 0;
-    private int minZ = 0;
-    @Getter private boolean isPaused = false;
+    private static final PauseScreen pauseScreen = new PauseScreen();
+    private static int maxZ = 0;
+    private static int minZ = 0;
+    @Getter private static boolean isPaused = false;
 
-    public GraphicsManager() {
-        renderables = new ArrayList<>();
-        uiRenderables = new ArrayList<>();
-    }
-
-    public void pause() {
+    public static void pause() {
         isPaused = true;
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
@@ -35,7 +29,7 @@ public class GraphicsManager {
             );
     }
 
-    public void unpause() {
+    public static void unpause() {
         isPaused = false;
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
@@ -44,22 +38,22 @@ public class GraphicsManager {
             );
     }
 
-    public void render(SpriteBatch batch) {
+    public static void render(SpriteBatch batch) {
         renderGameGraphics(batch);
         renderUI(batch);
         if (isPaused) pauseScreen.render(batch, 10, isPaused);
     }
 
-    public void renderUI(SpriteBatch batch) {
+    public static void renderUI(SpriteBatch batch) {
         uiRenderables.forEach(r -> r.renderUI(batch, isPaused));
     }
 
-    public void renderPauseUI(SpriteBatch batch) {
+    public static void renderPauseUI(SpriteBatch batch) {
         if (!isPaused) return;
         pauseScreen.renderPauseUI(batch);
     }
 
-    private void renderGameGraphics(SpriteBatch batch) {
+    private static void renderGameGraphics(SpriteBatch batch) {
         for(int i = minZ; i <= maxZ; i++) {
             for(Renderable r : renderables) {
                 if (r instanceof HigherOrderTexture) r.render(batch, i, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
@@ -68,7 +62,7 @@ public class GraphicsManager {
         }
     }
 
-    public void updateMinMaxZ() {
+    public static void updateMinMaxZ() {
         minZ = 0;
         maxZ = 0;
         for (Renderable r : renderables) {
@@ -76,28 +70,28 @@ public class GraphicsManager {
         }
     }
 
-    public void addRenderable(Renderable renderable) {
+    public static void addRenderable(Renderable renderable) {
         tryMinMaxZBoundary(renderable);
         renderables.add(renderable);
     }
 
-    public void addRenderables(List<Renderable> renderables) {
-        renderables.forEach(this::addRenderable);
+    public static void addRenderables(List<Renderable> renderables) {
+        renderables.forEach(GraphicsManager::addRenderable);
     }
 
-    public void addUIRenderable(UIRenderable renderable) {
+    public static void addUIRenderable(UIRenderable renderable) {
         uiRenderables.add(renderable);
     }
 
-    public void removeRenderable(Renderable renderable) {
+    public static void removeRenderable(Renderable renderable) {
         renderables.remove(renderable);
     }
 
-    public void removeRenderables(List<Renderable> renderables) {
-        renderables.forEach(this::removeRenderable);
+    public static void removeRenderables(List<Renderable> renderables) {
+        renderables.forEach(GraphicsManager::removeRenderable);
     }
 
-    private void tryMinMaxZBoundary(Renderable r) {
+    private static void tryMinMaxZBoundary(Renderable r) {
         List<Integer> renderableZs = r.getZs();
         int renderableMaxZ = renderableZs.stream()
             .max(Integer::compareTo)

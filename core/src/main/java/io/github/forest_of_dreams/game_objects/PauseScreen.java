@@ -10,6 +10,7 @@ import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.data_objects.TextList;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import java.util.List;
@@ -41,13 +42,18 @@ public class PauseScreen extends AbstractTexture implements Renderable {
         header.getBounds().setY(screenHeight - 100);
         header.update();
 
-        for (String text : List.of("Resume", "Settings")) {
-            options.addText(
-                new Text(text, FontType.DEFAULT, 0, 0, 0, Color.WHITE)
-                    .withHoverColor(Color.YELLOW)
-                    .withClickColor(Color.BLUE)
-            );
-        }
+        options.addText(
+            new Text("Resume", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+                .withHoverColor(Color.YELLOW)
+                .withClickColor(Color.BLUE)
+                .withOnClick(GraphicsManager::unpause)
+        );
+
+        options.addText(
+            new Text("Settings", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+                .withHoverColor(Color.YELLOW)
+                .withClickColor(Color.BLUE)
+        );
 
         options.addText(
             new Text("Exit", FontType.DEFAULT, 0, 0, 0, Color.WHITE)

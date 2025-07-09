@@ -12,11 +12,10 @@ public class HandlePause implements InputHandler {
     @Override
     public void handleInput(Map<InputHandlerData, Object> data) {
         boolean isPaused = (boolean) data.get(InputHandlerData.IS_PAUSED);
-        GraphicsManager graphicsManager = (GraphicsManager) data.get(InputHandlerData.GRAPHICS_MANAGER);
         if (!isPaused) {
-            GameManager.pause(graphicsManager);
+            GameManager.pause();
         } else {
-            GameManager.unpause(graphicsManager);
+            GameManager.unpause();
         }
     }
 }

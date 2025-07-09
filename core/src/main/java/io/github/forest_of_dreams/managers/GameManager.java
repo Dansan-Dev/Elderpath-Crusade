@@ -1,29 +1,28 @@
 package io.github.forest_of_dreams.managers;
 
-import io.github.forest_of_dreams.game_objects.SpriteObject;
 import lombok.Getter;
 
 public class GameManager {
     @Getter private static boolean isPaused = false;
 
-    public static void pause(GraphicsManager graphicsManager) {
+    public static void pause() {
         isPaused = true;
-        pauseGraphics(graphicsManager);
+        pauseGraphics();
         pauseInputHandlers();
     }
 
-    public static void unpause(GraphicsManager graphicsManager) {
+    public static void unpause() {
         isPaused = false;
-        unpauseGraphics(graphicsManager);
+        unpauseGraphics();
         pauseInputHandlers();
     }
 
-    private static void pauseGraphics(GraphicsManager graphicsManager) {
-        graphicsManager.pause();
+    private static void pauseGraphics() {
+        GraphicsManager.pause();
     }
 
-    private static void unpauseGraphics(GraphicsManager graphicsManager) {
-        graphicsManager.unpause();
+    private static void unpauseGraphics() {
+        GraphicsManager.unpause();
     }
 
     private static void pauseInputHandlers() {

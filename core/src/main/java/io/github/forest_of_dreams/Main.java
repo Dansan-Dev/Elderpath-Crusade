@@ -23,7 +23,6 @@ import java.util.Map;
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
-    private GraphicsManager graphicsManager;
 
     @Override
     public void create() {
@@ -37,7 +36,6 @@ public class Main extends ApplicationAdapter {
         SoundManager.playSound("01_chest_open_1.wav");
 
         batch = new SpriteBatch();
-        graphicsManager = new GraphicsManager();
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
         int[] board_size = new int[]{40*5, 40*7};
         Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, 40, 40);
@@ -65,9 +63,9 @@ public class Main extends ApplicationAdapter {
             SpriteCreator.makeSprite("images/gobu_hurt.png", 128, 6, 32, 32, 40, 48),
             SpriteCreator.makeSprite("images/gobu_hurt.png", 160, 6, 32, 32, 40, 48)
         ), 6);
-        graphicsManager.addRenderable(sprObj);
-        graphicsManager.addRenderable(board);
-        graphicsManager.addUIRenderable(new PauseMenuHint());
+        GraphicsManager.addRenderable(sprObj);
+        GraphicsManager.addRenderable(board);
+        GraphicsManager.addUIRenderable(new PauseMenuHint());
 //        List<Renderable> plots = List.of(
 //            new TextureObject(Color.BLUE, 175, 100, 100, 100, -1),
 //            new TextureObject(Color.YELLOW, 200, 150, 100, 100),
@@ -96,8 +94,7 @@ public class Main extends ApplicationAdapter {
 
     private Map<InputHandlerData, Object> getInputHandlerData() {
         Map<InputHandlerData, Object> data = new HashMap<>();
-        data.put(InputHandlerData.IS_PAUSED, graphicsManager.isPaused());
-        data.put(InputHandlerData.GRAPHICS_MANAGER, graphicsManager);
+        data.put(InputHandlerData.IS_PAUSED, GraphicsManager.isPaused());
         return data;
     }
 
@@ -113,7 +110,7 @@ public class Main extends ApplicationAdapter {
         batch.begin();
         batch.setShader(null); // Use normal shader for initial render
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        graphicsManager.render(batch);
+        GraphicsManager.render(batch);
         batch.end();
 
         fboA.end();
@@ -153,13 +150,13 @@ public class Main extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        graphicsManager.render(batch);
+        GraphicsManager.render(batch);
         batch.end();
     }
 
     public void drawPauseUI(SpriteBatch batch) {
         batch.begin();
-        graphicsManager.renderPauseUI(batch);
+        GraphicsManager.renderPauseUI(batch);
         batch.end();
     }
 
@@ -171,7 +168,7 @@ public class Main extends ApplicationAdapter {
         handleInput();
 
         // RENDER
-        if (graphicsManager.isPaused()) blurredDraw(batch);
+        if (GraphicsManager.isPaused()) blurredDraw(batch);
         else draw(batch);
         drawPauseUI(batch);
 //        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
