@@ -7,7 +7,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import io.github.forest_of_dreams.enums.FontType;
+import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import lombok.Getter;
@@ -91,7 +93,7 @@ public class Text extends AbstractTexture implements Renderable{
     }
 
     private boolean isClicked() {
-        return Gdx.input.isButtonPressed(0);
+        return InputManager.getFunctionActivation(InputFunction.LEFT_CLICK);
     }
 
     @Override
