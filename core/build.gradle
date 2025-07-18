@@ -8,6 +8,8 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
   implementation 'org.yaml:snakeyaml:2.2'
+  implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+
 
 
   if(enableGraalNative == 'true') {

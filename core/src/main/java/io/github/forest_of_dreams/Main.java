@@ -1,12 +1,15 @@
 package io.github.forest_of_dreams;
 
 import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
+import io.github.forest_of_dreams.api.BackendService;
+import io.github.forest_of_dreams.api.dto.UserResponseDto;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.enums.settings.InputKey;
@@ -19,6 +22,7 @@ import io.github.forest_of_dreams.utils.SpriteCreator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
@@ -26,6 +30,11 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
+        BackendService.post("Yxaria")
+            .thenAccept(u -> {
+                BackendService.get("/user/" + u.getId(), UserResponseDto.class)
+                    .thenAccept(user -> System.out.println("USERNAME: " + user.getUsername()));
+            });
         GameManager.initialize();
 
         SettingsManager.sound.setMusicVolume(3);
