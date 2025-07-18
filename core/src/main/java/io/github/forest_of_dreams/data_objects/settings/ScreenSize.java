@@ -6,18 +6,13 @@ import lombok.Getter;
 
 public class ScreenSize {
     private int[] currentSize = new int[]{1280, 720};
-    @Getter
-    private int[] nonFullscreenSize = currentSize;
+    @Getter private int[] nonFullscreenSize = currentSize;
+
+    public void initialize() {}
+
 
     public int[] getScreenCenter() {
         return new int[]{currentSize[0] / 2, currentSize[1] / 2};
-    }
-
-    public void setNonFullscreenSize(int width, int height) {
-        nonFullscreenSize = new int[]{width, height};
-        if (!Gdx.graphics.isFullscreen()) {
-            updateToNonFullscreenSize();
-        }
     }
 
     public void toggleFullscreen() {

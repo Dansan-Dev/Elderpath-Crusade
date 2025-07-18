@@ -22,7 +22,7 @@ public class GameManager {
     public static void unpause() {
         isPaused = false;
         unpauseGraphics();
-        pauseInputHandlers();
+        unpauseInputHandlers();
     }
 
     private static void pauseGraphics() {

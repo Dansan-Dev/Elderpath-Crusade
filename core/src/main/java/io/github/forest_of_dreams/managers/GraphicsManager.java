@@ -60,14 +60,6 @@ public class GraphicsManager {
         }
     }
 
-    public static void updateMinMaxZ() {
-        minZ = 0;
-        maxZ = 0;
-        for (Renderable r : renderables) {
-            tryMinMaxZBoundary(r);
-        }
-    }
-
     public static void addRenderable(Renderable renderable) {
         tryMinMaxZBoundary(renderable);
         renderables.add(renderable);

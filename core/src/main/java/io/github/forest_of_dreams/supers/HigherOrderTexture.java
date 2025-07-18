@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
-public abstract class HigherOrderTexture extends AbstractTexture implements Renderable{
+public abstract class HigherOrderTexture extends AbstractTexture implements Renderable {
     private List<Renderable> renderables = new ArrayList<>();
 
     @Override

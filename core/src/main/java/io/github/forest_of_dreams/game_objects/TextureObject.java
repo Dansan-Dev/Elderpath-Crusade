@@ -46,8 +46,22 @@ public class TextureObject extends BaseTexture {
         int y = getY() + relY;
         int width = getWidth();
         int height = getHeight();
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+        // Get the actual screen dimensions
+        float screenWidth = Gdx.graphics.getWidth();
+        float screenHeight = Gdx.graphics.getHeight();
+
+        // Get the configured dimensions
+        int configuredWidth = SettingsManager.screenSize.getScreenConfiguredWidth();
+        int configuredHeight = SettingsManager.screenSize.getScreenConfiguredHeight();
+
+        // Calculate scale factors
+        float scaleX = configuredWidth / screenWidth;
+        float scaleY = configuredHeight / screenHeight;
+
+        // Scale the mouse coordinates
+        float mouseX = Gdx.input.getX() * scaleX;
+        float mouseY = (Gdx.graphics.getHeight() - Gdx.input.getY()) * scaleY;
 
         boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
         boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);

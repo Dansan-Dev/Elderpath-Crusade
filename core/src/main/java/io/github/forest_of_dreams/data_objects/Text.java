@@ -19,16 +19,13 @@ import lombok.Setter;
 import java.util.List;
 
 public class Text extends AbstractTexture implements Renderable, ClickableEffect {
-    @Getter @Setter
-    private String text;
-    @Getter @Setter
-    private FontType fontType;
+    @Getter @Setter private String text;
+    @Getter @Setter private FontType fontType;
     private int z;
 
     private static final Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));;
     private LabelStyle style;
-    @Getter
-    private Label label;
+    @Getter private Label label;
 
     private Color color;
     private Color hoverColor = null;
@@ -86,15 +83,22 @@ public class Text extends AbstractTexture implements Renderable, ClickableEffect
         int y = getY() + relY;
         int width = getWidth();
         int height = getHeight();
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
 
-        float scaleX = (float)Gdx.graphics.getWidth() / SettingsManager.screenSize.getScreenWidth();
-        float scaleY = (float)Gdx.graphics.getHeight() / SettingsManager.screenSize.getScreenHeight();
-        mouseX /= scaleX;
-        mouseY /= scaleY;
-        mouseX = (float) Math.floor(mouseX);
-        mouseY = (float) Math.floor(mouseY);
+        // Get the actual screen dimensions
+        float screenWidth = Gdx.graphics.getWidth();
+        float screenHeight = Gdx.graphics.getHeight();
+
+        // Get the configured dimensions
+        int configuredWidth = SettingsManager.screenSize.getScreenConfiguredWidth();
+        int configuredHeight = SettingsManager.screenSize.getScreenConfiguredHeight();
+
+        // Calculate scale factors
+        float scaleX = configuredWidth / screenWidth;
+        float scaleY = configuredHeight / screenHeight;
+
+        // Scale the mouse coordinates
+        float mouseX = Gdx.input.getX() * scaleX;
+        float mouseY = (Gdx.graphics.getHeight() - Gdx.input.getY()) * scaleY;
 
         boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
         boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);

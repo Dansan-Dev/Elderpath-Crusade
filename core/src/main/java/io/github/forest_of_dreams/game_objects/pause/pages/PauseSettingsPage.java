@@ -1,13 +1,9 @@
 package io.github.forest_of_dreams.game_objects.pause.pages;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.data_objects.TextList;
 import io.github.forest_of_dreams.enums.FontType;
-import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
-import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
-import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
@@ -35,7 +31,6 @@ public class PauseSettingsPage extends HigherOrderTexture {
                 .withClickColor(Color.BLUE)
                 .withOnClick(SettingsManager.screenSize::toggleFullscreen)
         );
-
         getRenderables().add(options);
     }
 

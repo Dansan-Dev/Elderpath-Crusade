@@ -4,10 +4,7 @@ import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.enums.settings.InputKey;
-import io.github.forest_of_dreams.input_handlers.HandleLeftClick;
-import io.github.forest_of_dreams.input_handlers.HandlePause;
-import io.github.forest_of_dreams.input_handlers.HandleRightClick;
-import io.github.forest_of_dreams.input_handlers.HandleUnbound;
+import io.github.forest_of_dreams.input_handlers.*;
 import io.github.forest_of_dreams.interfaces.InputHandler;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,6 +43,7 @@ public class InputManager {
         setInput(InputKey.MOUSE_LEFT, InputFunction.LEFT_CLICK);
         setInput(InputKey.MOUSE_RIGHT, InputFunction.RIGHT_CLICK);
         setInput(InputKey.ESCAPE, InputFunction.PAUSE_MENU);
+        setInput(InputKey.Q, InputFunction.EXIT_GAME);
         // Standard binding
         // ...
 
@@ -55,8 +53,10 @@ public class InputManager {
     public static void initializeInputHandlers() {
         inputHandlers.put(InputFunction.LEFT_CLICK, new HandleLeftClick());
         inputHandlers.put(InputFunction.RIGHT_CLICK, new HandleRightClick());
-        inputHandlers.put(InputFunction.UNBOUND, new HandleUnbound());
         inputHandlers.put(InputFunction.PAUSE_MENU, new HandlePause());
+        inputHandlers.put(InputFunction.EXIT_GAME, new HandleExitGame());
+
+        inputHandlers.put(InputFunction.UNBOUND, new HandleUnbound());
     }
 
     public static void setInput(InputKey key, InputFunction value) {

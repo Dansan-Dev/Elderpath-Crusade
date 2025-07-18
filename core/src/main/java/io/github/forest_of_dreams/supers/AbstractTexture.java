@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
-public class AbstractTexture {
+public abstract class AbstractTexture {
     private Box parent;
     private Box bounds;
 

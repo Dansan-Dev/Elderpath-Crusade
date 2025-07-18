@@ -6,12 +6,12 @@ import io.github.forest_of_dreams.data_objects.Box;
 import java.util.List;
 
 public interface Renderable {
-    public Box getParent();
-    public void setParent(Box parent);
-    public Box getBounds();
-    public void setBounds(Box bounds);
+    Box getParent();
+    void setParent(Box parent);
+    Box getBounds();
+    void setBounds(Box bounds);
 
-    public List<Integer> getZs();
-    public void render(SpriteBatch batch, int zLevel, boolean isPaused);
-    public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y);
+    List<Integer> getZs();
+    void render(SpriteBatch batch, int zLevel, boolean isPaused);
+    void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y);
 }

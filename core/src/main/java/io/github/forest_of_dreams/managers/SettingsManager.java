@@ -13,6 +13,7 @@ public class SettingsManager {
     public static final ScreenSize screenSize = new ScreenSize();
 
     public static void initialize() {
+        screenSize.initialize();
         language.initialize();
     }
 

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import io.github.forest_of_dreams.utils.Logger;
 import lombok.Getter;
 
 public class ShaderManager {
@@ -18,7 +19,7 @@ public class ShaderManager {
                 Gdx.files.internal("shaders/blur-fragment.glsl")
             );
             if (!blurShader.isCompiled()) {
-                Gdx.app.error("Shader", blurShader.getLog());
+                Logger.error("Shader", blurShader.getLog());
             }
         }
         createFbos();
