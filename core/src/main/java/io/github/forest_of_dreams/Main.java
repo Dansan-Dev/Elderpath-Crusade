@@ -1,7 +1,6 @@
 package io.github.forest_of_dreams;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -10,20 +9,17 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.api.BackendService;
 import io.github.forest_of_dreams.api.dto.UserListResponseDto;
-import io.github.forest_of_dreams.api.dto.UserResponseDto;
-import io.github.forest_of_dreams.enums.SpriteBoxPos;
+import io.github.forest_of_dreams.characters.pieces.Goblin;
+import io.github.forest_of_dreams.characters.sprites.GoblinSprite;
 import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.enums.settings.InputKey;
 import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.managers.*;
 import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
 import io.github.forest_of_dreams.utils.GraphicUtils;
-import io.github.forest_of_dreams.utils.SpriteCreator;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
@@ -43,7 +39,7 @@ public class Main extends ApplicationAdapter {
         SoundManager.queueMusic("Evening_Harmony.mp3");
         SoundManager.queueMusic("Forgotten_Biomes.mp3");
         SoundManager.transition();
-        SoundManager.playSound("01_chest_open_1.wav");
+//        SoundManager.playSound("01_chest_open_1.wav");
 
         int plot_width = 40;
         int plot_height = 40;
@@ -58,25 +54,6 @@ public class Main extends ApplicationAdapter {
             }
         }
 
-        SpriteObject sprObj = new SpriteObject(60, 60, plot_width, plot_height, 1, SpriteBoxPos.BOTTOM);
-
-        sprObj.addAnimation("walk", List.of(
-            SpriteCreator.makeSprite("images/gobu_walk.png", 0, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 32, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 64, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 96, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 128, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_walk.png", 160, 6, 32, 32, plot_width, (int)(plot_height * 1.2f))
-        ), 6);
-        sprObj.addAnimation("hurt", List.of(
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 0, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 32, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 64, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 96, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 128, 6, 32, 32, plot_width, (int)(plot_height * 1.2f)),
-            SpriteCreator.makeSprite("images/gobu_hurt.png", 160, 6, 32, 32, plot_width, (int)(plot_height * 1.2f))
-        ), 6);
-        GraphicsManager.addRenderable(sprObj);
         GraphicsManager.addRenderable(board);
         GraphicsManager.addUIRenderable(new PauseMenuHint());
     }

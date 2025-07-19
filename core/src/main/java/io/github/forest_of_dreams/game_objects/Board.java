@@ -1,9 +1,14 @@
 package io.github.forest_of_dreams.game_objects;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.characters.pieces.Goblin;
+import io.github.forest_of_dreams.characters.sprites.GoblinSprite;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
+
+import java.util.Arrays;
 
 public class Board extends HigherOrderTexture {
     private final int ROWS = 7;
@@ -11,18 +16,24 @@ public class Board extends HigherOrderTexture {
     private final int PLOT_WIDTH;
     private final int PLOT_HEIGHT;
     private Renderable[][] board;
+    private GamePiece [][] gamePieces;
 
     public Board(int x, int y, int plot_width, int plot_height) {
         PLOT_WIDTH = plot_width;
         PLOT_HEIGHT = plot_height;
         setBounds(new Box(x, y, PLOT_WIDTH*COLS, PLOT_HEIGHT*ROWS));
         board = new Renderable[ROWS][COLS];
+        gamePieces = new GamePiece[ROWS][COLS];
+        Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
+        gamePieces[2][0] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
+        gamePieces[3][1] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
+        gamePieces[1][2] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
+        gamePieces[5][3] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
+        gamePieces[4][4] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
                 board[row][col] = renderable;
-
-                getRenderables().add(renderable);
             }
         }
     }
@@ -65,6 +76,8 @@ public class Board extends HigherOrderTexture {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
                 renderable.render(batch, zLevel, isPaused, x + col*(PLOT_WIDTH), y + row*(PLOT_HEIGHT));
+                if (gamePieces[row][col] != null)
+                    gamePieces[row][col].getSprite().render(batch, zLevel, isPaused, x + col*PLOT_WIDTH, y + row*PLOT_HEIGHT);
             }
         }
     }
