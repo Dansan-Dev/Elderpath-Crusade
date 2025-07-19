@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.api.BackendService;
+import io.github.forest_of_dreams.api.dto.UserListResponseDto;
 import io.github.forest_of_dreams.api.dto.UserResponseDto;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.enums.settings.InputHandlerData;
@@ -30,11 +31,11 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
-        BackendService.post("Yxaria")
-            .thenAccept(u -> {
-                BackendService.get("/user/" + u.getId(), UserResponseDto.class)
-                    .thenAccept(user -> System.out.println("USERNAME: " + user.getUsername()));
-            });
+        UserListResponseDto userListResponseDto = BackendService.getUsers();
+        System.out.println("USERS:");
+        userListResponseDto.getUsers().forEach(userResponseDto -> {
+            System.out.println("> " + userResponseDto.getUsername());
+        });
         GameManager.initialize();
 
         SettingsManager.sound.setMusicVolume(3);
