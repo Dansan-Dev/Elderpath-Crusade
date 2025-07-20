@@ -1,5 +1,6 @@
-package io.github.forest_of_dreams.game_objects;
+package io.github.forest_of_dreams.supers;
 
+import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;

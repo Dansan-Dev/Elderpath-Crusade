@@ -1,14 +1,10 @@
 package io.github.forest_of_dreams.rooms;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.game_objects.Plot;
-import io.github.forest_of_dreams.game_objects.Room;
-import io.github.forest_of_dreams.managers.GraphicsManager;
+import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
-
-import java.util.List;
 
 public class StartRoom extends Room {
     private StartRoom() {
@@ -26,9 +22,8 @@ public class StartRoom extends Room {
                 board.replacePos(row, col, new Plot(0, 0, plot_width, plot_height));
             }
         }
-
-        getContents().add(board);
-        getUi().add(new PauseMenuHint());
+        addContent(board);
+        addUI(new PauseMenuHint());
 
 //        GraphicsManager.addRenderable(board);
 //        GraphicsManager.addUIRenderable(new PauseMenuHint());

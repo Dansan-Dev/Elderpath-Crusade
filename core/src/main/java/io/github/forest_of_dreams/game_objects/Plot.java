@@ -1,15 +1,24 @@
 package io.github.forest_of_dreams.game_objects;
 import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
+import io.github.forest_of_dreams.enums.ClickableTargetType;
+import io.github.forest_of_dreams.interfaces.Clickable;
+import io.github.forest_of_dreams.interfaces.CustomBox;
+import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
+import java.util.HashMap;
 import java.util.List;
 
-public class Plot extends HigherOrderTexture {
+public class Plot extends HigherOrderTexture implements Clickable {
     private TextureObject plotDecorFront;
     private TextureObject plotDecorBack;
     private TextureObject plot;
     private TextureObject plotDirt;
+
+    private OnClick onClick = null;
+    private ClickableEffectData clickableEffectData = null;
 
     public Plot(int x, int y, TextureObject plot, TextureObject plotDirt) {
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
@@ -18,6 +27,11 @@ public class Plot extends HigherOrderTexture {
         plotDecorFront = EmptyTexture.get(x, y, width, height);
         plotDecorBack = EmptyTexture.get(x, y, width, height);
         plotConstruction(plot, plotDirt);
+
+        setClickableEffect(
+            (e) -> e.forEach((key, value) -> System.out.println(value)),
+            ClickableEffectData.getMultiChoiceLimited(ClickableTargetType.PLOT, 1)
+        );
     }
 
     public Plot(int x, int y, TextureObject plot, TextureObject plotDirt, TextureObject plotDecorFront, TextureObject plotDecorBack) {
@@ -59,5 +73,21 @@ public class Plot extends HigherOrderTexture {
         plotDirt.setParent(new Box(x, y, width, height));
         plotDecorFront.setParent(new Box(x, y, width, height));
         plotDecorBack.setParent(new Box(x, y + height/2, width, height*2));
+    }
+
+    @Override
+    public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
+        this.onClick = onClick;
+        this.clickableEffectData = effectData;
+    }
+
+    @Override
+    public ClickableEffectData getClickableEffectData() {
+        return clickableEffectData;
+    }
+
+    @Override
+    public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
+        onClick.run(interactionEntities);
     }
 }

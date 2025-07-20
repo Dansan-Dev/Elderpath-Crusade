@@ -1,6 +1,6 @@
 package io.github.forest_of_dreams.managers;
 
-import io.github.forest_of_dreams.game_objects.Room;
+import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.rooms.StartRoom;
 
 public class Game {

@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.game_objects.pause.pages;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.data_objects.TextList;
 import io.github.forest_of_dreams.enums.FontType;
@@ -34,21 +35,21 @@ public class PauseMenuPage extends HigherOrderTexture {
             new Text("Resume", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
-                .withOnClick(GraphicsManager::unpause)
+                .withOnClick((e) -> GraphicsManager.unpause(), ClickableEffectData.getImmediate())
         );
 
         options.addText(
             new Text("Settings", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
-                .withOnClick(() -> PauseScreen.setCurrentPage(PauseScreenPage.SETTINGS))
+                .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.SETTINGS), ClickableEffectData.getImmediate())
         );
 
         options.addText(
             new Text("Exit", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
-                .withOnClick(() -> Gdx.app.exit())
+                .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
         );
 
         getRenderables().add(options);

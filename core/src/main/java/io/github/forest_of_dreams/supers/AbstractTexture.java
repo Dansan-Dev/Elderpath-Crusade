@@ -1,11 +1,12 @@
 package io.github.forest_of_dreams.supers;
 
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.interfaces.CustomBox;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
-public abstract class AbstractTexture {
+public abstract class AbstractTexture implements CustomBox {
     private Box parent;
     private Box bounds;
 

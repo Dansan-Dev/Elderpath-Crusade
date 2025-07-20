@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.game_objects.pause.pages;
 
 import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.data_objects.TextList;
 import io.github.forest_of_dreams.enums.FontType;
@@ -29,7 +30,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
             new Text("Toggle Fullscreen", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
-                .withOnClick(SettingsManager.screenSize::toggleFullscreen)
+                .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
         );
         getRenderables().add(options);
     }

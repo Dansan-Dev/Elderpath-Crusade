@@ -3,9 +3,11 @@ package io.github.forest_of_dreams.managers;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
+import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
+import io.github.forest_of_dreams.supers.HigherOrderUI;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -39,7 +41,7 @@ public class GraphicsManager {
     public static void render(SpriteBatch batch) {
         renderGameGraphics(batch);
         renderUI(batch);
-        if (isPaused) PauseScreen.render(batch, 10, isPaused);
+//        if (isPaused) PauseScreen.render(batch, 10, isPaused);
     }
 
     public static void renderUI(SpriteBatch batch) {
@@ -48,7 +50,7 @@ public class GraphicsManager {
 
     public static void renderPauseUI(SpriteBatch batch) {
         if (!isPaused) return;
-        PauseScreen.renderPauseUI(batch);
+        PauseScreen.get().renderUI(batch, false);
     }
 
     private static void renderGameGraphics(SpriteBatch batch) {
@@ -63,6 +65,11 @@ public class GraphicsManager {
     public static void addRenderable(Renderable renderable) {
         tryMinMaxZBoundary(renderable);
         renderables.add(renderable);
+        if (renderable instanceof Clickable clickable) {
+            InteractionManager.addClickable(clickable);
+        } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
+            sendClickables(higherOrderTexture);
+        }
     }
 
     public static void addRenderables(List<Renderable> renderables) {
@@ -71,21 +78,46 @@ public class GraphicsManager {
 
     public static void addUIRenderable(UIRenderable renderable) {
         uiRenderables.add(renderable);
+        if (renderable instanceof Clickable clickable) {
+            InteractionManager.addClickable(clickable);
+        } else if (renderable instanceof HigherOrderUI higherOrderUI) {
+            sendUIClickables(higherOrderUI);
+        }
     }
 
     public static void removeRenderable(Renderable renderable) {
         renderables.remove(renderable);
+        if (renderable instanceof Clickable clickable)
+            InteractionManager.removeClickable(clickable);
     }
 
     public static void removeRenderables(List<Renderable> renderables) {
         renderables.forEach(GraphicsManager::removeRenderable);
     }
 
+    public static void removeUIRenderable(UIRenderable renderable) {
+        uiRenderables.remove(renderable);
+        if (renderable instanceof Clickable clickable)
+            InteractionManager.removeClickable(clickable);
+    }
+
+    public static void removeUIRenderables(List<UIRenderable> renderables) {
+        renderables.forEach(GraphicsManager::removeUIRenderable);
+    }
+
     public static void clearRenderables() {
+        renderables.forEach(r -> {
+            if (r instanceof Clickable clickable)
+                InteractionManager.removeClickable(clickable);
+        });
         renderables.clear();
     }
 
     public static void  clearUIRenderables() {
+        renderables.forEach(r -> {
+            if (r instanceof Clickable clickable)
+                InteractionManager.removeClickable(clickable);
+        });
         uiRenderables.clear();
     }
 
@@ -99,5 +131,35 @@ public class GraphicsManager {
             .orElse(0);
         if(renderableMaxZ > maxZ) maxZ = renderableMaxZ;
         if(renderableMinZ < minZ) minZ = renderableMinZ;
+    }
+
+    public static void sendClickables(HigherOrderTexture texture) {
+        texture.getRenderables().forEach(r -> {
+            if (r instanceof Clickable clickable) {
+                InteractionManager.addClickable(clickable);
+            }
+            else if (r instanceof HigherOrderTexture higherOrderTexture) sendClickables(higherOrderTexture);
+        });
+    }
+
+    public static void retractClickables(HigherOrderTexture texture) {
+        texture.getRenderables().forEach(r -> {
+            if (r instanceof Clickable clickable) InteractionManager.removeClickable(clickable);
+            else if (r instanceof HigherOrderTexture higherOrderTexture) retractClickables(higherOrderTexture);
+        });
+    }
+
+    public static void sendUIClickables(HigherOrderUI ui) {
+        ui.getRenderableUIs().forEach(r -> {
+            if (r instanceof Clickable clickable) InteractionManager.addClickable(clickable);
+            else if (r instanceof HigherOrderUI higherOrderUI) sendUIClickables(higherOrderUI);
+        });
+    }
+
+    public static void retractUIClickables(HigherOrderUI ui) {
+        ui.getRenderableUIs().forEach(r -> {
+            if (r instanceof Clickable clickable) InteractionManager.removeClickable(clickable);
+            else if (r instanceof HigherOrderUI higherOrderUI) retractUIClickables(higherOrderUI);
+        });
     }
 }

@@ -118,6 +118,7 @@ public class Main extends ApplicationAdapter {
         // Input
         InputManager.checkInput();
         handleInput();
+        InteractionManager.checkClick();
 
         // RENDER
         if (GraphicsManager.isPaused()) blurredDraw(batch);

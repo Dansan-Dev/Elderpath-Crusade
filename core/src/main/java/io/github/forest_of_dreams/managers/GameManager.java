@@ -8,7 +8,6 @@ public class GameManager {
 
     public static void initialize() {
         SettingsManager.initialize();
-        PauseScreen.initialize();
         ShaderManager.initialize();
         InputManager.initialize();
     }
