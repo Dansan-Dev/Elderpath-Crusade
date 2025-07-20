@@ -6,11 +6,11 @@ import io.github.forest_of_dreams.data_objects.Box;
 import java.util.List;
 
 public interface UIRenderable {
-    public Box getParent();
-    public void setParent(Box parent);
-    public Box getBounds();
-    public void setBounds(Box bounds);
+    Box getParent();
+    void setParent(Box parent);
+    Box getBounds();
+    void setBounds(Box bounds);
 
-    public void renderUI(SpriteBatch batch, boolean isPaused);
-    public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y);
+    void renderUI(SpriteBatch batch, boolean isPaused);
+    void renderUI(SpriteBatch batch, boolean isPaused, int x, int y);
 }

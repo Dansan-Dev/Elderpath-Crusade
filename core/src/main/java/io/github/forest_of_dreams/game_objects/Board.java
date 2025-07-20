@@ -5,6 +5,7 @@ import io.github.forest_of_dreams.characters.pieces.Goblin;
 import io.github.forest_of_dreams.characters.sprites.GoblinSprite;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.GamePiece;
+import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
@@ -25,11 +26,11 @@ public class Board extends HigherOrderTexture {
         board = new Renderable[ROWS][COLS];
         gamePieces = new GamePiece[ROWS][COLS];
         Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
-        gamePieces[2][0] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
-        gamePieces[3][1] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
-        gamePieces[1][2] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
-        gamePieces[5][3] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
-        gamePieces[4][4] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT);
+        gamePieces[2][0] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.ALLIED);
+        gamePieces[3][1] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.HOSTILE);
+        gamePieces[1][2] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.ALLIED);
+        gamePieces[5][3] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.HOSTILE);
+        gamePieces[4][4] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.NEUTRAL);
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);

@@ -81,6 +81,14 @@ public class GraphicsManager {
         renderables.forEach(GraphicsManager::removeRenderable);
     }
 
+    public static void clearRenderables() {
+        renderables.clear();
+    }
+
+    public static void  clearUIRenderables() {
+        uiRenderables.clear();
+    }
+
     private static void tryMinMaxZBoundary(Renderable r) {
         List<Integer> renderableZs = r.getZs();
         int renderableMaxZ = renderableZs.stream()

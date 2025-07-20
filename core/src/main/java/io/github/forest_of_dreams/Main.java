@@ -39,23 +39,10 @@ public class Main extends ApplicationAdapter {
         SoundManager.queueMusic("Evening_Harmony.mp3");
         SoundManager.queueMusic("Forgotten_Biomes.mp3");
         SoundManager.transition();
-//        SoundManager.playSound("01_chest_open_1.wav");
-
-        int plot_width = 40;
-        int plot_height = 40;
 
         batch = new SpriteBatch();
-        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int[] board_size = new int[]{plot_width*5, plot_height*7};
-        Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, plot_width, plot_height);
-        for(int row = 0; row < 7; row++) {
-            for(int col = 0; col < 5; col++) {
-                board.replacePos(row, col, new Plot(0, 0, plot_width, plot_height));
-            }
-        }
 
-        GraphicsManager.addRenderable(board);
-        GraphicsManager.addUIRenderable(new PauseMenuHint());
+        Game.initialize();
     }
 
     private void handleInput() {
