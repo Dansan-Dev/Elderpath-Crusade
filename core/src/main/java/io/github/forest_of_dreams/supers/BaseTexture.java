@@ -6,6 +6,9 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * Bare minimum texture implementation
+ */
 @Getter @Setter
 public abstract class BaseTexture extends AbstractTexture implements Renderable {
     protected int z;

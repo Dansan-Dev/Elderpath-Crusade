@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Higher order texture that can contain other textures
+ */
 @Getter @Setter
 public abstract class HigherOrderTexture extends AbstractTexture implements Renderable {
     private List<Renderable> renderables = new ArrayList<>();

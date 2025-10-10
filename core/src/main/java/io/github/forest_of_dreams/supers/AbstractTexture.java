@@ -5,6 +5,9 @@ import io.github.forest_of_dreams.interfaces.CustomBox;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Base class for all textures
+ */
 @Getter @Setter
 public abstract class AbstractTexture implements CustomBox {
     private Box parent;

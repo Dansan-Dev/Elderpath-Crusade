@@ -13,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * An object that represents a single sprite,
+ * a sprite animation, or multiple sprite animations
+ */
 public class SpriteObject extends AbstractTexture implements Renderable {
     @Setter
     private int currentSpriteFrame = -1;

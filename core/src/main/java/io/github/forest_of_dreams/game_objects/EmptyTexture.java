@@ -4,6 +4,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 
+/**
+ * This texture is used to fill empty space.
+ */
 public class EmptyTexture extends TextureObject {
     private EmptyTexture(int x, int y, int width, int height) {
         super(

@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Higher order texture for UI elements
+ */
 @Getter
 @Setter
 public class HigherOrderUI extends AbstractTexture implements UIRenderable {

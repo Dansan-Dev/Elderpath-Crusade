@@ -11,6 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Character sprite object
+ * Contains a SpriteObject
+ * Sets up animations from sprite sheets
+ */
 public class CharacterSprite extends HigherOrderTexture {
     @Getter private SpriteObject sprite;
 

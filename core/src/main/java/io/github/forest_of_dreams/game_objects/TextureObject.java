@@ -10,6 +10,10 @@ import io.github.forest_of_dreams.utils.GraphicUtils;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Simple texture object
+ * It returns a square of a certain color
+ */
 @Getter @Setter
 public class TextureObject extends BaseTexture {
     private Color color;

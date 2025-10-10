@@ -11,6 +11,11 @@ import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * A plot is a single square on a Board
+ * Contains decor such as plot, plotDirt, and plotDecorFront and plotDecorBack
+ * Handles onClick events
+ */
 public class Plot extends HigherOrderTexture implements Clickable {
     private TextureObject plotDecorFront;
     private TextureObject plotDecorBack;
