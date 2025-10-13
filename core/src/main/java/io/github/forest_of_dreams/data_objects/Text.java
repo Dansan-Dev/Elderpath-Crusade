@@ -161,6 +161,7 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
 
     @Override
     public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
+        if (this.onClick == null) return;
         this.onClick.run(interactionEntities);
     }
 

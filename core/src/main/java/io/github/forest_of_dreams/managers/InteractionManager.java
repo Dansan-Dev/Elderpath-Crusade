@@ -48,7 +48,7 @@ public class InteractionManager {
         if (selectedCount != 0) return;
         currentEffect = clickableEffect;
         ClickableEffectData data = currentEffect.getClickableEffectData();
-        if (data.getType().equals(ClickableEffectType.IMMEDIATE)) {
+        if (data != null && data.getType().equals(ClickableEffectType.IMMEDIATE)) {
             triggerFullInteraction();
         } else {
             selectedCount++;
@@ -59,6 +59,7 @@ public class InteractionManager {
         if (selectedCount == 0) return;
         selected.put(selectedCount, box);
         ClickableEffectData data = currentEffect.getClickableEffectData();
+        if (data == null) return; //TODO: Fix how interactions work, temp fix
         switch (data.getType()) {
             case IMMEDIATE -> Logger.error("InteractionManager", "Shouldn't add extra target when immediate");
             case MULTI_INTERACTION -> {
