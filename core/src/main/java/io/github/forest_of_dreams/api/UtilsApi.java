@@ -19,6 +19,22 @@ public class UtilsApi {
         .build();
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    public static boolean getHealth(BaseURL baseURL, int maxRequests) {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(baseURL.getBaseUrl() + "/health"))
+            .header("Content-Type", "application/json")
+            .method("GET", HttpRequest.BodyPublishers.ofString(""))
+            .build();
+
+        try {
+            sendRequest(request, List.of(200), maxRequests, 0);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
+
     public static <T> T get(BaseURL baseURL, HashMap<String, Object> data, List<Integer> expectedCodes, Class<T> responseType, String endpoint, int maxRequests) {
         String json = convertToJsonString(data);
 

@@ -19,6 +19,13 @@ import java.util.concurrent.CompletableFuture;
 
 public class BackendService {
     private static final BaseURL BASE_URL = BaseURL.BACKEND;
+    private static boolean isUp = false;
+
+    public static boolean isUp() {
+        boolean isUp = UtilsApi.getHealth(BASE_URL, 10);
+        BackendService.isUp = isUp;
+        return isUp;
+    }
 
     public static UserListResponseDto getUsers() {
         return UtilsApi.get(

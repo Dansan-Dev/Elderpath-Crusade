@@ -27,11 +27,14 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
-        UserListResponseDto userListResponseDto = BackendService.getUsers();
-        System.out.println("USERS:");
-        userListResponseDto.getUsers().forEach(userResponseDto -> {
-            System.out.println("> " + userResponseDto.getUsername());
-        });
+        boolean isOnline = BackendService.isUp();
+        if (isOnline) {
+            UserListResponseDto userListResponseDto = BackendService.getUsers();
+            System.out.println("USERS:");
+            userListResponseDto.getUsers().forEach(userResponseDto -> {
+                System.out.println("> " + userResponseDto.getUsername());
+            });
+        }
         GameManager.initialize();
 
         SettingsManager.sound.setMusicVolume(3);
