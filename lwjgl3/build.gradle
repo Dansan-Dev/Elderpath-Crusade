@@ -124,6 +124,18 @@ construo {
     // Optional, defaults to project version property
     version.set("$projectVersion")
 
+    jlink {
+      // avoid parsing jdeps output (we'll provide the modules explicitly)
+      guessModulesFromJar.set(false)
+
+      // LWJGL requires sun.misc.Unsafe which lives in jdk.unsupported on Java 9+.
+      // Include java.desktop for AWT-dependent features used by libGDX/LWJGL.
+      modules.add("java.base")
+      modules.add("java.desktop")
+      modules.add("java.net.http")
+      modules.add("jdk.unsupported")
+    }
+
     targets.configure {
       register("linuxX64", Target.Linux) {
         architecture.set(Target.Architecture.X86_64)
