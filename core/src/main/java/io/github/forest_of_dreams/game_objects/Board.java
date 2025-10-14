@@ -1,12 +1,9 @@
 package io.github.forest_of_dreams.game_objects;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.forest_of_dreams.characters.pieces.Goblin;
-import io.github.forest_of_dreams.characters.sprites.GoblinSprite;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
-import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.ui_objects.BoardIdentifierSymbol;

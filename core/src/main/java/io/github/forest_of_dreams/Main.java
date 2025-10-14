@@ -9,13 +9,9 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.forest_of_dreams.api.BackendService;
 import io.github.forest_of_dreams.api.dto.UserListResponseDto;
-import io.github.forest_of_dreams.characters.pieces.Goblin;
-import io.github.forest_of_dreams.characters.sprites.GoblinSprite;
 import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.enums.settings.InputKey;
-import io.github.forest_of_dreams.game_objects.*;
 import io.github.forest_of_dreams.managers.*;
-import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 
 import java.util.HashMap;

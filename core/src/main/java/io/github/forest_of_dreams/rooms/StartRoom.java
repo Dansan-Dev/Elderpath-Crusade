@@ -1,8 +1,8 @@
 package io.github.forest_of_dreams.rooms;
 
-import io.github.forest_of_dreams.characters.pieces.Goblin;
-import io.github.forest_of_dreams.characters.pieces.WarpMage;
-import io.github.forest_of_dreams.characters.pieces.Wolf;
+import io.github.forest_of_dreams.characters.pieces.monster.WarpMage;
+import io.github.forest_of_dreams.characters.pieces.monster.Wolf;
+import io.github.forest_of_dreams.characters.pieces.tiles.MountainTile;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.game_objects.Plot;
@@ -34,6 +34,10 @@ public class StartRoom extends Room {
         board.setGamePiecePos(2, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
         board.setGamePiecePos(1, 4, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.HOSTILE));
         board.setGamePiecePos(3, 2, new WarpMage(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
+        board.setGamePiecePos(4, 3, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
+        board.setGamePiecePos(2, 1, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
+        board.setGamePiecePos(5, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
+        board.setGamePiecePos(1, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
         addContent(board);
         addUI(new PauseMenuHint());
 
