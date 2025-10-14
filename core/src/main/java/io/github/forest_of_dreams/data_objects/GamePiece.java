@@ -10,13 +10,15 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public abstract class GamePiece {
+    @Getter private final GamePieceStats stats;
     @Getter private final GamePieceType type;
     @Getter private PieceAlignment alignment;
     @Getter private final UUID id;
     @Getter private Renderable sprite;
     @Getter private final HashMap<GamePieceData, Object> data = new HashMap<>();
 
-    public GamePiece(GamePieceType type, PieceAlignment alignment, UUID id, Renderable sprite) {
+    public GamePiece(GamePieceStats stats, GamePieceType type, PieceAlignment alignment, UUID id, Renderable sprite) {
+        this.stats = stats;
         this.type = type;
         this.alignment = alignment;
         this.id = id;
