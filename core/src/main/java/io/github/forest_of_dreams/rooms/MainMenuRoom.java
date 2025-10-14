@@ -23,7 +23,7 @@ public class MainMenuRoom extends Room {
         int screen_height = SettingsManager.screenSize.getScreenHeight();
 
         int[] backgroundSize = {1536, 1024};
-        SpriteObject background = new SpriteObject(0, 0, screen_width, screen_height, 1, SpriteBoxPos.CENTER);
+        SpriteObject background = new SpriteObject(0, 0, screen_width, screen_height, -1, SpriteBoxPos.BOTTOM);
         background.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
