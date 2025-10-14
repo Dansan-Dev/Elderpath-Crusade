@@ -7,7 +7,6 @@ import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
-import lombok.NoArgsConstructor;
 
 public class BoardIdentifierSymbol extends Text implements UIRenderable {
     private static final Color ROW_COLOR = Color.ORANGE;
