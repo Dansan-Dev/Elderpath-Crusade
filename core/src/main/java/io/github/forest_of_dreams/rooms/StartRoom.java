@@ -1,5 +1,8 @@
 package io.github.forest_of_dreams.rooms;
 
+import io.github.forest_of_dreams.characters.pieces.Goblin;
+import io.github.forest_of_dreams.characters.pieces.Wolf;
+import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.game_objects.Plot;
 import io.github.forest_of_dreams.supers.Room;
@@ -22,6 +25,13 @@ public class StartRoom extends Room {
                 board.replacePos(row, col, new Plot(0, 0, plot_width, plot_height));
             }
         }
+//        board.setGamePiecePos(2, 0, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
+//        board.setGamePiecePos(3, 1, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.HOSTILE));
+//        board.setGamePiecePos(1, 2, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
+//        board.setGamePiecePos(5, 3, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
+//        board.setGamePiecePos(4, 4, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
+        board.setGamePiecePos(2, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
+        board.setGamePiecePos(1, 4, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.HOSTILE));
         addContent(board);
         addUI(new PauseMenuHint());
 

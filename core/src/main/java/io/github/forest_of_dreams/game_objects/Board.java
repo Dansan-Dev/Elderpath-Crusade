@@ -10,6 +10,7 @@ import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.ui_objects.BoardIdentifierSymbol;
+import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -17,8 +18,8 @@ import java.util.stream.IntStream;
 public class Board extends HigherOrderTexture {
     private final int ROWS = 7;
     private final int COLS = 5;
-    private final int PLOT_WIDTH;
-    private final int PLOT_HEIGHT;
+    @Getter private final int PLOT_WIDTH;
+    @Getter private final int PLOT_HEIGHT;
     private Renderable[][] board;
     private GamePiece [][] gamePieces;
     private BoardIdentifierSymbol[] rowIdentifierSymbols = new BoardIdentifierSymbol[ROWS];
@@ -31,11 +32,6 @@ public class Board extends HigherOrderTexture {
         board = new Renderable[ROWS][COLS];
         gamePieces = new GamePiece[ROWS][COLS];
         Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
-        gamePieces[2][0] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.ALLIED);
-        gamePieces[3][1] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.HOSTILE);
-        gamePieces[1][2] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.ALLIED);
-        gamePieces[5][3] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.HOSTILE);
-        gamePieces[4][4] = new Goblin(0, 10, PLOT_WIDTH, PLOT_HEIGHT, PieceAlignment.NEUTRAL);
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
@@ -48,6 +44,10 @@ public class Board extends HigherOrderTexture {
     private char toLetter(int n) {
         if (n < 0 || n > 25) throw new IllegalArgumentException("n must be in range [0, 25]");
         return (char) ('A' + n);
+    }
+
+    private void checkBoardPosition(int row, int col) {
+        if (row < 0 || row > ROWS || col < 0 || col > COLS) throw new IllegalArgumentException("row and col must be in range [0, 5] and [0, 6]");
     }
 
     public void setBoardIdentifierSymbols() {
@@ -65,6 +65,11 @@ public class Board extends HigherOrderTexture {
         Renderable renderable = board[row][col];
         getRenderables().remove(renderable);
         board[row][col] = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
+    }
+
+    public void setGamePiecePos(int row, int col, GamePiece gamePiece) {
+        checkBoardPosition(row, col);
+        gamePieces[row][col] = gamePiece;
     }
 
     public void replacePos(int row, int col, Renderable newRenderable) {

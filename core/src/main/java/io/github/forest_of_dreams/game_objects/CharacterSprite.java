@@ -26,6 +26,9 @@ public class CharacterSprite extends HigherOrderTexture {
         setRenderables(List.of(sprite));
     }
 
+    public CharacterSprite() {
+    }
+
     protected void makeAnimationOfSpriteSheetRow(String name, String path, int spriteAmount, int startX, int startY, int spriteSheetCharacterWidth, int spriteSheetCharacterHeight, int updatesPerSecond) {
         List<Sprite> sprites = new ArrayList<>();
         Stream.iterate(startX, i -> i + spriteSheetCharacterWidth).limit(spriteAmount).forEach(i -> {
