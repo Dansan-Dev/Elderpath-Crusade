@@ -1,4 +1,6 @@
 assets/*
+lwjgl3/icons/*
+lwjgl3/src/main/resources/*
 
 ## Gradle:
 .gradle/

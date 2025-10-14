@@ -37,9 +37,20 @@ public class Lwjgl3Launcher {
         configuration.setWindowSizeLimits(width, height, width, height);
         configuration.setWindowedMode(width, height);
 
-        //// You can change these files; they are in lwjgl3/src/main/resources/ .
-        //// They can also be loaded from the root of assets/ .
-        configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
+        //// Window icon is loaded from the LWJGL3 module resources.
+        //// Provide multiple sizes so Linux/GLFW can choose the best match.
+        //// If some sizes are missing, the existing ones will be used/scaled.
+        //// Place icons in lwjgl3/src/main/resources/ .
+        configuration.setWindowIcon(
+                // Preferred sizes per your guidance
+                "icon16.png",
+                "icon32.png",
+                "icon64.png",
+                "icon128.png",
+                // Fallbacks in case only a single icon is provided
+                "icon.png",
+                "icons/icon.png"
+        );
         return configuration;
     }
 }
