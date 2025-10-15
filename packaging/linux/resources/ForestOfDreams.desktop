@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=ForestOfDreams
+Exec=./bin/ForestOfDreams
+Icon=icons/icon-256.png
+Terminal=false
+Categories=Game;
