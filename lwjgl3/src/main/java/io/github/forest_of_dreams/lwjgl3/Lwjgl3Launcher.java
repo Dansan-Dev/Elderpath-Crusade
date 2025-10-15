@@ -43,13 +43,10 @@ public class Lwjgl3Launcher {
         //// Place icons in lwjgl3/src/main/resources/ .
         configuration.setWindowIcon(
                 // Preferred sizes per your guidance
-                "icon16.png",
-                "icon32.png",
-                "icon64.png",
-                "icon128.png",
-                // Fallbacks in case only a single icon is provided
-                "icon.png",
-                "icons/icon.png"
+                "icon-16.png",
+                "icon-32.png",
+                "icon-64.png",
+                "icon-128.png"
         );
         return configuration;
     }
