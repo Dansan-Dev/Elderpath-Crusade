@@ -120,8 +120,8 @@ construo {
     }
     register("winX64", Target.Windows) {
       architecture.set(Target.Architecture.X86_64)
-      // Optional: icon for Windows, as a PNG
-      icon.set(project.file("icons/icon-64.png"))
+      // Optional: icon for Windows, as a PNG (use 256px for better taskbar fidelity)
+      icon.set(project.file("icons/icon-256.png"))
       jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_windows_hotspot_17.0.15_6.zip")
       // Uncomment the next line to show a console when the game runs, to print messages.
       //useConsole.set(true)
@@ -215,4 +215,54 @@ tasks.register('syncReadmeToPackageResources') {
   tasks.matching { it.name == "package${cfg.name}" }.configureEach {
     dependsOn injectTask
   }
+}
+
+// Inject Linux desktop entry and icon into the staged directory before zipping so they appear in the package
+// This uses existing icon from src/main/resources and generates the .desktop if not present under root packaging
+
+def injectLinuxDesktop = tasks.register("injectLinuxDesktop") {
+  dependsOn tasks.matching { it.name == "roastLinuxX64" }
+  doLast {
+    def roastDir = file("${buildDir}/construo/linuxX64/roast")
+    if (!roastDir.exists()) roastDir.mkdirs()
+
+    // Ensure icons directory exists
+    def iconsDir = new File(roastDir, "icons")
+    if (!iconsDir.exists()) iconsDir.mkdirs()
+
+    // Copy icon (prefer 256)
+    def iconSrc = project.file("src/main/resources/icon-256.png")
+    if (iconSrc.exists()) {
+      copy {
+        from iconSrc
+        into iconsDir
+      }
+    }
+
+    // Use .desktop from root packaging if present, else generate a minimal one
+    def packagedDesktop = rootProject.file("packaging/linux/resources/ForestOfDreams.desktop")
+    if (packagedDesktop.exists()) {
+      copy {
+        from packagedDesktop
+        into roastDir
+      }
+    } else {
+      def desktopFile = new File(roastDir, "ForestOfDreams.desktop")
+      desktopFile.text = """
+[Desktop Entry]
+Type=Application
+Name=Forest Of Dreams
+Comment=Forest Of Dreams game
+Exec=ForestOfDreams
+Icon=icons/icon-256.png
+Terminal=false
+Categories=Game;
+""".trim() + "\n"
+      desktopFile.setExecutable(true, false)
+    }
+  }
+}
+
+tasks.matching { it.name == "packageLinuxX64" }.configureEach {
+  dependsOn injectLinuxDesktop
 }
