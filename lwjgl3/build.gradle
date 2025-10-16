@@ -250,6 +250,17 @@ def injectLinuxDesktop = tasks.register("injectLinuxDesktop") {
     }
     stagedInstaller.setExecutable(true, false)
 
+    // Ensure uninstall.sh is present in the package root and executable
+    def sourceUninstaller = rootProject.file("packaging/linux/resources/uninstall.sh")
+    def stagedUninstaller = new File(roastDir, "uninstall.sh")
+    if (sourceUninstaller.exists()) {
+      copy {
+        from sourceUninstaller
+        into roastDir
+      }
+    }
+    stagedUninstaller.setExecutable(true, false)
+
     // Do NOT include .desktop in the ZIP anymore; the installer will generate it in the user's system
   }
 }
