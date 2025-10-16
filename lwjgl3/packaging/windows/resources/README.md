@@ -1,33 +1,44 @@
-# ForestOfDreams
+# Forest of Dreams — Windows Package Guide
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+Welcome! This archive contains the Forest of Dreams desktop build for Windows (x64). This document explains how to run the game and how to pin it to Start and the taskbar.
 
-This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws libGDX logo.
 
-## Platforms
+## Contents of this ZIP
+- ForestOfDreams.exe (the application)
+- Game runtime files and assets required to play
+- README.md (this file)
 
-- `core`: Main module with the application logic shared by all platforms.
-- `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
 
-## Gradle
+## Quick start
+1) Extract the ZIP to a folder you control (for example: Desktop\ForestOfDreams-windows-x64\).
+2) Double‑click ForestOfDreams.exe to start the game.
 
-This project uses [Gradle](https://gradle.org/) to manage dependencies.
-The Gradle wrapper was included, so you can run Gradle tasks using `gradlew.bat` or `./gradlew` commands.
-Useful Gradle tasks and flags:
+That’s it — no installer is required.
 
-- `--continue`: when using this flag, errors will not stop the tasks from running.
-- `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
-- `--offline`: when using this flag, cached dependency archives will be used.
-- `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
-- `build`: builds sources and archives of every project.
-- `cleanEclipse`: removes Eclipse project data.
-- `cleanIdea`: removes IntelliJ project data.
-- `clean`: removes `build` folders, which store compiled classes and built archives.
-- `eclipse`: generates Eclipse project data.
-- `idea`: generates IntelliJ project data.
-- `lwjgl3:jar`: builds application's runnable jar, which can be found at `lwjgl3/build/libs`.
-- `lwjgl3:run`: starts the application.
-- `test`: runs unit tests (if any).
 
-Note that most tasks that are not specific to a single project can be run with `name:` prefix, where the `name` should be replaced with the ID of a specific project.
-For example, `core:clean` removes `build` folder only from the `core` project.
+## Creating shortcuts
+- Desktop shortcut:
+  1) Right‑click ForestOfDreams.exe
+  2) Choose “Show more options” (if needed) → “Send to” → “Desktop (create shortcut)”
+
+- Pin to Start:
+  1) Right‑click ForestOfDreams.exe
+  2) Click “Pin to Start”
+
+- Pin to taskbar:
+  1) Drag the ForestOfDreams.exe file onto the taskbar
+
+
+## Running from any location
+You can keep the folder anywhere (e.g., Documents, a separate Games folder, or an external drive). If you move the folder, update or recreate any shortcuts you made.
+
+
+## Updating the game
+- Download the new ZIP, extract it, and replace the old folder.
+- If you pinned the app to Start/taskbar and moved the folder, you may need to re‑pin it.
+
+
+## Troubleshooting
+- If Windows shows a SmartScreen prompt, choose “More info” → “Run anyway”.
+- If double‑clicking does nothing, try running ForestOfDreams.exe from a Command Prompt to see error messages.
+- Some antivirus tools may scan the app on first launch; this can delay startup briefly.
