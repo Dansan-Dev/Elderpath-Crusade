@@ -67,16 +67,6 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     }
 
     /**
-     * Set the label's font scale relative to the font's base metrics (1.0 = default size).
-     */
-    public Text withFontScale(float scale) {
-        this.fontScale = scale;
-        this.desiredFontSize = null; // scale takes precedence when explicitly set
-        update();
-        return this;
-    }
-
-    /**
      * Set the label's font size in pixels (approximately using cap-height).
      * This computes an internal scale relative to the BitmapFont's cap height.
      */
