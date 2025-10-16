@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
@@ -13,6 +12,7 @@ import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.managers.FontManager;
 import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
@@ -27,7 +27,6 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     @Getter @Setter private FontType fontType;
     private int z;
 
-    private static final Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));;
     private LabelStyle style;
     @Getter private Label label;
 
@@ -64,7 +63,7 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     }
 
     public void update() {
-        style = skin.get(fontType.getFontName(), Label.LabelStyle.class);
+        style = FontManager.getLabelStyle(fontType);
         label = new Label(text, style);
         Box bounds = getBounds();
         label.setPosition(bounds.getX(), bounds.getY());

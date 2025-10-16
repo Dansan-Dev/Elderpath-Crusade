@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum FontType {
     DEFAULT("default"),
+    SILKSCREEN("Silkscreen-Regular"),
     WINDOW("window"),
     LIST("list"),
     SUBTITLE("subtitle");

@@ -51,7 +51,7 @@ public class MainMenuRoom extends Room {
         );
         addContent(navbar);
 
-        Text title = new Text("Main Menu", FontType.DEFAULT, 0, 0, 0, Color.WHITE);
+        Text title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE);
         Box titleBox = title.getBounds();
         titleBox.setX(screen_center[0] - titleBox.getWidth()/2);
         titleBox.setY(screen_height - titleBox.getHeight() - 50);
