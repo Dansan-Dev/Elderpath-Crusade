@@ -184,9 +184,20 @@ distributions {
       }
       def platformReadme = project.file("packaging/${cfg.packaging}/resources/README.md")
       if (platformReadme.exists()) {
-        copy {
-          from platformReadme
-          into roastDir
+        if (cfg.packaging != 'mac') {
+          copy {
+            from platformReadme
+            into roastDir
+          }
+        } else {
+          def macAppDir = file("${buildDir}/construo/${cfg.folder}/${appName}.app/Contents/MacOS")
+          if (!macAppDir.exists()) {
+            macAppDir.mkdirs()
+          }
+          copy {
+            from platformReadme
+            into macAppDir
+          }
         }
       }
     }
