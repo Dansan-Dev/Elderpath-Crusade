@@ -5,8 +5,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
@@ -48,34 +46,47 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
     @Getter @Setter private Color hoverBorderColor = null;
     @Getter @Setter private Color clickBorderColor = null;
 
-    private static final Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
-    private LabelStyle style;
-    @Getter private Label label;
+    private Text textObj;
 
     // Clickable integration
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
-    private Button(String text, FontType fontType, int x, int y, int width, int height, int z) {
+    private Button(String text, FontType fontType, int fontSize, int x, int y, int width, int height, int z) {
         this.text = text;
         this.fontType = fontType;
         this.z = z;
         setBounds(new Box(x, y, width, height));
-        updateLabel();
+        updateText();
+        textObj.withFontSize(fontSize);
     }
 
     // Factory: Color background
-    public static Button fromColor(Color backgroundColor, String text, FontType fontType,
-                                   int x, int y, int width, int height, int z) {
-        Button b = new Button(text, fontType, x, y, width, height, z);
+    public static Button fromColor(
+        Color backgroundColor,
+        String text,
+        FontType fontType,
+        int fontSize,
+        int x, int y,
+        int width, int height,
+        int z
+    ) {
+        Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
         b.backgroundColor = backgroundColor;
         return b;
     }
 
     // Factory: Image background (path to image)
-    public static Button fromImage(String imagePath, String text, FontType fontType,
-                                   int x, int y, int width, int height, int z) {
-        Button b = new Button(text, fontType, x, y, width, height, z);
+    public static Button fromImage(
+        String imagePath,
+        String text,
+        FontType fontType,
+        int fontSize,
+        int x, int y,
+        int width, int height,
+        int z
+    ) {
+        Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
         b.backgroundTexture = new Texture(Gdx.files.internal(imagePath));
         return b;
     }
@@ -89,32 +100,37 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
         this.textColor = normal;
         this.hoverTextColor = hover;
         this.clickTextColor = click;
-        if (label != null) label.setColor(textColor);
+        if (textObj != null && textObj.getLabel() != null) textObj.getLabel().setColor(textColor);
         return this;
     }
 
-    private void updateLabel() {
-        style = skin.get(fontType.getFontName(), Label.LabelStyle.class);
-        if (label == null) {
-            label = new Label(text, style);
+    private void updateText() {
+        // Ensure Text object exists and is synced with current text/font
+        if (textObj == null) {
+            textObj = new Text(text, fontType, getBounds().getX(), getBounds().getY(), z, textColor);
         } else {
-            label.setStyle(style);
-            label.setText(text);
+            textObj.setText(text);
+            textObj.setFontType(fontType);
         }
-        label.setColor(textColor);
+        // Update to ensure label, size and style are current
+        textObj.update();
         centerLabelInBounds();
     }
 
     private void centerLabelInBounds() {
         Box b = getBounds();
-        if (b == null || label == null) return;
+        if (b == null || textObj == null || textObj.getLabel() == null) return;
         // Ensure label has latest pref size
-        float labelWidth = label.getPrefWidth();
-        float labelHeight = label.getPrefHeight();
-        // Center inside box
-        float lx = b.getX() + (b.getWidth() - labelWidth) / 2f;
-        float ly = b.getY() + (b.getHeight() - labelHeight) / 2f;
-        label.setPosition(lx, ly);
+        Label lbl = textObj.getLabel();
+        float labelWidth = lbl.getPrefWidth();
+        float labelHeight = lbl.getPrefHeight();
+        Box newBounds = new Box(
+            (int) (b.getX() + (b.getWidth() - labelWidth) / 2f),
+            (int) (b.getY() + (b.getHeight() - labelHeight) / 2f),
+            (int) labelWidth,
+            (int) labelHeight
+        );
+        textObj.setBounds(newBounds);
     }
 
     private boolean isHovered(int relX, int relY) {
@@ -155,10 +171,12 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
         if (isPaused) return;
         if (zLevel != z) return;
         drawBackground(batch);
-        updateLabel();
+        updateText();
         applyHoverClickTint(0, 0);
-        label.draw(batch, 1);
-        label.setColor(textColor);
+        if (textObj != null && textObj.getLabel() != null) {
+            textObj.getLabel().draw(batch, 1);
+            textObj.getLabel().setColor(textColor);
+        }
     }
 
     @Override
@@ -171,10 +189,12 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
         setBounds(temp);
 
         drawBackground(batch);
-        updateLabel();
+        updateText();
         applyHoverClickTint(x, y);
-        label.draw(batch, 1);
-        label.setColor(textColor);
+        if (textObj != null && textObj.getLabel() != null) {
+            textObj.getLabel().draw(batch, 1);
+            textObj.getLabel().setColor(textColor);
+        }
 
         setBounds(original);
     }
@@ -227,9 +247,10 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
 
     private void applyHoverClickTint(int relX, int relY) {
         if (!isHovered(relX, relY)) return;
-        if (hoverTextColor != null) label.setColor(hoverTextColor);
+        if (textObj == null || textObj.getLabel() == null) return;
+        if (hoverTextColor != null) textObj.getLabel().setColor(hoverTextColor);
         // Visual click color change if provided
-        if (clickTextColor != null && Gdx.input.isTouched()) label.setColor(clickTextColor);
+        if (clickTextColor != null && Gdx.input.isTouched()) textObj.getLabel().setColor(clickTextColor);
     }
 
     // Clickable implementation hooks
