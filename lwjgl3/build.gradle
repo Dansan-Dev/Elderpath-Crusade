@@ -239,27 +239,18 @@ def injectLinuxDesktop = tasks.register("injectLinuxDesktop") {
       }
     }
 
-    // Use .desktop from root packaging if present, else generate a minimal one
-    def packagedDesktop = rootProject.file("packaging/linux/resources/ForestOfDreams.desktop")
-    if (packagedDesktop.exists()) {
+    // Ensure install.sh is present in the package root and executable
+    def sourceInstaller = rootProject.file("packaging/linux/resources/install.sh")
+    def stagedInstaller = new File(roastDir, "install.sh")
+    if (sourceInstaller.exists()) {
       copy {
-        from packagedDesktop
+        from sourceInstaller
         into roastDir
       }
-    } else {
-      def desktopFile = new File(roastDir, "ForestOfDreams.desktop")
-      desktopFile.text = """
-[Desktop Entry]
-Type=Application
-Name=Forest Of Dreams
-Comment=Forest Of Dreams game
-Exec=ForestOfDreams
-Icon=icons/icon-256.png
-Terminal=false
-Categories=Game;
-""".trim() + "\n"
-      desktopFile.setExecutable(true, false)
     }
+    stagedInstaller.setExecutable(true, false)
+
+    // Do NOT include .desktop in the ZIP anymore; the installer will generate it in the user's system
   }
 }
 
