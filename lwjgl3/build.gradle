@@ -166,31 +166,6 @@ distributions {
   }
 }
 
-// Copy README.md into Construo platform resources so it appears at the root of packaged ZIPs
-// This avoids relying on PackageTask internals and mirrors how platform resources are bundled.
-tasks.register('syncReadmeToPackageResources') {
-  doLast {
-    [
-      project.file('packaging/linux/resources'),
-      project.file('packaging/mac/resources'),
-      project.file('packaging/windows/resources')
-    ].each { File dir ->
-      if (!dir.exists()) {
-        dir.mkdirs()
-      }
-      project.copy {
-        from rootProject.file('README.md')
-        into dir
-      }
-    }
-  }
-}
-
-['packageLinuxX64', 'packageMacM1', 'packageMacX64', 'packageWinX64'].each { taskName ->
-  tasks.matching { it.name == taskName }.configureEach {
-    dependsOn tasks.named('syncReadmeToPackageResources')
-  }
-}
 
 // As Construo zips the staged content under build/construo/<target>/roast, inject README.md there right before packaging.
 [
