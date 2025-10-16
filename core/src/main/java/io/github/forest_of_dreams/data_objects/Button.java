@@ -35,9 +35,18 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
     private Texture backgroundTexture; // full texture scaled to bounds
     private Color backgroundColor;     // solid color fill
 
-    // Optional hover / click visual tweaks
+    // Optional hover / click visual tweaks (background)
+    @Getter @Setter private Color hoverColor = null;      // background hover color
+    @Getter @Setter private Color clickColor = null;      // background click color
+
+    // Optional hover / click visual tweaks (text)
     @Getter @Setter private Color hoverTextColor = null;
     @Getter @Setter private Color clickTextColor = null;
+
+    // Optional border colors
+    @Getter @Setter private Color borderColor = null;
+    @Getter @Setter private Color hoverBorderColor = null;
+    @Getter @Setter private Color clickBorderColor = null;
 
     private static final Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
     private LabelStyle style;
@@ -176,9 +185,42 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
         if (backgroundTexture != null) {
             batch.draw(backgroundTexture, b.getX(), b.getY(), b.getWidth(), b.getHeight());
         } else if (backgroundColor != null) {
-            Texture pixel = GraphicUtils.getPixelTexture(backgroundColor);
+            // Determine background color based on hover/click state (click overrides hover)
+            Color bg = backgroundColor;
+            boolean hovered = isHovered(0, 0);
+            if (hovered && hoverColor != null) bg = hoverColor;
+            if (hovered && Gdx.input.isTouched() && clickColor != null) bg = clickColor;
+            Texture pixel = GraphicUtils.getPixelTexture(bg);
             batch.draw(pixel, b.getX(), b.getY(), b.getWidth(), b.getHeight());
         }
+
+        // Optional border (drawn regardless of background type)
+        Color activeBorder = null;
+        if (borderColor != null) {
+            activeBorder = borderColor;
+            boolean hovered = isHovered(0, 0);
+            if (hovered && hoverBorderColor != null) activeBorder = hoverBorderColor;
+            if (hovered && Gdx.input.isTouched() && clickBorderColor != null) activeBorder = clickBorderColor;
+        }
+        if (activeBorder != null) {
+            Texture px = GraphicUtils.getPixelTexture(activeBorder);
+            int x = b.getX();
+            int y = b.getY();
+            int w = b.getWidth();
+            int h = b.getHeight();
+            int t = 1; // border thickness in pixels
+            if (w > 0 && h > 0) {
+                // Top
+                batch.draw(px, x, y + h - t, w, t);
+                // Bottom
+                batch.draw(px, x, y, w, t);
+                // Left
+                batch.draw(px, x, y, t, h);
+                // Right
+                batch.draw(px, x + w - t, y, t, h);
+            }
+        }
+
         // else: transparent background (only text)
         centerLabelInBounds();
     }
@@ -206,5 +248,47 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
     public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
         if (this.onClick == null) return;
         this.onClick.run(interactionEntities);
+    }
+
+    // Background hover color setter (hoverColor)
+    public Button withHoverColor(Color hoverColor) {
+        this.hoverColor = hoverColor;
+        return this;
+    }
+
+    // Text hover color setter (hoverTextColor)
+    public Button withHoverTextColor(Color hoverTextColor) {
+        this.hoverTextColor = hoverTextColor;
+        return this;
+    }
+
+    // Background click color setter (clickColor)
+    public Button withClickColor(Color clickColor) {
+        this.clickColor = clickColor;
+        return this;
+    }
+
+    // Text click color setter (clickTextColor)
+    public Button withClickTextColor(Color clickTextColor) {
+        this.clickTextColor = clickTextColor;
+        return this;
+    }
+
+    // Border base color setter
+    public Button withBorderColor(Color borderColor) {
+        this.borderColor = borderColor;
+        return this;
+    }
+
+    // Border hover color setter
+    public Button withHoverBorderColor(Color hoverBorderColor) {
+        this.hoverBorderColor = hoverBorderColor;
+        return this;
+    }
+
+    // Border click color setter
+    public Button withClickBorderColor(Color clickBorderColor) {
+        this.clickBorderColor = clickBorderColor;
+        return this;
     }
 }

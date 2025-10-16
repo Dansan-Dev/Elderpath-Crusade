@@ -57,8 +57,11 @@ public class MainMenuRoom extends Room {
         titleBox.setY(screen_height - titleBox.getHeight() - 50);
         addContent(title);
 
-        Button pButton = Button.fromColor(Color.BLUE, "Play Demo", FontType.DEFAULT, 0, 0, 80, 50, 0)
-            .withOnClick((e) -> Game.gotoRoom(StartRoom.get()), ClickableEffectData.getImmediate());
+        Button pButton = Button.fromColor(Color.valueOf("#37a5fa"), "Play Demo", FontType.DEFAULT, 0, 0, 80, 50, 0)
+            .withOnClick((e) -> Game.gotoRoom(StartRoom.get()), ClickableEffectData.getImmediate())
+            .withHoverColor(Color.valueOf("#70befa"))
+            .withBorderColor(Color.BLACK)
+            .withHoverBorderColor(Color.GRAY);
         pButton.getBounds().setX(screen_center[0] - pButton.getBounds().getWidth() / 2);
         pButton.getBounds().setY(screen_center[1] - pButton.getBounds().getHeight() / 2);
         addContent(pButton);
