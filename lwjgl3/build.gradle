@@ -167,12 +167,13 @@ distributions {
 }
 
 
-// As Construo zips the staged content under build/construo/<target>/roast, inject README.md there right before packaging.
+// As Construo zips the staged content under build/construo/<target>/roast, inject the correct README.md
+// Prefer platform-specific README from packaging/<platform>/resources, fallback to root README if missing.
 [
-  [name: 'LinuxX64', folder: 'linuxX64'],
-  [name: 'MacM1',    folder: 'macM1'],
-  [name: 'MacX64',   folder: 'macX64'],
-  [name: 'WinX64',   folder: 'winX64']
+  [name: 'LinuxX64', folder: 'linuxX64', packaging: 'linux'],
+  [name: 'MacM1',    folder: 'macM1',    packaging: 'mac'],
+  [name: 'MacX64',   folder: 'macX64',   packaging: 'mac'],
+  [name: 'WinX64',   folder: 'winX64',   packaging: 'windows']
 ].each { cfg ->
   def injectTask = tasks.register("injectReadme${cfg.name}") {
     dependsOn tasks.matching { it.name == "roast${cfg.name}" }
@@ -181,9 +182,12 @@ distributions {
       if (!roastDir.exists()) {
         roastDir.mkdirs()
       }
-      copy {
-        from rootProject.file('README.md')
-        into roastDir
+      def platformReadme = project.file("packaging/${cfg.packaging}/resources/README.md")
+      if (platformReadme.exists()) {
+        copy {
+          from platformReadme
+          into roastDir
+        }
       }
     }
   }
