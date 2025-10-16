@@ -23,7 +23,7 @@ public class MainMenuRoom extends Room {
         int screen_height = SettingsManager.screenSize.getScreenHeight();
 
         int[] backgroundSize = {1536, 1024};
-        SpriteObject background = new SpriteObject(0, 0, screen_width, screen_height, -1, SpriteBoxPos.BOTTOM);
+        SpriteObject background = new SpriteObject(0, 0, screen_width, screen_height, -2, SpriteBoxPos.BOTTOM);
         background.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
@@ -35,6 +35,20 @@ public class MainMenuRoom extends Room {
             0
         );
         addContent(background);
+
+        int[] navbarSize = {551, 831};
+        SpriteObject navbar = new SpriteObject(0, 150, screen_width, screen_height, -1, SpriteBoxPos.BOTTOM);
+        navbar.addAnimation(
+            "general",
+            List.of(SpriteCreator.makeSprite(
+                "images/home_navbar.png",
+                0, 0,
+                navbarSize[0], navbarSize[1],
+                navbarSize[0]/3, navbarSize[1]/3
+                )),
+            0
+        );
+        addContent(navbar);
 
         Text title = new Text("Main Menu", FontType.DEFAULT, 0, 0, 0, Color.WHITE);
         Box titleBox = title.getBounds();
