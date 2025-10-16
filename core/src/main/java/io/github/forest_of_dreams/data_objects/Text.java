@@ -37,6 +37,10 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
+    // Font sizing
+    private Float desiredFontSize = null; // desired cap-height in pixels; if null, uses scale
+    private float fontScale = 1f; // relative scale fallback
+
     public Text(String text, FontType fontType, int x, int y, int z, Color color) {
         this.text = text;
         this.fontType = fontType;
@@ -62,14 +66,50 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
         return this;
     }
 
+    /**
+     * Set the label's font scale relative to the font's base metrics (1.0 = default size).
+     */
+    public Text withFontScale(float scale) {
+        this.fontScale = scale;
+        this.desiredFontSize = null; // scale takes precedence when explicitly set
+        update();
+        return this;
+    }
+
+    /**
+     * Set the label's font size in pixels (approximately using cap-height).
+     * This computes an internal scale relative to the BitmapFont's cap height.
+     */
+    public Text withFontSize(float pixels) {
+        this.desiredFontSize = pixels;
+        update();
+        return this;
+    }
+
     public void update() {
         style = FontManager.getLabelStyle(fontType);
         label = new Label(text, style);
+
+        // Apply font sizing on the label (does not mutate the shared BitmapFont instance)
+        if (desiredFontSize != null) {
+            float baseCap = Math.abs(style.font.getCapHeight());
+            if (baseCap > 0f) {
+                label.setFontScale(desiredFontSize / baseCap);
+            } else {
+                label.setFontScale(fontScale);
+            }
+        } else {
+            label.setFontScale(fontScale);
+        }
+
         Box bounds = getBounds();
         label.setPosition(bounds.getX(), bounds.getY());
         label.setColor(color);
-        getBounds().setWidth((int)label.getWidth());
-        getBounds().setHeight((int)label.getHeight());
+
+        // Ensure preferred size is computed with current scale
+        label.pack();
+        getBounds().setWidth((int) label.getWidth());
+        getBounds().setHeight((int) label.getHeight());
     }
 
 

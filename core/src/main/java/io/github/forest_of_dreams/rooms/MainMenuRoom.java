@@ -51,10 +51,11 @@ public class MainMenuRoom extends Room {
         );
         addContent(navbar);
 
-        Text title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE);
+        Text title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            .withFontSize(18f);
         Box titleBox = title.getBounds();
         titleBox.setX(screen_center[0] - titleBox.getWidth()/2);
-        titleBox.setY(screen_height - titleBox.getHeight() - 50);
+        titleBox.setY(screen_height - titleBox.getHeight() - 120);
         addContent(title);
 
         Button pButton = Button.fromColor(Color.valueOf("#37a5fa"), "Play Demo", FontType.DEFAULT, 0, 0, 80, 50, 0)
