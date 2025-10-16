@@ -11,12 +11,12 @@ import io.github.forest_of_dreams.supers.HigherOrderTexture;
 public class PauseSettingsPage extends HigherOrderTexture {
     private final Text header = new Text(
         "SETTINGS",
-        FontType.WINDOW,
+        FontType.SILKSCREEN,
         0,
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
         Color.WHITE
-    );
+    ).withFontSize(36);
     private final TextList options = new TextList();
 
     public PauseSettingsPage() {
@@ -27,7 +27,8 @@ public class PauseSettingsPage extends HigherOrderTexture {
 
     private void addOptions() {
         options.addText(
-            new Text("Toggle Fullscreen", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+            new Text("Toggle Fullscreen", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+                .withFontSize(16)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())

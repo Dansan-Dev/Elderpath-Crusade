@@ -16,12 +16,12 @@ public class PauseMenuPage extends HigherOrderTexture {
 
     private final Text header = new Text(
         "PAUSED",
-        FontType.WINDOW,
+        FontType.SILKSCREEN,
         0,
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
         Color.WHITE
-    );
+    ).withFontSize(36);
     private final TextList options = new TextList();
 
     public PauseMenuPage() {
@@ -32,21 +32,24 @@ public class PauseMenuPage extends HigherOrderTexture {
 
     private void addOptions() {
         options.addText(
-            new Text("Resume", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+            new Text("Resume", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+                .withFontSize(16)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> GraphicsManager.unpause(), ClickableEffectData.getImmediate())
         );
 
         options.addText(
-            new Text("Settings", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+            new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+                .withFontSize(16)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.SETTINGS), ClickableEffectData.getImmediate())
         );
 
         options.addText(
-            new Text("Exit", FontType.DEFAULT, 0, 0, 0, Color.WHITE)
+            new Text("Exit", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+                .withFontSize(16)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
