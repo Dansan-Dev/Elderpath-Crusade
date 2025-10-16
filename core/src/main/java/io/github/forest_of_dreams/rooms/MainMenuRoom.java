@@ -3,6 +3,7 @@ package io.github.forest_of_dreams.rooms;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.Button;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
@@ -56,12 +57,11 @@ public class MainMenuRoom extends Room {
         titleBox.setY(screen_height - titleBox.getHeight() - 50);
         addContent(title);
 
-        Text playButton = new Text("Play Demo", FontType.DEFAULT, 0, 0, 0, Color.BLUE)
+        Button pButton = Button.fromColor(Color.BLUE, "Play Demo", FontType.DEFAULT, 0, 0, 80, 50, 0)
             .withOnClick((e) -> Game.gotoRoom(StartRoom.get()), ClickableEffectData.getImmediate());
-        Box playButtonBox = playButton.getBounds();
-        playButtonBox.setX(screen_center[0] - playButtonBox.getWidth()/2);
-        playButtonBox.setY(screen_center[1] - playButtonBox.getHeight()/2);
-        addContent(playButton);
+        pButton.getBounds().setX(screen_center[0] - pButton.getBounds().getWidth() / 2);
+        pButton.getBounds().setY(screen_center[1] - pButton.getBounds().getHeight() / 2);
+        addContent(pButton);
     }
 
     public static MainMenuRoom get() {
