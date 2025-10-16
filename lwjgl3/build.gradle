@@ -240,7 +240,7 @@ def injectLinuxDesktop = tasks.register("injectLinuxDesktop") {
     }
 
     // Ensure install.sh is present in the package root and executable
-    def sourceInstaller = rootProject.file("packaging/linux/resources/install.sh")
+    def sourceInstaller = project.file("packaging/linux/resources/install.sh")
     def stagedInstaller = new File(roastDir, "install.sh")
     if (sourceInstaller.exists()) {
       copy {
@@ -251,7 +251,7 @@ def injectLinuxDesktop = tasks.register("injectLinuxDesktop") {
     stagedInstaller.setExecutable(true, false)
 
     // Ensure uninstall.sh is present in the package root and executable
-    def sourceUninstaller = rootProject.file("packaging/linux/resources/uninstall.sh")
+    def sourceUninstaller = project.file("packaging/linux/resources/uninstall.sh")
     def stagedUninstaller = new File(roastDir, "uninstall.sh")
     if (sourceUninstaller.exists()) {
       copy {
