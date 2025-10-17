@@ -1,6 +1,13 @@
 package io.github.forest_of_dreams.managers;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.utils.ScreenUtils;
+import io.github.forest_of_dreams.game_objects.TextureObject;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
@@ -19,6 +26,11 @@ public class GraphicsManager {
     private static int maxZ = 0;
     private static int minZ = 0;
     @Getter private static boolean isPaused = false;
+    @Getter private static SpriteBatch batch = new SpriteBatch();
+
+    public static void resetBatch() {
+        batch = new SpriteBatch();
+    }
 
     public static void pause() {
         isPaused = true;
@@ -60,6 +72,8 @@ public class GraphicsManager {
                 else r.render(batch, i, isPaused);
             }
         }
+        TextureObject testSquare = new TextureObject(Color.ORANGE, 1200, 700, 100, 100);
+        testSquare.render(batch, 0, false);
     }
 
     public static void addRenderable(Renderable renderable) {
@@ -161,5 +175,55 @@ public class GraphicsManager {
             if (r instanceof Clickable clickable) InteractionManager.removeClickable(clickable);
             else if (r instanceof HigherOrderUI higherOrderUI) retractUIClickables(higherOrderUI);
         });
+    }
+
+    public static void draw(SpriteBatch batch) {
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        batch.setShader(null);
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        GraphicsManager.render(batch);
+        batch.end();
+    }
+
+    public static void blurredDraw(SpriteBatch batch) {
+        ShaderProgram blurShader = ShaderManager.getBlurShader();
+        FrameBuffer fboA = ShaderManager.getFboA();
+        FrameBuffer fboB = ShaderManager.getFboB();
+
+        // First pass - capture the scene
+        fboA.begin();
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        batch.setShader(null);
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        GraphicsManager.render(batch);
+        batch.end();
+        fboA.end();
+
+        // Horizontal blur
+        fboB.begin();
+        batch.begin();
+        batch.setShader(blurShader);
+        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenConfiguredWidth());
+        blurShader.setUniformf("u_direction", 1f, 0f);
+        batch.draw(fboA.getColorBufferTexture(), 0, 0);
+        batch.end();
+        fboB.end();
+
+        // Vertical blur (final pass)
+        batch.begin();
+        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenConfiguredHeight());
+        blurShader.setUniformf("u_direction", 0f, 1f);
+        batch.draw(fboB.getColorBufferTexture(), 0, 0);
+        batch.end();
+
+        batch.setShader(null);
+    }
+
+    public static void drawPauseUI(SpriteBatch batch) {
+        batch.begin();
+        GraphicsManager.renderPauseUI(batch);
+        batch.end();
     }
 }

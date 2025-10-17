@@ -19,7 +19,6 @@ import java.util.Map;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
-    private SpriteBatch batch;
 
     @Override
     public void create() {
@@ -38,8 +37,6 @@ public class Main extends ApplicationAdapter {
         SoundManager.queueMusic("Evening_Harmony.mp3");
         SoundManager.queueMusic("Forgotten_Biomes.mp3");
         SoundManager.transition();
-
-        batch = new SpriteBatch();
 
         Game.initialize();
     }
@@ -61,68 +58,17 @@ public class Main extends ApplicationAdapter {
         return data;
     }
 
-    public void blurredDraw(SpriteBatch batch) {
-        ShaderProgram blurShader = ShaderManager.getBlurShader();
-        FrameBuffer fboA = ShaderManager.getFboA();
-        FrameBuffer fboB = ShaderManager.getFboB();
-
-        // First pass - capture the scene
-        fboA.begin();
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        batch.setShader(null);
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        GraphicsManager.render(batch);
-        batch.end();
-        fboA.end();
-
-        // Horizontal blur
-        fboB.begin();
-        batch.begin();
-        batch.setShader(blurShader);
-        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenConfiguredWidth());
-        blurShader.setUniformf("u_direction", 1f, 0f);
-        batch.draw(fboA.getColorBufferTexture(), 0, 0);
-        batch.end();
-        fboB.end();
-
-        // Vertical blur (final pass)
-        batch.begin();
-        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenConfiguredHeight());
-        blurShader.setUniformf("u_direction", 0f, 1f);
-        batch.draw(fboB.getColorBufferTexture(), 0, 0);
-        batch.end();
-
-        batch.setShader(null);
-    }
-
-    public void draw(SpriteBatch batch) {
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        batch.setShader(null);
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        GraphicsManager.render(batch);
-        batch.end();
-    }
-
-    public void drawPauseUI(SpriteBatch batch) {
-        batch.begin();
-        GraphicsManager.renderPauseUI(batch);
-        batch.end();
-    }
-
     @Override
     public void render() {
-
         // Input
         InputManager.checkInput();
         handleInput();
         InteractionManager.checkClick();
 
         // RENDER
-        if (GraphicsManager.isPaused()) blurredDraw(batch);
-        else draw(batch);
-        drawPauseUI(batch);
+        if (GraphicsManager.isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
+        else GraphicsManager.draw(GraphicsManager.getBatch());
+        GraphicsManager.drawPauseUI(GraphicsManager.getBatch());
 
         // SOUND
         SoundManager.update();
@@ -130,7 +76,7 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void dispose() {
-        batch.dispose();
+        GraphicsManager.getBatch().dispose();
         GraphicUtils.dispose();
     }
 }
