@@ -126,8 +126,8 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
         int width = getWidth();
         int height = getHeight();
 
-        float mouseX = Gdx.input.getX() * x;
-        float mouseY = (Gdx.graphics.getHeight() - Gdx.input.getY()) * y;
+        float mouseX = Gdx.input.getX();
+        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
 
         boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
         boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);
@@ -149,17 +149,13 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        System.out.println("RENDER");
         if (zLevel != z) return;
         if (isPaused) return;
         update();
         if (isHovered(0, 0)) {
-            System.out.println("X: " + getX());
-            System.out.println("Y: " + getY());
             if (hoverColor != null) label.setColor(hoverColor);
             if (isClicked()) {
                 if (clickColor != null) {
-                    System.out.println("Is clicked");
                     label.setColor(clickColor);
                 };
             }
