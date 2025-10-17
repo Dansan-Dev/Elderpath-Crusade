@@ -15,6 +15,9 @@ import io.github.forest_of_dreams.rooms.MainMenuRoom;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
 public class PauseMenuPage extends HigherOrderTexture {
+    public static PauseMenuPage get() {
+        return new PauseMenuPage();
+    }
 
     private final Text header = new Text(
         "PAUSED",

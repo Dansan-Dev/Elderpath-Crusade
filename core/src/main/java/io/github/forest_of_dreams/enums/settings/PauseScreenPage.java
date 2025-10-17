@@ -7,7 +7,8 @@ import lombok.Getter;
 
 public enum PauseScreenPage {
     MENU(new PauseMenuPage()),
-    SETTINGS(new PauseSettingsPage());
+    SETTINGS(new PauseSettingsPage()),
+    NONE(null);
 
     @Getter
     private HigherOrderTexture page;
