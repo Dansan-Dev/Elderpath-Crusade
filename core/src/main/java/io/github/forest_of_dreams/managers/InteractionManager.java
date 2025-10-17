@@ -2,7 +2,6 @@ package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.ClickableEffectType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.*;
@@ -23,8 +22,15 @@ public class InteractionManager {
 
         int mouseX = Gdx.input.getX();
         int mouseY = SettingsManager.screenSize.getScreenHeight() - Gdx.input.getY();
+        boolean paused = GraphicsManager.isPaused();
+
+        // If the game just became paused while interaction selection was in progress, clear it.
+        if (paused && selectedCount != 0) cleanInteraction();
 
         for (Clickable clickable : clickables) {
+            // When paused, only allow UI elements to receive clicks
+            if (paused && !clickable.isPauseUIElement()) continue;
+
             if (clickable.inRange(mouseX, mouseY)) {
                 if (selectedCount == 0) {
                     addInitialInteraction(clickable);

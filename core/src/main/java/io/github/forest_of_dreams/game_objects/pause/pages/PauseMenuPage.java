@@ -26,7 +26,7 @@ public class PauseMenuPage extends HigherOrderTexture {
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
         Color.WHITE
-    ).withFontSize(36);
+    ).withFontSize(36).asPauseUI();
     private final TextList options = new TextList();
 
     public PauseMenuPage() {
@@ -42,6 +42,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> GraphicsManager.unpause(), ClickableEffectData.getImmediate())
+                .asPauseUI()
         );
 
         options.addText(
@@ -50,6 +51,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.SETTINGS), ClickableEffectData.getImmediate())
+                .asPauseUI()
         );
 
         options.addText(
@@ -64,6 +66,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                     },
                     ClickableEffectData.getImmediate()
                 )
+                .asPauseUI()
         );
 
         options.addText(
@@ -72,6 +75,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
+                .asPauseUI()
         );
 
         getRenderables().add(options);

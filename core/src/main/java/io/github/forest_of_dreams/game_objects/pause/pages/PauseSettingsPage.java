@@ -18,7 +18,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
         Color.WHITE
-    ).withFontSize(36);
+    ).withFontSize(36).asPauseUI();
     private final TextList options = new TextList();
 
     public PauseSettingsPage() {
@@ -34,6 +34,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
+                .asPauseUI()
         );
 
         options.addText(
@@ -42,6 +43,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
                 .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.MENU), ClickableEffectData.getImmediate())
+                .asPauseUI()
         );
 
         getRenderables().add(options);

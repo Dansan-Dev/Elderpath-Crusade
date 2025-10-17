@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
-import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.Clickable;
@@ -36,6 +35,7 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
+    @Setter private boolean pauseUIElement = false;
 
     // Font sizing
     private Float desiredFontSize = null; // desired cap-height in pixels; if null, uses scale
@@ -63,6 +63,14 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
 
     public Text withOnClick(OnClick onClick, ClickableEffectData effectData) {
         setClickableEffect(onClick, effectData);
+        return this;
+    }
+
+    /**
+     * Convenience: mark as UI element.
+     */
+    public Text asPauseUI() {
+        this.pauseUIElement = true;
         return this;
     }
 
@@ -148,6 +156,9 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     public List<Integer> getZs() {
         return List.of();
     }
+
+    @Override
+    public boolean isPauseUIElement() { return pauseUIElement; }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
