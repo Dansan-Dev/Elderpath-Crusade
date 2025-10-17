@@ -13,24 +13,8 @@ public interface CustomBox {
     int getHeight();
 
     default boolean inRange(int x, int y) {
-        // Get the actual screen dimensions
-        float screenWidth = Gdx.graphics.getWidth();
-        float screenHeight = Gdx.graphics.getHeight();
-
-        // Get the configured dimensions
-        int configuredWidth = SettingsManager.screenSize.getScreenConfiguredWidth();
-        int configuredHeight = SettingsManager.screenSize.getScreenConfiguredHeight();
-
-        // Calculate scale factors
-        float scaleX = configuredWidth / screenWidth;
-        float scaleY = configuredHeight / screenHeight;
-
-        // Scale the input coordinates
-        float scaledX = x * scaleX;
-        float scaledY = y * scaleY;
-
-        boolean inRangeX = getX() <= scaledX && scaledX < getX() + getWidth();
-        boolean inRangeY = getY() <= scaledY && scaledY < getY() + getHeight();
+        boolean inRangeX = getX() <= x && x < getX() + getWidth();
+        boolean inRangeY = getY() <= y && y < getY() + getHeight();
         return inRangeX && inRangeY;
     }
 }

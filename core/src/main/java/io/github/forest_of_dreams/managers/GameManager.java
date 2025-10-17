@@ -1,5 +1,6 @@
 package io.github.forest_of_dreams.managers;
 
+import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import lombok.Getter;
 
@@ -22,6 +23,7 @@ public class GameManager {
         isPaused = false;
         unpauseGraphics();
         unpauseInputHandlers();
+        PauseScreen.setCurrentPage(PauseScreenPage.NONE);
     }
 
     private static void pauseGraphics() {

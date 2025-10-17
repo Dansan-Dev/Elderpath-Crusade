@@ -193,19 +193,14 @@ public class GraphicsManager {
 
         // First pass - capture the scene
         fboA.begin();
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        batch.setShader(null);
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        GraphicsManager.render(batch);
-        batch.end();
+        draw(batch);
         fboA.end();
 
         // Horizontal blur
         fboB.begin();
         batch.begin();
         batch.setShader(blurShader);
-        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenConfiguredWidth());
+        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenWidth());
         blurShader.setUniformf("u_direction", 1f, 0f);
         batch.draw(fboA.getColorBufferTexture(), 0, 0);
         batch.end();
@@ -213,7 +208,7 @@ public class GraphicsManager {
 
         // Vertical blur (final pass)
         batch.begin();
-        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenConfiguredHeight());
+        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenHeight());
         blurShader.setUniformf("u_direction", 0f, 1f);
         batch.draw(fboB.getColorBufferTexture(), 0, 0);
         batch.end();

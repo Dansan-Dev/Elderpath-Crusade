@@ -17,6 +17,13 @@ import io.github.forest_of_dreams.utils.SpriteCreator;
 import java.util.List;
 
 public class MainMenuRoom extends Room {
+    private SpriteObject background;
+    private SpriteObject navbar;
+    private Text title;
+    private Button playButton;
+    private Button settingsButton;
+    private Button exitButton;
+
     private MainMenuRoom() {
         super();
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
@@ -24,7 +31,7 @@ public class MainMenuRoom extends Room {
         int screen_height = SettingsManager.screenSize.getScreenHeight();
 
         int[] backgroundSize = {1536, 1024};
-        SpriteObject background = new SpriteObject(0, 0, screen_width, screen_height, -2, SpriteBoxPos.BOTTOM);
+        background = new SpriteObject(0, 0, screen_width, screen_height, -2, SpriteBoxPos.BOTTOM_LEFT);
         background.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
@@ -38,7 +45,7 @@ public class MainMenuRoom extends Room {
         addContent(background);
 
         int[] navbarSize = {551, 831};
-        SpriteObject navbar = new SpriteObject(0, 150, screen_width, screen_height, -1, SpriteBoxPos.BOTTOM);
+        navbar = new SpriteObject(0, 150, screen_width, screen_height, -1, SpriteBoxPos.BOTTOM);
         navbar.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
@@ -51,14 +58,14 @@ public class MainMenuRoom extends Room {
         );
         addContent(navbar);
 
-        Text title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+        title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
             .withFontSize(18f);
         Box titleBox = title.getBounds();
         titleBox.setX(screen_center[0] - titleBox.getWidth()/2);
         titleBox.setY(screen_height - titleBox.getHeight() - 120);
         addContent(title);
 
-        Button playButton = Button.fromColor(Color.valueOf("#81cce3"), "Demo", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+        playButton = Button.fromColor(Color.valueOf("#81cce3"), "Demo", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(DemoRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
@@ -67,7 +74,7 @@ public class MainMenuRoom extends Room {
         playButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 + 10);
         addContent(playButton);
 
-        Button settingsButton = Button.fromColor(Color.valueOf("#81cce3"), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+        settingsButton = Button.fromColor(Color.valueOf("#81cce3"), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(SettingsRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
@@ -76,7 +83,7 @@ public class MainMenuRoom extends Room {
         settingsButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 - 70);
         addContent(settingsButton);
 
-        Button exitButton = Button.fromColor(Color.valueOf("#81cce3"), "Exit", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+        exitButton = Button.fromColor(Color.valueOf("#81cce3"), "Exit", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
             .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
@@ -85,6 +92,18 @@ public class MainMenuRoom extends Room {
         exitButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 - 150);
         addContent(exitButton);
 
+        layout();
+    }
+
+    public void layout() {
+        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
+        int screen_width = SettingsManager.screenSize.getScreenWidth();
+        int screen_height = SettingsManager.screenSize.getScreenHeight();
+
+        background.getBounds().setWidth(screen_width*2);
+        background.getBounds().setHeight(screen_height*2);
+        background.getBounds().setX(0);
+        background.getBounds().setY(0);
     }
 
     public static MainMenuRoom get() {

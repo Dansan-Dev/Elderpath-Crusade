@@ -13,21 +13,10 @@ public class ScreenSize {
 
     public void initialize() {}
 
-
-    public int[] getScreenCenter() {
-        return new int[]{currentSize[0] / 2, currentSize[1] / 2};
-    }
-
     public void toggleFullscreen() {
         Graphics graphics = Gdx.graphics;
-        if (!graphics.isFullscreen()) {
-            currentSize = new int[]{graphics.getWidth(), graphics.getHeight()};
-            graphics.setFullscreenMode(graphics.getDisplayMode());
-        }
-        else {
-            updateToNonFullscreenSize();
-        }
-        GraphicsManager.resetBatch();
+        if (!graphics.isFullscreen()) updateToFullscreenSize();
+        else updateToNonFullscreenSize();
     }
 
     private void updateToNonFullscreenSize() {
@@ -35,16 +24,26 @@ public class ScreenSize {
         Gdx.graphics.setWindowedMode(currentSize[0], currentSize[1]);
     }
 
+    private void updateToFullscreenSize() {
+        Graphics.DisplayMode displayMode = Gdx.graphics.getDisplayMode();
+        Gdx.graphics.setFullscreenMode(displayMode);
+        currentSize = new int[]{displayMode.width, displayMode.height};
+    }
+
     public int getScreenWidth() {
-        return Gdx.graphics.getWidth();//screenSize.getCurrentSize()[0];
+        return Gdx.graphics.getWidth();
     }
 
     public int getScreenHeight() {
-        return Gdx.graphics.getHeight();//screenSize.getCurrentSize()[1];
+        return Gdx.graphics.getHeight();
     }
 
     public int[] getScreenSize() {
         return new int[]{getScreenWidth(), getScreenHeight()};
+    }
+
+    public int[] getScreenCenter() {
+        return new int[]{currentSize[0] / 2, currentSize[1] / 2};
     }
 
     public int getScreenConfiguredWidth() {

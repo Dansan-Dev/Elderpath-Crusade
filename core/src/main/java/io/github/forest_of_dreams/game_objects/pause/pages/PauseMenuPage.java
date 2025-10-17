@@ -8,6 +8,7 @@ import io.github.forest_of_dreams.data_objects.TextList;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
+import io.github.forest_of_dreams.managers.GameManager;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.Game;
@@ -41,7 +42,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withFontSize(16)
                 .withHoverColor(Color.YELLOW)
                 .withClickColor(Color.BLUE)
-                .withOnClick((e) -> GraphicsManager.unpause(), ClickableEffectData.getImmediate())
+                .withOnClick((e) -> GameManager.unpause(), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );
 
@@ -62,7 +63,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withOnClick(
                     (e) -> {
                         Game.gotoRoom(MainMenuRoom.get());
-                        GraphicsManager.unpause();
+                        GameManager.unpause();
                     },
                     ClickableEffectData.getImmediate()
                 )

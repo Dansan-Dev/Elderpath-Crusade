@@ -126,21 +126,8 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
         int width = getWidth();
         int height = getHeight();
 
-        // Get the actual screen dimensions
-        float screenWidth = Gdx.graphics.getWidth();
-        float screenHeight = Gdx.graphics.getHeight();
-
-        // Get the configured dimensions
-        int configuredWidth = SettingsManager.screenSize.getScreenConfiguredWidth();
-        int configuredHeight = SettingsManager.screenSize.getScreenConfiguredHeight();
-
-        // Calculate scale factors
-        float scaleX = configuredWidth / screenWidth;
-        float scaleY = configuredHeight / screenHeight;
-
-        // Scale the mouse coordinates
-        float mouseX = Gdx.input.getX() * scaleX;
-        float mouseY = (Gdx.graphics.getHeight() - Gdx.input.getY()) * scaleY;
+        float mouseX = Gdx.input.getX() * x;
+        float mouseY = (Gdx.graphics.getHeight() - Gdx.input.getY()) * y;
 
         boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
         boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);

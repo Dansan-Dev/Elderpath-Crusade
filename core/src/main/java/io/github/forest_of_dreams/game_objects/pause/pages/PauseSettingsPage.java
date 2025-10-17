@@ -24,7 +24,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
     public PauseSettingsPage() {
         getRenderables().add(header);
         addOptions();
-        update();
+        layout();
     }
 
     private void addOptions() {
@@ -49,15 +49,14 @@ public class PauseSettingsPage extends HigherOrderTexture {
         getRenderables().add(options);
     }
 
-    public void update() {
-        int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
-        int screenCenterY = SettingsManager.screenSize.getScreenCenter()[1];
+    public void layout() {
+        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
         int screenHeight = SettingsManager.screenSize.getScreenHeight();
 
-        header.getBounds().setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
+        header.getBounds().setX((int)(screenCenter[0] - (header.getLabel().getWidth() / 2)));
         header.getBounds().setY(screenHeight - 100);
         header.update();
 
-        options.alignTextAcrossYAxis(50, screenCenterX, screenCenterY);
+        options.alignTextAcrossYAxis(50, screenCenter[0], screenCenter[1]);
     }
 }

@@ -19,7 +19,6 @@ public class HandlePause implements InputHandler {
             PauseScreen.setCurrentPage(PauseScreenPage.MENU);
         } else {
             GameManager.unpause();
-            PauseScreen.setCurrentPage(PauseScreenPage.NONE);
         }
     }
 }

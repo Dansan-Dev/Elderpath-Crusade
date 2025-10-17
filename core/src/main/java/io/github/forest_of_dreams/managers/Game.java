@@ -8,7 +8,6 @@ public class Game {
 
     public static void initialize() {
         gotoRoom(MainMenuRoom.get());
-//        gotoRoom(StartRoom.get());
     }
 
     public static void gotoRoom(Room room) {
