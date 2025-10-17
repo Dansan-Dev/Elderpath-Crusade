@@ -68,7 +68,7 @@ public class MainMenuRoom extends Room {
         addContent(playButton);
 
         Button settingsButton = Button.fromColor(Color.valueOf("#81cce3"), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
-            .withOnClick((e) -> {}, ClickableEffectData.getImmediate())
+            .withOnClick((e) -> Game.gotoRoom(SettingsRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
             .withHoverBorderColor(Color.WHITE);
