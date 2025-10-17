@@ -28,6 +28,7 @@ public class BackendService {
     }
 
     public static UserListResponseDto getUsers() {
+        if (!isUp) return null;
         return UtilsApi.get(
             BASE_URL,
             new HashMap<>(),
@@ -39,6 +40,7 @@ public class BackendService {
     }
 
     public static UserIdDto postUser(HashMap<String, Object> data) {
+        if (!isUp) return null;
         return UtilsApi.post(
             BASE_URL,
             data,
