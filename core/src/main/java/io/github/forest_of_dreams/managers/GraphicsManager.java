@@ -72,8 +72,6 @@ public class GraphicsManager {
                 else r.render(batch, i, isPaused);
             }
         }
-        TextureObject testSquare = new TextureObject(Color.ORANGE, 1200, 700, 100, 100);
-        testSquare.render(batch, 0, false);
     }
 
     public static void addRenderable(Renderable renderable) {
