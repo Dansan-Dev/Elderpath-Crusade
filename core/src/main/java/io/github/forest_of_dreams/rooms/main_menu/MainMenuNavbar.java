@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.Button;
+import io.github.forest_of_dreams.data_objects.ButtonList;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
@@ -20,6 +21,7 @@ public class MainMenuNavbar extends HigherOrderUI {
     private static final int[] NAVBAR_IMAGE_SIZE = {551, 831};
 
     private SpriteObject navbarBg;
+    private ButtonList buttonList;
     private Button playButton;
     private Button settingsButton;
     private Button exitButton;
@@ -58,11 +60,15 @@ public class MainMenuNavbar extends HigherOrderUI {
             .withBorderColor(Color.GRAY)
             .withHoverBorderColor(Color.WHITE);
 
-        // Add children to container
+        // Create ButtonList and add buttons
+        buttonList = new ButtonList();
+        buttonList.addButton(playButton);
+        buttonList.addButton(settingsButton);
+        buttonList.addButton(exitButton);
+
+        // Add children to container (background + individual buttons)
         getRenderableUIs().add(navbarBg);
-        getRenderableUIs().add(playButton);
-        getRenderableUIs().add(settingsButton);
-        getRenderableUIs().add(exitButton);
+        buttonList.getRenderables().forEach(r -> getRenderableUIs().add((Button) r));
     }
 
     @Override
@@ -75,9 +81,9 @@ public class MainMenuNavbar extends HigherOrderUI {
         if (getBounds() == null) return;
         // Parent all children to this container's bounds
         if (navbarBg != null) navbarBg.setParent(getBounds());
-        if (playButton != null) playButton.setParent(getBounds());
-        if (settingsButton != null) settingsButton.setParent(getBounds());
-        if (exitButton != null) exitButton.setParent(getBounds());
+        if (buttonList != null) {
+            buttonList.getRenderables().forEach(r -> ((Button) r).setParent(getBounds()));
+        }
 
         int navW = getBounds().getWidth();
         int navH = getBounds().getHeight();
@@ -85,14 +91,22 @@ public class MainMenuNavbar extends HigherOrderUI {
         // Background fills whole navbar
         if (navbarBg != null) navbarBg.setBounds(new Box(0, 0, navW, navH));
 
-        // Button layout within navbar
+        // Button layout within navbar via ButtonList
         int buttonWidth = 100;
         int buttonHeight = 60;
         int spacing = 10;
-        int leftX = (navW - buttonWidth) / 2;
-
-        if (playButton != null) playButton.setBounds(new Box(leftX, navH - buttonHeight - 20, buttonWidth, buttonHeight));
-        if (settingsButton != null) settingsButton.setBounds(new Box(leftX, navH - 2 * buttonHeight - 20 - spacing, buttonWidth, buttonHeight));
-        if (exitButton != null) exitButton.setBounds(new Box(leftX, navH - 3 * buttonHeight - 20 - 2 * spacing, buttonWidth, buttonHeight));
+        // Ensure button sizes
+        if (buttonList != null) {
+            buttonList.getRenderables().forEach(r -> {
+                Button b = (Button) r;
+                Box bb = b.getBounds();
+                bb.setWidth(buttonWidth);
+                bb.setHeight(buttonHeight);
+            });
+            int offset = buttonHeight + spacing;
+            int centerX = navW / 2;
+            int centerY = navH / 2; // center the ButtonList vertically within the navbar background
+            buttonList.alignButtonsAcrossYAxis(offset, centerX, centerY);
+        }
     }
 }
