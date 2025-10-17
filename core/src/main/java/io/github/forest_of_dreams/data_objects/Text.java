@@ -149,13 +149,19 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
+        System.out.println("RENDER");
         if (zLevel != z) return;
         if (isPaused) return;
         update();
         if (isHovered(0, 0)) {
+            System.out.println("X: " + getX());
+            System.out.println("Y: " + getY());
             if (hoverColor != null) label.setColor(hoverColor);
             if (isClicked()) {
-                if (clickColor != null) label.setColor(clickColor);
+                if (clickColor != null) {
+                    System.out.println("Is clicked");
+                    label.setColor(clickColor);
+                };
             }
         }
         label.draw(batch, 1);

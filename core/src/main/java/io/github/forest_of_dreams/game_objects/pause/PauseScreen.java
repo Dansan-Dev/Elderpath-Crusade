@@ -64,7 +64,6 @@ public class PauseScreen extends AbstractTexture implements UIRenderable {
 
     public static void setCurrentPage(PauseScreenPage page) {
         if (currentPage!=PauseScreenPage.NONE) GraphicsManager.retractClickables(currentPage.getPage());
-        System.out.println("page = " + page);
         currentPage = page;
         if (currentPage!=PauseScreenPage.NONE) GraphicsManager.sendClickables(currentPage.getPage());
     }
