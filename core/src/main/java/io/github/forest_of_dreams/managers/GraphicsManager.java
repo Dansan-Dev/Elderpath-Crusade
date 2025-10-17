@@ -128,7 +128,7 @@ public class GraphicsManager {
     }
 
     public static void  clearUIRenderables() {
-        renderables.forEach(r -> {
+        uiRenderables.forEach(r -> {
             if (r instanceof Clickable clickable)
                 InteractionManager.removeClickable(clickable);
         });
@@ -179,6 +179,7 @@ public class GraphicsManager {
 
     public static void draw(SpriteBatch batch) {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.setProjectionMatrix(SettingsManager.screenSize.getViewport().getCamera().combined);
         batch.begin();
         batch.setShader(null);
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
@@ -191,26 +192,43 @@ public class GraphicsManager {
         FrameBuffer fboA = ShaderManager.getFboA();
         FrameBuffer fboB = ShaderManager.getFboB();
 
-        // First pass - capture the scene
+        int screenW = SettingsManager.screenSize.getScreenWidth();
+        int screenH = SettingsManager.screenSize.getScreenHeight();
+
+        // First pass - capture the scene into fboA
         fboA.begin();
         draw(batch);
         fboA.end();
 
-        // Horizontal blur
+        // Prepare projection for post-process passes
+        batch.setProjectionMatrix(SettingsManager.screenSize.getViewport().getCamera().combined);
+
+        // Horizontal blur into fboB
         fboB.begin();
         batch.begin();
         batch.setShader(blurShader);
-        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenWidth());
+        blurShader.setUniformf("u_blurSize", 1f / (float) screenW);
         blurShader.setUniformf("u_direction", 1f, 0f);
-        batch.draw(fboA.getColorBufferTexture(), 0, 0);
+        // Flip Y when drawing FrameBuffer texture
+        batch.draw(
+            fboA.getColorBufferTexture(),
+            0, 0,
+            screenW, screenH,
+            0f, 1f, 1f, 0f
+        );
         batch.end();
         fboB.end();
 
-        // Vertical blur (final pass)
+        // Vertical blur (final pass) from fboB to screen
         batch.begin();
-        blurShader.setUniformf("u_blurSize", 1f / SettingsManager.screenSize.getScreenHeight());
+        blurShader.setUniformf("u_blurSize", 1f / (float) screenH);
         blurShader.setUniformf("u_direction", 0f, 1f);
-        batch.draw(fboB.getColorBufferTexture(), 0, 0);
+        batch.draw(
+            fboB.getColorBufferTexture(),
+            0, 0,
+            screenW, screenH,
+            0f, 1f, 1f, 0f
+        );
         batch.end();
 
         batch.setShader(null);

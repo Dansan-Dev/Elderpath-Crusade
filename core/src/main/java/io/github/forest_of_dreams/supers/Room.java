@@ -45,4 +45,13 @@ public abstract class Room {
     public void hideUI() {
         GraphicsManager.clearUIRenderables();
     }
+
+    /**
+     * Called when the screen size changes (e.g., toggling fullscreen) so the room can
+     * recalculate positions/sizes of its contents.
+     * Default implementation does nothing.
+     */
+    public void onScreenResize() {
+        // default no-op
+    }
 }

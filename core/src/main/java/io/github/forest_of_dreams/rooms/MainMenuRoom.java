@@ -24,13 +24,16 @@ public class MainMenuRoom extends Room {
     private Button settingsButton;
     private Button exitButton;
 
+    private static final int[] backgroundSize = {1536, 1024};
+    private static final int[] navbarSize = {551, 831};
+
     private MainMenuRoom() {
         super();
-        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
+        // Create objects
+
         int screen_width = SettingsManager.screenSize.getScreenWidth();
         int screen_height = SettingsManager.screenSize.getScreenHeight();
 
-        int[] backgroundSize = {1536, 1024};
         background = new SpriteObject(0, 0, screen_width, screen_height, -2, SpriteBoxPos.BOTTOM_LEFT);
         background.addAnimation(
             "general",
@@ -44,8 +47,7 @@ public class MainMenuRoom extends Room {
         );
         addContent(background);
 
-        int[] navbarSize = {551, 831};
-        navbar = new SpriteObject(0, 150, screen_width, screen_height, -1, SpriteBoxPos.BOTTOM);
+        navbar = new SpriteObject(0, 150, navbarSize[0]/3, navbarSize[1]/3, -1, SpriteBoxPos.BOTTOM);
         navbar.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
@@ -60,9 +62,6 @@ public class MainMenuRoom extends Room {
 
         title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
             .withFontSize(18f);
-        Box titleBox = title.getBounds();
-        titleBox.setX(screen_center[0] - titleBox.getWidth()/2);
-        titleBox.setY(screen_height - titleBox.getHeight() - 120);
         addContent(title);
 
         playButton = Button.fromColor(Color.valueOf("#81cce3"), "Demo", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
@@ -70,8 +69,6 @@ public class MainMenuRoom extends Room {
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
             .withHoverBorderColor(Color.WHITE);
-        playButton.getBounds().setX(screen_center[0] - playButton.getBounds().getWidth() / 2);
-        playButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 + 10);
         addContent(playButton);
 
         settingsButton = Button.fromColor(Color.valueOf("#81cce3"), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
@@ -79,8 +76,6 @@ public class MainMenuRoom extends Room {
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
             .withHoverBorderColor(Color.WHITE);
-        settingsButton.getBounds().setX(screen_center[0] - playButton.getBounds().getWidth() / 2);
-        settingsButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 - 70);
         addContent(settingsButton);
 
         exitButton = Button.fromColor(Color.valueOf("#81cce3"), "Exit", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
@@ -88,22 +83,47 @@ public class MainMenuRoom extends Room {
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
             .withHoverBorderColor(Color.WHITE);
-        exitButton.getBounds().setX(screen_center[0] - playButton.getBounds().getWidth() / 2);
-        exitButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 - 150);
         addContent(exitButton);
 
-        layout();
+        // Initial layout
+        layoutContents();
     }
 
-    public void layout() {
+    private void layoutContents() {
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
         int screen_width = SettingsManager.screenSize.getScreenWidth();
         int screen_height = SettingsManager.screenSize.getScreenHeight();
 
-        background.getBounds().setWidth(screen_width*2);
-        background.getBounds().setHeight(screen_height*2);
-        background.getBounds().setX(0);
-        background.getBounds().setY(0);
+        // Background covers full screen
+        background.setBounds(new Box(0, 0, screen_width, screen_height));
+
+        // Title position
+        Box titleBox = title.getBounds();
+        // Update label to get correct width/height before centering
+        title.update();
+        titleBox.setX(screen_center[0] - titleBox.getWidth()/2);
+        titleBox.setY(screen_height - titleBox.getHeight() - 120);
+
+        // Navbar alignment stays at bottom center with original scale
+        navbar.setBounds(new Box(screen_center[0]-(navbarSize[0]/6), 150, navbarSize[0]/3, navbarSize[1]/3));
+
+        // Buttons centered vertically spaced
+        Box playBox = playButton.getBounds();
+        playBox.setX(screen_center[0] - playBox.getWidth() / 2);
+        playBox.setY(screen_center[1] - playBox.getHeight() / 2 + 10);
+
+        Box settingsBox = settingsButton.getBounds();
+        settingsBox.setX(screen_center[0] - settingsBox.getWidth() / 2);
+        settingsBox.setY(screen_center[1] - settingsBox.getHeight() / 2 - 70);
+
+        Box exitBox = exitButton.getBounds();
+        exitBox.setX(screen_center[0] - exitBox.getWidth() / 2);
+        exitBox.setY(screen_center[1] - exitBox.getHeight() / 2 - 150);
+    }
+
+    @Override
+    public void onScreenResize() {
+        layoutContents();
     }
 
     public static MainMenuRoom get() {

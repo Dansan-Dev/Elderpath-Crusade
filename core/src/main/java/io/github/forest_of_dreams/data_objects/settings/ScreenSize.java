@@ -2,21 +2,34 @@ package io.github.forest_of_dreams.data_objects.settings;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Graphics;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.forest_of_dreams.Main;
+import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.managers.GameManager;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 import lombok.Getter;
 
 public class ScreenSize {
+    @Getter private final Viewport viewport = new ScreenViewport(new OrthographicCamera());
     @Getter private final int[] nonFullscreenSize = new int[]{1280, 720};
     private int[] currentSize = nonFullscreenSize;
 
-    public void initialize() {}
+    public void initialize() {
+        viewport.update(getScreenWidth(), getScreenHeight(), true);
+        viewport.apply();
+    }
 
     public void toggleFullscreen() {
         Graphics graphics = Gdx.graphics;
         if (!graphics.isFullscreen()) updateToFullscreenSize();
         else updateToNonFullscreenSize();
+        viewport.update(getScreenWidth(), getScreenHeight(), true);
+        viewport.apply();
+        if (Game.currentRoom != null) {
+            Game.currentRoom.onScreenResize();
+        }
     }
 
     private void updateToNonFullscreenSize() {
@@ -31,11 +44,11 @@ public class ScreenSize {
     }
 
     public int getScreenWidth() {
-        return Gdx.graphics.getWidth();
+        return getScreenConfiguredWidth();
     }
 
     public int getScreenHeight() {
-        return Gdx.graphics.getHeight();
+        return getScreenConfiguredHeight();
     }
 
     public int[] getScreenSize() {

@@ -11,16 +11,16 @@ import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
 
 public class DemoRoom extends Room {
+    private Board board;
+
     private DemoRoom() {
         super();
 
         int plot_width = 40;
         int plot_height = 40;
 
-
-        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
         int[] board_size = new int[]{plot_width*5, plot_height*7};
-        Board board = new Board(screen_center[0] - board_size[0]/2, screen_center[1] - board_size[1]/2, plot_width, plot_height);
+        board = new Board(0, 0, plot_width, plot_height);
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
                 board.replacePos(row, col, new Plot(0, 0, plot_width, plot_height));
@@ -41,8 +41,24 @@ public class DemoRoom extends Room {
         addContent(board);
         addUI(new PauseMenuHint());
 
-//        GraphicsManager.addRenderable(board);
-//        GraphicsManager.addUIRenderable(new PauseMenuHint());
+        layoutBoard(board_size[0], board_size[1]);
+    }
+
+    private void layoutBoard(int boardPixelWidth, int boardPixelHeight) {
+        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
+        int newX = screen_center[0] - boardPixelWidth / 2;
+        int newY = screen_center[1] - boardPixelHeight / 2;
+        board.getBounds().setX(newX);
+        board.getBounds().setY(newY);
+    }
+
+    @Override
+    public void onScreenResize() {
+        int plotWidth = board.getPLOT_WIDTH();
+        int plotHeight = board.getPLOT_HEIGHT();
+        int boardPixelWidth = plotWidth * 5;
+        int boardPixelHeight = plotHeight * 7;
+        layoutBoard(boardPixelWidth, boardPixelHeight);
     }
 
     public static DemoRoom get() {

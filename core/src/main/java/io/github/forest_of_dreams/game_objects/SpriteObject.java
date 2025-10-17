@@ -93,8 +93,18 @@ public class SpriteObject extends AbstractTexture implements Renderable {
         };
         Box bounds = getBounds();
         int marginWidthSize = (int)(bounds.getWidth() - getCurrentSprite().getWidth()) / 2;
-        int marginHeightSize = bounds.getHeight() / 2;
+        int marginHeightSize = (int)(bounds.getHeight() - getCurrentSprite().getHeight()) / 2;
         return new int[]{marginWidthSize * vector[0], marginHeightSize * vector[1]};
+    }
+
+    @Override
+    public void setBounds(Box bounds) {
+        super.setBounds(bounds);
+        animationMap.forEach((__, sprites) -> {
+            sprites.forEach(sprite -> {
+                sprite.setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+            });
+        });
     }
 
     @Override

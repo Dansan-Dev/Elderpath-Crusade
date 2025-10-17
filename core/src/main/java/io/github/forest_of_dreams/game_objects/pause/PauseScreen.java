@@ -5,14 +5,13 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.TextureObject;
-import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.game_objects.pause.pages.PauseMenuPage;
+import io.github.forest_of_dreams.game_objects.pause.pages.PauseSettingsPage;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
-import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * To add new pages:
@@ -36,8 +35,17 @@ public class PauseScreen extends AbstractTexture implements UIRenderable {
         return pauseScreen;
     }
 
+    private void updateCurrentPageLayout() {
+        if (currentPage == PauseScreenPage.MENU && currentPage.getPage() instanceof PauseMenuPage menu) {
+            menu.update();
+        } else if (currentPage == PauseScreenPage.SETTINGS && currentPage.getPage() instanceof PauseSettingsPage settings) {
+            settings.layout();
+        }
+    }
+
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
+        updateCurrentPageLayout();
         // isPaused needs to be false to avoid standardized functionality (should not stop anything within)
         currentPage.getPage().render(batch, 0, false);
         int[] screenSize = SettingsManager.screenSize.getScreenSize();
@@ -47,6 +55,7 @@ public class PauseScreen extends AbstractTexture implements UIRenderable {
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
+        updateCurrentPageLayout();
         currentPage.getPage().render(batch, 0, false);
         int[] screenSize = SettingsManager.screenSize.getScreenSize();
         background.setBounds(new Box(0, 0, screenSize[0], screenSize[1]));
