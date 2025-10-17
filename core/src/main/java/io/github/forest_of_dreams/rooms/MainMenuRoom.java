@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.rooms;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.Button;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
@@ -57,14 +58,33 @@ public class MainMenuRoom extends Room {
         titleBox.setY(screen_height - titleBox.getHeight() - 120);
         addContent(title);
 
-        Button playButton = Button.fromColor(Color.valueOf("#81cce3"), "Demo", FontType.SILKSCREEN, 10, 0, 0, 80, 50, 0)
+        Button playButton = Button.fromColor(Color.valueOf("#81cce3"), "Demo", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(DemoRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(Color.valueOf("#b3d8e3"))
             .withBorderColor(Color.GRAY)
             .withHoverBorderColor(Color.WHITE);
         playButton.getBounds().setX(screen_center[0] - playButton.getBounds().getWidth() / 2);
-        playButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2);
+        playButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 + 10);
         addContent(playButton);
+
+        Button settingsButton = Button.fromColor(Color.valueOf("#81cce3"), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+            .withOnClick((e) -> {}, ClickableEffectData.getImmediate())
+            .withHoverColor(Color.valueOf("#b3d8e3"))
+            .withBorderColor(Color.GRAY)
+            .withHoverBorderColor(Color.WHITE);
+        settingsButton.getBounds().setX(screen_center[0] - playButton.getBounds().getWidth() / 2);
+        settingsButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 - 70);
+        addContent(settingsButton);
+
+        Button exitButton = Button.fromColor(Color.valueOf("#81cce3"), "Exit", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+            .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
+            .withHoverColor(Color.valueOf("#b3d8e3"))
+            .withBorderColor(Color.GRAY)
+            .withHoverBorderColor(Color.WHITE);
+        exitButton.getBounds().setX(screen_center[0] - playButton.getBounds().getWidth() / 2);
+        exitButton.getBounds().setY(screen_center[1] - playButton.getBounds().getHeight() / 2 - 150);
+        addContent(exitButton);
+
     }
 
     public static MainMenuRoom get() {
