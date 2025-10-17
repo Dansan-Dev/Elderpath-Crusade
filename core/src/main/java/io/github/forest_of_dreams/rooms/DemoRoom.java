@@ -10,8 +10,8 @@ import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
 
-public class StartRoom extends Room {
-    private StartRoom() {
+public class DemoRoom extends Room {
+    private DemoRoom() {
         super();
 
         int plot_width = 40;
@@ -45,7 +45,7 @@ public class StartRoom extends Room {
 //        GraphicsManager.addUIRenderable(new PauseMenuHint());
     }
 
-    public static StartRoom get() {
-        return new StartRoom();
+    public static DemoRoom get() {
+        return new DemoRoom();
     }
 }
