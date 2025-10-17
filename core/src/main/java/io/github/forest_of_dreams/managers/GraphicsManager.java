@@ -109,8 +109,12 @@ public class GraphicsManager {
 
     public static void removeUIRenderable(UIRenderable renderable) {
         uiRenderables.remove(renderable);
-        if (renderable instanceof Clickable clickable)
+        if (renderable instanceof Clickable clickable) {
             InteractionManager.removeClickable(clickable);
+        } else if (renderable instanceof HigherOrderUI higherOrderUI) {
+            // Retract nested clickables that were sent on add
+            retractUIClickables(higherOrderUI);
+        }
     }
 
     public static void removeUIRenderables(List<UIRenderable> renderables) {
@@ -127,8 +131,12 @@ public class GraphicsManager {
 
     public static void  clearUIRenderables() {
         uiRenderables.forEach(r -> {
-            if (r instanceof Clickable clickable)
+            if (r instanceof Clickable clickable) {
                 InteractionManager.removeClickable(clickable);
+            } else if (r instanceof HigherOrderUI higherOrderUI) {
+                // Retract nested clickables for UI containers
+                retractUIClickables(higherOrderUI);
+            }
         });
         uiRenderables.clear();
     }
