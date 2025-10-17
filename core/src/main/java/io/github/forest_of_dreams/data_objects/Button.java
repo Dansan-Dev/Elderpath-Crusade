@@ -6,10 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import io.github.forest_of_dreams.enums.FontType;
-import io.github.forest_of_dreams.interfaces.Clickable;
-import io.github.forest_of_dreams.interfaces.CustomBox;
-import io.github.forest_of_dreams.interfaces.OnClick;
-import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.interfaces.*;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
@@ -23,7 +20,7 @@ import java.util.List;
  * A simple Button component that renders a rectangular box (image or solid color),
  * centers text inside the box, and triggers an onClick when clicked.
  */
-public class Button extends AbstractTexture implements Renderable, Clickable {
+public class Button extends AbstractTexture implements Renderable, Clickable, UIRenderable {
     @Getter @Setter private String text;
     @Getter @Setter private FontType fontType;
     @Getter @Setter private Color textColor = Color.WHITE;
@@ -124,9 +121,11 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
         Label lbl = textObj.getLabel();
         float labelWidth = lbl.getPrefWidth();
         float labelHeight = lbl.getPrefHeight();
+        int baseX = getX(); // absolute x
+        int baseY = getY(); // absolute y
         Box newBounds = new Box(
-            (int) (b.getX() + (b.getWidth() - labelWidth) / 2f),
-            (int) (b.getY() + (b.getHeight() - labelHeight) / 2f),
+            (int) (baseX + (b.getWidth() - labelWidth) / 2f),
+            (int) (baseY + (b.getHeight() - labelHeight) / 2f),
             (int) labelWidth,
             (int) labelHeight
         );
@@ -190,8 +189,12 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
     private void drawBackground(SpriteBatch batch) {
         Box b = getBounds();
         if (b == null) return;
+        int xAbs = getX();
+        int yAbs = getY();
+        int w = b.getWidth();
+        int h = b.getHeight();
         if (backgroundTexture != null) {
-            batch.draw(backgroundTexture, b.getX(), b.getY(), b.getWidth(), b.getHeight());
+            batch.draw(backgroundTexture, xAbs, yAbs, w, h);
         } else if (backgroundColor != null) {
             // Determine background color based on hover/click state (click overrides hover)
             Color bg = backgroundColor;
@@ -199,7 +202,7 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
             if (hovered && hoverColor != null) bg = hoverColor;
             if (hovered && Gdx.input.isTouched() && clickColor != null) bg = clickColor;
             Texture pixel = GraphicUtils.getPixelTexture(bg);
-            batch.draw(pixel, b.getX(), b.getY(), b.getWidth(), b.getHeight());
+            batch.draw(pixel, xAbs, yAbs, w, h);
         }
 
         // Optional border (drawn regardless of background type)
@@ -212,10 +215,8 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
         }
         if (activeBorder != null) {
             Texture px = GraphicUtils.getPixelTexture(activeBorder);
-            int x = b.getX();
-            int y = b.getY();
-            int w = b.getWidth();
-            int h = b.getHeight();
+            int x = xAbs;
+            int y = yAbs;
             int t = 1; // border thickness in pixels
             if (w > 0 && h > 0) {
                 // Top
@@ -299,5 +300,30 @@ public class Button extends AbstractTexture implements Renderable, Clickable {
     public Button withClickBorderColor(Color clickBorderColor) {
         this.clickBorderColor = clickBorderColor;
         return this;
+    }
+
+    // UIRenderable implementation
+    @Override
+    public void renderUI(SpriteBatch batch, boolean isPaused) {
+        this.render(batch, this.z, isPaused);
+    }
+
+    @Override
+    public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
+        // Ignore external offset; use parent-relative absolute via calculatePos()
+        this.renderUI(batch, isPaused);
+    }
+
+    // Ensure absolute positioning for interactions when nested in UI containers
+    @Override
+    public int getX() {
+        int[] pos = calculatePos();
+        return pos[0];
+    }
+
+    @Override
+    public int getY() {
+        int[] pos = calculatePos();
+        return pos[1];
     }
 }

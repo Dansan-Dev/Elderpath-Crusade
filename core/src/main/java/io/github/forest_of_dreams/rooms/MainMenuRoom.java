@@ -11,6 +11,7 @@ import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
 import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.managers.SettingsManager;
+import io.github.forest_of_dreams.rooms.main_menu.MainMenuNavbar;
 import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 
@@ -18,11 +19,8 @@ import java.util.List;
 
 public class MainMenuRoom extends Room {
     private SpriteObject background;
-    private SpriteObject navbar;
+    private MainMenuNavbar navbar;
     private Text title;
-    private Button playButton;
-    private Button settingsButton;
-    private Button exitButton;
 
     private static final int[] backgroundSize = {1536, 1024};
     private static final int[] navbarSize = {551, 831};
@@ -47,43 +45,14 @@ public class MainMenuRoom extends Room {
         );
         addContent(background);
 
-        navbar = new SpriteObject(0, 150, navbarSize[0]/3, navbarSize[1]/3, -1, SpriteBoxPos.BOTTOM);
-        navbar.addAnimation(
-            "general",
-            List.of(SpriteCreator.makeSprite(
-                "images/home_navbar.png",
-                0, 0,
-                navbarSize[0], navbarSize[1],
-                navbarSize[0]/3, navbarSize[1]/3
-                )),
-            0
-        );
-        addContent(navbar);
+        // Navbar as HigherOrderUI container
+        navbar = new MainMenuNavbar();
+        addUI(navbar);
 
+        // Title remains as content
         title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
             .withFontSize(18f);
         addContent(title);
-
-        playButton = Button.fromColor(Color.valueOf("#81cce3"), "Demo", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
-            .withOnClick((e) -> Game.gotoRoom(DemoRoom.get()), ClickableEffectData.getImmediate())
-            .withHoverColor(Color.valueOf("#b3d8e3"))
-            .withBorderColor(Color.GRAY)
-            .withHoverBorderColor(Color.WHITE);
-        addContent(playButton);
-
-        settingsButton = Button.fromColor(Color.valueOf("#81cce3"), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
-            .withOnClick((e) -> Game.gotoRoom(SettingsRoom.get()), ClickableEffectData.getImmediate())
-            .withHoverColor(Color.valueOf("#b3d8e3"))
-            .withBorderColor(Color.GRAY)
-            .withHoverBorderColor(Color.WHITE);
-        addContent(settingsButton);
-
-        exitButton = Button.fromColor(Color.valueOf("#81cce3"), "Exit", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
-            .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
-            .withHoverColor(Color.valueOf("#b3d8e3"))
-            .withBorderColor(Color.GRAY)
-            .withHoverBorderColor(Color.WHITE);
-        addContent(exitButton);
 
         // Initial layout
         layoutContents();
@@ -105,20 +74,12 @@ public class MainMenuRoom extends Room {
         titleBox.setY(screen_height - titleBox.getHeight() - 120);
 
         // Navbar alignment stays at bottom center with original scale
-        navbar.setBounds(new Box(screen_center[0]-(navbarSize[0]/6), 150, navbarSize[0]/3, navbarSize[1]/3));
+        int navW = navbarSize[0] / 3;
+        int navH = navbarSize[1] / 3;
+        int navX = screen_center[0] - (navbarSize[0] / 6);
+        int navY = 150;
+        navbar.setBounds(new Box(navX, navY, navW, navH));
 
-        // Buttons centered vertically spaced
-        Box playBox = playButton.getBounds();
-        playBox.setX(screen_center[0] - playBox.getWidth() / 2);
-        playBox.setY(screen_center[1] - playBox.getHeight() / 2 + 10);
-
-        Box settingsBox = settingsButton.getBounds();
-        settingsBox.setX(screen_center[0] - settingsBox.getWidth() / 2);
-        settingsBox.setY(screen_center[1] - settingsBox.getHeight() / 2 - 70);
-
-        Box exitBox = exitButton.getBounds();
-        exitBox.setX(screen_center[0] - exitBox.getWidth() / 2);
-        exitBox.setY(screen_center[1] - exitBox.getHeight() / 2 - 150);
     }
 
     @Override

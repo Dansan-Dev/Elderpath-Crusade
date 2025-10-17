@@ -9,7 +9,6 @@ import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.managers.GameManager;
-import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.rooms.MainMenuRoom;
