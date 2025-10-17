@@ -20,6 +20,7 @@ public class UtilsApi {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static boolean getHealth(BaseURL baseURL, int maxRequests) {
+        System.out.println("baseURL.getBaseUrl() = " + baseURL.getBaseUrl());
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseURL.getBaseUrl() + "/health"))
             .header("Content-Type", "application/json")

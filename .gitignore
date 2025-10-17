@@ -1,6 +1,7 @@
 assets/*
 lwjgl3/icons/*
 lwjgl3/src/main/resources/*
+.env
 
 ## Gradle:
 .gradle/
