@@ -25,27 +25,6 @@ public class Plot extends HigherOrderTexture implements Clickable {
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
-    public Plot(int x, int y, TextureObject plot, TextureObject plotDirt) {
-        setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
-        int width = getBounds().getWidth();
-        int height = getBounds().getHeight();
-        plotDecorFront = EmptyTexture.get(x, y, width, height);
-        plotDecorBack = EmptyTexture.get(x, y, width, height);
-        plotConstruction(plot, plotDirt);
-
-        setClickableEffect(
-            (e) -> e.forEach((key, value) -> System.out.println(value)),
-            ClickableEffectData.getMultiChoiceLimited(ClickableTargetType.PLOT, 1)
-        );
-    }
-
-    public Plot(int x, int y, TextureObject plot, TextureObject plotDirt, TextureObject plotDecorFront, TextureObject plotDecorBack) {
-        setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
-        this.plotDecorFront = plotDecorFront;
-        this.plotDecorBack = plotDecorBack;
-        plotConstruction(plot, plotDirt);
-    }
-
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(Color.valueOf("#32943a"), 0, 0, width, height);
         Color hoverColor = plot.getColor().cpy().lerp(Color.BLACK, 0.5f);
@@ -57,6 +36,11 @@ public class Plot extends HigherOrderTexture implements Clickable {
         plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotConstruction(plot, plotDirt);
+    }
+
+    public Plot withPlotColor(Color color) {
+        plot.setColor(color);
+        return this;
     }
 
     private void plotConstruction(TextureObject plot, TextureObject plotDirt) {

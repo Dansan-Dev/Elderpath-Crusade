@@ -1,5 +1,6 @@
 package io.github.forest_of_dreams.game_objects;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
@@ -67,6 +68,8 @@ public class Board extends HigherOrderTexture {
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
                 Plot plot = new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT);
+                if (row == 0) plot.withPlotColor(Color.BLUE);
+                if (row == 6) plot.withPlotColor(Color.RED);
                 int r = row;
                 int c = col;
                 plot.setClickableEffect(
@@ -99,9 +102,29 @@ public class Board extends HigherOrderTexture {
 
     public void setBoardIdentifierSymbols() {
         IntStream.iterate(0, i -> i + 1).limit(ROWS)
-            .forEach(i -> rowIdentifierSymbols[i] = new BoardIdentifierSymbol(String.valueOf(toLetter(i)), getX()-PLOT_WIDTH/4, getY()+PLOT_HEIGHT/2+PLOT_HEIGHT*i, GRID_DIRECTION.ROW, true));
+            .forEach(i -> rowIdentifierSymbols[i] = new BoardIdentifierSymbol(
+                String.valueOf(toLetter(i)),
+                -PLOT_WIDTH/4,
+                PLOT_HEIGHT/2+PLOT_HEIGHT*i,
+                GRID_DIRECTION.ROW,
+                true
+            ));
         IntStream.iterate(0, i -> i + 1).limit(COLS)
-            .forEach(i -> colIdentifierSymbols[i] = new BoardIdentifierSymbol(String.valueOf(i+1), getX()+(PLOT_WIDTH)/2+PLOT_WIDTH*i, getY()-PLOT_HEIGHT/4, GRID_DIRECTION.COLUMN, true));
+            .forEach(i -> colIdentifierSymbols[i] = new BoardIdentifierSymbol(
+                String.valueOf(i+1),
+                (PLOT_WIDTH)/2+PLOT_WIDTH*i,
+                -PLOT_HEIGHT/4,
+                GRID_DIRECTION.COLUMN,
+                true
+            ));
+        Arrays.stream(rowIdentifierSymbols).forEach(s -> {
+            System.out.println("s.getX() = " + s.getX());
+            System.out.println("s.getY() = " + s.getY());
+        });
+        Arrays.stream(colIdentifierSymbols).forEach(s -> {
+            System.out.println("s.getX() = " + s.getX());
+            System.out.println("s.getY() = " + s.getY());
+        });
     }
 
     public Renderable getPlotAtPos(int row, int col) {
@@ -174,7 +197,9 @@ public class Board extends HigherOrderTexture {
                 renderable.render(batch, zLevel, isPaused, col*PLOT_WIDTH, row*PLOT_HEIGHT);
             }
         }
-        Arrays.stream(rowIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
+        Arrays.stream(rowIdentifierSymbols).forEach(s -> {
+            s.render(batch, zLevel, isPaused);
+        });
         Arrays.stream(colIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
     }
 
@@ -188,7 +213,11 @@ public class Board extends HigherOrderTexture {
                     gamePieces[row][col].getSprite().render(batch, zLevel, isPaused, x + col*PLOT_WIDTH, y + row*PLOT_HEIGHT);
             }
         }
-        Arrays.stream(rowIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
-        Arrays.stream(colIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
+        Arrays.stream(rowIdentifierSymbols).forEach(s -> {
+            s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY());
+        });
+        Arrays.stream(colIdentifierSymbols).forEach(s -> {
+            s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY());
+        });
     }
 }
