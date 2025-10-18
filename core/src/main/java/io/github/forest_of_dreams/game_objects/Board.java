@@ -103,8 +103,12 @@ public class Board extends HigherOrderTexture {
             .forEach(i -> colIdentifierSymbols[i] = new BoardIdentifierSymbol(String.valueOf(i+1), getX()+(PLOT_WIDTH)/2+PLOT_WIDTH*i, getY()-PLOT_HEIGHT/4, GRID_DIRECTION.COLUMN, true));
     }
 
-    public Renderable getPos(int row, int col) {
+    public Renderable getPlotAtPos(int row, int col) {
         return board[row][col];
+    }
+
+    public GamePiece getGamePieceAtPos(int row, int col) {
+        return gamePieces[row][col];
     }
 
     public void removePos(int row, int col) {
