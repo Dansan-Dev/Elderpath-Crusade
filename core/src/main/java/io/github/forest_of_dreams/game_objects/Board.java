@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.game_objects;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
 import io.github.forest_of_dreams.enums.GamePieceData;
@@ -46,7 +47,7 @@ public class Board extends HigherOrderTexture {
     }
 
     public class Position {
-        private final Board board;
+        @Getter private final Board board;
         @Getter @Setter private int row;
         @Getter @Setter private int col;
 
@@ -64,7 +65,20 @@ public class Board extends HigherOrderTexture {
     public void initializePlots() {
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
-                replacePos(row, col, new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT));
+                Plot plot = new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT);
+                int r = row;
+                int c = col;
+                plot.setClickableEffect(
+                    (e) -> {
+                        System.out.println("Clicked on plot");
+                        GamePiece gp = gamePieces[r][c];
+                        if (gp != null) {
+                            gp.moveUpOne();
+                        }
+                    },
+                    ClickableEffectData.getImmediate()
+                );
+                replacePlotAtPos(row, col, plot);
             }
         }
     }
@@ -115,16 +129,33 @@ public class Board extends HigherOrderTexture {
         gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
     }
 
-    public void replacePos(int row, int col, Renderable newRenderable) {
+    private void replacePlotAtPos(int row, int col, Renderable newRenderable) {
         if (newRenderable.getBounds().getWidth() != PLOT_WIDTH
             || newRenderable.getBounds().getHeight() != PLOT_HEIGHT) throw new IllegalArgumentException("Renderable must be in PLOT size");
 
         Renderable renderable = board[row][col];
         getRenderables().remove(renderable);
 
+        // Set the child's relative position within the board grid for correct hit-testing
+        if (newRenderable.getBounds() != null) {
+            newRenderable.getBounds().setX(col * PLOT_WIDTH);
+            newRenderable.getBounds().setY(row * PLOT_HEIGHT);
+        }
         newRenderable.setParent(getBounds());
         board[row][col] = newRenderable;
         getRenderables().add(newRenderable);
+
+        // If this is a Plot, bind its click to the GamePiece occupying this cell
+        if (newRenderable instanceof Plot) {
+            Plot plot = (Plot) newRenderable;
+            plot.setClickableEffect(
+                (e) -> {
+                    GamePiece gp = gamePieces[row][col];
+                    if (gp != null) gp.moveUpOne();
+                },
+                ClickableEffectData.getImmediate()
+            );
+        }
     }
 
     @Override
