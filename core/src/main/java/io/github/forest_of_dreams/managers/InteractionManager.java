@@ -53,6 +53,8 @@ public class InteractionManager {
         clickables.remove(clickable);
     }
 
+    public static void clearClickables() { clickables.clear(); }
+
     private static void addInitialInteraction(Clickable clickableEffect) {
         if (selectedCount != 0) return;
         currentEffect = clickableEffect;
