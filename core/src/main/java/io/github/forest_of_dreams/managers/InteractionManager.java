@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
+import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.enums.ClickableEffectType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.*;
@@ -30,7 +31,9 @@ public class InteractionManager {
         for (Clickable clickable : clickables) {
             // When paused, only allow UI elements to receive clicks
             if (paused && !clickable.isPauseUIElement()) continue;
-
+            if (clickable instanceof GamePiece gamePiece) {
+                System.out.println("Clickable GamePiece: " + gamePiece.getId());
+            }
             if (clickable.inRange(mouseX, mouseY)) {
                 if (selectedCount == 0) {
                     addInitialInteraction(clickable);

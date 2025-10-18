@@ -69,6 +69,17 @@ public class Board extends HigherOrderTexture {
         gamePieces[row][col] = gamePiece;
     }
 
+    public void moveGamePiece(int currentRow, int currentCol, int newRow, int newCol) {
+        GamePiece gamePiece = gamePieces[currentRow][currentCol];
+        setGamePiecePos(currentRow, currentCol, null);
+        setGamePiecePos(newRow, newCol, gamePiece);
+    }
+
+    public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
+        setGamePiecePos(row, col, gamePiece);
+        getRenderables().add(gamePiece);
+    }
+
     public void replacePos(int row, int col, Renderable newRenderable) {
         if (newRenderable.getBounds().getWidth() != PLOT_WIDTH
             || newRenderable.getBounds().getHeight() != PLOT_HEIGHT) throw new IllegalArgumentException("Renderable must be in PLOT size");

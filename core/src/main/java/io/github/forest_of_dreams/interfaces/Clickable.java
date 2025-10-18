@@ -18,6 +18,7 @@ public interface Clickable extends CustomBox {
         return null; // clickableEffectData
     };
     default void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
+        // if (this.onClick == null) return;
         // onClick.run(interactionEntities);
     };
 

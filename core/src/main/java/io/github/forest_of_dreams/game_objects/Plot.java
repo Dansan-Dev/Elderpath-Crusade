@@ -93,6 +93,7 @@ public class Plot extends HigherOrderTexture implements Clickable {
 
     @Override
     public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
+        if (this.onClick == null) return;
         onClick.run(interactionEntities);
     }
 }

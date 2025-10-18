@@ -13,7 +13,6 @@ import java.util.List;
  * The representation of a room in the game
  */
 public abstract class Room {
-    private Board board;
     @Getter private List<Renderable> contents;
     @Getter private List<UIRenderable> ui;
 

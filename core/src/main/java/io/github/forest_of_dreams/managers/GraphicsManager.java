@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
+import io.github.forest_of_dreams.data_objects.GamePiece;
+import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.game_objects.TextureObject;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
@@ -155,6 +157,9 @@ public class GraphicsManager {
 
     public static void sendClickables(HigherOrderTexture texture) {
         texture.getRenderables().forEach(r -> {
+            if (r instanceof GamePiece gamePiece) {
+                System.out.println("GAMEPIECE ADDED TO CLICKABLES");
+            }
             if (r instanceof Clickable clickable) {
                 InteractionManager.addClickable(clickable);
             }
