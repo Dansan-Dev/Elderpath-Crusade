@@ -18,15 +18,15 @@ import java.util.List;
 public class PauseMenuHint extends AbstractTexture implements UIRenderable {
 //    private final LabelStyle style;
 //    private final Label text;
-    private final Text text;
+    public final Text text;
 
-    public PauseMenuHint() {
+    public PauseMenuHint(int x, int y) {
         // Using Silkscreen font; FontManager normalizes glyph RGB to white at load time
         // so tinting works correctly.
         text = new Text(
             "ESC",
             FontType.SILKSCREEN,
-            20, SettingsManager.screenSize.getScreenHeight() - 30,
+            x, y,
             0,
             Color.WHITE
         ).withFontSize(12);

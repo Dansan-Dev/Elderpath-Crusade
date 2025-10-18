@@ -7,10 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
-import io.github.forest_of_dreams.interfaces.Clickable;
-import io.github.forest_of_dreams.interfaces.CustomBox;
-import io.github.forest_of_dreams.interfaces.OnClick;
-import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.interfaces.*;
 import io.github.forest_of_dreams.managers.FontManager;
 import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
@@ -21,7 +18,7 @@ import lombok.Setter;
 import java.util.HashMap;
 import java.util.List;
 
-public class Text extends AbstractTexture implements Renderable, Clickable {
+public class Text extends AbstractTexture implements Renderable, UIRenderable, Clickable {
     @Getter @Setter private String text;
     @Getter @Setter private FontType fontType;
     private int z;
@@ -148,6 +145,23 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     public boolean isPauseUIElement() { return pauseUIElement; }
 
     @Override
+    public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
+        this.onClick = onClick;
+        this.clickableEffectData = effectData;
+    }
+
+    @Override
+    public ClickableEffectData getClickableEffectData() {
+        return clickableEffectData;
+    }
+
+    @Override
+    public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
+        if (this.onClick == null) return;
+        this.onClick.run(interactionEntities);
+    }
+
+    @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         if (zLevel != z) return;
         if (isPaused) return;
@@ -178,20 +192,13 @@ public class Text extends AbstractTexture implements Renderable, Clickable {
     }
 
     @Override
-    public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
-        this.onClick = onClick;
-        this.clickableEffectData = effectData;
+    public void renderUI(SpriteBatch batch, boolean isPaused) {
+        render(batch, z, isPaused);
     }
 
     @Override
-    public ClickableEffectData getClickableEffectData() {
-        return clickableEffectData;
-    }
-
-    @Override
-    public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
-        if (this.onClick == null) return;
-        this.onClick.run(interactionEntities);
+    public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
+        render(batch, z, isPaused, x, y);
     }
 
 //    public void onClick() {

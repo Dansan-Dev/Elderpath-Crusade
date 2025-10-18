@@ -1,17 +1,27 @@
 package io.github.forest_of_dreams.rooms;
 
+import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.characters.pieces.monster.WarpMage;
 import io.github.forest_of_dreams.characters.pieces.monster.Wolf;
 import io.github.forest_of_dreams.characters.pieces.tiles.MountainTile;
+import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.Text;
+import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.game_objects.Plot;
+import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.ui_objects.PauseMenuHint;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 public class DemoRoom extends Room {
     private final Board board;
+    private final UIRenderable pauseMenuHint;
+    private final Supplier<int[]> pauseMenuPos = () -> new int[]{20, SettingsManager.screenSize.getScreenHeight() - 40};
     private final int plot_width = 40;
     private final int plot_height = 40;
 
@@ -35,7 +45,11 @@ public class DemoRoom extends Room {
         board.addGamePieceToPos(1, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
 
         addContent(board);
-        addUI(new PauseMenuHint());
+
+        int[] pauseMenuPos = this.pauseMenuPos.get();
+        pauseMenuHint = new Text("ESC", FontType.SILKSCREEN, pauseMenuPos[0], pauseMenuPos[1], 1, Color.WHITE)
+            .withFontSize(16);
+        addUI(pauseMenuHint);
 
         int[] board_size = board.getPixelSize();
         layoutBoard(board_size[0], board_size[1]);
@@ -54,6 +68,10 @@ public class DemoRoom extends Room {
         int boardPixelWidth = plot_width * 5;
         int boardPixelHeight = plot_height * 7;
         layoutBoard(boardPixelWidth, boardPixelHeight);
+
+        int[] pauseMenuPos = this.pauseMenuPos.get();
+        pauseMenuHint.getBounds().setX(pauseMenuPos[0]);
+        pauseMenuHint.getBounds().setY(pauseMenuPos[1]);
     }
 
     public static DemoRoom get() {
