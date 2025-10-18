@@ -1,6 +1,6 @@
 package io.github.forest_of_dreams.rooms;
 
-import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Button;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
@@ -17,22 +17,22 @@ public class SettingsRoom extends Room {
     private SettingsRoom() {
         super();
 
-        header = new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+        header = new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(24f);
         addContent(header);
 
-        toggleFullscreen = Button.fromColor(Color.valueOf("#81cce3"), "Toggle Fullscreen", FontType.SILKSCREEN, 10, 0, 0, 200, 60, 0)
+        toggleFullscreen = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Toggle Fullscreen", FontType.SILKSCREEN, 10, 0, 0, 200, 60, 0)
             .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
-            .withHoverColor(Color.valueOf("#b3d8e3"))
-            .withBorderColor(Color.GRAY)
-            .withHoverBorderColor(Color.WHITE);
+            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
         addContent(toggleFullscreen);
 
-        backButton = Button.fromColor(Color.valueOf("#81cce3"), "Back", FontType.SILKSCREEN, 10, 0, 0, 120, 60, 0)
+        backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, 10, 0, 0, 120, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(MainMenuRoom.get()), ClickableEffectData.getImmediate())
-            .withHoverColor(Color.valueOf("#b3d8e3"))
-            .withBorderColor(Color.GRAY)
-            .withHoverBorderColor(Color.WHITE);
+            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
         addContent(backButton);
 
         layoutContents();

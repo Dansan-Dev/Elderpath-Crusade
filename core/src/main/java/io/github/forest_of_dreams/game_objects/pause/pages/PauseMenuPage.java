@@ -1,7 +1,7 @@
 package io.github.forest_of_dreams.game_objects.pause.pages;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.data_objects.TextList;
@@ -25,7 +25,7 @@ public class PauseMenuPage extends HigherOrderTexture {
         0,
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
-        Color.WHITE
+        ColorSettings.TEXT_DEFAULT.getColor()
     ).withFontSize(36).asPauseUI();
     private final TextList options = new TextList();
 
@@ -37,28 +37,28 @@ public class PauseMenuPage extends HigherOrderTexture {
 
     private void addOptions() {
         options.addText(
-            new Text("Resume", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            new Text("Resume", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(16)
-                .withHoverColor(Color.YELLOW)
-                .withClickColor(Color.BLUE)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> GameManager.unpause(), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );
 
         options.addText(
-            new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(16)
-                .withHoverColor(Color.YELLOW)
-                .withClickColor(Color.BLUE)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.SETTINGS), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );
 
         options.addText(
-            new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(16)
-                .withHoverColor(Color.YELLOW)
-                .withClickColor(Color.BLUE)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick(
                     (e) -> {
                         Game.gotoRoom(MainMenuRoom.get());
@@ -70,10 +70,10 @@ public class PauseMenuPage extends HigherOrderTexture {
         );
 
         options.addText(
-            new Text("Exit", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            new Text("Exit", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(16)
-                .withHoverColor(Color.YELLOW)
-                .withClickColor(Color.BLUE)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );

@@ -1,7 +1,7 @@
 package io.github.forest_of_dreams.game_objects;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.GamePiece;
@@ -68,8 +68,8 @@ public class Board extends HigherOrderTexture {
         for(int row = 0; row < 7; row++) {
             for(int col = 0; col < 5; col++) {
                 Plot plot = new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT);
-                if (row == 0) plot.withPlotColor(Color.BLUE);
-                if (row == 6) plot.withPlotColor(Color.RED);
+                if (row == 0) plot.withPlotColor(ColorSettings.PLOT_PLAYER_1_ROW.getColor());
+                if (row == 6) plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
                 int r = row;
                 int c = col;
                 plot.setClickableEffect(

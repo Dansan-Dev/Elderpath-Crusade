@@ -1,6 +1,6 @@
 package io.github.forest_of_dreams.game_objects.pause.pages;
 
-import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.data_objects.TextList;
@@ -17,7 +17,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
         0,
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
-        Color.WHITE
+        ColorSettings.TEXT_DEFAULT.getColor()
     ).withFontSize(36).asPauseUI();
     private final TextList options = new TextList();
 
@@ -29,19 +29,19 @@ public class PauseSettingsPage extends HigherOrderTexture {
 
     private void addOptions() {
         options.addText(
-            new Text("Toggle Fullscreen", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            new Text("Toggle Fullscreen", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(16)
-                .withHoverColor(Color.YELLOW)
-                .withClickColor(Color.BLUE)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );
 
         options.addText(
-            new Text("Back", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            new Text("Back", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(16)
-                .withHoverColor(Color.YELLOW)
-                .withClickColor(Color.BLUE)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.MENU), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );

@@ -2,11 +2,11 @@ package io.github.forest_of_dreams.game_objects;
 import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
+import io.github.forest_of_dreams.utils.ColorSettings;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +26,12 @@ public class Plot extends HigherOrderTexture implements Clickable {
     private ClickableEffectData clickableEffectData = null;
 
     public Plot(int x, int y, int width, int height) {
-        plot = new TextureObject(Color.valueOf("#32943a"), 0, 0, width, height);
+        plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);
         Color hoverColor = plot.getColor().cpy().lerp(Color.BLACK, 0.5f);
         Color clickColor = plot.getColor().cpy().lerp(Color.WHITE, 0.5f);
         plot.setHoverColor(hoverColor);
         plot.setClickColor(clickColor);
-        plotDirt = new TextureObject(Color.valueOf("#473101"), 0, -(height/2), width, height/2);
+        plotDirt = new TextureObject(ColorSettings.PLOT_DIRT_BROWN.getColor(), 0, -(height/2), width, height/2);
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
         plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());

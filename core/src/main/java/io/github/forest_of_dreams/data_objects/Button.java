@@ -4,10 +4,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.utils.ColorSettings;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.*;
-import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import java.util.List;
 public class Button extends AbstractTexture implements Renderable, Clickable, UIRenderable {
     @Getter @Setter private String text;
     @Getter @Setter private FontType fontType;
-    @Getter @Setter private Color textColor = Color.WHITE;
+    @Getter @Setter private Color textColor = ColorSettings.TEXT_DEFAULT.getColor();
     @Getter @Setter private int z;
 
     // Background options (only one should be used)

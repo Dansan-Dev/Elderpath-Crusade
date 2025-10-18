@@ -7,11 +7,11 @@ import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
-import lombok.NoArgsConstructor;
+import io.github.forest_of_dreams.utils.ColorSettings;
 
 public class BoardIdentifierSymbol extends Text implements UIRenderable {
-    private static final Color ROW_COLOR = Color.ORANGE;
-    private static final Color COLUMN_COLOR = Color.YELLOW;
+    private static final Color ROW_COLOR = ColorSettings.BOARD_IDENTIFIER_SYMBOL_ROW.getColor();
+    private static final Color COLUMN_COLOR = ColorSettings.BOARD_IDENTIFIER_SYMBOL_COL.getColor();
 
     public BoardIdentifierSymbol(String text, int x, int y, GRID_DIRECTION direction, boolean isCentered) {
         super(
