@@ -37,14 +37,6 @@ public abstract class Room {
         ui.forEach(GraphicsManager::addUIRenderable);
     }
 
-    public void hideContent() {
-        GraphicsManager.clearRenderables();
-    }
-
-    public void hideUI() {
-        GraphicsManager.clearUIRenderables();
-    }
-
     /**
      * Called when the screen size changes (e.g., toggling fullscreen) so the room can
      * recalculate positions/sizes of its contents.

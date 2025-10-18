@@ -10,12 +10,14 @@ public class Game {
         gotoRoom(MainMenuRoom.get());
     }
 
-    public static void gotoRoom(Room room) {
-        if (currentRoom != null) {
-            currentRoom.hideContent();
-            currentRoom.hideUI();
-        }
+    public static void clearRoom() {
+        GraphicsManager.clearRenderables();
+        GraphicsManager.clearUIRenderables();
+        InteractionManager.clearClickables();
+    }
 
+    public static void gotoRoom(Room room) {
+        clearRoom();
         currentRoom = room;
 
         currentRoom.showContent();
