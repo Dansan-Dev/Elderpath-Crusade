@@ -4,30 +4,37 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
+import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.ui_objects.BoardIdentifierSymbol;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class Board extends HigherOrderTexture {
-    private final int ROWS = 7;
-    private final int COLS = 5;
+    private final int ROWS;
+    private final int COLS;
     @Getter private final int PLOT_WIDTH;
     @Getter private final int PLOT_HEIGHT;
-    private Renderable[][] board;
-    private GamePiece [][] gamePieces;
-    private BoardIdentifierSymbol[] rowIdentifierSymbols = new BoardIdentifierSymbol[ROWS];
-    private BoardIdentifierSymbol[] colIdentifierSymbols = new BoardIdentifierSymbol[COLS];
+    private final Renderable[][] board;
+    private final GamePiece [][] gamePieces;
+    private final BoardIdentifierSymbol[] rowIdentifierSymbols;
+    private final BoardIdentifierSymbol[] colIdentifierSymbols;
 
-    public Board(int x, int y, int plot_width, int plot_height) {
+    public Board(int x, int y, int plot_width, int plot_height, int rows, int cols) {
+        ROWS = rows;
+        COLS = cols;
         PLOT_WIDTH = plot_width;
         PLOT_HEIGHT = plot_height;
-        setBounds(new Box(x, y, PLOT_WIDTH*COLS, PLOT_HEIGHT*ROWS));
+        rowIdentifierSymbols = new BoardIdentifierSymbol[ROWS];
+        colIdentifierSymbols = new BoardIdentifierSymbol[COLS];
         board = new Renderable[ROWS][COLS];
         gamePieces = new GamePiece[ROWS][COLS];
+        setBounds(new Box(x, y, PLOT_WIDTH*COLS, PLOT_HEIGHT*ROWS));
+
         Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
@@ -36,6 +43,34 @@ public class Board extends HigherOrderTexture {
             }
         }
         setBoardIdentifierSymbols();
+    }
+
+    public class Position {
+        private final Board board;
+        @Getter @Setter private int row;
+        @Getter @Setter private int col;
+
+        public Position(Board board, int row, int col) {
+            this.board = board;
+            this.row = row;
+            this.col = col;
+        }
+
+        public boolean isValid(int row, int col) {
+            return row >= 0 && row < board.ROWS && col >= 0 && col < COLS;
+        }
+    }
+
+    public void initializePlots() {
+        for(int row = 0; row < 7; row++) {
+            for(int col = 0; col < 5; col++) {
+                replacePos(row, col, new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT));
+            }
+        }
+    }
+
+    public int[] getPixelSize() {
+        return new int[]{PLOT_WIDTH*COLS, PLOT_HEIGHT*ROWS};
     }
 
     private char toLetter(int n) {
@@ -77,7 +112,7 @@ public class Board extends HigherOrderTexture {
 
     public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
         setGamePiecePos(row, col, gamePiece);
-        getRenderables().add(gamePiece);
+        gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
     }
 
     public void replacePos(int row, int col, Renderable newRenderable) {
