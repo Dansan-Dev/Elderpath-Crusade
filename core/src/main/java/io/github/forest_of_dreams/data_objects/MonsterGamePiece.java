@@ -58,7 +58,18 @@ public class MonsterGamePiece extends GamePiece {
         if (!(board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp)) return;
         System.out.println("[BEFORE] mgp.stats.getCurrentHealth() = " + mgp.stats.getCurrentHealth());
         mgp.stats.dealDamage(stats.getDamage());
+        if (mgp.stats.getCurrentHealth()<=0) mgp.die();
         System.out.println("[AFTER] mgp.stats.getCurrentHealth() = " + mgp.stats.getCurrentHealth());
+    }
+
+    public void die() {
+        Optional<BoardContext> context = getBoardContext();
+        if (context.isEmpty()) return;
+
+        BoardContext ctx = context.get();
+        Board.Position pos = ctx.position;
+        Board board = ctx.board;
+        board.removeGamePieceAtPos(pos.getRow(), pos.getCol());
     }
 
     private Optional<BoardContext> getBoardContext() {

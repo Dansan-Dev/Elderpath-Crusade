@@ -112,10 +112,14 @@ public class Board extends HigherOrderTexture {
         return gamePieces[row][col];
     }
 
-    public void removePos(int row, int col) {
+    public void removePlotAtPos(int row, int col) {
         Renderable renderable = board[row][col];
         getRenderables().remove(renderable);
         board[row][col] = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
+    }
+
+    public void removeGamePieceAtPos(int row, int col) {
+        setGamePiecePos(row, col, null);
     }
 
     public void setGamePiecePos(int row, int col, GamePiece gamePiece) {
