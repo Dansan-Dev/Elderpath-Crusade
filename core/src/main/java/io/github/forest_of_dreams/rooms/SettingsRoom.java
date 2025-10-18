@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.rooms;
 
 import io.github.forest_of_dreams.utils.ColorSettings;
+import io.github.forest_of_dreams.utils.FontSize;
 import io.github.forest_of_dreams.data_objects.Button;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
@@ -18,17 +19,17 @@ public class SettingsRoom extends Room {
         super();
 
         header = new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-            .withFontSize(24f);
+            .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
-        toggleFullscreen = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Toggle Fullscreen", FontType.SILKSCREEN, 10, 0, 0, 200, 60, 0)
+        toggleFullscreen = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Toggle Fullscreen", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 200, 60, 0)
             .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
         addContent(toggleFullscreen);
 
-        backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, 10, 0, 0, 120, 60, 0)
+        backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(MainMenuRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())

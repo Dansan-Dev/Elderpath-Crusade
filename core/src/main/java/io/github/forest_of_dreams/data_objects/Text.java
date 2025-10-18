@@ -81,6 +81,11 @@ public class Text extends AbstractTexture implements Renderable, UIRenderable, C
         return this;
     }
 
+    // Convenience overload to use standardized enum
+    public Text withFontSize(io.github.forest_of_dreams.utils.FontSize size) {
+        return withFontSize(size.getSize());
+    }
+
     public void update() {
         style = FontManager.getLabelStyle(fontType);
         label = new Label(text, style);

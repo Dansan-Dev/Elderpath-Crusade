@@ -18,7 +18,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
         SettingsManager.screenSize.getScreenHeight() - 200,
         0,
         ColorSettings.TEXT_DEFAULT.getColor()
-    ).withFontSize(36).asPauseUI();
+    ).withFontSize(io.github.forest_of_dreams.utils.FontSize.TITLE_LARGE).asPauseUI();
     private final TextList options = new TextList();
 
     public PauseSettingsPage() {
@@ -30,7 +30,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
     private void addOptions() {
         options.addText(
             new Text("Toggle Fullscreen", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-                .withFontSize(16)
+                .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_MEDIUM)
                 .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
@@ -39,7 +39,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
 
         options.addText(
             new Text("Back", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-                .withFontSize(16)
+                .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_MEDIUM)
                 .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick((e) -> PauseScreen.setCurrentPage(PauseScreenPage.MENU), ClickableEffectData.getImmediate())

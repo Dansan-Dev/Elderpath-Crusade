@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.rooms.main_menu;
 
 import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.utils.ColorSettings;
+import io.github.forest_of_dreams.utils.FontSize;
 import io.github.forest_of_dreams.path_loaders.ImagePathBackgroundAndUI;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.Button;
@@ -43,19 +44,19 @@ public class MainMenuNavbar extends HigherOrderUI {
         );
 
         // Build buttons
-        playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+        playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(DemoRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+        settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
             .withOnClick((e) -> Game.gotoRoom(SettingsRoom.get()), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, 10, 0, 0, 100, 60, 0)
+        exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
             .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())

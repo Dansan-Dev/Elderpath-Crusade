@@ -48,7 +48,7 @@ public class MainMenuRoom extends Room {
 
         // Title remains as content
         title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
-            .withFontSize(18f);
+            .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_LARGE);
         addContent(title);
 
         // Initial layout

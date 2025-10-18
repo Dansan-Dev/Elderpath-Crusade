@@ -49,7 +49,7 @@ public class DemoRoom extends Room {
 
         int[] pauseMenuPos = this.pauseMenuPos.get();
         pauseMenuHint = new Text("ESC", FontType.SILKSCREEN, pauseMenuPos[0], pauseMenuPos[1], 1, Color.WHITE)
-            .withFontSize(16);
+            .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_MEDIUM);
         addUI(pauseMenuHint);
 
         int[] board_size = board.getPixelSize();

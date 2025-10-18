@@ -29,7 +29,7 @@ public class PauseMenuHint extends AbstractTexture implements UIRenderable {
             x, y,
             0,
             Color.WHITE
-        ).withFontSize(12);
+        ).withFontSize(io.github.forest_of_dreams.utils.FontSize.CAPTION);
 //        Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
 //        style = skin.get("window", LabelStyle.class);
 //        text = new Label("ESC", style);
