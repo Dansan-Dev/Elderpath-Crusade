@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.rooms.main_menu;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.path_loaders.ImagePathBackgroundAndUI;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.Button;
 import io.github.forest_of_dreams.data_objects.ButtonList;
@@ -33,7 +34,7 @@ public class MainMenuNavbar extends HigherOrderUI {
         navbarBg.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
-                "images/home_navbar.png",
+                ImagePathBackgroundAndUI.HOME_NAVBAR.getPath(),
                 0, 0,
                 NAVBAR_IMAGE_SIZE[0], NAVBAR_IMAGE_SIZE[1],
                 NAVBAR_IMAGE_SIZE[0] / 3, NAVBAR_IMAGE_SIZE[1] / 3

@@ -1,5 +1,6 @@
 package io.github.forest_of_dreams.characters.sprites.monster_sprites;
 
+import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.game_objects.CharacterSprite;
 
 public class GoblinSprite extends CharacterSprite {
@@ -11,7 +12,7 @@ public class GoblinSprite extends CharacterSprite {
     private void initializeAnimations() {
         makeAnimationOfSpriteSheetRow(
             "walk",
-            "images/gobu_walk.png",
+            ImagePathSpritesAndAnimations.GOBU_WALK.getPath(),
             6,
             0, 0,
             32, 32,
@@ -20,7 +21,7 @@ public class GoblinSprite extends CharacterSprite {
 
         makeAnimationOfSpriteSheetRow(
             "hurt",
-            "images/gobu_hurt.png",
+            ImagePathSpritesAndAnimations.GOBU_HURT.getPath(),
             6,
             0, 0,
             32, 32,

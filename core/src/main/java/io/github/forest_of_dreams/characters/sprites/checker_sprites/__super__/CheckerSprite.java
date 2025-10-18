@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
@@ -16,8 +17,8 @@ public abstract class CheckerSprite extends CharacterSprite {
 
     private void initializeImage(AlignmentColor color) {
         String path = switch (color) {
-            case RED -> "images/red_checker.png";
-            case BLUE -> "images/blue_checker.png";
+            case RED -> ImagePathSpritesAndAnimations.RED_CHECKER.getPath();
+            case BLUE -> ImagePathSpritesAndAnimations.BLUE_CHECKER.getPath();
         };
         int[] size = {468, 479};
         makeAnimationOfSpriteSheetRow(

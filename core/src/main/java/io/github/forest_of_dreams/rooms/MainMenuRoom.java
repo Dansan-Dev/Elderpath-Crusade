@@ -1,15 +1,12 @@
 package io.github.forest_of_dreams.rooms;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.Gdx;
+import io.github.forest_of_dreams.path_loaders.ImagePathBackgroundAndUI;
 import io.github.forest_of_dreams.data_objects.Box;
-import io.github.forest_of_dreams.data_objects.Button;
-import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
-import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.rooms.main_menu.MainMenuNavbar;
 import io.github.forest_of_dreams.supers.Room;
@@ -36,7 +33,7 @@ public class MainMenuRoom extends Room {
         background.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
-                "images/home_screen_background.png",
+                ImagePathBackgroundAndUI.HOME_BACKGROUND.getPath(),
                 0, 0,
                 backgroundSize[0], backgroundSize[1],
                 screen_width, screen_height
