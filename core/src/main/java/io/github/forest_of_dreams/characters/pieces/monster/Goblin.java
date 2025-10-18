@@ -3,12 +3,13 @@ package io.github.forest_of_dreams.characters.pieces.monster;
 import io.github.forest_of_dreams.characters.sprites.monster_sprites.GoblinSprite;
 import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.data_objects.GamePieceStats;
+import io.github.forest_of_dreams.data_objects.MonsterGamePiece;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 
 import java.util.UUID;
 
-public class Goblin extends GamePiece {
+public class Goblin extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
         return GamePieceStats.getMonsterStats(2, 1, 2, 1, 1);
     }

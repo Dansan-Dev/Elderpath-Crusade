@@ -4,14 +4,21 @@ import io.github.forest_of_dreams.characters.sprites.checker_sprites.WarpMageSpr
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__.CheckerSprite;
 import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.data_objects.GamePieceStats;
+import io.github.forest_of_dreams.data_objects.MonsterGamePiece;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 
 import java.util.UUID;
 
-public class WarpMage extends GamePiece {
+public class WarpMage extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
-        return GamePieceStats.getMonsterStats(0, 1, 0, 1, 2);
+        return GamePieceStats.getMonsterStats(
+            0,
+            1,
+            0,
+            1,
+            2
+        );
     }
 
     public WarpMage(GamePieceStats stats, int x, int y, int width, int height, PieceAlignment alignment) {

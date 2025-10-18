@@ -4,14 +4,21 @@ import io.github.forest_of_dreams.characters.sprites.checker_sprites.WolfSprite;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__.CheckerSprite;
 import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.data_objects.GamePieceStats;
+import io.github.forest_of_dreams.data_objects.MonsterGamePiece;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 
 import java.util.UUID;
 
-public class Wolf extends GamePiece {
+public class Wolf extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
-        return GamePieceStats.getMonsterStats(1, 1, 1, 1, 1);
+        return GamePieceStats.getMonsterStats(
+            1,
+            1,
+            1,
+            1,
+            1
+        );
     }
 
     public Wolf(GamePieceStats stats, int x, int y, int width, int height, PieceAlignment alignment) {

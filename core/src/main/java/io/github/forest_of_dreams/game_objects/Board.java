@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.data_objects.GamePiece;
+import io.github.forest_of_dreams.data_objects.MonsterGamePiece;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.interfaces.Renderable;
@@ -72,8 +73,8 @@ public class Board extends HigherOrderTexture {
                     (e) -> {
                         System.out.println("Clicked on plot");
                         GamePiece gp = gamePieces[r][c];
-                        if (gp != null) {
-                            gp.moveUpOne();
+                        if (gp instanceof MonsterGamePiece mgp) {
+                            mgp.moveUpOne();
                         }
                     },
                     ClickableEffectData.getImmediate()
@@ -150,12 +151,11 @@ public class Board extends HigherOrderTexture {
         getRenderables().add(newRenderable);
 
         // If this is a Plot, bind its click to the GamePiece occupying this cell
-        if (newRenderable instanceof Plot) {
-            Plot plot = (Plot) newRenderable;
+        if (newRenderable instanceof Plot plot) {
             plot.setClickableEffect(
                 (e) -> {
                     GamePiece gp = gamePieces[row][col];
-                    if (gp != null) gp.moveUpOne();
+                    if (gp instanceof MonsterGamePiece mgp) mgp.moveUpOne();
                 },
                 ClickableEffectData.getImmediate()
             );
