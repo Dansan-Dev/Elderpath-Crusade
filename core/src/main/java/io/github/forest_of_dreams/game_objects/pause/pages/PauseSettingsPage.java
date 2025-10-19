@@ -9,6 +9,7 @@ import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
+import io.github.forest_of_dreams.utils.MenuLayout;
 
 public class PauseSettingsPage extends HigherOrderTexture {
     private final Text header = new Text(
@@ -50,13 +51,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
     }
 
     public void layout() {
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
-
-        header.getBounds().setX((int)(screenCenter[0] - (header.getLabel().getWidth() / 2)));
-        header.getBounds().setY(screenHeight - 100);
-        header.update();
-
-        options.alignTextAcrossYAxis(50, screenCenter[0], screenCenter[1]);
+        // Centralized layout for header and options
+        MenuLayout.layoutHeaderAndOptions(header, options, 50, 100);
     }
 }

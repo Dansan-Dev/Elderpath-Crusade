@@ -13,6 +13,7 @@ import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.rooms.MainMenuRoom;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
+import io.github.forest_of_dreams.utils.MenuLayout;
 
 public class PauseMenuPage extends HigherOrderTexture {
     public static PauseMenuPage get() {
@@ -82,16 +83,7 @@ public class PauseMenuPage extends HigherOrderTexture {
     }
 
     public void update() {
-        int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
-        int screenCenterY = SettingsManager.screenSize.getScreenCenter()[1];
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
-
-        // Header
-        header.getBounds().setX((int)(screenCenterX - (header.getLabel().getWidth() / 2)));
-        header.getBounds().setY(screenHeight - 100);
-        header.update();
-
-        // Options
-        options.alignTextAcrossYAxis(50, screenCenterX, screenCenterY);
+        // Centralized layout for header and options
+        MenuLayout.layoutHeaderAndOptions(header, options, 50, 100);
     }
 }
