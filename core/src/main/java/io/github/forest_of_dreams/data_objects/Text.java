@@ -183,7 +183,7 @@ public class Text extends AbstractTexture implements Renderable, UIRenderable, C
         label.setPosition(x, y);
         if (isHovered(x, y)) {
             if (hoverColor != null) label.setColor(hoverColor);
-            if (isClicked() && clickColor != null) label.setColor(hoverColor);
+            if (isClicked() && clickColor != null) label.setColor(clickColor);
         }
         label.draw(batch, 1);
         label.setColor(color);

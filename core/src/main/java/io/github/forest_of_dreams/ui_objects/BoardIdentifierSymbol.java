@@ -34,13 +34,4 @@ public class BoardIdentifierSymbol extends Text implements UIRenderable {
         }
     }
 
-    @Override
-    public void renderUI(SpriteBatch batch, boolean isPaused) {
-
-    }
-
-    @Override
-    public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
-
-    }
 }

@@ -65,16 +65,15 @@ public class Board extends HigherOrderTexture {
     }
 
     public void initializePlots() {
-        for(int row = 0; row < 7; row++) {
-            for(int col = 0; col < 5; col++) {
+        for(int row = 0; row < ROWS; row++) {
+            for(int col = 0; col < COLS; col++) {
                 Plot plot = new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT);
                 if (row == 0) plot.withPlotColor(ColorSettings.PLOT_PLAYER_1_ROW.getColor());
-                if (row == 6) plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
+                if (row == ROWS - 1) plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
                 int r = row;
                 int c = col;
                 plot.setClickableEffect(
                     (e) -> {
-                        System.out.println("Clicked on plot");
                         GamePiece gp = gamePieces[r][c];
                         if (gp instanceof MonsterGamePiece mgp) {
                             mgp.moveUpOne();
@@ -97,7 +96,9 @@ public class Board extends HigherOrderTexture {
     }
 
     private void checkBoardPosition(int row, int col) {
-        if (row < 0 || row > ROWS || col < 0 || col > COLS) throw new IllegalArgumentException("row and col must be in range [0, 5] and [0, 6]");
+        if (row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+            throw new IllegalArgumentException("row must be in [0, " + (ROWS - 1) + "] and col must be in [0, " + (COLS - 1) + "]");
+        }
     }
 
     public void setBoardIdentifierSymbols() {
