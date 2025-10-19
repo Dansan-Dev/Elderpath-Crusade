@@ -53,6 +53,7 @@ public class Button extends AbstractTexture implements Renderable, Clickable, UI
         this.text = text;
         this.fontType = fontType;
         this.z = z;
+        this.textObj = new Text(text, fontType, x, y, z, textColor);
         setBounds(new Box(x, y, width, height));
         updateText();
         textObj.withFontSize(fontSize);
@@ -102,13 +103,6 @@ public class Button extends AbstractTexture implements Renderable, Clickable, UI
     }
 
     private void updateText() {
-        // Ensure Text object exists and is synced with current text/font
-        if (textObj == null) {
-            textObj = new Text(text, fontType, getBounds().getX(), getBounds().getY(), z, textColor);
-        } else {
-            textObj.setText(text);
-            textObj.setFontType(fontType);
-        }
         // Update to ensure label, size and style are current
         textObj.update();
         centerLabelInBounds();
@@ -187,14 +181,14 @@ public class Button extends AbstractTexture implements Renderable, Clickable, UI
     }
 
     private void drawBackground(SpriteBatch batch) {
-        Box b = getBounds();
-        if (b == null) return;
+        Box bounds = getBounds();
         int xAbs = getX();
         int yAbs = getY();
-        int w = b.getWidth();
-        int h = b.getHeight();
+        int width = bounds.getWidth();
+        int height = bounds.getHeight();
+
         if (backgroundTexture != null) {
-            batch.draw(backgroundTexture, xAbs, yAbs, w, h);
+            batch.draw(backgroundTexture, xAbs, yAbs, width, height);
         } else if (backgroundColor != null) {
             // Determine background color based on hover/click state (click overrides hover)
             Color bg = backgroundColor;
@@ -202,7 +196,7 @@ public class Button extends AbstractTexture implements Renderable, Clickable, UI
             if (hovered && hoverColor != null) bg = hoverColor;
             if (hovered && Gdx.input.isTouched() && clickColor != null) bg = clickColor;
             Texture pixel = GraphicUtils.getPixelTexture(bg);
-            batch.draw(pixel, xAbs, yAbs, w, h);
+            batch.draw(pixel, xAbs, yAbs, width, height);
         }
 
         // Optional border (drawn regardless of background type)
@@ -215,18 +209,16 @@ public class Button extends AbstractTexture implements Renderable, Clickable, UI
         }
         if (activeBorder != null) {
             Texture px = GraphicUtils.getPixelTexture(activeBorder);
-            int x = xAbs;
-            int y = yAbs;
-            int t = 1; // border thickness in pixels
-            if (w > 0 && h > 0) {
+            int thickness = 1; // border thickness in pixels
+            if (width > 0 && height > 0) {
                 // Top
-                batch.draw(px, x, y + h - t, w, t);
+                batch.draw(px, xAbs, yAbs + height - thickness, width, thickness);
                 // Bottom
-                batch.draw(px, x, y, w, t);
+                batch.draw(px, xAbs, yAbs, width, thickness);
                 // Left
-                batch.draw(px, x, y, t, h);
+                batch.draw(px, xAbs, yAbs, thickness, height);
                 // Right
-                batch.draw(px, x + w - t, y, t, h);
+                batch.draw(px, xAbs + width - thickness, yAbs, thickness, height);
             }
         }
 
