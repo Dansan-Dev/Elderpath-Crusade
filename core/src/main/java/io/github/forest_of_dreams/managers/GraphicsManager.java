@@ -21,9 +21,7 @@ import java.util.TreeSet;
 public class GraphicsManager {
     @Getter private static final List<Renderable> renderables = new ArrayList<>();;
     @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
-    // Buckets for renderables by Z level (game graphics only)
-    private static final Map<Integer, List<Renderable>> zBuckets = new HashMap<>();
-    private static final NavigableSet<Integer> zLevels = new TreeSet<>();
+    // Z-ordering managed by ZIndexRegistry (game renderables only)
     @Getter private static boolean isPaused = false;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
@@ -60,8 +58,8 @@ public class GraphicsManager {
     }
 
     private static void renderGameGraphics(SpriteBatch batch) {
-        for (Integer z : zLevels) {
-            List<Renderable> bucket = zBuckets.get(z);
+        for (Integer z : ZIndexRegistry.getZLevels()) {
+            List<Renderable> bucket = ZIndexRegistry.getBucket(z);
             if (bucket == null) continue;
             for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture) {
@@ -75,7 +73,7 @@ public class GraphicsManager {
 
     public static void addRenderable(Renderable renderable) {
         renderables.add(renderable);
-        addToZBuckets(renderable);
+        ZIndexRegistry.add(renderable);
         if (renderable instanceof Clickable clickable) {
             InteractionManager.addClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
@@ -98,7 +96,7 @@ public class GraphicsManager {
 
     public static void removeRenderable(Renderable renderable) {
         renderables.remove(renderable);
-        removeFromZBuckets(renderable);
+        ZIndexRegistry.remove(renderable);
         if (renderable instanceof Clickable clickable) {
             InteractionManager.removeClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
@@ -135,8 +133,7 @@ public class GraphicsManager {
             }
         });
         renderables.clear();
-        zBuckets.clear();
-        zLevels.clear();
+        ZIndexRegistry.clear();
     }
 
     public static void  clearUIRenderables() {
@@ -152,31 +149,9 @@ public class GraphicsManager {
     }
 
 
-    // --- Z bucket management (game renderables only) ---
-    private static void addToZBuckets(Renderable r) {
-        for (Integer z : r.getZs()) {
-            zBuckets.computeIfAbsent(z, k -> new ArrayList<>()).add(r);
-            zLevels.add(z);
-        }
-    }
-
-    private static void removeFromZBuckets(Renderable r) {
-        for (Integer z : r.getZs()) {
-            List<Renderable> list = zBuckets.get(z);
-            if (list != null) {
-                list.remove(r);
-                if (list.isEmpty()) {
-                    zBuckets.remove(z);
-                    zLevels.remove(z);
-                }
-            }
-        }
-    }
-
     public static void notifyZChanged(Renderable r) {
         // Re-index renderable in z buckets when its Z set changes
-        removeFromZBuckets(r);
-        addToZBuckets(r);
+        ZIndexRegistry.notifyZChanged(r);
     }
 
     public static void sendClickables(HigherOrderTexture texture) {
