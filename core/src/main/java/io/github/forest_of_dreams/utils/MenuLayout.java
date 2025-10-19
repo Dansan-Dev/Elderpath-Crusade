@@ -33,4 +33,16 @@ public final class MenuLayout {
         // Align options around vertical center
         options.alignTextAcrossYAxis(spacing, centerX, centerY);
     }
+
+    /**
+     * Centers a header Text at a fixed offset from the top of the screen.
+     * Useful when a screen has a single header without an options list.
+     */
+    public static void centerHeader(Text header, int headerTopOffset) {
+        int centerX = SettingsManager.screenSize.getScreenCenter()[0];
+        int screenHeight = SettingsManager.screenSize.getScreenHeight();
+        header.update();
+        header.getBounds().setX((int) (centerX - (header.getLabel().getWidth() / 2)));
+        header.getBounds().setY(screenHeight - headerTopOffset);
+    }
 }

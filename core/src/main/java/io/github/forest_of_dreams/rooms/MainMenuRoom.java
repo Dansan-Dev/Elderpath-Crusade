@@ -11,6 +11,7 @@ import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.rooms.main_menu.MainMenuNavbar;
 import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.utils.SpriteCreator;
+import io.github.forest_of_dreams.utils.MenuLayout;
 
 import java.util.List;
 
@@ -63,12 +64,8 @@ public class MainMenuRoom extends Room {
         // Background covers full screen
         background.setBounds(new Box(0, 0, screen_width, screen_height));
 
-        // Title position
-        Box titleBox = title.getBounds();
-        // Update label to get correct width/height before centering
-        title.update();
-        titleBox.setX(screen_center[0] - titleBox.getWidth()/2);
-        titleBox.setY(screen_height - titleBox.getHeight() - 120);
+        // Title position via shared helper
+        MenuLayout.centerHeader(title, 120);
 
         // Navbar alignment stays at bottom center with original scale
         int navW = navbarSize[0] / 3;

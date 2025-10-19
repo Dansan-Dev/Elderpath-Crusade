@@ -9,6 +9,7 @@ import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.Room;
+import io.github.forest_of_dreams.utils.MenuLayout;
 
 public class SettingsRoom extends Room {
     private Text header;
@@ -45,10 +46,8 @@ public class SettingsRoom extends Room {
         int screenCenterY = screenCenter[1];
         int screenHeight = SettingsManager.screenSize.getScreenHeight();
 
-        // Header centered at top
-        header.update();
-        header.getBounds().setX((int) (screenCenterX - (header.getLabel().getWidth() / 2)));
-        header.getBounds().setY(screenHeight - 100);
+        // Header centered at top via shared helper
+        MenuLayout.centerHeader(header, 100);
 
         // Buttons centered beneath
         toggleFullscreen.getBounds().setX(screenCenterX - toggleFullscreen.getBounds().getWidth() / 2);
