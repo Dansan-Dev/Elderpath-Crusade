@@ -22,7 +22,7 @@ public class CharacterSprite extends HigherOrderTexture {
     public CharacterSprite(int x, int y, int width, int height) {
         setBounds(new Box(x, y, width, height));
 
-        sprite = new SpriteObject(x, y, width, height, 1, SpriteBoxPos.BOTTOM);
+        sprite = new SpriteObject(x, y, width, height, 2, SpriteBoxPos.BOTTOM);
         setRenderables(List.of(sprite));
     }
 

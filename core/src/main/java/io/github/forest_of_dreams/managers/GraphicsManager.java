@@ -20,13 +20,20 @@ import io.github.forest_of_dreams.supers.HigherOrderUI;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 public class GraphicsManager {
     @Getter private static final List<Renderable> renderables = new ArrayList<>();;
     @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
-    private static int maxZ = 0;
-    private static int minZ = 0;
+    // Buckets for renderables by Z level (game graphics only)
+    private static final Map<Integer, List<Renderable>> zBuckets = new HashMap<>();
+    private static final NavigableSet<Integer> zLevels = new TreeSet<>();
+    private static int maxZ = 0; // kept for backward-compat, no longer used in rendering
+    private static int minZ = 0; // kept for backward-compat, no longer used in rendering
     @Getter private static boolean isPaused = false;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
@@ -63,12 +70,14 @@ public class GraphicsManager {
     }
 
     private static void renderGameGraphics(SpriteBatch batch) {
-        for(int i = minZ; i <= maxZ; i++) {
-            for(Renderable r : renderables) {
+        for (Integer z : zLevels) {
+            List<Renderable> bucket = zBuckets.get(z);
+            if (bucket == null) continue;
+            for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture) {
-                    r.render(batch, i, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
+                    r.render(batch, z, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
                 } else {
-                    r.render(batch, i, isPaused);
+                    r.render(batch, z, isPaused);
                 }
             }
         }
@@ -77,6 +86,7 @@ public class GraphicsManager {
     public static void addRenderable(Renderable renderable) {
         tryMinMaxZBoundary(renderable);
         renderables.add(renderable);
+        addToZBuckets(renderable);
         if (renderable instanceof Clickable clickable) {
             InteractionManager.addClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
@@ -99,8 +109,13 @@ public class GraphicsManager {
 
     public static void removeRenderable(Renderable renderable) {
         renderables.remove(renderable);
-        if (renderable instanceof Clickable clickable)
+        removeFromZBuckets(renderable);
+        if (renderable instanceof Clickable clickable) {
             InteractionManager.removeClickable(clickable);
+        } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
+            // Retract nested clickables that were sent on add
+            retractClickables(higherOrderTexture);
+        }
     }
 
     public static void removeRenderables(List<Renderable> renderables) {
@@ -123,10 +138,16 @@ public class GraphicsManager {
 
     public static void clearRenderables() {
         renderables.forEach(r -> {
-            if (r instanceof Clickable clickable)
+            if (r instanceof Clickable clickable) {
                 InteractionManager.removeClickable(clickable);
+            } else if (r instanceof HigherOrderTexture higherOrderTexture) {
+                // Retract nested clickables for containers
+                retractClickables(higherOrderTexture);
+            }
         });
         renderables.clear();
+        zBuckets.clear();
+        zLevels.clear();
     }
 
     public static void  clearUIRenderables() {
@@ -151,6 +172,33 @@ public class GraphicsManager {
             .orElse(0);
         if(renderableMaxZ > maxZ) maxZ = renderableMaxZ;
         if(renderableMinZ < minZ) minZ = renderableMinZ;
+    }
+
+    // --- Z bucket management (game renderables only) ---
+    private static void addToZBuckets(Renderable r) {
+        for (Integer z : r.getZs()) {
+            zBuckets.computeIfAbsent(z, k -> new ArrayList<>()).add(r);
+            zLevels.add(z);
+        }
+    }
+
+    private static void removeFromZBuckets(Renderable r) {
+        for (Integer z : r.getZs()) {
+            List<Renderable> list = zBuckets.get(z);
+            if (list != null) {
+                list.remove(r);
+                if (list.isEmpty()) {
+                    zBuckets.remove(z);
+                    zLevels.remove(z);
+                }
+            }
+        }
+    }
+
+    public static void notifyZChanged(Renderable r) {
+        // Re-index renderable in z buckets when its Z set changes
+        removeFromZBuckets(r);
+        addToZBuckets(r);
     }
 
     public static void sendClickables(HigherOrderTexture texture) {

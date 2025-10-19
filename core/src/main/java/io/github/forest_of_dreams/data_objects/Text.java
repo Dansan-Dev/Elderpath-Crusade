@@ -135,7 +135,7 @@ public class Text extends AbstractTexture implements Renderable, UIRenderable, C
 
     @Override
     public List<Integer> getZs() {
-        return List.of();
+        return List.of(z);
     }
 
     @Override
