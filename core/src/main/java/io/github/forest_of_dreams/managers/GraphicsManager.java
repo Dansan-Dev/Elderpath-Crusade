@@ -32,8 +32,6 @@ public class GraphicsManager {
     // Buckets for renderables by Z level (game graphics only)
     private static final Map<Integer, List<Renderable>> zBuckets = new HashMap<>();
     private static final NavigableSet<Integer> zLevels = new TreeSet<>();
-    private static int maxZ = 0; // kept for backward-compat, no longer used in rendering
-    private static int minZ = 0; // kept for backward-compat, no longer used in rendering
     @Getter private static boolean isPaused = false;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
@@ -84,7 +82,6 @@ public class GraphicsManager {
     }
 
     public static void addRenderable(Renderable renderable) {
-        tryMinMaxZBoundary(renderable);
         renderables.add(renderable);
         addToZBuckets(renderable);
         if (renderable instanceof Clickable clickable) {
@@ -162,17 +159,6 @@ public class GraphicsManager {
         uiRenderables.clear();
     }
 
-    private static void tryMinMaxZBoundary(Renderable r) {
-        List<Integer> renderableZs = r.getZs();
-        int renderableMaxZ = renderableZs.stream()
-            .max(Integer::compareTo)
-            .orElse(0);
-        int renderableMinZ = renderableZs.stream()
-            .min(Integer::compareTo)
-            .orElse(0);
-        if(renderableMaxZ > maxZ) maxZ = renderableMaxZ;
-        if(renderableMinZ < minZ) minZ = renderableMinZ;
-    }
 
     // --- Z bucket management (game renderables only) ---
     private static void addToZBuckets(Renderable r) {
