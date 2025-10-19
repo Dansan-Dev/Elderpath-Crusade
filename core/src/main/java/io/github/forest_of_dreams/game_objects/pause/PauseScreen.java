@@ -11,6 +11,7 @@ import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.utils.ClickableRegistryUtil;
 import lombok.Getter;
 
 /**
@@ -63,8 +64,8 @@ public class PauseScreen extends AbstractTexture implements UIRenderable {
     }
 
     public static void setCurrentPage(PauseScreenPage page) {
-        if (currentPage!=PauseScreenPage.NONE) GraphicsManager.retractClickables(currentPage.getPage());
+        if (currentPage!=PauseScreenPage.NONE) ClickableRegistryUtil.retractClickables(currentPage.getPage());
         currentPage = page;
-        if (currentPage!=PauseScreenPage.NONE) GraphicsManager.sendClickables(currentPage.getPage());
+        if (currentPage!=PauseScreenPage.NONE) ClickableRegistryUtil.sendClickables(currentPage.getPage());
     }
 }

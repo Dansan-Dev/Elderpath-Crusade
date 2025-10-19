@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.game_objects;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.managers.ZIndexRegistry;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
@@ -85,7 +86,7 @@ public class Board extends HigherOrderTexture {
             }
         }
         // Ensure Board is re-indexed for z-bucket rendering after plots are initialized
-        io.github.forest_of_dreams.managers.GraphicsManager.notifyZChanged(this);
+        ZIndexRegistry.notifyZChanged(this);
     }
 
     public int[] getPixelSize() {
@@ -129,7 +130,7 @@ public class Board extends HigherOrderTexture {
             System.out.println("s.getY() = " + s.getY());
         });
         // Board now contains label Texts at z=0; ensure z-buckets reindex
-        io.github.forest_of_dreams.managers.GraphicsManager.notifyZChanged(this);
+        ZIndexRegistry.notifyZChanged(this);
     }
 
     public Renderable getPlotAtPos(int row, int col) {
@@ -154,7 +155,7 @@ public class Board extends HigherOrderTexture {
         checkBoardPosition(row, col);
         gamePieces[row][col] = gamePiece;
         // A piece sprite affects z coverage; re-index Board
-        io.github.forest_of_dreams.managers.GraphicsManager.notifyZChanged(this);
+        ZIndexRegistry.notifyZChanged(this);
     }
 
     public void moveGamePiece(int currentRow, int currentCol, int newRow, int newCol) {
@@ -195,7 +196,7 @@ public class Board extends HigherOrderTexture {
             );
         }
         // Board's z coverage may have changed; re-index in z-buckets
-        io.github.forest_of_dreams.managers.GraphicsManager.notifyZChanged(this);
+        ZIndexRegistry.notifyZChanged(this);
     }
 
     @Override

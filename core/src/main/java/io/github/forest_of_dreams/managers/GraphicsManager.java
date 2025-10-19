@@ -12,16 +12,13 @@ import io.github.forest_of_dreams.utils.ClickableRegistryUtil;
 import lombok.Getter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+
+// When you update higher order textures, you need to update the ZIndexRegistry as well
 
 public class GraphicsManager {
     @Getter private static final List<Renderable> renderables = new ArrayList<>();;
     @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
-    // Z-ordering managed by ZIndexRegistry (game renderables only)
     @Getter private static boolean isPaused = false;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
@@ -77,7 +74,7 @@ public class GraphicsManager {
         if (renderable instanceof Clickable clickable) {
             InteractionManager.addClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
-            sendClickables(higherOrderTexture);
+            ClickableRegistryUtil.sendClickables(higherOrderTexture);
         }
     }
 
@@ -90,7 +87,7 @@ public class GraphicsManager {
         if (renderable instanceof Clickable clickable) {
             InteractionManager.addClickable(clickable);
         } else if (renderable instanceof HigherOrderUI higherOrderUI) {
-            sendUIClickables(higherOrderUI);
+            ClickableRegistryUtil.sendUIClickables(higherOrderUI);
         }
     }
 
@@ -101,7 +98,7 @@ public class GraphicsManager {
             InteractionManager.removeClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
             // Retract nested clickables that were sent on add
-            retractClickables(higherOrderTexture);
+            ClickableRegistryUtil.retractClickables(higherOrderTexture);
         }
     }
 
@@ -115,7 +112,7 @@ public class GraphicsManager {
             InteractionManager.removeClickable(clickable);
         } else if (renderable instanceof HigherOrderUI higherOrderUI) {
             // Retract nested clickables that were sent on add
-            retractUIClickables(higherOrderUI);
+            ClickableRegistryUtil.retractUIClickables(higherOrderUI);
         }
     }
 
@@ -129,7 +126,7 @@ public class GraphicsManager {
                 InteractionManager.removeClickable(clickable);
             } else if (r instanceof HigherOrderTexture higherOrderTexture) {
                 // Retract nested clickables for containers
-                retractClickables(higherOrderTexture);
+                ClickableRegistryUtil.retractClickables(higherOrderTexture);
             }
         });
         renderables.clear();
@@ -142,32 +139,10 @@ public class GraphicsManager {
                 InteractionManager.removeClickable(clickable);
             } else if (r instanceof HigherOrderUI higherOrderUI) {
                 // Retract nested clickables for UI containers
-                retractUIClickables(higherOrderUI);
+                ClickableRegistryUtil.retractUIClickables(higherOrderUI);
             }
         });
         uiRenderables.clear();
-    }
-
-
-    public static void notifyZChanged(Renderable r) {
-        // Re-index renderable in z buckets when its Z set changes
-        ZIndexRegistry.notifyZChanged(r);
-    }
-
-    public static void sendClickables(HigherOrderTexture texture) {
-        ClickableRegistryUtil.sendClickables(texture);
-    }
-
-    public static void retractClickables(HigherOrderTexture texture) {
-        ClickableRegistryUtil.retractClickables(texture);
-    }
-
-    public static void sendUIClickables(HigherOrderUI ui) {
-        ClickableRegistryUtil.sendUIClickables(ui);
-    }
-
-    public static void retractUIClickables(HigherOrderUI ui) {
-        ClickableRegistryUtil.retractUIClickables(ui);
     }
 
     public static void draw(SpriteBatch batch) {
