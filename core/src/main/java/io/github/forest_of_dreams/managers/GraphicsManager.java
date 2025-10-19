@@ -30,10 +30,6 @@ public class GraphicsManager {
     @Getter private static boolean isPaused = false;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
-    public static void resetBatch() {
-        batch = new SpriteBatch();
-    }
-
     public static void pause() {
         isPaused = true;
         renderables.stream()
@@ -55,7 +51,6 @@ public class GraphicsManager {
     public static void render(SpriteBatch batch) {
         renderGameGraphics(batch);
         renderUI(batch);
-//        if (isPaused) PauseScreen.render(batch, 10, isPaused);
     }
 
     public static void renderUI(SpriteBatch batch) {
@@ -70,8 +65,11 @@ public class GraphicsManager {
     private static void renderGameGraphics(SpriteBatch batch) {
         for(int i = minZ; i <= maxZ; i++) {
             for(Renderable r : renderables) {
-                if (r instanceof HigherOrderTexture) r.render(batch, i, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
-                else r.render(batch, i, isPaused);
+                if (r instanceof HigherOrderTexture) {
+                    r.render(batch, i, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
+                } else {
+                    r.render(batch, i, isPaused);
+                }
             }
         }
     }
