@@ -1,15 +1,6 @@
 package io.github.forest_of_dreams.managers;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.utils.ScreenUtils;
-import io.github.forest_of_dreams.data_objects.GamePiece;
-import io.github.forest_of_dreams.game_objects.Board;
-import io.github.forest_of_dreams.game_objects.TextureObject;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.game_objects.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
@@ -17,6 +8,7 @@ import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.supers.HigherOrderUI;
+import io.github.forest_of_dreams.utils.ClickableRegistryUtil;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -188,98 +180,30 @@ public class GraphicsManager {
     }
 
     public static void sendClickables(HigherOrderTexture texture) {
-        texture.getRenderables().forEach(r -> {
-            if (r instanceof GamePiece gamePiece) {
-                System.out.println("GAMEPIECE ADDED TO CLICKABLES");
-            }
-            if (r instanceof Clickable clickable) {
-                InteractionManager.addClickable(clickable);
-            }
-            else if (r instanceof HigherOrderTexture higherOrderTexture) sendClickables(higherOrderTexture);
-        });
+        ClickableRegistryUtil.sendClickables(texture);
     }
 
     public static void retractClickables(HigherOrderTexture texture) {
-        texture.getRenderables().forEach(r -> {
-            if (r instanceof Clickable clickable) InteractionManager.removeClickable(clickable);
-            else if (r instanceof HigherOrderTexture higherOrderTexture) retractClickables(higherOrderTexture);
-        });
+        ClickableRegistryUtil.retractClickables(texture);
     }
 
     public static void sendUIClickables(HigherOrderUI ui) {
-        ui.getRenderableUIs().forEach(r -> {
-            if (r instanceof Clickable clickable) InteractionManager.addClickable(clickable);
-            else if (r instanceof HigherOrderUI higherOrderUI) sendUIClickables(higherOrderUI);
-        });
+        ClickableRegistryUtil.sendUIClickables(ui);
     }
 
     public static void retractUIClickables(HigherOrderUI ui) {
-        ui.getRenderableUIs().forEach(r -> {
-            if (r instanceof Clickable clickable) InteractionManager.removeClickable(clickable);
-            else if (r instanceof HigherOrderUI higherOrderUI) retractUIClickables(higherOrderUI);
-        });
+        ClickableRegistryUtil.retractUIClickables(ui);
     }
 
     public static void draw(SpriteBatch batch) {
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.setProjectionMatrix(SettingsManager.screenSize.getViewport().getCamera().combined);
-        batch.begin();
-        batch.setShader(null);
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        GraphicsManager.render(batch);
-        batch.end();
+        RenderPipeline.draw(batch);
     }
 
     public static void blurredDraw(SpriteBatch batch) {
-        ShaderProgram blurShader = ShaderManager.getBlurShader();
-        FrameBuffer fboA = ShaderManager.getFboA();
-        FrameBuffer fboB = ShaderManager.getFboB();
-
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
-
-        // First pass - capture the scene into fboA
-        fboA.begin();
-        draw(batch);
-        fboA.end();
-
-        // Prepare projection for post-process passes
-        batch.setProjectionMatrix(SettingsManager.screenSize.getViewport().getCamera().combined);
-
-        // Horizontal blur into fboB
-        fboB.begin();
-        batch.begin();
-        batch.setShader(blurShader);
-        blurShader.setUniformf("u_blurSize", 1f / (float) screenW);
-        blurShader.setUniformf("u_direction", 1f, 0f);
-        // Flip Y when drawing FrameBuffer texture
-        batch.draw(
-            fboA.getColorBufferTexture(),
-            0, 0,
-            screenW, screenH,
-            0f, 1f, 1f, 0f
-        );
-        batch.end();
-        fboB.end();
-
-        // Vertical blur (final pass) from fboB to screen
-        batch.begin();
-        blurShader.setUniformf("u_blurSize", 1f / (float) screenH);
-        blurShader.setUniformf("u_direction", 0f, 1f);
-        batch.draw(
-            fboB.getColorBufferTexture(),
-            0, 0,
-            screenW, screenH,
-            0f, 1f, 1f, 0f
-        );
-        batch.end();
-
-        batch.setShader(null);
+        RenderPipeline.blurredDraw(batch);
     }
 
     public static void drawPauseUI(SpriteBatch batch) {
-        batch.begin();
-        GraphicsManager.renderPauseUI(batch);
-        batch.end();
+        RenderPipeline.drawPauseUI(batch);
     }
 }
