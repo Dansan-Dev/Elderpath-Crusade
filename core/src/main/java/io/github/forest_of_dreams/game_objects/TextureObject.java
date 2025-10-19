@@ -4,9 +4,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
-import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.BaseTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
+import io.github.forest_of_dreams.utils.HoverUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -48,16 +48,7 @@ public class TextureObject extends BaseTexture {
     public boolean isHovered(int relX, int relY) {
         int x = getX() + relX;
         int y = getY() + relY;
-        int width = getWidth();
-        int height = getHeight();
-
-        float mouseX = Gdx.input.getX();
-        float mouseY = (Gdx.graphics.getHeight() - Gdx.input.getY());
-
-        boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
-        boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);
-
-        return isInXRange && isInYRange;
+        return HoverUtils.isHovered(x, y, getWidth(), getHeight());
     }
 
     private boolean isClicked() {

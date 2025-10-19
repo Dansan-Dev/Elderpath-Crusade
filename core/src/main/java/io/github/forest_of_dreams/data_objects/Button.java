@@ -10,6 +10,7 @@ import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.*;
 import io.github.forest_of_dreams.supers.AbstractTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
+import io.github.forest_of_dreams.utils.HoverUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -129,17 +130,7 @@ public class Button extends AbstractTexture implements Renderable, Clickable, UI
     private boolean isHovered(int relX, int relY) {
         int x = getX() + relX;
         int y = getY() + relY;
-        int width = getWidth();
-        int height = getHeight();
-
-        // Scale the mouse coordinates
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
-
-        boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
-        boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);
-
-        return isInXRange && isInYRange;
+        return HoverUtils.isHovered(x, y, getWidth(), getHeight());
     }
 
     @Override

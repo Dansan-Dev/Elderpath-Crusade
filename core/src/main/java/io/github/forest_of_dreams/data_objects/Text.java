@@ -12,6 +12,7 @@ import io.github.forest_of_dreams.managers.FontManager;
 import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.utils.HoverUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -125,16 +126,7 @@ public class Text extends AbstractTexture implements Renderable, UIRenderable, C
     private boolean isHovered(int relX, int relY) {
         int x = getX() + relX;
         int y = getY() + relY;
-        int width = getWidth();
-        int height = getHeight();
-
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
-
-        boolean isInXRange = x <= mouseX && mouseX <= (x + width - 1);
-        boolean isInYRange = y <= mouseY && mouseY <= (y + height - 1);
-
-        return isInXRange && isInYRange;
+        return HoverUtils.isHovered(x, y, getWidth(), getHeight());
     }
 
     private boolean isClicked() {
@@ -170,13 +162,14 @@ public class Text extends AbstractTexture implements Renderable, UIRenderable, C
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         if (zLevel != z) return;
         if (isPaused) return;
-        update();
+        // Keep label in sync with bounds without reallocating style/label on every frame
+        if (label != null) {
+            label.setPosition(getBounds().getX(), getBounds().getY());
+        }
         if (isHovered(0, 0)) {
             if (hoverColor != null) label.setColor(hoverColor);
-            if (isClicked()) {
-                if (clickColor != null) {
-                    label.setColor(clickColor);
-                };
+            if (isClicked() && clickColor != null) {
+                label.setColor(clickColor);
             }
         }
         label.draw(batch, 1);
