@@ -56,10 +56,8 @@ public class MonsterGamePiece extends GamePiece {
         int newRow = currentRow + 1;
         if (!pos.isValid(newRow, currentCol)) return;
         if (!(board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp)) return;
-        System.out.println("[BEFORE] mgp.stats.getCurrentHealth() = " + mgp.stats.getCurrentHealth());
         mgp.stats.dealDamage(stats.getDamage());
         if (mgp.stats.getCurrentHealth()<=0) mgp.die();
-        System.out.println("[AFTER] mgp.stats.getCurrentHealth() = " + mgp.stats.getCurrentHealth());
     }
 
     public void die() {

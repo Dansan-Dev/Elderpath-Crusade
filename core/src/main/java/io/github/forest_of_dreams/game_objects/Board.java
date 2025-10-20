@@ -121,14 +121,6 @@ public class Board extends HigherOrderTexture {
                 GRID_DIRECTION.COLUMN,
                 true
             ));
-        Arrays.stream(rowIdentifierSymbols).forEach(s -> {
-            System.out.println("s.getX() = " + s.getX());
-            System.out.println("s.getY() = " + s.getY());
-        });
-        Arrays.stream(colIdentifierSymbols).forEach(s -> {
-            System.out.println("s.getX() = " + s.getX());
-            System.out.println("s.getY() = " + s.getY());
-        });
         // Board now contains label Texts at z=0; ensure z-buckets reindex
         ZIndexRegistry.notifyZChanged(this);
     }

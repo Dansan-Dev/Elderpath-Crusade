@@ -31,9 +31,6 @@ public class InteractionManager {
         for (Clickable clickable : clickables) {
             // When paused, only allow UI elements to receive clicks
             if (paused && !clickable.isPauseUIElement()) continue;
-            if (clickable instanceof GamePiece gamePiece) {
-                System.out.println("Clickable GamePiece: " + gamePiece.getId());
-            }
             if (clickable.inRange(mouseX, mouseY)) {
                 if (selectedCount == 0) {
                     addInitialInteraction(clickable);
