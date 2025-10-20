@@ -1,10 +1,11 @@
-package io.github.forest_of_dreams.data_objects;
+package io.github.forest_of_dreams.ui_objects;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
+import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.*;

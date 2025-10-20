@@ -1,7 +1,7 @@
 package io.github.forest_of_dreams.utils;
 
-import io.github.forest_of_dreams.data_objects.Text;
-import io.github.forest_of_dreams.data_objects.TextList;
+import io.github.forest_of_dreams.ui_objects.Text;
+import io.github.forest_of_dreams.ui_objects.TextList;
 import io.github.forest_of_dreams.managers.SettingsManager;
 
 /**

@@ -1,5 +1,6 @@
-package io.github.forest_of_dreams.data_objects;
+package io.github.forest_of_dreams.ui_objects;
 
+import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 
 import java.util.List;

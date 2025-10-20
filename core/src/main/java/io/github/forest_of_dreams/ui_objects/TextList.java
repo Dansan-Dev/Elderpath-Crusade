@@ -1,4 +1,4 @@
-package io.github.forest_of_dreams.data_objects;
+package io.github.forest_of_dreams.ui_objects;
 
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;

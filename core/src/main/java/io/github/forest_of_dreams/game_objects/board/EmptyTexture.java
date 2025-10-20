@@ -1,8 +1,9 @@
-package io.github.forest_of_dreams.game_objects;
+package io.github.forest_of_dreams.game_objects.board;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.game_objects.sprites.TextureObject;
 
 /**
  * This texture is used to fill empty space.

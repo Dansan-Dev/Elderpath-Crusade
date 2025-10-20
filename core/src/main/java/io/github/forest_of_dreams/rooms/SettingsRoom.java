@@ -2,9 +2,9 @@ package io.github.forest_of_dreams.rooms;
 
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.utils.FontSize;
-import io.github.forest_of_dreams.data_objects.Button;
+import io.github.forest_of_dreams.ui_objects.Button;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.data_objects.Text;
+import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.managers.SettingsManager;

@@ -1,9 +1,8 @@
-package io.github.forest_of_dreams.data_objects;
+package io.github.forest_of_dreams.game_objects.board;
 
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
-import io.github.forest_of_dreams.game_objects.Board;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import lombok.Getter;
 

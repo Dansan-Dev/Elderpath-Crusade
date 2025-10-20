@@ -1,4 +1,4 @@
-package io.github.forest_of_dreams.data_objects;
+package io.github.forest_of_dreams.game_objects.board;
 
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 import lombok.Getter;

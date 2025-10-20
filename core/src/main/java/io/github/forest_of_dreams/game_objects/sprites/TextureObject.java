@@ -1,4 +1,4 @@
-package io.github.forest_of_dreams.game_objects;
+package io.github.forest_of_dreams.game_objects.sprites;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;

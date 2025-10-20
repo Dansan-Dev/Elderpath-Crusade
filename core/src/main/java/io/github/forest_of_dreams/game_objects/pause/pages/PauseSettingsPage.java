@@ -2,8 +2,8 @@ package io.github.forest_of_dreams.game_objects.pause.pages;
 
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.data_objects.Text;
-import io.github.forest_of_dreams.data_objects.TextList;
+import io.github.forest_of_dreams.ui_objects.Text;
+import io.github.forest_of_dreams.ui_objects.TextList;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.settings.PauseScreenPage;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;

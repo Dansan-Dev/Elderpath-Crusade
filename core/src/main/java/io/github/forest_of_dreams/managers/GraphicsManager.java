@@ -2,7 +2,7 @@ package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
-import io.github.forest_of_dreams.game_objects.SpriteObject;
+import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.interfaces.UIRenderable;

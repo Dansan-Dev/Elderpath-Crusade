@@ -2,7 +2,6 @@ package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.data_objects.GamePiece;
 import io.github.forest_of_dreams.enums.ClickableEffectType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.*;

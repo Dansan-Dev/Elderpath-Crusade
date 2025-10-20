@@ -1,7 +1,7 @@
 package io.github.forest_of_dreams.characters.sprites.monster_sprites;
 
 import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
-import io.github.forest_of_dreams.game_objects.CharacterSprite;
+import io.github.forest_of_dreams.game_objects.sprites.CharacterSprite;
 
 public class GoblinSprite extends CharacterSprite {
     public GoblinSprite(int x, int y, int width, int height) {

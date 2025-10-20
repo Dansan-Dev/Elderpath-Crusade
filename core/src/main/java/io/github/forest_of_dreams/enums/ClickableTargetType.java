@@ -1,7 +1,7 @@
 package io.github.forest_of_dreams.enums;
 
-import io.github.forest_of_dreams.data_objects.GamePiece;
-import io.github.forest_of_dreams.game_objects.Plot;
+import io.github.forest_of_dreams.game_objects.board.GamePiece;
+import io.github.forest_of_dreams.game_objects.board.Plot;
 import lombok.Getter;
 
 import java.util.Set;

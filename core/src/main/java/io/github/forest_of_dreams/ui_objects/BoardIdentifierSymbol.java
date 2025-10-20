@@ -1,9 +1,7 @@
 package io.github.forest_of_dreams.ui_objects;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
-import io.github.forest_of_dreams.data_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
 import io.github.forest_of_dreams.interfaces.UIRenderable;

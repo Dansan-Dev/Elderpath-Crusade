@@ -4,9 +4,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.data_objects.Box;
-import io.github.forest_of_dreams.data_objects.Text;
+import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
-import io.github.forest_of_dreams.game_objects.CharacterSprite;
+import io.github.forest_of_dreams.game_objects.sprites.CharacterSprite;
 
 public abstract class CheckerSprite extends CharacterSprite {
     private Text text;

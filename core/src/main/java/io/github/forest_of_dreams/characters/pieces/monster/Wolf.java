@@ -2,9 +2,8 @@ package io.github.forest_of_dreams.characters.pieces.monster;
 
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.WolfSprite;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__.CheckerSprite;
-import io.github.forest_of_dreams.data_objects.GamePiece;
-import io.github.forest_of_dreams.data_objects.GamePieceStats;
-import io.github.forest_of_dreams.data_objects.MonsterGamePiece;
+import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
+import io.github.forest_of_dreams.game_objects.board.MonsterGamePiece;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 

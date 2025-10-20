@@ -1,14 +1,11 @@
-package io.github.forest_of_dreams.characters.pieces.tiles;
+package io.github.forest_of_dreams.tiles;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.characters.sprites.terrain_sprites.MountainSprite;
-import io.github.forest_of_dreams.data_objects.GamePiece;
-import io.github.forest_of_dreams.data_objects.GamePieceStats;
+import io.github.forest_of_dreams.game_objects.board.GamePiece;
+import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
-import io.github.forest_of_dreams.interfaces.Renderable;
 
-import java.util.List;
 import java.util.UUID;
 
 public class MountainTile extends GamePiece {

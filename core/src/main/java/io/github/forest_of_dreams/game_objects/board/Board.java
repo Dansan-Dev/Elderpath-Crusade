@@ -1,12 +1,10 @@
-package io.github.forest_of_dreams.game_objects;
+package io.github.forest_of_dreams.game_objects.board;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.managers.ZIndexRegistry;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.data_objects.GamePiece;
-import io.github.forest_of_dreams.data_objects.MonsterGamePiece;
 import io.github.forest_of_dreams.enums.GRID_DIRECTION;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.interfaces.Renderable;

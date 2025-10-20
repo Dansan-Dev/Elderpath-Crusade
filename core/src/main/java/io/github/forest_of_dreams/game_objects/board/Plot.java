@@ -1,7 +1,8 @@
-package io.github.forest_of_dreams.game_objects;
+package io.github.forest_of_dreams.game_objects.board;
 import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
+import io.github.forest_of_dreams.game_objects.sprites.TextureObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
