@@ -1,16 +1,12 @@
 package io.github.forest_of_dreams.rooms;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import io.github.forest_of_dreams.characters.pieces.monster.WarpMage;
-import io.github.forest_of_dreams.characters.pieces.monster.Wolf;
+import io.github.forest_of_dreams.characters.pieces.WarpMage;
+import io.github.forest_of_dreams.characters.pieces.Wolf;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.cards.Card;
 import io.github.forest_of_dreams.game_objects.cards.Deck;
 import io.github.forest_of_dreams.game_objects.cards.Hand;
-import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
-import io.github.forest_of_dreams.managers.GraphicsManager;
-import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
@@ -19,7 +15,6 @@ import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.managers.SettingsManager;
-import io.github.forest_of_dreams.utils.SpriteCreator;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package io.github.forest_of_dreams.characters.pieces.monster;
+package io.github.forest_of_dreams.characters.pieces;
 
 import io.github.forest_of_dreams.characters.sprites.monster_sprites.GoblinSprite;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
