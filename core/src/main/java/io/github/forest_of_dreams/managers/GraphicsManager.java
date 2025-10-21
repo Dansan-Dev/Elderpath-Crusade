@@ -59,8 +59,8 @@ public class GraphicsManager {
             List<Renderable> bucket = ZIndexRegistry.getBucket(z);
             if (bucket == null) continue;
             for (Renderable r : bucket) {
-                if (r instanceof HigherOrderTexture) {
-                    r.render(batch, z, isPaused, ((HigherOrderTexture) r).getX(), ((HigherOrderTexture) r).getY());
+                if (r instanceof HigherOrderTexture hot) {
+                    r.render(batch, z, isPaused, hot.getX(), hot.getY());
                 } else {
                     r.render(batch, z, isPaused);
                 }

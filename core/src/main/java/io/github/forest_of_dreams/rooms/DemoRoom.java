@@ -3,6 +3,9 @@ package io.github.forest_of_dreams.rooms;
 import com.badlogic.gdx.graphics.Color;
 import io.github.forest_of_dreams.characters.pieces.monster.WarpMage;
 import io.github.forest_of_dreams.characters.pieces.monster.Wolf;
+import io.github.forest_of_dreams.enums.SpriteBoxPos;
+import io.github.forest_of_dreams.game_objects.cards.Card;
+import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
@@ -11,7 +14,9 @@ import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.managers.SettingsManager;
+import io.github.forest_of_dreams.utils.SpriteCreator;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public class DemoRoom extends Room {
@@ -47,6 +52,47 @@ public class DemoRoom extends Room {
         pauseMenuHint = new Text("ESC", FontType.SILKSCREEN, pauseMenuPos[0], pauseMenuPos[1], 1, Color.WHITE)
             .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_MEDIUM);
         addUI(pauseMenuHint);
+
+        SpriteObject cardSprite1 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+        cardSprite1.addAnimation(
+            "general",
+            List.of(
+                SpriteCreator.makeSprite(
+                    "assets/images/card_front.png",
+                    0,
+                    0,
+                    1024,
+                    1536,
+                    125,
+                    200
+                )
+            ), 0
+        );
+        SpriteObject cardSprite2 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+        cardSprite2.addAnimation(
+            "general",
+            List.of(
+                SpriteCreator.makeSprite(
+                    "assets/images/card_back.png",
+                    0,
+                    0,
+                    1024,
+                    1536,
+                    125,
+                    200
+                )
+            ), 0
+        );
+
+        Card card1 = new Card(
+            0,
+            -80,
+            cardSprite1,
+            cardSprite2,
+            null
+        );
+
+        addContent(card1);
 
         int[] board_size = board.getPixelSize();
         layoutBoard(board_size[0], board_size[1]);
