@@ -61,62 +61,17 @@ public class DemoRoom extends Room {
             .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_MEDIUM);
         addUI(pauseMenuHint);
 
-        // Preload frames once to avoid reloading textures on every card creation
-        List<Sprite> frontBaseFrames = List.of(
-            SpriteCreator.makeSprite(
-                "assets/images/card_front.png",
-                0,
-                0,
-                1024,
-                1536,
-                125,
-                200
-            )
-        );
-        List<Sprite> backBaseFrames = List.of(
-            SpriteCreator.makeSprite(
-                "assets/images/card_back.png",
-                0,
-                0,
-                1024,
-                1536,
-                125,
-                200
-            )
-        );
-
-        Supplier<Card> cardSupplier = () -> {
-            // Clone sprites so each card owns its sprites without reloading textures
-            List<Sprite> frontFrames = new java.util.ArrayList<>(frontBaseFrames.size());
-            for (Sprite s : frontBaseFrames) frontFrames.add(new Sprite(s));
-            List<Sprite> backFrames = new java.util.ArrayList<>(backBaseFrames.size());
-            for (Sprite s : backBaseFrames) backFrames.add(new Sprite(s));
-
-            SpriteObject cardSprite1 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
-            cardSprite1.addAnimation("general", frontFrames, 0);
-
-            SpriteObject cardSprite2 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
-            cardSprite2.addAnimation("general", backFrames, 0);
-
-            return new Card(
-                0,
-                0,
-                cardSprite1,
-                cardSprite2,
-                null
-            );
-        };
-
         hand = new Hand(
             SettingsManager.screenSize.getScreenCenter()[0],
             -80,
             125,
-            200
+            200,
+            0
         );
-        hand.addCard(cardSupplier.get());
+
         List<Card> cards = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            cards.add(cardSupplier.get());
+            cards.add(new Card(0, 0, 125, 200, 0, null));
         }
 
         addContent(hand);

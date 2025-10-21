@@ -1,14 +1,19 @@
 package io.github.forest_of_dreams.game_objects.cards;
 
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
+import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
+import io.github.forest_of_dreams.utils.SpriteCreator;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -32,21 +37,53 @@ public class Card extends HigherOrderTexture {
         void apply(Board board, int row, int col);
     }
 
-    public Card(int x, int y, Renderable front, Renderable back, CardEffect effect) {
-        if (front == null || back == null) {
-            throw new IllegalArgumentException("Card requires both front and back Renderables.");
-        }
-        this.front = front;
-        this.back = back;
-        this.playEffect = effect;
+    // Preload base frames once to avoid reloading textures per card
+    private static final List<Sprite> FRONT_BASE_FRAMES = List.of(
+        SpriteCreator.makeSprite(
+            "assets/images/card_front.png",
+            0, 0,
+            1024, 1536,
+            125, 200
+        )
+    );
+    private static final List<Sprite> BACK_BASE_FRAMES = List.of(
+        SpriteCreator.makeSprite(
+            "assets/images/card_back.png",
+            0, 0,
+            1024, 1536,
+            125, 200
+        )
+    );
+
+    public Card(int x, int y, int width, int height, int z, CardEffect effect) {
+        // Clone sprites so each Card has its own instances
+        List<Sprite> frontFrames = new ArrayList<>(FRONT_BASE_FRAMES.size());
+        for (Sprite s : FRONT_BASE_FRAMES) frontFrames.add(new Sprite(s));
+        List<Sprite> backFrames = new ArrayList<>(BACK_BASE_FRAMES.size());
+        for (Sprite s : BACK_BASE_FRAMES) backFrames.add(new Sprite(s));
+
+        SpriteObject frontSprite = new SpriteObject(
+            0, 0,
+            width, height,
+            z,
+            SpriteBoxPos.BOTTOM_LEFT
+        );
+        frontSprite.addAnimation("general", frontFrames, 0);
+
+        SpriteObject backSprite = new SpriteObject(
+            0, 0,
+            width, height,
+            z,
+            SpriteBoxPos.BOTTOM_LEFT
+        );
+        backSprite.addAnimation("general", backFrames, 0);
+
         this.faceUp = true;
+        this.front = frontSprite;
+        this.back = backSprite;
+        this.playEffect = effect;
 
-        if (
-            front.getBounds().getWidth() != back.getBounds().getWidth() ||
-            front.getBounds().getHeight() != back.getBounds().getHeight()
-        ) throw new IllegalArgumentException("Card requires Renderables with equal dimensions.");
-
-        setBounds(new Box(x, y, front.getBounds().getWidth(), front.getBounds().getHeight()));
+        setBounds(new Box(x, y, width, height));
 
         // Attach children to this Card; they render relative to the Card's origin.
         attachChild(front);
@@ -91,14 +128,14 @@ public class Card extends HigherOrderTexture {
     /**
      * Convenience factory: Create a card that summons a GamePiece to the target square when played.
      */
-    public static Card summonCard(int x, int y, Renderable front, Renderable back, Supplier<GamePiece> gamePieceSupplier) {
+    public static Card summonCard(int x, int y, int width, int height, int z, Supplier<GamePiece> gamePieceSupplier) {
         CardEffect effect = (board, row, col) -> {
             GamePiece gp = gamePieceSupplier.get();
             if (gp != null) {
                 board.addGamePieceToPos(row, col, gp);
             }
         };
-        return new Card(x, y, front, back, effect);
+        return new Card(x, y, width, height, z, effect);
     }
 
     private Renderable activeSide() {

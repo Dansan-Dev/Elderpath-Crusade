@@ -45,7 +45,6 @@ public class Deck extends SpriteObject implements Clickable {
         );
         setClickableEffect(
             (e) -> {
-                System.out.println("DRAW");
                 draw();
             },
             ClickableEffectData.getImmediate()

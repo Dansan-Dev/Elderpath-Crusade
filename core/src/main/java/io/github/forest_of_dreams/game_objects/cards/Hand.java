@@ -22,14 +22,18 @@ public class Hand extends HigherOrderTexture {
     private int cardWidth;
     @Getter @Setter
     private int cardHeight;
+    @Getter
+    private final int z;
 
-    public Hand(int centerX, int bottomY, int cardWidth, int cardHeight) {
+    public Hand(int centerX, int bottomY, int cardWidth, int cardHeight, int z) {
         cards = new ArrayList<>();
         this.centerX = centerX;
         this.bottomY = bottomY;
         this.cardWidth = cardWidth;
         this.cardHeight = cardHeight;
+        this.z = z;
         setBounds(new Box(centerX, bottomY, 0, 0));
+        updateBounds();
     }
 
     public void addCard(Card card) {
@@ -61,11 +65,7 @@ public class Hand extends HigherOrderTexture {
 
     @Override
     public List<Integer> getZs() {
-        return cards.stream()
-            .map(Card::getZs)
-            .flatMap(List::stream)
-            .distinct()
-            .toList();
+        return List.of(z);
     }
 
     @Override
