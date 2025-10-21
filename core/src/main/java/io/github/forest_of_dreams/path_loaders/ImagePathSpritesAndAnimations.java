@@ -8,7 +8,9 @@ public enum ImagePathSpritesAndAnimations {
     GOBU_HURT("gobu_hurt.png"),
     RED_CHECKER("red_checker.png"),
     BLUE_CHECKER("blue_checker.png"),
-    MOUNTAIN_TERRAIN("mountain_tile.png");
+    MOUNTAIN_TERRAIN("mountain_tile.png"),
+    CARD_BACK("card_back.png"),
+    CARD_FRONT("card_front.png");
 
 
     private final String path;

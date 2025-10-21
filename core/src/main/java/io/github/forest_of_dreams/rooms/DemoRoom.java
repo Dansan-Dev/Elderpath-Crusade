@@ -6,6 +6,7 @@ import io.github.forest_of_dreams.characters.pieces.monster.WarpMage;
 import io.github.forest_of_dreams.characters.pieces.monster.Wolf;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.cards.Card;
+import io.github.forest_of_dreams.game_objects.cards.Deck;
 import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.tiles.MountainTile;
@@ -24,6 +25,7 @@ import java.util.function.Supplier;
 public class DemoRoom extends Room {
     private final Board board;
     private final Hand hand;
+    private final Deck deck;
     private final UIRenderable pauseMenuHint;
     private final Supplier<int[]> pauseMenuPos = () -> new int[]{20, SettingsManager.screenSize.getScreenHeight() - 40};
     private final int plot_width = 40;
@@ -113,6 +115,16 @@ public class DemoRoom extends Room {
         }
 
         addContent(hand);
+
+        deck = new Deck(
+            List.of(cardSupplier.get()),
+            0, 0,
+            125, 200,
+            1,
+            SpriteBoxPos.BOTTOM_LEFT
+        );
+
+        addContent(deck);
 
         int[] board_size = board.getPixelSize();
         layoutBoard(board_size[0], board_size[1]);

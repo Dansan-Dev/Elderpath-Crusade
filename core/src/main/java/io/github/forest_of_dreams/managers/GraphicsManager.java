@@ -61,9 +61,6 @@ public class GraphicsManager {
             if (bucket == null) continue;
             for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture hot) {
-                    if (hot instanceof Hand h) {
-                        System.out.println("h = " + h);
-                    }
                     r.render(batch, z, isPaused, hot.getX(), hot.getY());
                 } else {
                     r.render(batch, z, isPaused);
