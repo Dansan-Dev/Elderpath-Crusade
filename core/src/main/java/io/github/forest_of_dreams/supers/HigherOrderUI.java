@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-public class HigherOrderUI extends AbstractTexture implements UIRenderable {
+public class HigherOrderUI extends LowestOrderTexture implements UIRenderable {
     private List<UIRenderable> renderableUIs = new ArrayList<>();
 
     @Override

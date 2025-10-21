@@ -7,7 +7,7 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
-import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import lombok.Setter;
 
 import java.util.HashMap;
@@ -18,7 +18,7 @@ import java.util.Map;
  * An object that represents a single sprite,
  * a sprite animation, or multiple sprite animations
  */
-public class SpriteObject extends AbstractTexture implements Renderable, UIRenderable {
+public class SpriteObject extends LowestOrderTexture implements Renderable, UIRenderable {
     @Setter
     private int currentSpriteFrame = -1;
     private List<Sprite> currentAnimation = null;

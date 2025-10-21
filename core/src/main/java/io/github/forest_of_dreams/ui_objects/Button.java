@@ -10,7 +10,7 @@ import io.github.forest_of_dreams.utils.ColorSettings;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.*;
-import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.utils.HoverUtils;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import java.util.List;
  * A simple Button component that renders a rectangular box (image or solid color),
  * centers text inside the box, and triggers an onClick when clicked.
  */
-public class Button extends AbstractTexture implements Renderable, Clickable, UIRenderable {
+public class Button extends LowestOrderTexture implements Renderable, Clickable, UIRenderable {
     @Getter @Setter private String text;
     @Getter @Setter private FontType fontType;
     @Getter @Setter private Color textColor = ColorSettings.TEXT_DEFAULT.getColor();

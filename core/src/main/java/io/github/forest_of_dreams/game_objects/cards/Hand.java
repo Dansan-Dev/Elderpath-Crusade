@@ -2,7 +2,7 @@ package io.github.forest_of_dreams.game_objects.cards;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
-import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,7 +39,7 @@ public class Hand extends HigherOrderTexture {
 
     public void updateBounds() {
         int totalCardWidth = cards.stream()
-                .mapToInt(AbstractTexture::getWidth)
+                .mapToInt(LowestOrderTexture::getWidth)
                 .sum();
         int totalMarginWidth = cardMargin * (cards.size() - 1);
         int width = totalCardWidth + totalMarginWidth;

@@ -5,9 +5,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
-import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.supers.LowestOrderTexture;
 
-public class PauseMenuHint extends AbstractTexture implements UIRenderable {
+public class PauseMenuHint extends LowestOrderTexture implements UIRenderable {
 //    private final LabelStyle style;
 //    private final Label text;
     public final Text text;

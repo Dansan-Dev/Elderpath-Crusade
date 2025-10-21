@@ -9,7 +9,7 @@ import io.github.forest_of_dreams.game_objects.pause.pages.PauseMenuPage;
 import io.github.forest_of_dreams.game_objects.pause.pages.PauseSettingsPage;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.managers.SettingsManager;
-import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.utils.ClickableRegistryUtil;
 import lombok.Getter;
 
@@ -20,7 +20,7 @@ import lombok.Getter;
  *
  * To then go to that page onClick, reference PauseScreen.getCurrentPage.setPage(...)
  */
-public class PauseScreen extends AbstractTexture implements UIRenderable {
+public class PauseScreen extends LowestOrderTexture implements UIRenderable {
     private static final int z = 10;
     private static final PauseScreen pauseScreen = new PauseScreen();
     private static final TextureObject background = new TextureObject(

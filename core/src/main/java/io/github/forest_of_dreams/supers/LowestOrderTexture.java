@@ -9,7 +9,7 @@ import lombok.Setter;
  * Base class for all textures
  */
 @Getter @Setter
-public abstract class AbstractTexture implements CustomBox {
+public abstract class LowestOrderTexture implements CustomBox {
     private Box parent;
     private Box bounds;
 

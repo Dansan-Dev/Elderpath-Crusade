@@ -12,7 +12,7 @@ import io.github.forest_of_dreams.interfaces.*;
 import io.github.forest_of_dreams.managers.FontManager;
 import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
-import io.github.forest_of_dreams.supers.AbstractTexture;
+import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.utils.HoverUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,7 +20,7 @@ import lombok.Setter;
 import java.util.HashMap;
 import java.util.List;
 
-public class Text extends AbstractTexture implements Renderable, UIRenderable, Clickable {
+public class Text extends LowestOrderTexture implements Renderable, UIRenderable, Clickable {
     @Getter @Setter private String text;
     @Getter @Setter private FontType fontType;
     private int z;

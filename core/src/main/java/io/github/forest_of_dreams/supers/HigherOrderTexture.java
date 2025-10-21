@@ -12,7 +12,7 @@ import java.util.List;
  * Higher order texture that can contain other textures
  */
 @Getter @Setter
-public abstract class HigherOrderTexture extends AbstractTexture implements Renderable {
+public abstract class HigherOrderTexture extends LowestOrderTexture implements Renderable {
     private List<Renderable> renderables = new ArrayList<>();
 
     @Override
