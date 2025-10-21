@@ -6,12 +6,14 @@ import io.github.forest_of_dreams.enums.ClickableEffectType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.*;
 import io.github.forest_of_dreams.utils.Logger;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class InteractionManager {
+    @Getter
     private static final List<Clickable> clickables = new ArrayList<>();
     private static Clickable currentEffect;
     private static final HashMap<Integer, CustomBox> selected = new HashMap<>();

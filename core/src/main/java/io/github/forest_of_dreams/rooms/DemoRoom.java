@@ -9,6 +9,8 @@ import io.github.forest_of_dreams.game_objects.cards.Card;
 import io.github.forest_of_dreams.game_objects.cards.Deck;
 import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
+import io.github.forest_of_dreams.managers.GraphicsManager;
+import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
@@ -19,6 +21,7 @@ import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -110,20 +113,22 @@ public class DemoRoom extends Room {
             125,
             200
         );
-        for (int i = 0; i < 6; i++) {
-            hand.addCard(cardSupplier.get());
+        hand.addCard(cardSupplier.get());
+        List<Card> cards = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            cards.add(cardSupplier.get());
         }
 
         addContent(hand);
 
         deck = new Deck(
-            List.of(cardSupplier.get()),
+            cards,
             0, 0,
             125, 200,
             1,
             SpriteBoxPos.BOTTOM_LEFT
         );
-
+        deck.setHand(hand);
         addContent(deck);
 
         int[] board_size = board.getPixelSize();

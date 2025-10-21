@@ -1,31 +1,36 @@
 package io.github.forest_of_dreams.game_objects.cards;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
+import io.github.forest_of_dreams.interfaces.Clickable;
+import io.github.forest_of_dreams.interfaces.CustomBox;
+import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
-public class Deck extends SpriteObject {
+public class Deck extends SpriteObject implements Clickable {
     @Getter
-    private final List<Card> cards;
+    private final List<Card> cards = new ArrayList<>();
     @Getter
     private final List<Card> discardPile;
     @Getter @Setter
     private Hand hand;
 
+    private OnClick onClick;
+    @Getter
+    private ClickableEffectData clickableEffectData;
+
     private final Random rng = new Random();
 
     public Deck(List<Card> cards, int x, int y, int width, int height, int z, SpriteBoxPos spriteBoxPos) {
         super(x, y, width, height, z, spriteBoxPos);
-        this.cards = cards;
+        this.cards.addAll(cards);
         this.discardPile = new ArrayList<>();
         Sprite sprite = SpriteCreator.makeSprite(
             ImagePathSpritesAndAnimations.CARD_BACK.getPath(),
@@ -38,6 +43,20 @@ public class Deck extends SpriteObject {
             List.of(sprite),
             0
         );
+        setClickableEffect(
+            (e) -> {
+                System.out.println("DRAW");
+                draw();
+            },
+            ClickableEffectData.getImmediate()
+        );
+    }
+
+    // Ensure InteractionManager can read the effect config by storing it here
+    @Override
+    public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
+        this.onClick = onClick;
+        this.clickableEffectData = effectData;
     }
 
     public void draw() {
@@ -55,4 +74,9 @@ public class Deck extends SpriteObject {
         discardPile.clear();
         Collections.shuffle(cards, rng);
     }
+
+    public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
+         if (this.onClick == null) return;
+         onClick.run(interactionEntities);
+    };
 }
