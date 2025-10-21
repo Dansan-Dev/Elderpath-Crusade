@@ -31,7 +31,7 @@ public class SettingsRoom extends Room {
         addContent(toggleFullscreen);
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
-            .withOnClick((e) -> Game.gotoRoom(MainMenuRoom.get()), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> Game.gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());

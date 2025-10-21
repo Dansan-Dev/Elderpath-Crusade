@@ -2,6 +2,8 @@ package io.github.forest_of_dreams.game_objects.cards;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.interfaces.Clickable;
+import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import lombok.Getter;
@@ -38,6 +40,10 @@ public class Hand extends HigherOrderTexture {
 
     public void addCard(Card card) {
         cards.add(card);
+        // Register with InteractionManager if the card is clickable
+        if (card instanceof Clickable clickable) {
+            InteractionManager.addClickable(clickable);
+        }
         updateBounds();
     }
 
@@ -52,6 +58,7 @@ public class Hand extends HigherOrderTexture {
         for (int i = 0; i < cards.size(); i++) {
             Card c = cards.get(i);
             int relX = i * (cardWidth + cardMargin);
+            // Position card relative to Hand container and ensure hit-testing uses Hand as parent
             c.setBounds(
                 new Box(
                     -(getWidth()/2) + relX,
@@ -60,6 +67,7 @@ public class Hand extends HigherOrderTexture {
                     cardHeight
                 )
             );
+            c.setParent(getBounds());
         }
     }
 

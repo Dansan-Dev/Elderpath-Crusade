@@ -1,13 +1,16 @@
 package io.github.forest_of_dreams.rooms;
 
 import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.cards.WolfCard;
 import io.github.forest_of_dreams.characters.pieces.WarpMage;
 import io.github.forest_of_dreams.characters.pieces.Wolf;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.cards.Card;
 import io.github.forest_of_dreams.game_objects.cards.Deck;
 import io.github.forest_of_dreams.game_objects.cards.Hand;
+import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.tiles.MountainTile;
+import io.github.forest_of_dreams.ui_objects.Button;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
@@ -64,12 +67,16 @@ public class DemoRoom extends Room {
             0
         );
 
+        addContent(hand);
+
         List<Card> cards = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            cards.add(new Card(0, 0, 125, 200, 0, null));
+            if ( i % 2 == 0) {
+                cards.add(new Card(0, 0, 125, 200, 0, null));
+            } else {
+                cards.add(new WolfCard(board, 0, 1, PieceAlignment.ALLIED, 0, 0, 125, 200, 0));
+            }
         }
-
-        addContent(hand);
 
         deck = new Deck(
             cards,
@@ -80,6 +87,19 @@ public class DemoRoom extends Room {
         );
         deck.setHand(hand);
         addContent(deck);
+
+        System.out.println("InteractionManager.getClickables().size() = " + InteractionManager.getClickables().size());
+        InteractionManager.getClickables().forEach((c) -> {
+            if (c instanceof WolfCard wolfCard) {
+                System.out.println("wolfCard = " + wolfCard);
+            } else if (c instanceof Text text) {
+                System.out.println("text.getText() = " + text.getText());
+            } else if (c instanceof Button button) {
+                System.out.println("button.getText() = " + button.getText());
+            } else {
+                System.out.println("c = " + c);
+            }
+        });
 
         int[] board_size = board.getPixelSize();
         layoutBoard(board_size[0], board_size[1]);

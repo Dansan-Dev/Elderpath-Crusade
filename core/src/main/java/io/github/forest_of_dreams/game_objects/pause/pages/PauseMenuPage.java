@@ -62,7 +62,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick(
                     (e) -> {
-                        Game.gotoRoom(MainMenuRoom.get());
+                        Game.gotoRoom(MainMenuRoom::get);
                         GameManager.unpause();
                     },
                     ClickableEffectData.getImmediate()
