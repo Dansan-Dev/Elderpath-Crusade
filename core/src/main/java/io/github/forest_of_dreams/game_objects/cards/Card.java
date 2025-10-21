@@ -39,7 +39,7 @@ public class Card extends HigherOrderTexture {
         this.front = front;
         this.back = back;
         this.playEffect = effect;
-        this.faceUp = false;
+        this.faceUp = true;
 
         if (
             front.getBounds().getWidth() != back.getBounds().getWidth() ||

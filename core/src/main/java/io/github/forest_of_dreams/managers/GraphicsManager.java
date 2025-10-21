@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.managers;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.game_objects.pause.PauseScreen;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
@@ -60,6 +61,9 @@ public class GraphicsManager {
             if (bucket == null) continue;
             for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture hot) {
+                    if (hot instanceof Hand h) {
+                        System.out.println("h = " + h);
+                    }
                     r.render(batch, z, isPaused, hot.getX(), hot.getY());
                 } else {
                     r.render(batch, z, isPaused);

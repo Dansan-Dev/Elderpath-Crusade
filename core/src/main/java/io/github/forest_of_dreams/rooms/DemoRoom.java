@@ -1,10 +1,12 @@
 package io.github.forest_of_dreams.rooms;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import io.github.forest_of_dreams.characters.pieces.monster.WarpMage;
 import io.github.forest_of_dreams.characters.pieces.monster.Wolf;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.cards.Card;
+import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Text;
@@ -21,6 +23,7 @@ import java.util.function.Supplier;
 
 public class DemoRoom extends Room {
     private final Board board;
+    private final Hand hand;
     private final UIRenderable pauseMenuHint;
     private final Supplier<int[]> pauseMenuPos = () -> new int[]{20, SettingsManager.screenSize.getScreenHeight() - 40};
     private final int plot_width = 40;
@@ -53,46 +56,63 @@ public class DemoRoom extends Room {
             .withFontSize(io.github.forest_of_dreams.utils.FontSize.BODY_MEDIUM);
         addUI(pauseMenuHint);
 
-        SpriteObject cardSprite1 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
-        cardSprite1.addAnimation(
-            "general",
-            List.of(
-                SpriteCreator.makeSprite(
-                    "assets/images/card_front.png",
-                    0,
-                    0,
-                    1024,
-                    1536,
-                    125,
-                    200
-                )
-            ), 0
+        // Preload frames once to avoid reloading textures on every card creation
+        List<Sprite> frontBaseFrames = List.of(
+            SpriteCreator.makeSprite(
+                "assets/images/card_front.png",
+                0,
+                0,
+                1024,
+                1536,
+                125,
+                200
+            )
         );
-        SpriteObject cardSprite2 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
-        cardSprite2.addAnimation(
-            "general",
-            List.of(
-                SpriteCreator.makeSprite(
-                    "assets/images/card_back.png",
-                    0,
-                    0,
-                    1024,
-                    1536,
-                    125,
-                    200
-                )
-            ), 0
+        List<Sprite> backBaseFrames = List.of(
+            SpriteCreator.makeSprite(
+                "assets/images/card_back.png",
+                0,
+                0,
+                1024,
+                1536,
+                125,
+                200
+            )
         );
 
-        Card card1 = new Card(
-            0,
+        Supplier<Card> cardSupplier = () -> {
+            // Clone sprites so each card owns its sprites without reloading textures
+            List<Sprite> frontFrames = new java.util.ArrayList<>(frontBaseFrames.size());
+            for (Sprite s : frontBaseFrames) frontFrames.add(new Sprite(s));
+            List<Sprite> backFrames = new java.util.ArrayList<>(backBaseFrames.size());
+            for (Sprite s : backBaseFrames) backFrames.add(new Sprite(s));
+
+            SpriteObject cardSprite1 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+            cardSprite1.addAnimation("general", frontFrames, 0);
+
+            SpriteObject cardSprite2 = new SpriteObject(0, 0,125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+            cardSprite2.addAnimation("general", backFrames, 0);
+
+            return new Card(
+                0,
+                0,
+                cardSprite1,
+                cardSprite2,
+                null
+            );
+        };
+
+        hand = new Hand(
+            SettingsManager.screenSize.getScreenCenter()[0],
             -80,
-            cardSprite1,
-            cardSprite2,
-            null
+            125,
+            200
         );
+        for (int i = 0; i < 6; i++) {
+            hand.addCard(cardSupplier.get());
+        }
 
-        addContent(card1);
+        addContent(hand);
 
         int[] board_size = board.getPixelSize();
         layoutBoard(board_size[0], board_size[1]);
@@ -100,10 +120,12 @@ public class DemoRoom extends Room {
 
     private void layoutBoard(int boardPixelWidth, int boardPixelHeight) {
         int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int newCenteredX = screen_center[0] - boardPixelWidth / 2;
-        int newCenteredY = screen_center[1] - boardPixelHeight / 2;
-        board.getBounds().setX(newCenteredX);
-        board.getBounds().setY(newCenteredY);
+        int boardCenteredX = screen_center[0] - boardPixelWidth / 2;
+        int boardCenteredY = screen_center[1] - boardPixelHeight / 2;
+        board.getBounds().setX(boardCenteredX);
+        board.getBounds().setY(boardCenteredY);
+        hand.setCenterX(screen_center[0]);
+        hand.updateBounds();
     }
 
     @Override
