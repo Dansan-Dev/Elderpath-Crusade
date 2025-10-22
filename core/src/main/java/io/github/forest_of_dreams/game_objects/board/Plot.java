@@ -26,6 +26,10 @@ public class Plot extends HigherOrderTexture implements Clickable {
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
+    // Highlighting state
+    private boolean highlighted = false;
+    private EmergingBorderTexture highlightBorder;
+
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);
         Color hoverColor = plot.getColor().cpy().lerp(Color.BLACK, 0.5f);
@@ -36,7 +40,78 @@ public class Plot extends HigherOrderTexture implements Clickable {
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
         plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());
-        plotConstruction(plot, plotDirt);
+        // Emerging highlight border (animated)
+        highlightBorder = new EmergingBorderTexture(0, 0, width, height);
+        highlightBorder.setZ(1);
+        plotConstruction(plot, plotDirt, highlightBorder);
+    }
+
+    /**
+     * Animated border used to highlight a Plot during multi-selection.
+     * Border thickness smoothly grows when active and shrinks when inactive.
+     */
+    private static class EmergingBorderTexture extends io.github.forest_of_dreams.game_objects.sprites.TextureObject {
+        private boolean active = false;
+        private float progress = 0f; // 0..1
+        private final float speed = 4f; // seconds to full thickness ~0.25s
+        private final int maxThickness;
+        private final com.badlogic.gdx.graphics.Color borderColor = com.badlogic.gdx.graphics.Color.WHITE;
+
+        EmergingBorderTexture(int x, int y, int width, int height) {
+            super(new com.badlogic.gdx.graphics.Color(1,1,1,0f), x, y, width, height);
+            // Use a small relative max thickness; at least 2px for visibility
+            this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
+        }
+
+        void setActive(boolean active) {
+            if (active && !this.active) {
+                // Restart emergence when turning on
+                this.progress = 0f;
+            }
+            this.active = active;
+        }
+
+        private void step(boolean isPaused) {
+            if (isPaused) return;
+            float dt = com.badlogic.gdx.Gdx.graphics.getDeltaTime();
+            if (active) {
+                progress = Math.min(1f, progress + speed * dt);
+            } else {
+                progress = Math.max(0f, progress - speed * dt);
+            }
+        }
+
+        @Override
+        public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, int zLevel, boolean isPaused) {
+            if (zLevel != this.getZ()) return;
+            step(isPaused);
+            if (progress <= 0f) return;
+            int[] pos = calculatePos();
+            drawBorder(batch, pos[0], pos[1]);
+        }
+
+        @Override
+        public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
+            if (zLevel != this.getZ()) return;
+            step(isPaused);
+            if (progress <= 0f) return;
+            int[] base = calculatePos();
+            drawBorder(batch, x + base[0], y + base[1]);
+        }
+
+        private void drawBorder(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, int absX, int absY) {
+            int w = getWidth();
+            int h = getHeight();
+            int t = Math.max(1, Math.round(maxThickness * progress));
+            // Top
+            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
+            // Bottom
+            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
+            // Left
+            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
+            // Right
+            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
+        }
     }
 
     public Plot withPlotColor(Color color) {
@@ -44,7 +119,20 @@ public class Plot extends HigherOrderTexture implements Clickable {
         return this;
     }
 
-    private void plotConstruction(TextureObject plot, TextureObject plotDirt) {
+    /** Public API for Board to toggle selection highlight */
+    public void setHighlighted(boolean highlighted) {
+        if (this.highlighted == highlighted) return;
+        this.highlighted = highlighted;
+        if (highlightBorder != null) highlightBorder.setActive(highlighted);
+    }
+
+    public boolean isHighlighted() { return highlighted; }
+
+    private void applyHighlightTint() {
+        // no-op; old tinting replaced by animated border
+    }
+
+    private void plotConstruction(TextureObject plot, TextureObject plotDirt, EmergingBorderTexture border) {
         int width = getWidth();
         int height = getHeight();
         int x = getX();
@@ -52,17 +140,22 @@ public class Plot extends HigherOrderTexture implements Clickable {
 
         plotDirt.setZ(-1);
         plot.setZ(0);
+        // Border sits above the base plot but below decor
+        if (border != null) border.setZ(1);
         plotDecorBack.setZ(2);
         plotDecorFront.setZ(3);
 
         this.plot = plot;
         this.plotDirt = plotDirt;
-        setRenderables(List.of(plotDecorFront, plotDecorBack, plot, plotDirt));
+        // Include border in renderables so it participates in rendering at z=1
+        setRenderables(java.util.Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt, border));
 
-        plot.setParent(new Box(x, y, width, height));
-        plotDirt.setParent(new Box(x, y, width, height));
-        plotDecorFront.setParent(new Box(x, y, width, height));
+        Box parentBox = new Box(x, y, width, height);
+        plot.setParent(parentBox);
+        plotDirt.setParent(parentBox);
+        plotDecorFront.setParent(parentBox);
         plotDecorBack.setParent(new Box(x, y + height/2, width, height*2));
+        if (border != null) border.setParent(parentBox);
     }
 
     @Override

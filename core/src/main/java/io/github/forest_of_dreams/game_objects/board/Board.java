@@ -1,6 +1,8 @@
 package io.github.forest_of_dreams.game_objects.board;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.interfaces.CustomBox;
+import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.ZIndexRegistry;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
@@ -14,6 +16,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.IntStream;
 
 public class Board extends HigherOrderTexture {
@@ -123,6 +126,26 @@ public class Board extends HigherOrderTexture {
         ZIndexRegistry.notifyZChanged(this);
     }
 
+    // Update plot highlighting by comparing this board's plots with the InteractionManager's active targets.
+    private void updatePlotHighlights() {
+        boolean active = InteractionManager.hasActiveSelection();
+        List<CustomBox> targets = InteractionManager.getActiveTargets();
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                Renderable r = board[row][col];
+                if (r instanceof Plot p) {
+                    boolean shouldHighlight = false;
+                    if (active && !targets.isEmpty()) {
+                        for (CustomBox b : targets) {
+                            if (b == p) { shouldHighlight = true; break; }
+                        }
+                    }
+                    p.setHighlighted(shouldHighlight);
+                }
+            }
+        }
+    }
+
     public Renderable getPlotAtPos(int row, int col) {
         return board[row][col];
     }
@@ -206,6 +229,8 @@ public class Board extends HigherOrderTexture {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
+        // Update plot highlights based on current multi-selection state
+        updatePlotHighlights();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
@@ -220,6 +245,8 @@ public class Board extends HigherOrderTexture {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
+        // Update plot highlights based on current multi-selection state
+        updatePlotHighlights();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
