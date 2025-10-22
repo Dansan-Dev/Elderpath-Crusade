@@ -58,6 +58,8 @@ public class InteractionManager {
         if (selectedCount != 0) return;
         currentEffect = clickableEffect;
         ClickableEffectData data = currentEffect.getClickableEffectData();
+        // Reset confirmation state at the start of a new interaction to avoid carryover between runs
+        if (data != null) data.setConfirmed(false);
         if (data != null && data.getType().equals(ClickableEffectType.IMMEDIATE)) {
             triggerFullInteraction();
         } else {
@@ -72,6 +74,16 @@ public class InteractionManager {
         // Validate target based on expected target type; ignore invalid clicks
         if (!isValidTarget(box, data)) {
             Logger.log("InteractionManager", "Ignored click: target does not match required type " + data.getTargetType());
+            return;
+        }
+        // Prevent selecting the same target multiple times
+        if (selected.containsValue(box)) {
+            Logger.log("InteractionManager", "Ignored click: target already selected");
+            return;
+        }
+        // Enforce cap for limited-choice interactions (up to N targets)
+        if (data.getType() == ClickableEffectType.MULTI_CHOICE_LIMITED_INTERACTION && selected.size() >= data.getExtraTargets()) {
+            Logger.log("InteractionManager", "Ignored click: selection limit reached (" + data.getExtraTargets() + ")");
             return;
         }
         // Accept the target
@@ -102,6 +114,9 @@ public class InteractionManager {
     }
 
     private static void cleanInteraction() {
+        // Reset confirmation state on the effect being cleaned up (if any)
+        ClickableEffectData data = (currentEffect != null) ? currentEffect.getClickableEffectData() : null;
+        if (data != null) data.setConfirmed(false);
         currentEffect = null;
         selected.clear();
         selectedCount = 0;
@@ -190,13 +205,10 @@ public class InteractionManager {
         } else {
             Logger.error("InteractionManager", "currentEffect is null when compiling selected entities");
         }
-        // Subsequent indices (1..selectedCount) are the selected target entities
-        for (int i = 1; i <= selectedCount; i++) {
-            if (selected.containsKey(i)) {
-                entities.put(i, selected.get(i));
-            } else {
-                Logger.error("InteractionManager", "missing entity in slot: " + i);
-            }
+        // Subsequent indices are the selected target entities.
+        // Note: selectedCount is advanced after each addition, so valid indices are 1..selected.size().
+        for (int i = 1; i <= selected.size(); i++) {
+            entities.put(i, selected.get(i));
         }
         return entities;
     }

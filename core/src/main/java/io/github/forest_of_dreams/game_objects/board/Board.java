@@ -131,6 +131,21 @@ public class Board extends HigherOrderTexture {
         return gamePieces[row][col];
     }
 
+    /**
+     * Resolve the GamePiece currently occupying the given Plot instance, or null if none.
+     */
+    public GamePiece getGamePieceAtPlot(Plot plot) {
+        if (plot == null) return null;
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                if (board[row][col] == plot) {
+                    return gamePieces[row][col];
+                }
+            }
+        }
+        return null;
+    }
+
     public void removePlotAtPos(int row, int col) {
         Renderable renderable = board[row][col];
         getRenderables().remove(renderable);
