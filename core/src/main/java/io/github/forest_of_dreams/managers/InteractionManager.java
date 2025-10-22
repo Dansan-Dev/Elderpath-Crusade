@@ -18,6 +18,7 @@ public class InteractionManager {
     private static final List<Clickable> clickables = new ArrayList<>();
     private static Clickable currentEffect;
     private static final HashMap<Integer, CustomBox> selected = new HashMap<>();
+    @Getter
     private static int selectedCount = 0;
 
     public static void checkClick() {
@@ -150,8 +151,6 @@ public class InteractionManager {
         return (data == null ? null : data.getType());
     }
 
-    public static int getSelectedCount() { return selectedCount; }
-
     public static int getRequiredTargets() {
         if (currentEffect == null) return 0;
         ClickableEffectData data = currentEffect.getClickableEffectData();
@@ -211,9 +210,5 @@ public class InteractionManager {
             entities.put(i, selected.get(i));
         }
         return entities;
-    }
-
-    private static int getSelectedTargets() {
-        return selectedCount;
     }
 }

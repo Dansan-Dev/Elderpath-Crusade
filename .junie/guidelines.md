@@ -258,3 +258,58 @@ Purpose
   - Do not directly register clickables with InteractionManager when adding via GraphicsManager; rely on addContent/addUI to route through GraphicsManager so nested clickables are handled correctly.
   - Keep per-frame allocations out of render paths; build lists once in the constructor and reuse objects. Adjust bounds rather than recreating renderables.
   - Respect the asset path loader policy (see section 11) and color/font standards (see section 12) for any UI elements added in rooms.
+
+
+14) Multi‑selection interactions (finalized)
+- Overview
+  - InteractionManager supports four ClickableEffectData types:
+    - IMMEDIATE: Trigger effect on initial click; no extra targets.
+    - MULTI_INTERACTION: Select exactly N additional targets; auto‑resolves when N reached.
+    - MULTI_CHOICE_LIMITED_INTERACTION: Select up to N targets; resolves on confirmation (Enter).
+    - MULTI_CHOICE_UNLIMITED_INTERACTION: Select any number of targets; resolves on confirmation (Enter).
+- Source/targets indexing contract
+  - Interaction callbacks receive a HashMap<Integer, CustomBox>.
+  - Index 0: the source Clickable (the item initially clicked to start the interaction).
+  - Indices 1..k: selected targets in order of selection.
+- Target validation
+  - ClickableEffectData carries a ClickableTargetType that filters acceptable targets during selection.
+  - Current options: NONE (no filter), PLOT, GAME_PIECE. Validation is inheritance‑aware via Class#isInstance.
+  - Note: In the current gameplay model, pieces are selected via Plot clicks (the plot is the clickable); map Plot→GamePiece in your effect if you want piece results.
+- Confirmation and cancellation
+  - Enter confirms selections for choice‑based types and triggers the effect immediately.
+  - Right‑click cancels the current multi‑selection without pausing.
+  - ESC cancels any active multi‑selection and toggles pause (pause/unpause) afterwards.
+- Visual feedback
+  - A SelectionOverlay UI is globally registered per room and displays context‑sensitive instructions and counters during an active multi‑selection. It hides when paused or when no selection is active.
+- Duplicates and limits
+  - Duplicate targets are ignored (cannot select the same entity twice).
+  - MULTI_CHOICE_LIMITED_INTERACTION enforces the limit: further clicks beyond N are ignored.
+- Developer usage examples
+  - Immediate:
+    - myText.setClickableEffect(onClick, ClickableEffectData.getImmediate());
+  - Exactly 2 plots:
+    - myText.setClickableEffect(onClick, ClickableEffectData.getMulti(ClickableTargetType.PLOT, 2));
+  - Up to 3 plots (confirm with Enter):
+    - myText.setClickableEffect(onClick, ClickableEffectData.getMultiChoiceLimited(ClickableTargetType.PLOT, 3));
+  - Any number (confirm with Enter):
+    - myText.setClickableEffect(onClick, ClickableEffectData.getMultiChoiceUnlimited(ClickableTargetType.NONE));
+- Input bindings (fixed)
+  - Left click: start/select target
+  - Right click: cancel selection
+  - Enter: confirm selection (choice‑based types)
+  - ESC: cancel selection and toggle pause
+- Related classes/paths
+  - core/src/main/java/io/github/forest_of_dreams/managers/InteractionManager.java
+  - core/src/main/java/io/github/forest_of_dreams/data_objects/ClickableEffectData.java
+  - core/src/main/java/io/github/forest_of_dreams/enums/ClickableTargetType.java
+  - core/src/main/java/io/github/forest_of_dreams/ui_objects/SelectionOverlay.java
+  - core/src/main/java/io/github/forest_of_dreams/enums/settings/InputFunction.java
+  - core/src/main/java/io/github/forest_of_dreams/enums/settings/InputKey.java
+  - core/src/main/java/io/github/forest_of_dreams/input_handlers/HandleConfirmSelection.java
+  - core/src/main/java/io/github/forest_of_dreams/input_handlers/HandleRightClick.java
+- Manual verification checklist
+  - Start a choice‑based interaction; confirm with Enter; ensure the source is at index 0 and targets follow.
+  - Try selecting an invalid type (e.g., click non‑plot when PLOT required); selection should not advance; see logs.
+  - Attempt duplicate clicks on the same target; selection should not advance.
+  - For limited choice, attempt to select more than N targets; extra clicks are ignored until confirm/cancel.
+  - Right‑click cancels without pausing; ESC cancels and opens pause menu; overlay messaging reflects this.
