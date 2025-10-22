@@ -3,6 +3,7 @@ package io.github.forest_of_dreams.managers;
 import com.badlogic.gdx.Gdx;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.ClickableEffectType;
+import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.enums.settings.InputFunction;
 import io.github.forest_of_dreams.interfaces.*;
 import io.github.forest_of_dreams.utils.Logger;
@@ -66,9 +67,15 @@ public class InteractionManager {
 
     private static void addExtraTarget(CustomBox box) {
         if (selectedCount == 0) return;
-        selected.put(selectedCount, box);
         ClickableEffectData data = currentEffect.getClickableEffectData();
-        if (data == null) return; //TODO: Fix how interactions work, temp fix
+        if (data == null) return; // Safety: no effect metadata
+        // Validate target based on expected target type; ignore invalid clicks
+        if (!isValidTarget(box, data)) {
+            Logger.log("InteractionManager", "Ignored click: target does not match required type " + data.getTargetType());
+            return;
+        }
+        // Accept the target
+        selected.put(selectedCount, box);
         switch (data.getType()) {
             case IMMEDIATE -> Logger.error("InteractionManager", "Shouldn't add extra target when immediate");
             case MULTI_INTERACTION -> {
@@ -163,6 +170,16 @@ public class InteractionManager {
             }
         }
         return "";
+    }
+
+    private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
+        if (box == null || data == null) return false;
+        ClickableTargetType targetType = data.getTargetType();
+        if (targetType == null || targetType == ClickableTargetType.NONE) return true;
+        for (Class<?> allowed : targetType.getAllowedClasses()) {
+            if (allowed.isInstance(box)) return true;
+        }
+        return false;
     }
 
     private static HashMap<Integer, CustomBox> getSelectedEntities() {
