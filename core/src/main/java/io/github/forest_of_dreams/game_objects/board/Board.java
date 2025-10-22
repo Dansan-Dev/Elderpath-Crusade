@@ -75,7 +75,7 @@ public class Board extends HigherOrderTexture {
                     (e) -> {
                         GamePiece gp = gamePieces[r][c];
                         if (gp instanceof MonsterGamePiece mgp) {
-                            mgp.moveUpOne();
+                            mgp.expendAction();
                         }
                     },
                     ClickableEffectData.getImmediate()
@@ -180,7 +180,7 @@ public class Board extends HigherOrderTexture {
             plot.setClickableEffect(
                 (e) -> {
                     GamePiece gp = gamePieces[row][col];
-                    if (gp instanceof MonsterGamePiece mgp) mgp.moveUpOne();
+                    if (gp instanceof MonsterGamePiece mgp) mgp.expendAction();
                 },
                 ClickableEffectData.getImmediate()
             );

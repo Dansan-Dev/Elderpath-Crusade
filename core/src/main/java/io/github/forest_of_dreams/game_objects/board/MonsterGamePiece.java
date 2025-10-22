@@ -16,7 +16,7 @@ public class MonsterGamePiece extends GamePiece {
     }
 
     // Generic interaction triggered by Plot: move this piece one step upwards if possible
-    public void moveUpOne() {
+    public void expendAction() {
         Optional<BoardContext> context = getBoardContext();
         if (context.isEmpty()) return;
 
@@ -35,11 +35,28 @@ public class MonsterGamePiece extends GamePiece {
 
         GamePiece gamePiece = board.getGamePieceAtPos(newRow, currentCol);
         if (gamePiece != null && gamePiece.type.equals(GamePieceType.TERRAIN)) return;
-        else if (board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp) attack();
-        else {
-            board.moveGamePiece(currentRow, currentCol, newRow, currentCol);
-            pos.setRow(newRow);
+        else if (board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp) {
+            if (mgp.alignment.equals(PieceAlignment.HOSTILE)) attack();
         }
+        else {
+            moveUpOneStep();
+        }
+    }
+
+    private void moveUpOneStep() {
+        Optional<BoardContext> context = getBoardContext();
+        if (context.isEmpty()) return;
+
+        BoardContext ctx = context.get();
+        Board.Position pos = ctx.position;
+        Board board = ctx.board;
+        int currentRow = pos.getRow();
+        int currentCol = pos.getCol();
+
+        int newRow = currentRow + 1;
+        if (!pos.isValid(newRow, currentCol)) return;
+        board.moveGamePiece(currentRow, currentCol, newRow, currentCol);
+        pos.setRow(newRow);
     }
 
     public void attack() {
