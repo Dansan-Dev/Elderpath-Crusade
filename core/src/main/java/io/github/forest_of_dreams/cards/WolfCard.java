@@ -217,9 +217,10 @@ public class WolfCard extends Card implements TargetFilter {
             if (active) borderProgress = Math.min(1f, borderProgress + borderSpeed * dt);
             else borderProgress = Math.max(0f, borderProgress - borderSpeed * dt);
             if (borderProgress > 0f) {
-                int[] base = calculatePos();
-                int absX = x + base[0];
-                int absY = y + base[1];
+                // In the (x,y) render overload, the active side is rendered at (x,y),
+                // so draw the border at the same absolute coordinates to align perfectly.
+                int absX = x;
+                int absY = y;
                 int w = getWidth();
                 int h = getHeight();
                 int t2 = Math.max(2, Math.round(Math.min(w, h) * 0.08f * borderProgress));
