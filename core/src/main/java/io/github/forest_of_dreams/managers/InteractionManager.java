@@ -92,26 +92,6 @@ public class InteractionManager {
         HashMap<Integer, CustomBox> entities = getSelectedEntities();
         currentEffect.triggerClickEffect(entities);
         cleanInteraction();
-//        switch (type) {
-//            case IMMEDIATE -> {
-//                currentEffect.triggerClickEffect(entities);
-//                cleanInteraction();
-//
-//            } case MULTI_INTERACTION -> {
-//                if (data.getExtraTargets() == getSelectedTargets()) {
-//                    currentEffect.triggerClickEffect(entities);
-//                    cleanInteraction();
-//                }
-//            } case MULTI_CHOICE_LIMITED_INTERACTION -> {
-//                if (data.getExtraTargets() <= getSelectedTargets()) {
-//                    currentEffect.triggerClickEffect(entities);
-//                    cleanInteraction();
-//                }
-//            } case MULTI_CHOICE_UNLIMITED_INTERACTION -> {
-//                currentEffect.triggerClickEffect(entities);
-//                cleanInteraction();
-//            }
-//        }
     }
 
     private static void cleanInteraction() {
@@ -122,10 +102,19 @@ public class InteractionManager {
 
     private static HashMap<Integer, CustomBox> getSelectedEntities() {
         HashMap<Integer, CustomBox> entities = new HashMap<>();
-        for(int i = 1; i <= selectedCount; i++) {
-            if (selected.containsKey(i))
+        // Index 0 should always be the source of the interaction (the clickable that initiated it)
+        if (currentEffect != null) {
+            entities.put(0, currentEffect);
+        } else {
+            Logger.error("InteractionManager", "currentEffect is null when compiling selected entities");
+        }
+        // Subsequent indices (1..selectedCount) are the selected target entities
+        for (int i = 1; i <= selectedCount; i++) {
+            if (selected.containsKey(i)) {
                 entities.put(i, selected.get(i));
-            else Logger.error("InteractionManager", "missing entity in slot: " + i);
+            } else {
+                Logger.error("InteractionManager", "missing entity in slot: " + i);
+            }
         }
         return entities;
     }
