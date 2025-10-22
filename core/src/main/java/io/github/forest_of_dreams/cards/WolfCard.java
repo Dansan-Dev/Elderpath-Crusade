@@ -19,6 +19,7 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.interfaces.Clickable;
+import io.github.forest_of_dreams.utils.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +89,11 @@ public class WolfCard extends Card implements TargetFilter {
                 if (!(t instanceof Plot plot)) return;
                 int[] idx = this.board.getIndicesOfPlot(plot);
                 if (idx == null) return;
+                // Safety: ensure target plot is still empty at resolution time
+                if (this.board.getGamePieceAtPos(idx[0], idx[1]) != null) {
+                    Logger.log("WolfCard", "Summon aborted: target plot is occupied at (" + idx[0] + "," + idx[1] + ")");
+                    return;
+                }
                 this.board.addGamePieceToPos(
                     idx[0],
                     idx[1],
@@ -106,6 +112,8 @@ public class WolfCard extends Card implements TargetFilter {
         int[] idx = board.getIndicesOfPlot(plot);
         if (idx == null) return false;
         int row = idx[0];
+        // Must be an empty plot
+        if (board.getGamePieceAtPlot(plot) != null) return false;
         switch (alignment) {
             case ALLIED:
                 return row == 0; // only first row for allied player
