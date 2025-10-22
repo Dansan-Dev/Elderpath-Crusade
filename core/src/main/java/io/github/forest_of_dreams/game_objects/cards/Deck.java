@@ -18,7 +18,7 @@ public class Deck extends SpriteObject implements Clickable {
     @Getter
     private final List<Card> cards = new ArrayList<>();
     @Getter
-    private final List<Card> discardPile;
+    private final List<Card> discardPile = new ArrayList<>();
     @Getter @Setter
     private Hand hand;
 
@@ -30,8 +30,8 @@ public class Deck extends SpriteObject implements Clickable {
 
     public Deck(List<Card> cards, int x, int y, int width, int height, int z, SpriteBoxPos spriteBoxPos) {
         super(x, y, width, height, z, spriteBoxPos);
-        this.cards.addAll(cards);
-        this.discardPile = new ArrayList<>();
+        addNewCards(cards);
+
         Sprite sprite = SpriteCreator.makeSprite(
             ImagePathSpritesAndAnimations.CARD_BACK.getPath(),
             0, 0,
@@ -44,11 +44,19 @@ public class Deck extends SpriteObject implements Clickable {
             0
         );
         setClickableEffect(
-            (e) -> {
-                draw();
-            },
+            (e) -> draw(),
             ClickableEffectData.getImmediate()
         );
+    }
+
+    public void addNewCards(List<Card> cards) {
+        cards.forEach(card -> {
+            card.setOnConsumed(() -> {
+                hand.removeCard(card);
+                discardPile.add(card);
+            });
+        });
+        this.cards.addAll(cards);
     }
 
     // Ensure InteractionManager can read the effect config by storing it here

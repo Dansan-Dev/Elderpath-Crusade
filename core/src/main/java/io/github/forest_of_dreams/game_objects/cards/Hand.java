@@ -41,9 +41,7 @@ public class Hand extends HigherOrderTexture {
     public void addCard(Card card) {
         cards.add(card);
         // Register with InteractionManager if the card is clickable
-        if (card instanceof Clickable clickable) {
-            InteractionManager.addClickable(clickable);
-        }
+        InteractionManager.addClickable(card);
         updateBounds();
     }
 
@@ -69,6 +67,13 @@ public class Hand extends HigherOrderTexture {
             );
             c.setParent(getBounds());
         }
+    }
+
+    public void removeCard(Card card) {
+        if (card == null) return;
+        cards.remove(card);
+        InteractionManager.removeClickable(card);
+        updateBounds();
     }
 
     @Override

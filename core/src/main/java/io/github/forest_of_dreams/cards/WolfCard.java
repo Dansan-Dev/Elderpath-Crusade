@@ -24,7 +24,7 @@ import java.util.List;
  * Note: Multiclick target selection is not yet implemented in the project, so this version
  * summons immediately to a fixed target (row/col) supplied at construction time.
  */
-public class WolfCard extends Card implements Clickable {
+public class WolfCard extends Card {
 
     private final int z; // z-layer used by the card art; used to render the text at the same layer
 
@@ -78,6 +78,8 @@ public class WolfCard extends Card implements Clickable {
                     this.targetCol,
                     new Wolf(0, 0, this.board.getPLOT_WIDTH(), this.board.getPLOT_HEIGHT(), this.alignment)
                 );
+                // After resolving the effect, consume the card (remove from hand, add to discard, unregister clicks)
+                this.consume();
             },
             ClickableEffectData.getImmediate()
         );

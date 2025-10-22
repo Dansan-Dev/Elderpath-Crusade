@@ -7,6 +7,7 @@ import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
+import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.utils.SpriteCreator;
@@ -22,7 +23,7 @@ import java.util.function.Supplier;
  * - Rendering: Only the currently visible side (front/back) is rendered.
  * - Effect: A functional CardEffect can be supplied to define behavior (e.g., summon a piece).
  */
-public class Card extends HigherOrderTexture {
+public class Card extends HigherOrderTexture implements Clickable {
     @Getter private final Renderable front;
     @Getter private final Renderable back;
 
@@ -31,6 +32,9 @@ public class Card extends HigherOrderTexture {
 
     @Getter
     private final CardEffect playEffect;
+
+    @Setter
+    private Runnable onConsumed = null;
 
     @FunctionalInterface
     public interface CardEffect {
@@ -123,6 +127,14 @@ public class Card extends HigherOrderTexture {
         if (playEffect != null) {
             playEffect.apply(board, row, col);
         }
+    }
+
+    /**
+     * Consume this card: triggers the configured onConsumed hook.
+     * Intended to be called by concrete cards after their effect resolves.
+     */
+    public void consume() {
+        if (onConsumed != null) onConsumed.run();
     }
 
     /**
