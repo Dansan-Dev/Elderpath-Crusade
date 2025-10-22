@@ -12,6 +12,7 @@ import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.ui_objects.Text;
+import io.github.forest_of_dreams.data_objects.Box;
 
 import java.util.HashMap;
 import java.util.List;
@@ -94,7 +95,7 @@ public class WolfCard extends Card {
 
     // Keep the title sizing roughly in sync when card bounds change
     @Override
-    public void setBounds(io.github.forest_of_dreams.data_objects.Box bounds) {
+    public void setBounds(Box bounds) {
         super.setBounds(bounds);
         if (title != null) {
             title.withFontSize(Math.max(12, (int)(getHeight() * 0.15f)));

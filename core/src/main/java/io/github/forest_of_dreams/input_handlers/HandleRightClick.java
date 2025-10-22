@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.input_handlers;
 
 import io.github.forest_of_dreams.enums.settings.InputHandlerData;
 import io.github.forest_of_dreams.interfaces.InputHandler;
+import io.github.forest_of_dreams.managers.InteractionManager;
 
 import java.util.Map;
 
@@ -12,8 +13,8 @@ public class HandleRightClick implements InputHandler {
         // Do nothing if paused; interactions are cleared on pause entry.
         boolean isPaused = (boolean) data.get(InputHandlerData.IS_PAUSED);
         if (isPaused) return;
-        if (io.github.forest_of_dreams.managers.InteractionManager.hasActiveSelection()) {
-            io.github.forest_of_dreams.managers.InteractionManager.cancelSelection();
+        if (InteractionManager.hasActiveSelection()) {
+            InteractionManager.cancelSelection();
         }
     }
 }

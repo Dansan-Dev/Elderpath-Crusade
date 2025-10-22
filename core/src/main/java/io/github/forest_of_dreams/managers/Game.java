@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.managers;
 
 import io.github.forest_of_dreams.rooms.MainMenuRoom;
 import io.github.forest_of_dreams.supers.Room;
+import io.github.forest_of_dreams.ui_objects.SelectionOverlay;
 
 import java.util.function.Supplier;
 
@@ -28,7 +29,7 @@ public class Game {
         currentRoom.showContent();
         currentRoom.showUI();
         // Global overlays (persist per room instance): selection hint
-        io.github.forest_of_dreams.ui_objects.SelectionOverlay selectionOverlay = new io.github.forest_of_dreams.ui_objects.SelectionOverlay();
+        SelectionOverlay selectionOverlay = new SelectionOverlay();
         GraphicsManager.addUIRenderable(selectionOverlay);
     }
 }

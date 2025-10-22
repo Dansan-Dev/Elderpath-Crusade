@@ -1,5 +1,7 @@
 package io.github.forest_of_dreams.game_objects.board;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.game_objects.sprites.TextureObject;
@@ -8,6 +10,7 @@ import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.utils.ColorSettings;
+import io.github.forest_of_dreams.utils.GraphicUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -50,15 +53,15 @@ public class Plot extends HigherOrderTexture implements Clickable {
      * Animated border used to highlight a Plot during multi-selection.
      * Border thickness smoothly grows when active and shrinks when inactive.
      */
-    private static class EmergingBorderTexture extends io.github.forest_of_dreams.game_objects.sprites.TextureObject {
+    private static class EmergingBorderTexture extends TextureObject {
         private boolean active = false;
         private float progress = 0f; // 0..1
         private final float speed = 4f; // seconds to full thickness ~0.25s
         private final int maxThickness;
-        private final com.badlogic.gdx.graphics.Color borderColor = com.badlogic.gdx.graphics.Color.WHITE;
+        private final Color borderColor = Color.WHITE;
 
         EmergingBorderTexture(int x, int y, int width, int height) {
-            super(new com.badlogic.gdx.graphics.Color(1,1,1,0f), x, y, width, height);
+            super(new Color(1,1,1,0f), x, y, width, height);
             // Use a small relative max thickness; at least 2px for visibility
             this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
         }
@@ -73,7 +76,7 @@ public class Plot extends HigherOrderTexture implements Clickable {
 
         private void step(boolean isPaused) {
             if (isPaused) return;
-            float dt = com.badlogic.gdx.Gdx.graphics.getDeltaTime();
+            float dt = Gdx.graphics.getDeltaTime();
             if (active) {
                 progress = Math.min(1f, progress + speed * dt);
             } else {
@@ -82,7 +85,7 @@ public class Plot extends HigherOrderTexture implements Clickable {
         }
 
         @Override
-        public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, int zLevel, boolean isPaused) {
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
             if (zLevel != this.getZ()) return;
             step(isPaused);
             if (progress <= 0f) return;
@@ -91,7 +94,7 @@ public class Plot extends HigherOrderTexture implements Clickable {
         }
 
         @Override
-        public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
             if (zLevel != this.getZ()) return;
             step(isPaused);
             if (progress <= 0f) return;
@@ -99,18 +102,18 @@ public class Plot extends HigherOrderTexture implements Clickable {
             drawBorder(batch, x + base[0], y + base[1]);
         }
 
-        private void drawBorder(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, int absX, int absY) {
+        private void drawBorder(SpriteBatch batch, int absX, int absY) {
             int w = getWidth();
             int h = getHeight();
             int t = Math.max(1, Math.round(maxThickness * progress));
             // Top
-            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
             // Bottom
-            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
             // Left
-            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
             // Right
-            batch.draw(io.github.forest_of_dreams.utils.GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
         }
     }
 

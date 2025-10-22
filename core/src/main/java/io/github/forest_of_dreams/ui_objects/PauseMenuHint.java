@@ -6,6 +6,7 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.interfaces.UIRenderable;
 import io.github.forest_of_dreams.supers.LowestOrderTexture;
+import io.github.forest_of_dreams.utils.FontSize;
 
 public class PauseMenuHint extends LowestOrderTexture implements UIRenderable {
 //    private final LabelStyle style;
@@ -21,7 +22,7 @@ public class PauseMenuHint extends LowestOrderTexture implements UIRenderable {
             x, y,
             0,
             Color.WHITE
-        ).withFontSize(io.github.forest_of_dreams.utils.FontSize.CAPTION);
+        ).withFontSize(FontSize.CAPTION);
 //        Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
 //        style = skin.get("window", LabelStyle.class);
 //        text = new Label("ESC", style);

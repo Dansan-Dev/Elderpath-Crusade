@@ -317,3 +317,26 @@ Purpose
   - Attempt duplicate clicks on the same target; selection should not advance.
   - For limited choice, attempt to select more than N targets; extra clicks are ignored until confirm/cancel.
   - Right‑click cancels without pausing; ESC cancels and opens pause menu; overlay messaging reflects this.
+
+
+15) Import style (avoid fully-qualified inline references)
+- Policy: Always import classes at the top of the file instead of using fully-qualified names (FQNs) inline in code. This greatly improves readability and keeps diffs small when moving classes.
+  - Correct:
+    - import com.badlogic.gdx.graphics.Color;
+      ...
+      Color c = Color.WHITE;
+  - Avoid:
+    - Color c = com.badlogic.gdx.graphics.Color.WHITE;
+- Apply this to both external libraries (LibGDX, Java stdlib) and project classes. Prefer concise names with clear imports.
+  - Correct:
+    - import io.github.forest_of_dreams.ui_objects.SelectionOverlay;
+      SelectionOverlay overlay = new SelectionOverlay();
+  - Avoid:
+    - io.github.forest_of_dreams.ui_objects.SelectionOverlay overlay = new io.github.forest_of_dreams.ui_objects.SelectionOverlay();
+- Exceptions (rare):
+  - If two imported types clash (same simple name), import one and fully qualify the other at the usage site. Document the rationale in a short comment above the import block.
+  - For on-the-fly, temporary references in comments or string logs, FQNs are acceptable but not recommended.
+- PR checklist:
+  - No occurrences of com.badlogic.gdx.* or io.github.forest_of_dreams.* used inline where a clean import is possible.
+  - Import order: standard Java (java.*), third-party (com.badlogic.gdx.*), then project (io.github.forest_of_dreams.*). Group by block with no blank lines required, but keep it consistent with existing files.
+  - Remove unused imports introduced during refactors.
