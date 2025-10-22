@@ -9,6 +9,7 @@ import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 import lombok.Getter;
@@ -44,7 +45,7 @@ public class Card extends HigherOrderTexture implements Clickable {
     // Preload base frames once to avoid reloading textures per card
     private static final List<Sprite> FRONT_BASE_FRAMES = List.of(
         SpriteCreator.makeSprite(
-            "assets/images/card_front.png",
+            ImagePathSpritesAndAnimations.CARD_FRONT.getPath(),
             0, 0,
             1024, 1536,
             125, 200
@@ -52,7 +53,7 @@ public class Card extends HigherOrderTexture implements Clickable {
     );
     private static final List<Sprite> BACK_BASE_FRAMES = List.of(
         SpriteCreator.makeSprite(
-            "assets/images/card_back.png",
+            ImagePathSpritesAndAnimations.CARD_BACK.getPath(),
             0, 0,
             1024, 1536,
             125, 200
