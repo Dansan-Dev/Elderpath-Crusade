@@ -282,8 +282,12 @@ Purpose
 - Visual feedback
   - A SelectionOverlay UI is globally registered per room and displays context‑sensitive instructions and counters during an active multi‑selection. It hides when paused or when no selection is active.
 - Duplicates and limits
-  - Duplicate targets are ignored (cannot select the same entity twice).
-  - MULTI_CHOICE_LIMITED_INTERACTION enforces the limit: further clicks beyond N are ignored.
+  - Re-clicking an already-selected target deselects it (toggle behavior). Selection indices stay contiguous (1..n) and the overlay counter updates.
+  - MULTI_CHOICE_LIMITED_INTERACTION enforces the limit: further clicks beyond N are ignored until you deselect a target or confirm/cancel.
+- Querying active selection (for highlights)
+  - InteractionManager.getActiveSource(): returns the initiating source (index 0) or null.
+  - InteractionManager.getActiveTargets(): ordered List<CustomBox> of currently selected targets (indices 1..n).
+  - InteractionManager.getActiveEntities(): copy of the entities map (0=source, 1..n=targets).
 - Developer usage examples
   - Immediate:
     - myText.setClickableEffect(onClick, ClickableEffectData.getImmediate());

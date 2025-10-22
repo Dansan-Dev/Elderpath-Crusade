@@ -79,7 +79,8 @@ public class InteractionManager {
         }
         // Prevent selecting the same target multiple times
         if (selected.containsValue(box)) {
-            Logger.log("InteractionManager", "Ignored click: target already selected");
+            // Toggle behavior: clicking an already-selected target will deselect it
+            deselectTarget(box);
             return;
         }
         // Enforce cap for limited-choice interactions (up to N targets)
@@ -121,6 +122,44 @@ public class InteractionManager {
         currentEffect = null;
         selected.clear();
         selectedCount = 0;
+    }
+
+    // Helper: deselect an already-selected target and compact indices
+    private static void deselectTarget(CustomBox box) {
+        if (box == null || selected.isEmpty()) return;
+        // Find the index of this box
+        int idx = -1;
+        for (int i = 1; i <= selected.size(); i++) {
+            if (selected.get(i) == box) { idx = i; break; }
+        }
+        if (idx == -1) return; // not found
+        // Shift elements down to keep indices contiguous: idx..size-1 move one step down
+        int size = selected.size();
+        for (int i = idx; i < size; i++) {
+            selected.put(i, selected.get(i + 1));
+        }
+        // Remove the last duplicate entry
+        selected.remove(size);
+        // Decrement selectedCount but never below 1 (which represents the source click)
+        if (selectedCount > 1) selectedCount--;
+        // Note: We intentionally do not auto-trigger here; user must reconfirm or reselect as needed.
+    }
+
+    // --- Active selection query API (read-only copies) ---
+    /** Returns the initiating clickable (source) of the current interaction, or null if none. */
+    public static CustomBox getActiveSource() { return currentEffect; }
+    /** Returns an ordered copy of currently selected targets (indices 1..n). */
+    public static List<CustomBox> getActiveTargets() {
+        List<CustomBox> out = new ArrayList<>();
+        for (int i = 1; i <= selected.size(); i++) {
+            CustomBox b = selected.get(i);
+            if (b != null) out.add(b);
+        }
+        return out;
+    }
+    /** Returns a copy of the entities map following the indexing contract (0=source, 1..n=targets). */
+    public static HashMap<Integer, CustomBox> getActiveEntities() {
+        return new HashMap<>(getSelectedEntities());
     }
 
     // Selection state helpers for confirmation/cancellation flows
