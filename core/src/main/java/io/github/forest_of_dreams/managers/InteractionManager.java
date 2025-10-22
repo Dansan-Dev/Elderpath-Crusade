@@ -72,6 +72,11 @@ public class InteractionManager {
         if (selectedCount == 0) return;
         ClickableEffectData data = currentEffect.getClickableEffectData();
         if (data == null) return; // Safety: no effect metadata
+        // General rule: re-clicking the source (initial clickable) cancels the interaction
+        if (box == currentEffect) {
+            cancelSelection();
+            return;
+        }
         // Validate target based on expected target type; ignore invalid clicks
         if (!isValidTarget(box, data)) {
             Logger.log("InteractionManager", "Ignored click: target does not match required type " + data.getTargetType());

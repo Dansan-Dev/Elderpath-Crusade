@@ -279,6 +279,7 @@ Purpose
   - Enter confirms selections for choice‑based types and triggers the effect immediately.
   - Right‑click cancels the current multi‑selection without pausing.
   - ESC cancels any active multi‑selection and toggles pause (pause/unpause) afterwards.
+  - Re-clicking the source cancels: If you click the initiating item (index 0, the source) again while a multi‑selection is active, the interaction is canceled immediately. This is the general rule for multi‑interactions; exceptions may be introduced by specific sources in the future.
 - Visual feedback
   - A SelectionOverlay UI is globally registered per room and displays context‑sensitive instructions and counters during an active multi‑selection. It hides when paused or when no selection is active.
 - Duplicates and limits
