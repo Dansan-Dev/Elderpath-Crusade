@@ -100,6 +100,27 @@ public class InteractionManager {
         selectedCount = 0;
     }
 
+    // Selection state helpers for confirmation/cancellation flows
+    public static boolean hasActiveSelection() { return selectedCount > 0; }
+
+    public static void cancelSelection() {
+        if (hasActiveSelection()) {
+            cleanInteraction();
+        }
+    }
+
+    public static void confirmSelection() {
+        if (!hasActiveSelection() || currentEffect == null) return;
+        ClickableEffectData data = currentEffect.getClickableEffectData();
+        if (data == null) { cleanInteraction(); return; }
+        data.setConfirmed(true);
+        // For choice-based interactions, confirmation should immediately evaluate the interaction.
+        switch (data.getType()) {
+            case MULTI_CHOICE_LIMITED_INTERACTION, MULTI_CHOICE_UNLIMITED_INTERACTION -> triggerFullInteraction();
+            case MULTI_INTERACTION, IMMEDIATE -> { /* No-op: these are auto-handled elsewhere */ }
+        }
+    }
+
     private static HashMap<Integer, CustomBox> getSelectedEntities() {
         HashMap<Integer, CustomBox> entities = new HashMap<>();
         // Index 0 should always be the source of the interaction (the clickable that initiated it)
