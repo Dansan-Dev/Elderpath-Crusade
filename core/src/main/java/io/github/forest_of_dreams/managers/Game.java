@@ -27,5 +27,8 @@ public class Game {
         currentRoom = roomSupplier.get();
         currentRoom.showContent();
         currentRoom.showUI();
+        // Global overlays (persist per room instance): selection hint
+        io.github.forest_of_dreams.ui_objects.SelectionOverlay selectionOverlay = new io.github.forest_of_dreams.ui_objects.SelectionOverlay();
+        GraphicsManager.addUIRenderable(selectionOverlay);
     }
 }

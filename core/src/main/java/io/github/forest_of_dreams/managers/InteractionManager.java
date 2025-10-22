@@ -121,6 +121,50 @@ public class InteractionManager {
         }
     }
 
+    // --- Overlay helpers (read-only) ---
+    public static ClickableEffectType getCurrentEffectType() {
+        if (currentEffect == null) return null;
+        ClickableEffectData data = currentEffect.getClickableEffectData();
+        return (data == null ? null : data.getType());
+    }
+
+    public static int getSelectedCount() { return selectedCount; }
+
+    public static int getRequiredTargets() {
+        if (currentEffect == null) return 0;
+        ClickableEffectData data = currentEffect.getClickableEffectData();
+        if (data == null) return 0;
+        return data.getExtraTargets();
+    }
+
+    /**
+     * Builds a user-facing hint for the selection overlay.
+     * Note: selectedCount includes the initial click; selected targets = max(selectedCount - 1, 0).
+     */
+    public static String getOverlayText() {
+        if (!hasActiveSelection() || currentEffect == null) return "";
+        ClickableEffectData data = currentEffect.getClickableEffectData();
+        if (data == null) return "";
+        int selectedTargets = Math.max(selectedCount - 1, 0);
+        switch (data.getType()) {
+            case MULTI_INTERACTION -> {
+                int required = data.getExtraTargets();
+                return "Select " + required + " target" + (required == 1 ? "" : "s") + " (" + selectedTargets + "/" + required + ") — ESC to cancel";
+            }
+            case MULTI_CHOICE_LIMITED_INTERACTION -> {
+                int limit = data.getExtraTargets();
+                return "Select up to " + limit + " target" + (limit == 1 ? "" : "s") + " (" + selectedTargets + ") — Enter to confirm, ESC to cancel";
+            }
+            case MULTI_CHOICE_UNLIMITED_INTERACTION -> {
+                return "Select any number (" + selectedTargets + ") — Enter to confirm, ESC to cancel";
+            }
+            case IMMEDIATE -> {
+                return "";
+            }
+        }
+        return "";
+    }
+
     private static HashMap<Integer, CustomBox> getSelectedEntities() {
         HashMap<Integer, CustomBox> entities = new HashMap<>();
         // Index 0 should always be the source of the interaction (the clickable that initiated it)
