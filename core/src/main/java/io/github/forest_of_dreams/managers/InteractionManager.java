@@ -228,11 +228,23 @@ public class InteractionManager {
     private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
         if (box == null || data == null) return false;
         ClickableTargetType targetType = data.getTargetType();
-        if (targetType == null || targetType == ClickableTargetType.NONE) return true;
-        for (Class<?> allowed : targetType.getAllowedClasses()) {
-            if (allowed.isInstance(box)) return true;
+        if (targetType == null || targetType == ClickableTargetType.NONE) {
+            // If source defines additional filtering, consult it
+            if (currentEffect instanceof TargetFilter tf) {
+                return tf.isValidTargetForEffect(box);
+            }
+            return true;
         }
-        return false;
+        boolean typeOk = false;
+        for (Class<?> allowed : targetType.getAllowedClasses()) {
+            if (allowed.isInstance(box)) { typeOk = true; break; }
+        }
+        if (!typeOk) return false;
+        // Apply optional source-defined filtering
+        if (currentEffect instanceof io.github.forest_of_dreams.interfaces.TargetFilter tf) {
+            return tf.isValidTargetForEffect(box);
+        }
+        return true;
     }
 
     private static HashMap<Integer, CustomBox> getSelectedEntities() {

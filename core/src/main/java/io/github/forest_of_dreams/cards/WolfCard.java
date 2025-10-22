@@ -1,18 +1,24 @@
 package io.github.forest_of_dreams.cards;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.characters.pieces.Wolf;
+import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.board.Board;
+import io.github.forest_of_dreams.game_objects.board.Plot;
 import io.github.forest_of_dreams.game_objects.cards.Card;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
-import io.github.forest_of_dreams.interfaces.OnClick;
+import io.github.forest_of_dreams.interfaces.TargetFilter;
+import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.utils.GraphicUtils;
+import io.github.forest_of_dreams.interfaces.OnClick;
+import io.github.forest_of_dreams.interfaces.Clickable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,11 +31,11 @@ import java.util.List;
  * Note: Multiclick target selection is not yet implemented in the project, so this version
  * summons immediately to a fixed target (row/col) supplied at construction time.
  */
-public class WolfCard extends Card {
+public class WolfCard extends Card implements TargetFilter {
 
     private final int z; // z-layer used by the card art; used to render the text at the same layer
 
-    // Immediate summon context
+    // Context
     private final Board board;
     private final int targetRow;
     private final int targetCol;
@@ -41,6 +47,10 @@ public class WolfCard extends Card {
 
     // Title overlay (not registered as a child/clickable; rendered manually when face up)
     private final Text title;
+
+    // Source selection highlight (animated emerging border)
+    private float borderProgress = 0f; // 0..1
+    private final float borderSpeed = 4f; // ~0.25s to fully show/hide
 
     /**
      * Minimal constructor that only renders a Wolf card front/back and title. No click behavior.
@@ -57,7 +67,8 @@ public class WolfCard extends Card {
     }
 
     /**
-     * Fully configured WolfCard that immediately summons a Wolf to (targetRow, targetCol) on click.
+     * Fully configured WolfCard that uses multi-selection: click the card, then click a Plot to summon there.
+     * The targetRow/targetCol params are retained for backward compatibility but ignored by the multi flow.
      */
     public WolfCard(Board board, int targetRow, int targetCol, PieceAlignment alignment,
                     int x, int y, int width, int height, int z) {
@@ -69,21 +80,41 @@ public class WolfCard extends Card {
         this.alignment = alignment;
         this.title = makeTitle();
 
-        // Immediate click behavior: summon a Wolf on the specified board position
+        // Multi-selection: select exactly one Plot; on resolution, summon Wolf there and consume the card.
         setClickableEffect(
-            (HashMap<Integer, CustomBox> e) -> {
-                System.out.println("CLICKED");
+            (HashMap<Integer, CustomBox> entities) -> {
                 if (this.board == null) return;
+                Object t = entities.get(1);
+                if (!(t instanceof Plot plot)) return;
+                int[] idx = this.board.getIndicesOfPlot(plot);
+                if (idx == null) return;
                 this.board.addGamePieceToPos(
-                    this.targetRow,
-                    this.targetCol,
+                    idx[0],
+                    idx[1],
                     new Wolf(0, 0, this.board.getPLOT_WIDTH(), this.board.getPLOT_HEIGHT(), this.alignment)
                 );
-                // After resolving the effect, consume the card (remove from hand, add to discard, unregister clicks)
                 this.consume();
             },
-            ClickableEffectData.getImmediate()
+            ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
         );
+    }
+
+    @Override
+    public boolean isValidTargetForEffect(CustomBox box) {
+        if (board == null) return false;
+        if (!(box instanceof Plot plot)) return false;
+        int[] idx = board.getIndicesOfPlot(plot);
+        if (idx == null) return false;
+        int row = idx[0];
+        switch (alignment) {
+            case ALLIED:
+                return row == 0; // only first row for allied player
+            case HOSTILE:
+                // Future-proof: restrict to last row for hostile
+                return row == board.getROWS() - 1;
+            default:
+                return false;
+        }
     }
 
     private Text makeTitle() {
@@ -140,6 +171,25 @@ public class WolfCard extends Card {
             int tx = cardX + (getWidth() - title.getWidth()) / 2;
             int ty = cardY + (int)(getHeight() * 0.75f) - title.getHeight() / 2; // upper quadrant
             title.render(batch, zLevel, false, tx, ty);
+
+            // Draw animated border if this card is the active selection source
+            boolean active = InteractionManager.hasActiveSelection() && InteractionManager.getActiveSource() == this;
+            float dt = Gdx.graphics.getDeltaTime();
+            if (active) borderProgress = Math.min(1f, borderProgress + borderSpeed * dt);
+            else borderProgress = Math.max(0f, borderProgress - borderSpeed * dt);
+            if (borderProgress > 0f) {
+                int w = getWidth();
+                int h = getHeight();
+                int t = Math.max(2, Math.round(Math.min(w, h) * 0.08f * borderProgress));
+                // Top
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), cardX, cardY + h - t, w, t);
+                // Bottom
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), cardX, cardY, w, t);
+                // Left
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), cardX, cardY, t, h);
+                // Right
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), cardX + w - t, cardY, t, h);
+            }
         }
     }
 
@@ -152,6 +202,24 @@ public class WolfCard extends Card {
             int tx = x + (getWidth() - title.getWidth()) / 2;
             int ty = y + (int)(getHeight() * 0.75f) - title.getHeight() / 2;
             title.render(batch, zLevel, false, tx, ty);
+
+            // Animated border (same as other render overload) using absolute position
+            boolean active = InteractionManager.hasActiveSelection() && InteractionManager.getActiveSource() == this;
+            float dt = Gdx.graphics.getDeltaTime();
+            if (active) borderProgress = Math.min(1f, borderProgress + borderSpeed * dt);
+            else borderProgress = Math.max(0f, borderProgress - borderSpeed * dt);
+            if (borderProgress > 0f) {
+                int[] base = calculatePos();
+                int absX = x + base[0];
+                int absY = y + base[1];
+                int w = getWidth();
+                int h = getHeight();
+                int t2 = Math.max(2, Math.round(Math.min(w, h) * 0.08f * borderProgress));
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), absX, absY + h - t2, w, t2);
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), absX, absY, w, t2);
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), absX, absY, t2, h);
+                batch.draw(GraphicUtils.getPixelTexture(Color.WHITE), absX + w - t2, absY, t2, h);
+            }
         }
     }
 }

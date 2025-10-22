@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 public class Board extends HigherOrderTexture {
-    private final int ROWS;
-    private final int COLS;
+    @Getter private final int ROWS;
+    @Getter private final int COLS;
     @Getter private final int PLOT_WIDTH;
     @Getter private final int PLOT_HEIGHT;
     private final Renderable[][] board;
@@ -163,6 +163,22 @@ public class Board extends HigherOrderTexture {
             for (int col = 0; col < COLS; col++) {
                 if (board[row][col] == plot) {
                     return gamePieces[row][col];
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find the grid indices of a given Plot instance.
+     * @return int[]{row, col} if found, otherwise null.
+     */
+    public int[] getIndicesOfPlot(Plot plot) {
+        if (plot == null) return null;
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                if (board[row][col] == plot) {
+                    return new int[]{row, col};
                 }
             }
         }
