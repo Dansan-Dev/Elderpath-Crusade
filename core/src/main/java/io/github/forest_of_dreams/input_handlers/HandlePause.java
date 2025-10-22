@@ -13,10 +13,9 @@ import java.util.Map;
 public class HandlePause implements InputHandler {
     @Override
     public void handleInput(Map<InputHandlerData, Object> data) {
-        // If a multi-selection is in progress, ESC should cancel it instead of pausing
+        // If a multi-selection is in progress, first cancel it, then proceed to pause toggle
         if (InteractionManager.hasActiveSelection()) {
             InteractionManager.cancelSelection();
-            return;
         }
         boolean isPaused = (boolean) data.get(InputHandlerData.IS_PAUSED);
         if (!isPaused) {

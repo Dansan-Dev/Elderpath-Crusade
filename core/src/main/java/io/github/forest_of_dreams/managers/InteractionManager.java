@@ -149,14 +149,14 @@ public class InteractionManager {
         switch (data.getType()) {
             case MULTI_INTERACTION -> {
                 int required = data.getExtraTargets();
-                return "Select " + required + " target" + (required == 1 ? "" : "s") + " (" + selectedTargets + "/" + required + ") — ESC to cancel";
+                return "Select " + required + " target" + (required == 1 ? "" : "s") + " (" + selectedTargets + "/" + required + ") — Right-click to cancel, ESC to pause";
             }
             case MULTI_CHOICE_LIMITED_INTERACTION -> {
                 int limit = data.getExtraTargets();
-                return "Select up to " + limit + " target" + (limit == 1 ? "" : "s") + " (" + selectedTargets + ") — Enter to confirm, ESC to cancel";
+                return "Select up to " + limit + " target" + (limit == 1 ? "" : "s") + " (" + selectedTargets + ") — Enter to confirm, Right-click to cancel, ESC to pause";
             }
             case MULTI_CHOICE_UNLIMITED_INTERACTION -> {
-                return "Select any number (" + selectedTargets + ") — Enter to confirm, ESC to cancel";
+                return "Select any number (" + selectedTargets + ") — Enter to confirm, Right-click to cancel, ESC to pause";
             }
             case IMMEDIATE -> {
                 return "";
