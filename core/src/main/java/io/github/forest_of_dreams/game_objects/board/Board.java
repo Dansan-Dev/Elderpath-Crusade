@@ -143,14 +143,17 @@ public class Board extends HigherOrderTexture {
         }
     }
 
-    // Mark candidate move plots (white spots) when a movement source is active
+    // Mark candidate move plots (white dots) and attack plots (red glow) when a movement source is active
     private void updateCandidateMoveSpots() {
         Object src = InteractionManager.getActiveSource();
         // Clear all by default
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
                 Renderable r = board[row][col];
-                if (r instanceof Plot p) p.setCandidate(false);
+                if (r instanceof Plot p) {
+                    p.setCandidate(false);
+                    p.setAttackCandidate(false);
+                }
             }
         }
         if (!(src instanceof Plot plot)) return;
@@ -162,14 +165,22 @@ public class Board extends HigherOrderTexture {
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != PieceAlignment.ALLIED) return;
         int speed = mgp.getStats().getSpeed();
-        java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
+        List<Plot> reachable = getReachablePlots(sr, sc, speed);
+        List<Plot> attackables = getAdjacentHostilePlots(sr, sc, ((MonsterGamePiece) gp).getAlignment());
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
                 Renderable r = board[row][col];
                 if (r instanceof Plot p) {
-                    boolean cand = false;
-                    for (Plot q : reachable) { if (q == p) { cand = true; break; } }
-                    p.setCandidate(cand);
+                    boolean isAttack = false;
+                    for (Plot a : attackables) { if (a == p) { isAttack = true; break; } }
+                    if (isAttack) {
+                        p.setAttackCandidate(true);
+                        p.setCandidate(false); // no dot on enemies
+                        continue;
+                    }
+                    boolean moveCand = false;
+                    for (Plot q : reachable) { if (q == p) { moveCand = true; break; } }
+                    p.setCandidate(moveCand);
                 }
             }
         }
@@ -316,6 +327,37 @@ public class Board extends HigherOrderTexture {
         return out;
     }
 
+    /** Return adjacent hostile plots (cardinal) around (row,col). */
+    public List<Plot> getAdjacentHostilePlots(int row, int col, PieceAlignment friendlyAlignment) {
+        List<Plot> out = new java.util.ArrayList<>();
+        int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
+        for (int[] d : dirs) {
+            int nr = row + d[0];
+            int nc = col + d[1];
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            GamePiece gp = getGamePieceAtPos(nr, nc);
+            if (gp instanceof MonsterGamePiece mgp) {
+                if (mgp.getAlignment() == PieceAlignment.HOSTILE && friendlyAlignment == PieceAlignment.ALLIED) {
+                    Renderable r = board[nr][nc];
+                    if (r instanceof Plot p) out.add(p);
+                }
+                // Future: handle opposite case if playing as HOSTILE, etc.
+            }
+        }
+        return out;
+    }
+
+    private int getRemainingActions(MonsterGamePiece mgp) {
+        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
+        if (v instanceof Integer n) return n;
+        return mgp.getStats().getActions();
+    }
+
+    private void spendAction(MonsterGamePiece mgp) {
+        int left = Math.max(0, getRemainingActions(mgp) - 1);
+        mgp.updateData(GamePieceData.ACTIONS_REMAINING, left);
+    }
+
     private void handlePlotMove(HashMap<Integer, CustomBox> entities) {
         Object s = entities.get(0);
         Object t = entities.get(1);
@@ -328,15 +370,31 @@ public class Board extends HigherOrderTexture {
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != PieceAlignment.ALLIED) return;
+        // Must have actions remaining
+        if (getRemainingActions(mgp) <= 0) return;
+
+        // Attack branch: adjacent hostile in 4-dir
+        GamePiece targetPiece = getGamePieceAtPos(dr, dc);
+        int manhattan = Math.abs(dr - sr) + Math.abs(dc - sc);
+        if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() == PieceAlignment.HOSTILE && manhattan == 1) {
+            enemy.getStats().dealDamage(mgp.getStats().getDamage());
+            if (enemy.getStats().getCurrentHealth() <= 0) {
+                removeGamePieceAtPos(dr, dc);
+            }
+            spendAction(mgp);
+            return;
+        }
+
+        // Move branch: empty destination within reach by Speed
         int speed = mgp.getStats().getSpeed();
         java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
         boolean ok = false;
         for (Plot p : reachable) { if (p == dst) { ok = true; break; } }
         if (!ok) return;
         if (isOccupied(dr, dc)) return; // safety
-        // Perform move
         moveGamePiece(sr, sc, dr, dc);
         mgp.updateData(GamePieceData.POSITION, new Position(this, dr, dc));
+        spendAction(mgp);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.PieceAlignment;
+import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.game_objects.sprites.TextureObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
@@ -40,6 +41,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     private boolean highlighted = false;
     private final EmergingBorderTexture highlightBorder;
     private final CandidateDotTexture candidateDot;
+    private final CandidateAttackBorderTexture attackGlow;
 
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);
@@ -57,7 +59,10 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         // Candidate move spot indicator
         candidateDot = new CandidateDotTexture(0, 0, width, height);
         candidateDot.setZ(2);
-        plotConstruction(plot, plotDirt, highlightBorder, candidateDot);
+        // Attack candidate red glow
+        attackGlow = new CandidateAttackBorderTexture(0, 0, width, height);
+        attackGlow.setZ(2);
+        plotConstruction(plot, plotDirt, highlightBorder, candidateDot, attackGlow);
     }
 
     /**
@@ -166,6 +171,62 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         }
     }
 
+    /**
+     * Red glow border used to mark an attackable target (adjacent hostile).
+     */
+    private static class CandidateAttackBorderTexture extends TextureObject {
+        private boolean active = false;
+        private float progress = 0f; // 0..1 animation
+        private final float speed = 4f;
+        private final int maxThickness;
+        private final Color borderColor = Color.RED;
+
+        CandidateAttackBorderTexture(int x, int y, int width, int height) {
+            super(new Color(1,1,1,0f), x, y, width, height);
+            this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
+        }
+
+        void setActive(boolean active) {
+            if (active && !this.active) this.progress = 0f;
+            this.active = active;
+        }
+
+        private void step(boolean isPaused) {
+            if (isPaused) return;
+            float dt = Gdx.graphics.getDeltaTime();
+            if (active) progress = Math.min(1f, progress + speed * dt);
+            else progress = Math.max(0f, progress - speed * dt);
+        }
+
+        @Override
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
+            if (zLevel != this.getZ()) return;
+            step(isPaused);
+            if (progress <= 0f) return;
+            int[] pos = calculatePos();
+            drawBorder(batch, pos[0], pos[1]);
+        }
+
+        @Override
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
+            if (zLevel != this.getZ()) return;
+            step(isPaused);
+            if (progress <= 0f) return;
+            int[] base = calculatePos();
+            drawBorder(batch, x + base[0], y + base[1]);
+        }
+
+        private void drawBorder(SpriteBatch batch, int absX, int absY) {
+            int w = getWidth();
+            int h = getHeight();
+            int t = Math.max(1, Math.round(maxThickness * progress));
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
+        }
+    }
+
     public Plot withPlotColor(Color color) {
         plot.setColor(color);
         return this;
@@ -183,6 +244,10 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (candidateDot != null) candidateDot.setActive(candidate);
     }
 
+    public void setAttackCandidate(boolean candidate) {
+        if (attackGlow != null) attackGlow.setActive(candidate);
+    }
+
     // Board back-reference wiring
     public void setBoard(Board board) { this.boardRef = board; }
 
@@ -196,11 +261,19 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return false;
         if (mgp.getAlignment() != PieceAlignment.ALLIED) return false;
+
+        // Movement candidates: empty plots within BFS reach by Speed
         int speed = mgp.getStats().getSpeed();
         java.util.List<Plot> reachable = boardRef.getReachablePlots(srcIdx[0], srcIdx[1], speed);
-        // Fast path: identity check
-        for (Plot p : reachable) {
-            if (p == target) return true;
+        for (Plot p : reachable) { if (p == target) return true; }
+
+        // Attack candidates: adjacent hostile monster in 4 directions (cardinal)
+        GamePiece dstPiece = boardRef.getGamePieceAtPlot(target);
+        if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() == PieceAlignment.HOSTILE) {
+            int[] dstIdx = boardRef.getIndicesOfPlot(target);
+            if (dstIdx == null) return false;
+            int manhattan = Math.abs(dstIdx[0] - srcIdx[0]) + Math.abs(dstIdx[1] - srcIdx[1]);
+            return manhattan == 1;
         }
         return false;
     }
@@ -209,7 +282,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         // no-op; old tinting replaced by animated border
     }
 
-    private void plotConstruction(TextureObject plot, TextureObject plotDirt, EmergingBorderTexture border, CandidateDotTexture dot) {
+    private void plotConstruction(TextureObject plot, TextureObject plotDirt, EmergingBorderTexture border, CandidateDotTexture dot, CandidateAttackBorderTexture attack) {
         int width = getWidth();
         int height = getHeight();
         int x = getX();
@@ -219,15 +292,16 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         plot.setZ(0);
         // Border sits above the base plot but below decor
         if (border != null) border.setZ(1);
-        // Back decor and candidate dot share z=2; front decor z=3
+        // Back decor and candidate indicators share z=2; front decor z=3
         plotDecorBack.setZ(2);
         if (dot != null) dot.setZ(2);
+        if (attack != null) attack.setZ(2);
         plotDecorFront.setZ(3);
 
         this.plot = plot;
         this.plotDirt = plotDirt;
-        // Include border and dot in renderables so they participate in rendering
-        setRenderables(Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt, border, dot));
+        // Include border, dot, and attack glow in renderables
+        setRenderables(Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt, border, dot, attack));
 
         Box parentBox = new Box(x, y, width, height);
         plot.setParent(parentBox);
@@ -236,6 +310,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         plotDecorBack.setParent(new Box(x, y + height/2, width, height*2));
         if (border != null) border.setParent(parentBox);
         if (dot != null) dot.setParent(parentBox);
+        if (attack != null) attack.setParent(parentBox);
     }
 
     @Override
@@ -246,12 +321,16 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        // Dynamically decide if this plot should start a movement interaction.
-        // Only start if there is a friendly MonsterGamePiece on this plot.
+        // Dynamically decide if this plot should start a movement/attack interaction.
+        // Only start if there is a friendly MonsterGamePiece with actions remaining on this plot.
         if (boardRef == null) return null;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return null;
         if (mgp.getAlignment() != PieceAlignment.ALLIED) return null;
+        // Require at least one action available
+        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
+        int actionsLeft = (v instanceof Integer n) ? n : mgp.getStats().getActions();
+        if (actionsLeft <= 0) return null;
         return clickableEffectData; // multi-interaction set by Board
     }
 
