@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.game_objects.cards;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
+import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
 import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
@@ -21,6 +22,9 @@ public class Deck extends SpriteObject implements Clickable {
     private final List<Card> discardPile = new ArrayList<>();
     @Getter @Setter
     private Hand hand;
+    // Owner of this deck (P1 or P2)
+    @Getter @Setter
+    private PieceAlignment owner;
 
     private OnClick onClick;
     @Getter

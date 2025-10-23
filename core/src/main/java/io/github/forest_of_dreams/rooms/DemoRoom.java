@@ -100,6 +100,7 @@ public class DemoRoom extends Room {
             }, ClickableEffectData.getMultiChoiceUnlimited(ClickableTargetType.NONE));
         addUI(testChoiceUnlimited);
 
+        // P1 hand (bottom)
         hand = new Hand(
             SettingsManager.screenSize.getScreenCenter()[0],
             -80,
@@ -107,31 +108,69 @@ public class DemoRoom extends Room {
             200,
             0
         );
-
+        hand.setOwner(PieceAlignment.P1);
         addContent(hand);
 
-        List<Card> cards = new ArrayList<>();
+        List<Card> cardsP1 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             if ( i % 2 == 0) {
-                cards.add(new Card(0, 0, 125, 200, 0, null));
+                cardsP1.add(new Card(0, 0, 125, 200, 0, null));
             } else {
-                cards.add(new WolfCard(board, 0, 1, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                cardsP1.add(new WolfCard(board, 0, 1, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
 
         deck = new Deck(
-            cards,
-            0, 0,
+            cardsP1,
+            0, 10,
             125, 200,
             1,
             SpriteBoxPos.BOTTOM_LEFT
         );
+        deck.getBounds().setX(SettingsManager.screenSize.getScreenWidth() - deck.getWidth() - 10);
+        deck.setOwner(PieceAlignment.P1);
         deck.setHand(hand);
         addContent(deck);
 
-        // Wire P1 state to current hand/deck for initial turn testing
+        // P2 hand (top)
+        Hand handP2 = new Hand(
+            SettingsManager.screenSize.getScreenCenter()[0],
+            0,
+            125,
+            200,
+            0
+        );
+        handP2.setBottomY(SettingsManager.screenSize.getScreenHeight() - handP2.getHeight());
+        handP2.setOwner(PieceAlignment.P2);
+        addContent(handP2);
+
+        List<Card> cardsP2 = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            if ( i % 2 == 0) {
+                cardsP2.add(new Card(0, 0, 125, 200, 0, null));
+            } else {
+                cardsP2.add(new WolfCard(board, board.getROWS() - 1, 1, PieceAlignment.P2, 0, 0, 125, 200, 0));
+            }
+        }
+        Deck deckP2 = new Deck(
+            cardsP2,
+            0, SettingsManager.screenSize.getScreenHeight() - 200,
+            125, 200,
+            1,
+            SpriteBoxPos.BOTTOM_LEFT
+        );
+        deckP2.getBounds().setX(SettingsManager.screenSize.getScreenWidth()-deckP2.getWidth() - 10);
+        deckP2.getBounds().setY(SettingsManager.screenSize.getScreenHeight()-deckP2.getHeight() - 10);
+        deckP2.setOwner(PieceAlignment.P2);
+        deckP2.setHand(handP2);
+        addContent(deckP2);
+
+        // Wire PlayerManager ownership
         PlayerManager.setHand(PieceAlignment.P1, hand);
         PlayerManager.setDeck(PieceAlignment.P1, deck);
+        PlayerManager.setHand(PieceAlignment.P2, handP2);
+        PlayerManager.setDeck(PieceAlignment.P2, deckP2);
+
         // Start turn flow if not started yet
         TurnManager.startIfNeeded();
 

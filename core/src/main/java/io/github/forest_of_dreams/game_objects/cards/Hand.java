@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.game_objects.cards;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
+import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.supers.LowestOrderTexture;
@@ -15,6 +16,9 @@ import java.util.List;
 public class Hand extends HigherOrderTexture {
     @Getter
     private List<Card> cards;
+    // Owner of this hand (P1 or P2)
+    @Getter @Setter
+    private PieceAlignment owner;
     private int cardMargin = 2;
     @Getter @Setter
     private int centerX;
