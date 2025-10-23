@@ -8,6 +8,8 @@ import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
+import io.github.forest_of_dreams.multiplayer.EventBus;
+import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 import io.github.forest_of_dreams.managers.TurnManager;
@@ -77,7 +79,17 @@ public class Deck extends SpriteObject implements Clickable {
             if (discardPile.isEmpty()) return;
             shuffle();
         }
-        hand.addCard(cards.remove(0));
+        Card c = cards.remove(0);
+        hand.addCard(c);
+        // Emit CARD_DRAWN
+        EventBus.emit(
+                GameEventType.CARD_DRAWN,
+                Map.of(
+                        "owner", (owner == null ? "UNKNOWN" : owner.name()),
+                        "card", c.getClass().getSimpleName(),
+                        "handSize", hand.getCards().size()
+                )
+        );
     }
 
     public void shuffle() {
@@ -85,6 +97,14 @@ public class Deck extends SpriteObject implements Clickable {
         cards.addAll(discardPile);
         discardPile.clear();
         Collections.shuffle(cards, rng);
+        // Emit CARD_SHUFFLED
+        EventBus.emit(
+                GameEventType.CARD_SHUFFLED,
+                Map.of(
+                        "owner", (owner == null ? "UNKNOWN" : owner.name()),
+                        "deckSize", cards.size()
+                )
+        );
     }
 
     public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {

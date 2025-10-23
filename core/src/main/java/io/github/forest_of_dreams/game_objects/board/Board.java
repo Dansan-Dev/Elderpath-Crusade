@@ -7,6 +7,8 @@ import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.ZIndexRegistry;
 import io.github.forest_of_dreams.managers.TurnManager;
+import io.github.forest_of_dreams.multiplayer.EventBus;
+import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
@@ -21,6 +23,7 @@ import lombok.Setter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 public class Board extends HigherOrderTexture {
@@ -273,6 +276,16 @@ public class Board extends HigherOrderTexture {
     public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
         setGamePiecePos(row, col, gamePiece);
         gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
+        // Emit PIECE_SPAWNED when a piece is added to the board
+        EventBus.emit(
+                GameEventType.PIECE_SPAWNED,
+                Map.of(
+                        "pieceId", gamePiece.getId().toString(),
+                        "owner", gamePiece.getAlignment().name(),
+                        "row", row,
+                        "col", col
+                )
+        );
     }
 
     private void replacePlotAtPos(int row, int col, Renderable newRenderable) {
@@ -410,9 +423,29 @@ public class Board extends HigherOrderTexture {
         GamePiece targetPiece = getGamePieceAtPos(dr, dc);
         int manhattan = Math.abs(dr - sr) + Math.abs(dc - sc);
         if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment() && manhattan == 1) {
-            enemy.getStats().dealDamage(mgp.getStats().getDamage());
+            int dmg = mgp.getStats().getDamage();
+            enemy.getStats().dealDamage(dmg);
+            // Emit attack event
+            EventBus.emit(
+                    GameEventType.PIECE_ATTACKED,
+                    Map.of(
+                            "attackerId", mgp.getId().toString(),
+                            "defenderId", enemy.getId().toString(),
+                            "row", dr,
+                            "col", dc,
+                            "damage", dmg
+                    )
+            );
             if (enemy.getStats().getCurrentHealth() <= 0) {
                 removeGamePieceAtPos(dr, dc);
+                EventBus.emit(
+                        GameEventType.PIECE_DIED,
+                        Map.of(
+                                "pieceId", enemy.getId().toString(),
+                                "row", dr,
+                                "col", dc
+                        )
+                );
             }
             spendAction(mgp);
             return;
@@ -427,6 +460,18 @@ public class Board extends HigherOrderTexture {
         if (isOccupied(dr, dc)) return; // safety
         moveGamePiece(sr, sc, dr, dc);
         mgp.updateData(GamePieceData.POSITION, new Position(this, dr, dc));
+        // Emit move event
+        EventBus.emit(
+                GameEventType.PIECE_MOVED,
+                Map.of(
+                        "pieceId", mgp.getId().toString(),
+                        "owner", mgp.getAlignment().name(),
+                        "fromRow", sr,
+                        "fromCol", sc,
+                        "toRow", dr,
+                        "toCol", dc
+                )
+        );
         spendAction(mgp);
     }
 

@@ -36,6 +36,8 @@ public class TurnManager {
         if (!started) return;
         // End current player's turn
         PlayerManager.onEndTurn(current);
+        // Emit TURN_ENDED for the current player
+        EventBus.emit(GameEventType.TURN_ENDED, java.util.Map.of("player", current.name()));
         // Switch player
         current = (current == PieceAlignment.P1) ? PieceAlignment.P2 : PieceAlignment.P1;
         // Start next player's turn

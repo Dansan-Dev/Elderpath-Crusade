@@ -725,3 +725,11 @@ Purpose
   - Start: P1 mana=1, draws 3 cards; only P1’s deck/cards are actionable.
   - Play a WolfCard until mana=0: further plays are rejected. Press Pass Turn → P2 mana increments, draws 3; P1 hand is discarded.
   - Movement/attack interactions remain restricted to the current player’s pieces.
+
+
+### 16.1) Gameplay events: listening and debugging
+- Emission: Core systems emit events via io.github.forest_of_dreams.multiplayer.EventBus.emit(GameEventType, Map<String,Object>). See GameEventType for the current taxonomy (TURN_*, CARD_*, PIECE_*, MANA_CHANGED, ACTIONS_RESET).
+- Listening: Register a listener with EventBus.register(type, listener). The listener receives a GameEvent with getType() and getData(). Example:
+  - EventBus.register(GameEventType.PIECE_MOVED, evt -> Logger.log("Events", evt.getType()+" "+evt.getData()));
+  - To log all events (Demo-only), iterate over GameEventType.values() and register the same Consumer for each. DemoRoom demonstrates this pattern for manual debugging.
+- Scope and cleanup: Rooms are recreated on navigation; for long-lived listeners, keep a reference and call EventBus.unregister(...) when no longer needed. For Demo-only logging in DemoRoom, registration at construction is sufficient.

@@ -11,6 +11,9 @@ import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.PlayerManager;
 import io.github.forest_of_dreams.managers.TurnManager;
+import io.github.forest_of_dreams.multiplayer.EventBus;
+import io.github.forest_of_dreams.multiplayer.GameEvent;
+import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Button;
 import io.github.forest_of_dreams.ui_objects.ManaHud;
@@ -31,6 +34,7 @@ import io.github.forest_of_dreams.enums.ClickableTargetType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class DemoRoom extends Room {
@@ -164,6 +168,14 @@ public class DemoRoom extends Room {
         addUI(manaHud);
         TurnHud turnHud = new TurnHud();
         addUI(turnHud);
+
+        // Temporary: Register an in-room gameplay event logger for debugging/demo purposes
+        Consumer<GameEvent> eventLogger = (evt) -> {
+            Logger.log("DemoRoom/Event", evt.getType() + " -> " + evt.getData());
+        };
+        for (GameEventType t : GameEventType.values()) {
+            EventBus.register(t, eventLogger);
+        }
 
         System.out.println("InteractionManager.getClickables().size() = " + InteractionManager.getClickables().size());
         InteractionManager.getClickables().forEach((c) -> {

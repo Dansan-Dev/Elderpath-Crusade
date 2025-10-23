@@ -6,9 +6,12 @@ import io.github.forest_of_dreams.game_objects.cards.Card;
 import io.github.forest_of_dreams.game_objects.cards.Deck;
 import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import io.github.forest_of_dreams.multiplayer.EventBus;
+import io.github.forest_of_dreams.multiplayer.GameEventType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Owns PlayerState for P1 and P2 and performs per-turn start/end actions
@@ -44,16 +47,30 @@ public class PlayerManager {
         PlayerState ps = get(id);
         // +1 mana
         ps.mana += 1;
+        // Emit mana changed
+        EventBus.emit(
+            GameEventType.MANA_CHANGED,
+            Map.of("player", id.name(), "mana", ps.mana)
+        );
         // Draw 3
         draw(ps, 3);
         // Reset actions for that player's pieces on all boards currently rendered
         resetActionsFor(id);
+        EventBus.emit(
+            GameEventType.ACTIONS_RESET,
+            Map.of("player", id.name())
+        );
     }
 
     public static void onEndTurn(PieceAlignment id) {
         PlayerState ps = get(id);
         // Discard hand (all cards)
+        int discarded = (ps.hand == null ? 0 : ps.hand.getCards().size());
         discardHand(ps);
+        EventBus.emit(
+            GameEventType.CARD_DISCARDED,
+            Map.of("player", id.name(), "count", discarded)
+        );
     }
 
     private static void draw(PlayerState ps, int n) {
