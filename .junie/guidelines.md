@@ -702,3 +702,26 @@ Purpose
   - No occurrences of com.badlogic.gdx.* or io.github.forest_of_dreams.* used inline where a clean import is possible.
   - Import order: standard Java (java.*), third-party (com.badlogic.gdx.*), then project (io.github.forest_of_dreams.*). Group by block with no blank lines required, but keep it consistent with existing files.
   - Remove unused imports introduced during refactors.
+
+### 16) Turn system and resources (multiplayer prototype)
+- Turn order and control
+  - TurnManager tracks the current player (P1 starts). endTurn() discards current player hand, switches to the other player, then starts their turn.
+  - startIfNeeded() initializes the first turn at app start.
+- Player state (PlayerManager)
+  - PlayerManager owns PlayerState for P1 and P2: mana, Hand, Deck.
+  - onStartTurn(player): +1 mana, draw 3 cards from the player’s deck (shuffling in from discard when needed), and resets ACTIONS_REMAINING for that player’s pieces on all Boards.
+  - onEndTurn(player): discards the entire hand (uses Card.consume() hook installed by Deck.addNewCards()).
+- Interactivity gating by turn
+  - Deck.getClickableEffectData(): only returns non-null for the owner when it is their turn.
+  - Cards can also gate playability by turn (see WolfCard.getClickableEffectData()).
+- Mana rules
+  - Cards must check and deduct mana on successful play. Example: WolfCard has COST=1 and spends from the current player’s PlayerState.mana.
+  - Prevent negative mana: abort the play and log if insufficient mana.
+- UI
+  - A Pass Turn button exists in DemoRoom that calls TurnManager.endTurn(). The button is not clickable while paused (not marked as pause UI).
+  - Turn HUD (ui_objects.TurnHud): shows the current player at center-left. Added by DemoRoom only (not globally).
+  - Mana HUD (ui_objects.ManaHud): shows P1 and P2 mana only; P2 at top-left, P1 at bottom-left. Added by DemoRoom only (not globally).
+- Manual verification
+  - Start: P1 mana=1, draws 3 cards; only P1’s deck/cards are actionable.
+  - Play a WolfCard until mana=0: further plays are rejected. Press Pass Turn → P2 mana increments, draws 3; P1 hand is discarded.
+  - Movement/attack interactions remain restricted to the current player’s pieces.

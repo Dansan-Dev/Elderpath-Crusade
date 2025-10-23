@@ -13,6 +13,8 @@ import io.github.forest_of_dreams.managers.PlayerManager;
 import io.github.forest_of_dreams.managers.TurnManager;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Button;
+import io.github.forest_of_dreams.ui_objects.ManaHud;
+import io.github.forest_of_dreams.ui_objects.TurnHud;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
@@ -67,38 +69,6 @@ public class DemoRoom extends Room {
             .withFontSize(FontSize.BODY_MEDIUM);
         addUI(pauseMenuHint);
 
-        // Test buttons for multi-click interactions (Step 6 verification)
-        Text testMulti = new Text("Test: Multi (2 Plots)", FontType.SILKSCREEN, 20, pauseMenuPos[1] - 30, 1, Color.WHITE)
-            .withFontSize(FontSize.CAPTION)
-            .withOnClick((entities) -> {
-                int count = entities.size() - 1; // exclude source at index 0
-                Logger.log("DemoRoom", "MULTI_INTERACTION triggered with " + count + " targets: " + entities);
-            }, ClickableEffectData.getMulti(ClickableTargetType.PLOT, 2));
-        addUI(testMulti);
-
-        Text testChoiceLimited = new Text("Test: Choice Limited (<=3 Pieces)", FontType.SILKSCREEN, 20, pauseMenuPos[1] - 50, 1, Color.WHITE)
-            .withFontSize(FontSize.CAPTION)
-            .withOnClick((entities) -> {
-                // Translate selected plots to the occupying game pieces (if any)
-                java.util.List<GamePiece> pieces = new java.util.ArrayList<>();
-                for (int i = 1; i < entities.size(); i++) {
-                    Object o = entities.get(i);
-                    if (o instanceof Plot plot) {
-                        GamePiece gp = board.getGamePieceAtPlot(plot);
-                        if (gp != null) pieces.add(gp);
-                    }
-                }
-                Logger.log("DemoRoom", "MULTI_CHOICE_LIMITED (Pieces via Plots) resolved with " + pieces.size() + " pieces: " + pieces);
-            }, ClickableEffectData.getMultiChoiceLimited(ClickableTargetType.PLOT, 3));
-        addUI(testChoiceLimited);
-
-        Text testChoiceUnlimited = new Text("Test: Choice Unlimited (any)", FontType.SILKSCREEN, 20, pauseMenuPos[1] - 70, 1, Color.WHITE)
-            .withFontSize(FontSize.CAPTION)
-            .withOnClick((entities) -> {
-                int count = entities.size() - 1;
-                Logger.log("DemoRoom", "MULTI_CHOICE_UNLIMITED triggered with " + count + " targets: " + entities);
-            }, ClickableEffectData.getMultiChoiceUnlimited(ClickableTargetType.NONE));
-        addUI(testChoiceUnlimited);
 
         // Pass Turn button (mid-right)
         int screenW = SettingsManager.screenSize.getScreenWidth();
@@ -188,6 +158,12 @@ public class DemoRoom extends Room {
 
         // Start turn flow if not started yet
         TurnManager.startIfNeeded();
+
+        // Add HUDs (only in DemoRoom)
+        ManaHud manaHud = new ManaHud();
+        addUI(manaHud);
+        TurnHud turnHud = new TurnHud();
+        addUI(turnHud);
 
         System.out.println("InteractionManager.getClickables().size() = " + InteractionManager.getClickables().size());
         InteractionManager.getClickables().forEach((c) -> {
