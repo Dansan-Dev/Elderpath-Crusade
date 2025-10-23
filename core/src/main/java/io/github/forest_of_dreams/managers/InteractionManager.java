@@ -59,9 +59,11 @@ public class InteractionManager {
         if (selectedCount != 0) return;
         currentEffect = clickableEffect;
         ClickableEffectData data = currentEffect.getClickableEffectData();
+        // If no effect is defined for this click, ignore it (do not start selection)
+        if (data == null) { currentEffect = null; return; }
         // Reset confirmation state at the start of a new interaction to avoid carryover between runs
-        if (data != null) data.setConfirmed(false);
-        if (data != null && data.getType().equals(ClickableEffectType.IMMEDIATE)) {
+        data.setConfirmed(false);
+        if (data.getType().equals(ClickableEffectType.IMMEDIATE)) {
             triggerFullInteraction();
         } else {
             selectedCount++;

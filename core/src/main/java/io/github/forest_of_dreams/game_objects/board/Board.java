@@ -72,16 +72,10 @@ public class Board extends HigherOrderTexture {
                 Plot plot = new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT);
                 if (row == 0) plot.withPlotColor(ColorSettings.PLOT_PLAYER_1_ROW.getColor());
                 if (row == ROWS - 1) plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
-                int r = row;
-                int c = col;
+                plot.setBoard(this);
                 plot.setClickableEffect(
-                    (e) -> {
-                        GamePiece gp = gamePieces[r][c];
-                        if (gp instanceof MonsterGamePiece mgp) {
-                            mgp.expendAction();
-                        }
-                    },
-                    ClickableEffectData.getImmediate()
+                    this::handlePlotMove,
+                    ClickableEffectData.getMulti(io.github.forest_of_dreams.enums.ClickableTargetType.PLOT, 1)
                 );
                 replacePlotAtPos(row, col, plot);
             }
@@ -229,18 +223,85 @@ public class Board extends HigherOrderTexture {
         board[row][col] = newRenderable;
         getRenderables().add(newRenderable);
 
-        // If this is a Plot, bind its click to the GamePiece occupying this cell
+        // If this is a Plot, wire it for movement multi-interaction
         if (newRenderable instanceof Plot plot) {
+            plot.setBoard(this);
             plot.setClickableEffect(
-                (e) -> {
-                    GamePiece gp = gamePieces[row][col];
-                    if (gp instanceof MonsterGamePiece mgp) mgp.expendAction();
-                },
-                ClickableEffectData.getImmediate()
+                this::handlePlotMove,
+                ClickableEffectData.getMulti(io.github.forest_of_dreams.enums.ClickableTargetType.PLOT, 1)
             );
         }
         // Board's z coverage may have changed; re-index in z-buckets
         ZIndexRegistry.notifyZChanged(this);
+    }
+
+    // Helpers for movement reachability and occupancy
+    public boolean isOccupied(int row, int col) {
+        return getGamePieceAtPos(row, col) != null;
+    }
+
+    /**
+     * Compute reachable plots from (row,col) within a maximum path length (speed),
+     * moving 4-directionally (N/E/S/W). Cannot pass through or end on occupied cells.
+     * The origin cell is excluded from the results.
+     */
+    public java.util.List<Plot> getReachablePlots(int row, int col, int speed) {
+        java.util.List<Plot> out = new java.util.ArrayList<>();
+        if (speed <= 0) return out;
+        boolean[][] visited = new boolean[ROWS][COLS];
+        int[][] dist = new int[ROWS][COLS];
+        for (int r = 0; r < ROWS; r++) java.util.Arrays.fill(dist[r], -1);
+        java.util.ArrayDeque<int[]> q = new java.util.ArrayDeque<>();
+        q.add(new int[]{row, col});
+        visited[row][col] = true;
+        dist[row][col] = 0;
+        int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
+        while (!q.isEmpty()) {
+            int[] cur = q.removeFirst();
+            int cr = cur[0], cc = cur[1];
+            int cd = dist[cr][cc];
+            if (cd >= speed) continue; // cannot step further
+            for (int[] d : dirs) {
+                int nr = cr + d[0];
+                int nc = cc + d[1];
+                if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+                if (visited[nr][nc]) continue;
+                // Block stepping into occupied cells
+                if (isOccupied(nr, nc)) continue;
+                visited[nr][nc] = true;
+                dist[nr][nc] = cd + 1;
+                q.addLast(new int[]{nr, nc});
+                // Exclude origin (handled by cd>=0 and origin has dist 0)
+                if (!(nr == row && nc == col)) {
+                    Renderable r = board[nr][nc];
+                    if (r instanceof Plot p) out.add(p);
+                }
+            }
+        }
+        return out;
+    }
+
+    private void handlePlotMove(java.util.HashMap<Integer, io.github.forest_of_dreams.interfaces.CustomBox> entities) {
+        Object s = entities.get(0);
+        Object t = entities.get(1);
+        if (!(s instanceof Plot src) || !(t instanceof Plot dst)) return;
+        int[] sIdx = getIndicesOfPlot(src);
+        int[] dIdx = getIndicesOfPlot(dst);
+        if (sIdx == null || dIdx == null) return;
+        int sr = sIdx[0], sc = sIdx[1];
+        int dr = dIdx[0], dc = dIdx[1];
+        GamePiece gp = getGamePieceAtPos(sr, sc);
+        if (!(gp instanceof MonsterGamePiece mgp)) return;
+        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return;
+        int speed = mgp.getStats().getSpeed();
+        java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
+        boolean ok = false;
+        for (Plot p : reachable) { if (p == dst) { ok = true; break; } }
+        if (!ok) return;
+        if (isOccupied(dr, dc)) return; // safety
+        // Perform move
+        moveGamePiece(sr, sc, dr, dc);
+        mgp.updateData(GamePieceData.POSITION, new Position(this, dr, dc));
     }
 
     @Override

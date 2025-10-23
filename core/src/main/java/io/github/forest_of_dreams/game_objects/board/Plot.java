@@ -20,7 +20,7 @@ import java.util.List;
  * Contains decor such as plot, plotDirt, and plotDecorFront and plotDecorBack
  * Handles onClick events
  */
-public class Plot extends HigherOrderTexture implements Clickable {
+public class Plot extends HigherOrderTexture implements Clickable, io.github.forest_of_dreams.interfaces.TargetFilter {
     private TextureObject plotDecorFront;
     private TextureObject plotDecorBack;
     private TextureObject plot;
@@ -28,6 +28,9 @@ public class Plot extends HigherOrderTexture implements Clickable {
 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
+
+    // Board back-reference for movement logic
+    private Board boardRef = null;
 
     // Highlighting state
     private boolean highlighted = false;
@@ -131,6 +134,28 @@ public class Plot extends HigherOrderTexture implements Clickable {
 
     public boolean isHighlighted() { return highlighted; }
 
+    // Board back-reference wiring
+    public void setBoard(Board board) { this.boardRef = board; }
+
+    // TargetFilter: validate movement targets when this plot is the active source
+    @Override
+    public boolean isValidTargetForEffect(CustomBox box) {
+        if (boardRef == null) return false;
+        if (!(box instanceof Plot target)) return false;
+        int[] srcIdx = boardRef.getIndicesOfPlot(this);
+        if (srcIdx == null) return false;
+        GamePiece gp = boardRef.getGamePieceAtPlot(this);
+        if (!(gp instanceof MonsterGamePiece mgp)) return false;
+        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return false;
+        int speed = mgp.getStats().getSpeed();
+        java.util.List<Plot> reachable = boardRef.getReachablePlots(srcIdx[0], srcIdx[1], speed);
+        // Fast path: identity check
+        for (Plot p : reachable) {
+            if (p == target) return true;
+        }
+        return false;
+    }
+
     private void applyHighlightTint() {
         // no-op; old tinting replaced by animated border
     }
@@ -169,7 +194,13 @@ public class Plot extends HigherOrderTexture implements Clickable {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        return clickableEffectData;
+        // Dynamically decide if this plot should start a movement interaction.
+        // Only start if there is a friendly MonsterGamePiece on this plot.
+        if (boardRef == null) return null;
+        GamePiece gp = boardRef.getGamePieceAtPlot(this);
+        if (!(gp instanceof MonsterGamePiece mgp)) return null;
+        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return null;
+        return clickableEffectData; // multi-interaction set by Board
     }
 
     @Override
