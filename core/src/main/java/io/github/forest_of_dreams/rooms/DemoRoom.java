@@ -15,7 +15,7 @@ import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEvent;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.tiles.MountainTile;
-import io.github.forest_of_dreams.ui_objects.Button;
+import io.github.forest_of_dreams.ui_objects.PassTurnButton;
 import io.github.forest_of_dreams.ui_objects.ManaHud;
 import io.github.forest_of_dreams.ui_objects.TurnHud;
 import io.github.forest_of_dreams.ui_objects.Text;
@@ -82,7 +82,7 @@ public class DemoRoom extends Room {
         // Pass Turn button (mid-right)
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
-        Button passTurn = Button.fromColor(
+        PassTurnButton passTurn = PassTurnButton.fromColor(
             Color.WHITE.cpy().mul(0.2f,0.2f,0.2f,1f),
             "Pass Turn",
             FontType.SILKSCREEN,
@@ -90,8 +90,9 @@ public class DemoRoom extends Room {
             screenW - 150, screenH/2 - 20,
             130, 40,
             2
-        ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
-         .withOnClick((e) -> TurnManager.endTurn(), ClickableEffectData.getImmediate());
+        );
+        passTurn.withTextColors(Color.WHITE, Color.WHITE, Color.WHITE);
+        passTurn.withOnClick((e) -> TurnManager.endTurn(), ClickableEffectData.getImmediate());
         addUI(passTurn);
 
         // P1 hand (bottom)
@@ -194,8 +195,8 @@ public class DemoRoom extends Room {
                 System.out.println("wolfCard = " + wolfCard);
             } else if (c instanceof Text text) {
                 System.out.println("text.getText() = " + text.getText());
-            } else if (c instanceof Button button) {
-                System.out.println("button.getText() = " + button.getText());
+            } else if (c instanceof PassTurnButton) {
+                System.out.println("pass turn button clickable registered");
             } else {
                 System.out.println("c = " + c);
             }

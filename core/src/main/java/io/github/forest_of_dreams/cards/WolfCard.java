@@ -163,7 +163,11 @@ public class WolfCard extends Card implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        // Only allow playing this card on the owning player's turn
+        // Only allow playing this card on the owning player's turn.
+        // Additionally, when P2 bot is enabled, block human clicks on P2's cards (the bot will trigger directly).
+        if (alignment == io.github.forest_of_dreams.enums.PieceAlignment.P2 && io.github.forest_of_dreams.managers.SettingsManager.debug.enableP2Bot) {
+            return null;
+        }
         return (alignment == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
     }
 

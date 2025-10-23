@@ -52,7 +52,7 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
-    private Button(String text, FontType fontType, int fontSize, int x, int y, int width, int height, int z) {
+    protected Button(String text, FontType fontType, int fontSize, int x, int y, int width, int height, int z) {
         this.text = text;
         this.fontType = fontType;
         this.z = z;
@@ -92,10 +92,16 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         return b;
     }
 
+    // Protected setter for subclasses to configure background color
+    protected void setBackgroundColor(Color color) {
+        this.backgroundColor = color;
+    }
+
     public Button withOnClick(OnClick onClick, ClickableEffectData effectData) {
         setClickableEffect(onClick, effectData);
         return this;
     }
+
 
     public Button withTextColors(Color normal, Color hover, Color click) {
         this.textColor = normal;

@@ -8,6 +8,7 @@ import io.github.forest_of_dreams.game_objects.sprites.SpriteObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
+import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
@@ -114,8 +115,12 @@ public class Deck extends SpriteObject implements Clickable {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        // Only the current player's deck is active during their turn
+        // Only the current player's deck is active during their turn.
+        // Additionally, when P2 bot is enabled, block human clicks on P2's deck (the bot will trigger directly).
         if (owner == null) return clickableEffectData;
+        if (owner == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot) {
+            return null;
+        }
         return (owner == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
     }
 }
