@@ -10,7 +10,6 @@ public enum GameEventType {
     CARD_SHUFFLED,
     CARD_DISCARDED,
     CARD_PLAYED,
-    CARD_PLAY_FAILED_MANA,
 
     // Board / pieces
     PIECE_SPAWNED,

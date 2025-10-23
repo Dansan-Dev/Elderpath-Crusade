@@ -51,6 +51,9 @@ public class DemoRoom extends Room {
     private DemoRoom() {
         super();
 
+        // Reset turn and player state for a fresh DemoRoom instance
+        TurnManager.reset();
+
         board = new Board(0, 0, plot_width, plot_height, 7, 5);
         board.initializePlots();
 

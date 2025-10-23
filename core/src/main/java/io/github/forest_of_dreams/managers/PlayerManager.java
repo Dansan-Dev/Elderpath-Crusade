@@ -34,6 +34,18 @@ public class PlayerManager {
         if (!initialized) initialized = true;
     }
 
+    /** Reset player state for a brand new game/session. */
+    public static void resetForNewGame() {
+        // Reset mana
+        p1.mana = 0;
+        p2.mana = 0;
+        // Clear wiring to any previous Hands/Decks; new room will rewire
+        p1.hand = null;
+        p1.deck = null;
+        p2.hand = null;
+        p2.deck = null;
+    }
+
     public static PlayerState get(PieceAlignment id) { return id == PieceAlignment.P1 ? p1 : p2; }
 
     public static PlayerState getCurrent() { return get(TurnManager.getCurrentPlayer()); }

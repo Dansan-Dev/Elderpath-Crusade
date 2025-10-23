@@ -44,4 +44,14 @@ public class TurnManager {
         PlayerManager.onStartTurn(current);
         EventBus.emit(GameEventType.TURN_STARTED, java.util.Map.of("player", current.name()));
     }
+
+    /**
+     * Reset turn system and player state for a brand new room/session.
+     * P1 will start after calling startIfNeeded() again.
+     */
+    public static void reset() {
+        started = false;
+        current = PieceAlignment.P1;
+        PlayerManager.resetForNewGame();
+    }
 }
