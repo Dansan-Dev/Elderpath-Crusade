@@ -11,6 +11,8 @@ public class GameManager {
         SettingsManager.initialize();
         ShaderManager.initialize();
         InputManager.initialize();
+        // Initialize simple bot listener (idempotent)
+        BotManager.initialize();
     }
 
     public static void pause() {

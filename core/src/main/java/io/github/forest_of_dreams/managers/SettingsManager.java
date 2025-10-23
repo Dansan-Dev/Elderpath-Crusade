@@ -21,5 +21,7 @@ public class SettingsManager {
     public static final class DebugSettings {
         // When true, DemoRoom registers an all-events logger via EventBus for manual debugging.
         public boolean eventsLoggerInDemo = true;
+        // Enable or disable the simple P2 bot. When false, BotManager will not act.
+        public boolean enableP2Bot = true;
     }
 }
