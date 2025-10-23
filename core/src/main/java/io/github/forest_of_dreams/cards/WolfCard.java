@@ -14,6 +14,8 @@ import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.TargetFilter;
 import io.github.forest_of_dreams.managers.InteractionManager;
+import io.github.forest_of_dreams.multiplayer.EventBus;
+import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.utils.GraphicUtils;
@@ -104,10 +106,22 @@ public class WolfCard extends Card implements TargetFilter {
                     return;
                 }
                 ps.mana -= COST;
+                Wolf wolf = new Wolf(0, 0, this.board.getPLOT_WIDTH(), this.board.getPLOT_HEIGHT(), this.alignment);
                 this.board.addGamePieceToPos(
                     idx[0],
                     idx[1],
-                    new Wolf(0, 0, this.board.getPLOT_WIDTH(), this.board.getPLOT_HEIGHT(), this.alignment)
+                    wolf
+                );
+                // Emit CARD_PLAYED event
+                EventBus.emit(
+                    GameEventType.CARD_PLAYED,
+                    java.util.Map.of(
+                        "card", "WolfCard",
+                        "owner", this.alignment.name(),
+                        "row", idx[0],
+                        "col", idx[1],
+                        "pieceId", wolf.getId().toString()
+                    )
                 );
                 this.consume();
             },
