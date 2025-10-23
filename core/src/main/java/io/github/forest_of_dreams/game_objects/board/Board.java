@@ -140,6 +140,38 @@ public class Board extends HigherOrderTexture {
         }
     }
 
+    // Mark candidate move plots (white spots) when a movement source is active
+    private void updateCandidateMoveSpots() {
+        Object src = InteractionManager.getActiveSource();
+        // Clear all by default
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                Renderable r = board[row][col];
+                if (r instanceof Plot p) p.setCandidate(false);
+            }
+        }
+        if (!(src instanceof Plot plot)) return;
+        // Ensure the source plot belongs to this board
+        int[] sIdx = getIndicesOfPlot(plot);
+        if (sIdx == null) return;
+        int sr = sIdx[0], sc = sIdx[1];
+        GamePiece gp = getGamePieceAtPos(sr, sc);
+        if (!(gp instanceof MonsterGamePiece mgp)) return;
+        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return;
+        int speed = mgp.getStats().getSpeed();
+        java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                Renderable r = board[row][col];
+                if (r instanceof Plot p) {
+                    boolean cand = false;
+                    for (Plot q : reachable) { if (q == p) { cand = true; break; } }
+                    p.setCandidate(cand);
+                }
+            }
+        }
+    }
+
     public Renderable getPlotAtPos(int row, int col) {
         return board[row][col];
     }
@@ -306,7 +338,8 @@ public class Board extends HigherOrderTexture {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        // Update plot highlights based on current multi-selection state
+        // Update candidate move spots and selected-target highlights
+        updateCandidateMoveSpots();
         updatePlotHighlights();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
@@ -322,7 +355,8 @@ public class Board extends HigherOrderTexture {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-        // Update plot highlights based on current multi-selection state
+        // Update candidate move spots and selected-target highlights
+        updateCandidateMoveSpots();
         updatePlotHighlights();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
