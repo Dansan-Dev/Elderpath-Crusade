@@ -18,7 +18,6 @@ import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.interfaces.OnClick;
-import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.utils.Logger;
 
 import java.util.HashMap;
@@ -63,7 +62,7 @@ public class WolfCard extends Card implements TargetFilter {
         this.board = null;
         this.targetRow = -1;
         this.targetCol = -1;
-        this.alignment = PieceAlignment.ALLIED;
+        this.alignment = PieceAlignment.P1;
         this.title = makeTitle();
     }
 
@@ -115,9 +114,9 @@ public class WolfCard extends Card implements TargetFilter {
         // Must be an empty plot
         if (board.getGamePieceAtPlot(plot) != null) return false;
         switch (alignment) {
-            case ALLIED:
+            case P1:
                 return row == 0; // only first row for allied player
-            case HOSTILE:
+            case P2:
                 // Future-proof: restrict to last row for hostile
                 return row == board.getROWS() - 1;
             default:

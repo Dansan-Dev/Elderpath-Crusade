@@ -9,6 +9,8 @@ import io.github.forest_of_dreams.game_objects.cards.Card;
 import io.github.forest_of_dreams.game_objects.cards.Deck;
 import io.github.forest_of_dreams.game_objects.cards.Hand;
 import io.github.forest_of_dreams.managers.InteractionManager;
+import io.github.forest_of_dreams.managers.PlayerManager;
+import io.github.forest_of_dreams.managers.TurnManager;
 import io.github.forest_of_dreams.tiles.MountainTile;
 import io.github.forest_of_dreams.ui_objects.Button;
 import io.github.forest_of_dreams.ui_objects.Text;
@@ -44,15 +46,15 @@ public class DemoRoom extends Room {
         board = new Board(0, 0, plot_width, plot_height, 7, 5);
         board.initializePlots();
 
-//        board.setGamePiecePos(2, 0, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
-//        board.setGamePiecePos(3, 1, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.HOSTILE));
-//        board.setGamePiecePos(1, 2, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
+//        board.setGamePiecePos(2, 0, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
+//        board.setGamePiecePos(3, 1, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P2));
+//        board.setGamePiecePos(1, 2, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
 //        board.setGamePiecePos(5, 3, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
 //        board.setGamePiecePos(4, 4, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
-        board.addGamePieceToPos(2, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
-        board.addGamePieceToPos(4, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.HOSTILE));
-        board.addGamePieceToPos(1, 4, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.HOSTILE));
-        board.addGamePieceToPos(3, 2, new WarpMage(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.ALLIED));
+        board.addGamePieceToPos(2, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
+        board.addGamePieceToPos(4, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P2));
+        board.addGamePieceToPos(1, 4, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P2));
+        board.addGamePieceToPos(3, 2, new WarpMage(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
         board.addGamePieceToPos(4, 3, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
         board.addGamePieceToPos(2, 1, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
         board.addGamePieceToPos(5, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
@@ -113,7 +115,7 @@ public class DemoRoom extends Room {
             if ( i % 2 == 0) {
                 cards.add(new Card(0, 0, 125, 200, 0, null));
             } else {
-                cards.add(new WolfCard(board, 0, 1, PieceAlignment.ALLIED, 0, 0, 125, 200, 0));
+                cards.add(new WolfCard(board, 0, 1, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
 
@@ -126,6 +128,12 @@ public class DemoRoom extends Room {
         );
         deck.setHand(hand);
         addContent(deck);
+
+        // Wire P1 state to current hand/deck for initial turn testing
+        PlayerManager.setHand(PieceAlignment.P1, hand);
+        PlayerManager.setDeck(PieceAlignment.P1, deck);
+        // Start turn flow if not started yet
+        TurnManager.startIfNeeded();
 
         System.out.println("InteractionManager.getClickables().size() = " + InteractionManager.getClickables().size());
         InteractionManager.getClickables().forEach((c) -> {

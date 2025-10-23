@@ -30,8 +30,8 @@ public class Wolf extends MonsterGamePiece {
                 x, y,
                 width, height,
                 switch (alignment) {
-                    case ALLIED -> CheckerSprite.AlignmentColor.BLUE;
-                    case HOSTILE -> CheckerSprite.AlignmentColor.RED;
+                    case P1 -> CheckerSprite.AlignmentColor.BLUE;
+                    case P2 -> CheckerSprite.AlignmentColor.RED;
                     default -> throw new IllegalArgumentException("Alignment must be allied or hostile");
                 }
             )
@@ -48,8 +48,8 @@ public class Wolf extends MonsterGamePiece {
                 x, y,
                 width, height,
                 switch (alignment) {
-                    case ALLIED -> CheckerSprite.AlignmentColor.BLUE;
-                    case HOSTILE -> CheckerSprite.AlignmentColor.RED;
+                    case P1 -> CheckerSprite.AlignmentColor.BLUE;
+                    case P2 -> CheckerSprite.AlignmentColor.RED;
                     default -> throw new IllegalArgumentException("Alignment must be allied or hostile");
                 }
             )

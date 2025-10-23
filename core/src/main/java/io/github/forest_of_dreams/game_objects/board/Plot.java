@@ -260,7 +260,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (srcIdx == null) return false;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return false;
-        if (mgp.getAlignment() != PieceAlignment.ALLIED) return false;
+        if (mgp.getAlignment() != PieceAlignment.P1) return false;
 
         // Movement candidates: empty plots within BFS reach by Speed
         int speed = mgp.getStats().getSpeed();
@@ -269,7 +269,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
         // Attack candidates: adjacent hostile monster in 4 directions (cardinal)
         GamePiece dstPiece = boardRef.getGamePieceAtPlot(target);
-        if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() == PieceAlignment.HOSTILE) {
+        if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() == PieceAlignment.P2) {
             int[] dstIdx = boardRef.getIndicesOfPlot(target);
             if (dstIdx == null) return false;
             int manhattan = Math.abs(dstIdx[0] - srcIdx[0]) + Math.abs(dstIdx[1] - srcIdx[1]);
@@ -326,7 +326,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (boardRef == null) return null;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return null;
-        if (mgp.getAlignment() != PieceAlignment.ALLIED) return null;
+        if (mgp.getAlignment() != PieceAlignment.P1) return null;
         // Require at least one action available
         Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
         int actionsLeft = (v instanceof Integer n) ? n : mgp.getStats().getActions();

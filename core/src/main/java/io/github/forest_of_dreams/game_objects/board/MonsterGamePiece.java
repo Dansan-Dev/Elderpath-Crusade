@@ -26,7 +26,7 @@ public class MonsterGamePiece extends GamePiece {
         int currentRow = pos.getRow();
         int currentCol = pos.getCol();
 
-        boolean isMovablePiece = !type.equals(GamePieceType.TERRAIN) && alignment.equals(PieceAlignment.ALLIED);
+        boolean isMovablePiece = !type.equals(GamePieceType.TERRAIN) && alignment.equals(PieceAlignment.P1);
         if (!isMovablePiece) return;
 
         int newRow = currentRow + 1; // upwards
@@ -36,7 +36,7 @@ public class MonsterGamePiece extends GamePiece {
         GamePiece gamePiece = board.getGamePieceAtPos(newRow, currentCol);
         if (gamePiece != null && gamePiece.type.equals(GamePieceType.TERRAIN)) return;
         else if (board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp) {
-            if (mgp.alignment.equals(PieceAlignment.HOSTILE)) attack();
+            if (mgp.alignment.equals(PieceAlignment.P2)) attack();
         }
         else {
             moveUpOneStep();
