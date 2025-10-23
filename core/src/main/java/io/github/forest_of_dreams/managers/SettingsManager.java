@@ -11,13 +11,15 @@ public class SettingsManager {
     public static final LanguageSetting language = new LanguageSetting();
     public static final SoundSetting sound = new SoundSetting();
     public static final ScreenSize screenSize = new ScreenSize();
+    public static final DebugSettings debug = new DebugSettings();
 
     public static void initialize() {
         screenSize.initialize();
         language.initialize();
     }
 
-
-
-
+    public static final class DebugSettings {
+        // When true, DemoRoom registers an all-events logger via EventBus for manual debugging.
+        public boolean eventsLoggerInDemo = true;
+    }
 }

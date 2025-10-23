@@ -402,6 +402,15 @@ public class Board extends HigherOrderTexture {
     private void spendAction(MonsterGamePiece mgp) {
         int left = Math.max(0, getRemainingActions(mgp) - 1);
         mgp.updateData(GamePieceData.ACTIONS_REMAINING, left);
+        // Emit ACTION_SPENT with remaining actions
+        EventBus.emit(
+                GameEventType.ACTION_SPENT,
+                Map.of(
+                        "pieceId", mgp.getId().toString(),
+                        "owner", mgp.getAlignment().name(),
+                        "remaining", left
+                )
+        );
     }
 
     private void handlePlotMove(HashMap<Integer, CustomBox> entities) {
@@ -433,6 +442,10 @@ public class Board extends HigherOrderTexture {
                             "defenderId", enemy.getId().toString(),
                             "row", dr,
                             "col", dc,
+                            "attackerRow", sr,
+                            "attackerCol", sc,
+                            "defenderRow", dr,
+                            "defenderCol", dc,
                             "damage", dmg
                     )
             );

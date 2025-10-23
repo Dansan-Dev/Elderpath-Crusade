@@ -38,6 +38,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class DemoRoom extends Room {
+    // Guard against duplicate event logger registration within the same JVM session
+    private static boolean LOGGER_REGISTERED = false;
     private final Board board;
     private final Hand hand;
     private final Deck deck;
@@ -169,12 +171,18 @@ public class DemoRoom extends Room {
         TurnHud turnHud = new TurnHud();
         addUI(turnHud);
 
-        // Temporary: Register an in-room gameplay event logger for debugging/demo purposes
-        Consumer<GameEvent> eventLogger = (evt) -> {
-            Logger.log("DemoRoom/Event", evt.getType() + " -> " + evt.getData());
-        };
-        for (GameEventType t : GameEventType.values()) {
-            EventBus.register(t, eventLogger);
+        // Optional: Register an all-events logger for debugging in DemoRoom
+        if (SettingsManager.debug.eventsLoggerInDemo) {
+            // Guard against double-registration if DemoRoom is recreated without clearing the EventBus
+            if (!LOGGER_REGISTERED) {
+                Consumer<GameEvent> eventLogger = (evt) -> {
+                    Logger.log("DemoRoom/Event", evt.getType() + " -> " + evt.getData());
+                };
+                for (GameEventType t : GameEventType.values()) {
+                    EventBus.register(t, eventLogger);
+                }
+                LOGGER_REGISTERED = true;
+            }
         }
 
         System.out.println("InteractionManager.getClickables().size() = " + InteractionManager.getClickables().size());

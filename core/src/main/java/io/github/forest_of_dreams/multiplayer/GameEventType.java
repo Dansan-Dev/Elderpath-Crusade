@@ -10,6 +10,7 @@ public enum GameEventType {
     CARD_SHUFFLED,
     CARD_DISCARDED,
     CARD_PLAYED,
+    CARD_PLAY_FAILED_MANA,
 
     // Board / pieces
     PIECE_SPAWNED,
@@ -19,5 +20,6 @@ public enum GameEventType {
 
     // Resources / state
     MANA_CHANGED,
-    ACTIONS_RESET
+    ACTIONS_RESET,
+    ACTION_SPENT
 }

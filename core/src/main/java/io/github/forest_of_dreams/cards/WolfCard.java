@@ -103,6 +103,16 @@ public class WolfCard extends Card implements TargetFilter {
                 PlayerManager.PlayerState ps = PlayerManager.get(this.alignment);
                 if (ps == null || ps.mana < COST) {
                     Logger.log("WolfCard", "Not enough mana to play WolfCard. Required=" + COST + ", have=" + (ps == null ? 0 : ps.mana));
+                    // Emit failure event for UI/logging
+                    EventBus.emit(
+                        GameEventType.CARD_PLAY_FAILED_MANA,
+                        java.util.Map.of(
+                            "card", "WolfCard",
+                            "owner", this.alignment.name(),
+                            "required", COST,
+                            "have", (ps == null ? 0 : ps.mana)
+                        )
+                    );
                     return;
                 }
                 ps.mana -= COST;
