@@ -10,6 +10,7 @@ import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.forest_of_dreams.utils.SpriteCreator;
+import io.github.forest_of_dreams.managers.TurnManager;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -90,4 +91,11 @@ public class Deck extends SpriteObject implements Clickable {
          if (this.onClick == null) return;
          onClick.run(interactionEntities);
     };
+
+    @Override
+    public ClickableEffectData getClickableEffectData() {
+        // Only the current player's deck is active during their turn
+        if (owner == null) return clickableEffectData;
+        return (owner == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
+    }
 }

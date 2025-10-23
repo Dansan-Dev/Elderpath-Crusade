@@ -19,6 +19,8 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.interfaces.OnClick;
 import io.github.forest_of_dreams.utils.Logger;
+import io.github.forest_of_dreams.managers.TurnManager;
+import io.github.forest_of_dreams.managers.PlayerManager;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +34,8 @@ import java.util.List;
  * summons immediately to a fixed target (row/col) supplied at construction time.
  */
 public class WolfCard extends Card implements TargetFilter {
+
+    private static final int COST = 1; // Mana cost to play this card
 
     private final int z; // z-layer used by the card art; used to render the text at the same layer
 
@@ -93,6 +97,13 @@ public class WolfCard extends Card implements TargetFilter {
                     Logger.log("WolfCard", "Summon aborted: target plot is occupied at (" + idx[0] + "," + idx[1] + ")");
                     return;
                 }
+                // Check mana and spend it
+                PlayerManager.PlayerState ps = PlayerManager.get(this.alignment);
+                if (ps == null || ps.mana < COST) {
+                    Logger.log("WolfCard", "Not enough mana to play WolfCard. Required=" + COST + ", have=" + (ps == null ? 0 : ps.mana));
+                    return;
+                }
+                ps.mana -= COST;
                 this.board.addGamePieceToPos(
                     idx[0],
                     idx[1],
@@ -149,7 +160,8 @@ public class WolfCard extends Card implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        return clickableEffectData;
+        // Only allow playing this card on the owning player's turn
+        return (alignment == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
     }
 
     @Override

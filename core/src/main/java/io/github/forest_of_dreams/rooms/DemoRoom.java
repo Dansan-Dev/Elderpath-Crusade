@@ -100,6 +100,21 @@ public class DemoRoom extends Room {
             }, ClickableEffectData.getMultiChoiceUnlimited(ClickableTargetType.NONE));
         addUI(testChoiceUnlimited);
 
+        // Pass Turn button (mid-right)
+        int screenW = SettingsManager.screenSize.getScreenWidth();
+        int screenH = SettingsManager.screenSize.getScreenHeight();
+        Button passTurn = Button.fromColor(
+            Color.WHITE.cpy().mul(0.2f,0.2f,0.2f,1f),
+            "Pass Turn",
+            FontType.SILKSCREEN,
+            (int)FontSize.BODY_MEDIUM.getSize(),
+            screenW - 150, screenH/2 - 20,
+            130, 40,
+            2
+        ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
+         .withOnClick((e) -> TurnManager.endTurn(), ClickableEffectData.getImmediate());
+        addUI(passTurn);
+
         // P1 hand (bottom)
         hand = new Hand(
             SettingsManager.screenSize.getScreenCenter()[0],

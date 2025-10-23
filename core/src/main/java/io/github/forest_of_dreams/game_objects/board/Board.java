@@ -6,6 +6,7 @@ import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.ZIndexRegistry;
+import io.github.forest_of_dreams.managers.TurnManager;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
@@ -163,7 +164,7 @@ public class Board extends HigherOrderTexture {
         int sr = sIdx[0], sc = sIdx[1];
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != PieceAlignment.P1) return;
+        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
         int speed = mgp.getStats().getSpeed();
         List<Plot> reachable = getReachablePlots(sr, sc, speed);
         List<Plot> attackables = getAdjacentHostilePlots(sr, sc, ((MonsterGamePiece) gp).getAlignment());
@@ -337,7 +338,7 @@ public class Board extends HigherOrderTexture {
             if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
             GamePiece gp = getGamePieceAtPos(nr, nc);
             if (gp instanceof MonsterGamePiece mgp) {
-                if (mgp.getAlignment() == PieceAlignment.P2 && friendlyAlignment == PieceAlignment.P1) {
+                        if (mgp.getAlignment() != friendlyAlignment) {
                     Renderable r = board[nr][nc];
                     if (r instanceof Plot p) out.add(p);
                 }
@@ -380,14 +381,14 @@ public class Board extends HigherOrderTexture {
         int dr = dIdx[0], dc = dIdx[1];
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != PieceAlignment.P1) return;
+        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
         // Must have actions remaining
         if (getRemainingActions(mgp) <= 0) return;
 
         // Attack branch: adjacent hostile in 4-dir
         GamePiece targetPiece = getGamePieceAtPos(dr, dc);
         int manhattan = Math.abs(dr - sr) + Math.abs(dc - sc);
-        if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() == PieceAlignment.P2 && manhattan == 1) {
+        if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment() && manhattan == 1) {
             enemy.getStats().dealDamage(mgp.getStats().getDamage());
             if (enemy.getStats().getCurrentHealth() <= 0) {
                 removeGamePieceAtPos(dr, dc);

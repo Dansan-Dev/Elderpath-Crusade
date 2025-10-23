@@ -14,6 +14,7 @@ import io.github.forest_of_dreams.interfaces.TargetFilter;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.utils.GraphicUtils;
+import io.github.forest_of_dreams.managers.TurnManager;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -260,7 +261,8 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (srcIdx == null) return false;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return false;
-        if (mgp.getAlignment() != PieceAlignment.P1) return false;
+        // Only allow interactions when the piece alignment matches current player's turn
+        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return false;
 
         // Movement candidates: empty plots within BFS reach by Speed
         int speed = mgp.getStats().getSpeed();
@@ -269,7 +271,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
         // Attack candidates: adjacent hostile monster in 4 directions (cardinal)
         GamePiece dstPiece = boardRef.getGamePieceAtPlot(target);
-        if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() == PieceAlignment.P2) {
+        if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
             int[] dstIdx = boardRef.getIndicesOfPlot(target);
             if (dstIdx == null) return false;
             int manhattan = Math.abs(dstIdx[0] - srcIdx[0]) + Math.abs(dstIdx[1] - srcIdx[1]);
@@ -326,7 +328,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (boardRef == null) return null;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return null;
-        if (mgp.getAlignment() != PieceAlignment.P1) return null;
+        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return null;
         // Require at least one action available
         Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
         int actionsLeft = (v instanceof Integer n) ? n : mgp.getStats().getActions();
