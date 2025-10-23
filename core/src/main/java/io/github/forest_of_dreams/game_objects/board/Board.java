@@ -211,6 +211,27 @@ public class Board extends HigherOrderTexture {
     }
 
     /**
+     * Generalized summon target validation: a plot is valid if it is empty and lies on the
+     * appropriate summon row for the given alignment (P1 → first row 0, P2 → last row ROWS-1).
+     */
+    public boolean isValidSummonTarget(Plot plot, io.github.forest_of_dreams.enums.PieceAlignment alignment) {
+        if (plot == null || alignment == null) return false;
+        int[] idx = getIndicesOfPlot(plot);
+        if (idx == null) return false;
+        // must be empty
+        if (getGamePieceAtPos(idx[0], idx[1]) != null) return false;
+        // row policy
+        switch (alignment) {
+            case P1:
+                return idx[0] == 0;
+            case P2:
+                return idx[0] == ROWS - 1;
+            default:
+                return false;
+        }
+    }
+
+    /**
      * Find the grid indices of a given Plot instance.
      * @return int[]{row, col} if found, otherwise null.
      */

@@ -119,20 +119,8 @@ public class WolfCard extends Card implements TargetFilter {
     public boolean isValidTargetForEffect(CustomBox box) {
         if (board == null) return false;
         if (!(box instanceof Plot plot)) return false;
-        int[] idx = board.getIndicesOfPlot(plot);
-        if (idx == null) return false;
-        int row = idx[0];
-        // Must be an empty plot
-        if (board.getGamePieceAtPlot(plot) != null) return false;
-        switch (alignment) {
-            case P1:
-                return row == 0; // only first row for allied player
-            case P2:
-                // Future-proof: restrict to last row for hostile
-                return row == board.getROWS() - 1;
-            default:
-                return false;
-        }
+        // Delegate to Board for centralized validation (row policy + empty)
+        return board.isValidSummonTarget(plot, alignment);
     }
 
     private Text makeTitle() {
