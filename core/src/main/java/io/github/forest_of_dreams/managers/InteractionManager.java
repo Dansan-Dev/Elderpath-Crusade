@@ -248,7 +248,7 @@ public class InteractionManager {
         }
         if (!typeOk) return false;
         // Apply optional source-defined filtering
-        if (currentEffect instanceof io.github.forest_of_dreams.interfaces.TargetFilter tf) {
+        if (currentEffect instanceof TargetFilter tf) {
             return tf.isValidTargetForEffect(box);
         }
         return true;

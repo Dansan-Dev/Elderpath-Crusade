@@ -14,6 +14,7 @@ import io.github.forest_of_dreams.managers.InputManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.utils.HoverUtils;
+import io.github.forest_of_dreams.utils.FontSize;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -84,7 +85,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     }
 
     // Convenience overload to use standardized enum
-    public Text withFontSize(io.github.forest_of_dreams.utils.FontSize size) {
+    public Text withFontSize(FontSize size) {
         return withFontSize(size.getSize());
     }
 

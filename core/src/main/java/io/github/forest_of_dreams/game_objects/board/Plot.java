@@ -4,10 +4,12 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
+import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.sprites.TextureObject;
 import io.github.forest_of_dreams.interfaces.Clickable;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
+import io.github.forest_of_dreams.interfaces.TargetFilter;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.utils.GraphicUtils;
@@ -21,7 +23,7 @@ import java.util.HashMap;
  * Contains decor such as plot, plotDirt, and plotDecorFront and plotDecorBack
  * Handles onClick events
  */
-public class Plot extends HigherOrderTexture implements Clickable, io.github.forest_of_dreams.interfaces.TargetFilter {
+public class Plot extends HigherOrderTexture implements Clickable, TargetFilter {
     private TextureObject plotDecorFront;
     private TextureObject plotDecorBack;
     private TextureObject plot;
@@ -193,7 +195,7 @@ public class Plot extends HigherOrderTexture implements Clickable, io.github.for
         if (srcIdx == null) return false;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return false;
-        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return false;
+        if (mgp.getAlignment() != PieceAlignment.ALLIED) return false;
         int speed = mgp.getStats().getSpeed();
         java.util.List<Plot> reachable = boardRef.getReachablePlots(srcIdx[0], srcIdx[1], speed);
         // Fast path: identity check
@@ -249,7 +251,7 @@ public class Plot extends HigherOrderTexture implements Clickable, io.github.for
         if (boardRef == null) return null;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return null;
-        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return null;
+        if (mgp.getAlignment() != PieceAlignment.ALLIED) return null;
         return clickableEffectData; // multi-interaction set by Board
     }
 

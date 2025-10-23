@@ -1,6 +1,8 @@
 package io.github.forest_of_dreams.game_objects.board;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.enums.ClickableTargetType;
+import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.ZIndexRegistry;
@@ -16,6 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -75,7 +78,7 @@ public class Board extends HigherOrderTexture {
                 plot.setBoard(this);
                 plot.setClickableEffect(
                     this::handlePlotMove,
-                    ClickableEffectData.getMulti(io.github.forest_of_dreams.enums.ClickableTargetType.PLOT, 1)
+                    ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
                 );
                 replacePlotAtPos(row, col, plot);
             }
@@ -157,7 +160,7 @@ public class Board extends HigherOrderTexture {
         int sr = sIdx[0], sc = sIdx[1];
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return;
+        if (mgp.getAlignment() != PieceAlignment.ALLIED) return;
         int speed = mgp.getStats().getSpeed();
         java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
         for (int row = 0; row < ROWS; row++) {
@@ -260,7 +263,7 @@ public class Board extends HigherOrderTexture {
             plot.setBoard(this);
             plot.setClickableEffect(
                 this::handlePlotMove,
-                ClickableEffectData.getMulti(io.github.forest_of_dreams.enums.ClickableTargetType.PLOT, 1)
+                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
             );
         }
         // Board's z coverage may have changed; re-index in z-buckets
@@ -313,7 +316,7 @@ public class Board extends HigherOrderTexture {
         return out;
     }
 
-    private void handlePlotMove(java.util.HashMap<Integer, io.github.forest_of_dreams.interfaces.CustomBox> entities) {
+    private void handlePlotMove(HashMap<Integer, CustomBox> entities) {
         Object s = entities.get(0);
         Object t = entities.get(1);
         if (!(s instanceof Plot src) || !(t instanceof Plot dst)) return;
@@ -324,7 +327,7 @@ public class Board extends HigherOrderTexture {
         int dr = dIdx[0], dc = dIdx[1];
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != io.github.forest_of_dreams.enums.PieceAlignment.ALLIED) return;
+        if (mgp.getAlignment() != PieceAlignment.ALLIED) return;
         int speed = mgp.getStats().getSpeed();
         java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
         boolean ok = false;
