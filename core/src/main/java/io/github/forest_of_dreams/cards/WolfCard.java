@@ -1,15 +1,14 @@
 package io.github.forest_of_dreams.cards;
 
-import com.badlogic.gdx.graphics.Color;
-import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
+import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
 import io.github.forest_of_dreams.game_objects.cards.SummonCard;
 import io.github.forest_of_dreams.characters.pieces.Wolf;
 
 /**
- * WolfCard now extends SummonCard, providing cost, name, and piece instantiation.
+ * WolfCard now extends SummonCard, providing stats, name, and piece instantiation.
  * Title and border animation are handled by Card.
  */
 public class WolfCard extends SummonCard {
@@ -22,14 +21,24 @@ public class WolfCard extends SummonCard {
     }
 
     @Override
-    protected int getCost() { return 1; }
+    protected GamePieceStats buildStats() {
+        // Define the card's stats (cost, hp, dmg, speed, actions), delivered to the piece upon summon
+        return GamePieceStats.getMonsterStats(
+            1, // cost
+            1, // maxHealth
+            1, // damage
+            1, // speed
+            1  // actions
+        );
+    }
 
     @Override
     protected String getCardName() { return "Wolf"; }
 
     @Override
-    protected GamePiece instantiatePiece() {
+    protected GamePiece instantiatePiece(GamePieceStats stats) {
         return new Wolf(
+            stats,
             0, 0,
             board.getPLOT_WIDTH(),
             board.getPLOT_HEIGHT(),

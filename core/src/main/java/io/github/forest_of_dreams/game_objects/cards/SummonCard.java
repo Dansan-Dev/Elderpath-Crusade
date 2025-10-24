@@ -7,6 +7,7 @@ import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
+import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
 import io.github.forest_of_dreams.game_objects.board.Plot;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.interfaces.OnClick;
@@ -23,11 +24,12 @@ import java.util.HashMap;
 /**
  * Base class for summon-type cards. Handles multi-target click flow, mana cost,
  * summoning onto a Board plot, emitting events, and consuming the card.
- * Subclasses provide the concrete piece instantiation and cost/name.
+ * Subclasses provide the concrete piece instantiation and stats/name.
  */
 public abstract class SummonCard extends Card implements TargetFilter {
     protected final Board board;
     protected final PieceAlignment alignment;
+    protected final GamePieceStats stats; // unified stats used by both card and resulting piece
 
     // Clickable plumbing for InteractionManager
     private OnClick onClick = null;
@@ -42,15 +44,16 @@ public abstract class SummonCard extends Card implements TargetFilter {
         super(x, y, width, height, z, null);
         this.board = board;
         this.alignment = alignment;
+        this.stats = buildStats();
         setTitle(getCardName(), FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
         initializeClickableEffect();
     }
 
     // Subclass hooks
-    protected abstract int getCost();
+    protected abstract GamePieceStats buildStats();
     protected abstract String getCardName();
-    protected abstract GamePiece instantiatePiece();
+    protected abstract GamePiece instantiatePiece(GamePieceStats stats);
 
     private void initializeClickableEffect() {
         setClickableEffect(
@@ -67,18 +70,18 @@ public abstract class SummonCard extends Card implements TargetFilter {
                     return;
                 }
 
-                // Mana check and spend
+                // Mana check and spend using unified stats cost
                 PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
-                int cost = getCost();
+                int cost = stats.getCost();
                 if (playerState == null || playerState.mana < cost) {
                     Logger.log("SummonCard", "Not enough mana. Need=" + cost + ", have=" + (playerState == null ? 0 : playerState.mana));
                     return;
                 }
                 playerState.mana -= cost;
 
-                GamePiece piece = instantiatePiece();
+                GamePiece piece = instantiatePiece(stats);
                 if (piece == null) {
-                    Logger.error("SummonCard", "instantiatePiece() returned null for " + getCardName() + "Card");
+                    Logger.error("SummonCard", "instantiatePiece(stats) returned null for " + getCardName() + "Card");
                     return;
                 }
                 board.addGamePieceToPos(plotPos[0], plotPos[1], piece);
