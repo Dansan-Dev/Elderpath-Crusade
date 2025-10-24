@@ -111,7 +111,7 @@ public class DemoRoom extends Room {
             if ( i % 2 == 0) {
                 cardsP1.add(new Card(0, 0, 125, 200, 0, null));
             } else {
-                cardsP1.add(new WolfCard(board, 0, 1, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
 
@@ -144,7 +144,7 @@ public class DemoRoom extends Room {
             if ( i % 2 == 0) {
                 cardsP2.add(new Card(0, 0, 125, 200, 0, null));
             } else {
-                cardsP2.add(new WolfCard(board, board.getROWS() - 1, 1, PieceAlignment.P2, 0, 0, 125, 200, 0));
+                cardsP2.add(new WolfCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
             }
         }
         Deck deckP2 = new Deck(
