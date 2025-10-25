@@ -31,7 +31,6 @@ public class Deck extends SpriteObject implements Clickable {
     private PieceAlignment owner;
 
     private OnClick onClick;
-    @Getter
     private ClickableEffectData clickableEffectData;
 
     private final Random rng = new Random();
