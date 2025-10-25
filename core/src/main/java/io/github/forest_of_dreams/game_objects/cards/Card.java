@@ -1,5 +1,4 @@
 package io.github.forest_of_dreams.game_objects.cards;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -18,6 +17,7 @@ import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.utils.GraphicUtils;
 import io.github.forest_of_dreams.utils.SpriteCreator;
 import io.github.forest_of_dreams.managers.InteractionManager;
+import io.github.forest_of_dreams.utils.HoverUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -52,6 +52,11 @@ public class Card extends HigherOrderTexture implements Clickable {
     // Animated selection border
     private float borderProgress = 0f; // 0..1
     private final float borderSpeed = 4f; // ~0.25s
+
+    // Hover lift animation (for cards in hand): smoothly lift when hovered
+    private float hoverProgress = 0f; // 0..1
+    private static final float HOVER_SPEED = 6.5f; // controls animation speed
+    private static final int HOVER_LIFT_PX = 90; // should be slightly > 80 to rise above hand baseline
 
     @FunctionalInterface
     public interface CardEffect {
@@ -179,29 +184,45 @@ public class Card extends HigherOrderTexture implements Clickable {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        activeSide().render(batch, zLevel, isPaused);
+        int[] abs = calculatePos();
+        int hoverOffset = stepHoverAndGetOffset(isPaused, abs[0], abs[1], getWidth(), getHeight());
+        // Draw active side at lifted Y when hovered
+        activeSide().render(batch, zLevel, isPaused, abs[0], abs[1] + hoverOffset);
         // Overlays (title + border + subclass extras) only when face-up and at card z layer
         if (!isPaused && faceUp && zLevel == zLayer) {
-            int[] abs = calculatePos();
-            renderTitle(batch, zLevel, abs[0], abs[1]);
-            renderBorderAnimation(batch, zLevel, abs[0], abs[1]);
-            renderExtraOverlays(batch, zLevel, isPaused, abs[0], abs[1]);
+            renderTitle(batch, zLevel, abs[0], abs[1] + hoverOffset);
+            renderBorderAnimation(batch, zLevel, abs[0], abs[1] + hoverOffset);
+            renderExtraOverlays(batch, zLevel, isPaused, abs[0], abs[1] + hoverOffset);
         }
     }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-        activeSide().render(batch, zLevel, isPaused, x, y);
+        int hoverOffset = stepHoverAndGetOffset(isPaused, x, y, getWidth(), getHeight());
+        activeSide().render(batch, zLevel, isPaused, x, y + hoverOffset);
         if (!isPaused && faceUp && zLevel == zLayer) {
-            renderTitle(batch, zLevel, x, y);
-            renderBorderAnimation(batch, zLevel, x, y);
-            renderExtraOverlays(batch, zLevel, isPaused, x, y);
+            renderTitle(batch, zLevel, x, y + hoverOffset);
+            renderBorderAnimation(batch, zLevel, x, y + hoverOffset);
+            renderExtraOverlays(batch, zLevel, isPaused, x, y + hoverOffset);
         }
     }
 
     // Extension hook for subclasses to render additional overlays (e.g., stat numbers)
     // Default: no-op.
     protected void renderExtraOverlays(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {}
+
+    // --- Hover animation helpers ---
+    private int stepHoverAndGetOffset(boolean isPaused, int absX, int absY, int width, int height) {
+        // Determine hover state using absolute rectangle
+        boolean hovered = HoverUtils.isHovered(absX, absY, width, height);
+        float dt = Gdx.graphics.getDeltaTime();
+        if (!isPaused && hovered && faceUp) {
+            hoverProgress = Math.min(1f, hoverProgress + HOVER_SPEED * dt);
+        } else {
+            hoverProgress = Math.max(0f, hoverProgress - HOVER_SPEED * dt);
+        }
+        return (int) Math.round(hoverProgress * HOVER_LIFT_PX);
+    }
 
     private void renderTitle(SpriteBatch batch, int zLevel, int x, int y) {
         if (title != null) {
