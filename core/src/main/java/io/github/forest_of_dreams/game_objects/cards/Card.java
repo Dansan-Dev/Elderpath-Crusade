@@ -128,10 +128,17 @@ public class Card extends HigherOrderTexture implements Clickable {
     @Override
     public void setBounds(Box bounds) {
         super.setBounds(bounds);
-        front.getBounds().setWidth(bounds.getWidth());
-        front.getBounds().setHeight(bounds.getHeight());
-        back.getBounds().setWidth(bounds.getWidth());
-        back.getBounds().setHeight(bounds.getHeight());
+        // Propagate size changes to child sides using their own setBounds so sprites rescale properly
+        Box childBounds = new Box(0, 0, bounds.getWidth(), bounds.getHeight());
+        if (front != null) {
+            front.setBounds(new Box(childBounds.getX(), childBounds.getY(), childBounds.getWidth(), childBounds.getHeight()));
+            // Ensure the child's parent box reflects the new size for relative rendering
+            front.setParent(new Box(0, 0, bounds.getWidth(), bounds.getHeight()));
+        }
+        if (back != null) {
+            back.setBounds(new Box(childBounds.getX(), childBounds.getY(), childBounds.getWidth(), childBounds.getHeight()));
+            back.setParent(new Box(0, 0, bounds.getWidth(), bounds.getHeight()));
+        }
         // Keep title sizing in sync
         if (title != null) {
             title.withFontSize(Math.max(12, (int)(bounds.getHeight() * 0.15f)));
