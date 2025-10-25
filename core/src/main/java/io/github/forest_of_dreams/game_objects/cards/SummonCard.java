@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.game_objects.cards;
-
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.enums.FontType;
@@ -17,10 +18,12 @@ import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.TurnManager;
 import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
+import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.utils.Logger;
 import java.util.Map;
 
 import java.util.HashMap;
+import java.util.function.BiConsumer;
 
 /**
  * Base class for summon-type cards. Handles multi-target click flow, mana cost,
@@ -31,6 +34,13 @@ public abstract class SummonCard extends Card implements TargetFilter {
     protected final Board board;
     protected final PieceAlignment alignment;
     protected final GamePieceStats stats; // unified stats used by both card and resulting piece
+
+    // Cached stat texts (rendered inside orbs)
+    private Text manaText;   // top-right big orb
+    private Text hpText;     // bottom-left big orb (health = maxHealth)
+    private Text spdText;    // bottom small (second-left)
+    private Text actText;    // bottom small (second-right)
+    private Text atkText;    // bottom-right big orb
 
     // Clickable plumbing for InteractionManager
     private OnClick onClick = null;
@@ -48,6 +58,8 @@ public abstract class SummonCard extends Card implements TargetFilter {
         this.stats = buildStats();
         setTitle(getCardName(), FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
+        // Initialize stat text overlays
+        initStatTexts();
         initializeClickableEffect();
     }
 
@@ -55,6 +67,35 @@ public abstract class SummonCard extends Card implements TargetFilter {
     protected abstract GamePieceStats buildStats();
     protected abstract String getCardName();
     protected abstract GamePiece instantiatePiece(GamePieceStats stats);
+
+    // --- Stat overlay initialization and sizing ---
+    private void initStatTexts() {
+        Color c = Color.WHITE;
+        int z = getZLayer();
+        manaText = new Text(String.valueOf(stats.getCost()), FontType.SILKSCREEN, 0, 0, z, c);
+        hpText   = new Text(String.valueOf(stats.getMaxHealth()), FontType.SILKSCREEN, 0, 0, z, c);
+        spdText  = new Text(String.valueOf(stats.getSpeed()), FontType.SILKSCREEN, 0, 0, z, c);
+        actText  = new Text(String.valueOf(stats.getActions()), FontType.SILKSCREEN, 0, 0, z, c);
+        atkText  = new Text(String.valueOf(stats.getDamage()), FontType.SILKSCREEN, 0, 0, z, c);
+        updateStatTextSizes();
+    }
+
+    private void updateStatTextSizes() {
+        int h = getBounds().getHeight();
+        int big = Math.max(8, (int)(h * 0.08f));
+        int small = Math.max(8, (int)(h * 0.06f));
+        if (manaText != null) manaText.withFontSize(big);
+        if (hpText != null) hpText.withFontSize(big);
+        if (atkText != null) atkText.withFontSize(big);
+        if (spdText != null) spdText.withFontSize(small);
+        if (actText != null) actText.withFontSize(small);
+    }
+
+    @Override
+    public void setBounds(Box bounds) {
+        super.setBounds(bounds);
+        updateStatTextSizes();
+    }
 
     private void initializeClickableEffect() {
         setClickableEffect(
@@ -104,6 +145,39 @@ public abstract class SummonCard extends Card implements TargetFilter {
             },
             ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
         );
+    }
+
+    // Render stat texts inside orbs (face-up only; Card controls gating and z-level)
+    @Override
+    protected void renderExtraOverlays(SpriteBatch batch, int zLevel, boolean isPaused, int baseX, int baseY) {
+        if (manaText == null) return;
+        // Card dimensions
+        int w = getWidth();
+        int h = getHeight();
+        // Normalized centers tuned for the provided template
+        float MANA_CX = 0.825f, MANA_CY = 0.890f;   // top-right big orb
+        float HP_CX   = 0.160f, HP_CY   = 0.130f;   // bottom-left big orb
+        float SPD_CX  = 0.365f, SPD_CY  = 0.110f;   // bottom row small (second-left)
+        float ACT_CX  = 0.635f, ACT_CY  = 0.110f;   // bottom row small (second-right)
+        float ATK_CX  = 0.840f, ATK_CY  = 0.130f;   // bottom-right big orb
+        // Helper to center draw
+        BiConsumer<Text, int[]> drawCentered = (t, center) -> {
+            int tx = baseX + center[0] - t.getWidth()/2;
+            int ty = baseY + center[1] - t.getHeight()/2;
+            t.render(batch, zLevel, false, tx, ty);
+        };
+        // Compute centers in pixel space
+        int[] manaC = new int[]{Math.round(w * MANA_CX), Math.round(h * MANA_CY)};
+        int[] hpC   = new int[]{Math.round(w * HP_CX),   Math.round(h * HP_CY)};
+        int[] spdC  = new int[]{Math.round(w * SPD_CX),  Math.round(h * SPD_CY)};
+        int[] actC  = new int[]{Math.round(w * ACT_CX),  Math.round(h * ACT_CY)};
+        int[] atkC  = new int[]{Math.round(w * ATK_CX),  Math.round(h * ATK_CY)};
+        // Render
+        drawCentered.accept(manaText, manaC);
+        drawCentered.accept(hpText, hpC);
+        drawCentered.accept(spdText, spdC);
+        drawCentered.accept(actText, actC);
+        drawCentered.accept(atkText, atkC);
     }
 
     // TargetFilter for InteractionManager validation

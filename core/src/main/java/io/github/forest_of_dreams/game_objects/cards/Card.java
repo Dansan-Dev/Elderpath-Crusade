@@ -169,6 +169,9 @@ public class Card extends HigherOrderTexture implements Clickable {
         return faceUp ? front : back;
     }
 
+    // Allow subclasses to query the card's z-layer for overlay construction
+    protected int getZLayer() { return zLayer; }
+
     @Override
     public List<Integer> getZs() {
         return activeSide().getZs();
@@ -177,11 +180,12 @@ public class Card extends HigherOrderTexture implements Clickable {
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         activeSide().render(batch, zLevel, isPaused);
-        // Overlays (title + border) only when face-up and at card z layer
+        // Overlays (title + border + subclass extras) only when face-up and at card z layer
         if (!isPaused && faceUp && zLevel == zLayer) {
             int[] abs = calculatePos();
             renderTitle(batch, zLevel, abs[0], abs[1]);
             renderBorderAnimation(batch, zLevel, abs[0], abs[1]);
+            renderExtraOverlays(batch, zLevel, isPaused, abs[0], abs[1]);
         }
     }
 
@@ -191,8 +195,13 @@ public class Card extends HigherOrderTexture implements Clickable {
         if (!isPaused && faceUp && zLevel == zLayer) {
             renderTitle(batch, zLevel, x, y);
             renderBorderAnimation(batch, zLevel, x, y);
+            renderExtraOverlays(batch, zLevel, isPaused, x, y);
         }
     }
+
+    // Extension hook for subclasses to render additional overlays (e.g., stat numbers)
+    // Default: no-op.
+    protected void renderExtraOverlays(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {}
 
     private void renderTitle(SpriteBatch batch, int zLevel, int x, int y) {
         if (title != null) {
