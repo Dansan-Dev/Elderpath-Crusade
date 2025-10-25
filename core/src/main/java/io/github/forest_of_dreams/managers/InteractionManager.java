@@ -232,22 +232,16 @@ public class InteractionManager {
         return "";
     }
 
+    /**
+     * Unified target validation:
+     * 1) Coarse type check via ClickableTargetType.matches (NONE or null → allow all types)
+     * 2) Optional fine-grained rules via the source's TargetFilter (if implemented)
+     */
     private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
         if (box == null || data == null) return false;
         ClickableTargetType targetType = data.getTargetType();
-        if (targetType == null || targetType == ClickableTargetType.NONE) {
-            // If source defines additional filtering, consult it
-            if (currentEffect instanceof TargetFilter tf) {
-                return tf.isValidTargetForEffect(box);
-            }
-            return true;
-        }
-        boolean typeOk = false;
-        for (Class<?> allowed : targetType.getAllowedClasses()) {
-            if (allowed.isInstance(box)) { typeOk = true; break; }
-        }
+        boolean typeOk = (targetType == null) || targetType.matches(box);
         if (!typeOk) return false;
-        // Apply optional source-defined filtering
         if (currentEffect instanceof TargetFilter tf) {
             return tf.isValidTargetForEffect(box);
         }
