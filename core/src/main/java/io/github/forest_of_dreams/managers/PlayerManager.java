@@ -66,6 +66,8 @@ public class PlayerManager {
         );
         // Draw 3
         draw(ps, 3);
+        // Ensure bot hand visibility rules (flip P2 hand to back during bot's turn)
+        applyBotHandVisibilityOnTurnStart(id);
         // Reset actions for that player's pieces on all boards currently rendered
         resetActionsFor(id);
         EventBus.emit(
@@ -105,6 +107,26 @@ public class PlayerManager {
         for (Renderable r : GraphicsManager.getRenderables()) {
             if (r instanceof Board b) {
                 b.resetActionsForOwner(id);
+            }
+        }
+    }
+
+    // --- Bot hand visibility helpers ---
+    private static void applyBotHandVisibilityOnTurnStart(PieceAlignment current) {
+        // Only applies when P2 is bot-controlled; feature flag lives in SettingsManager.debug.enableP2Bot
+        if (!SettingsManager.debug.enableP2Bot) return;
+        // When P2's turn starts, flip P2's hand cards face-down; when P1's turn starts, restore face-up.
+        PlayerState bot = get(PieceAlignment.P2);
+        if (bot.hand == null) return;
+        if (current == PieceAlignment.P2) {
+            // Flip any face-up cards to back; leave already face-down cards untouched to respect persistence
+            for (Card c : bot.hand.getCards()) {
+                if (c != null && !c.isFaceDown()) c.showBack();
+            }
+        } else if (current == PieceAlignment.P1) {
+            // Restore visibility for demo purposes: show P2 hand fronts when it's not the bot's turn
+            for (Card c : bot.hand.getCards()) {
+                if (c != null && c.isFaceDown()) c.showFront();
             }
         }
     }
