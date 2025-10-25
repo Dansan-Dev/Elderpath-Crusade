@@ -1,29 +1,28 @@
 package io.github.forest_of_dreams.game_objects.board;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.forest_of_dreams.enums.ClickableTargetType;
-import io.github.forest_of_dreams.enums.PieceAlignment;
+import io.github.forest_of_dreams.enums.*;
 import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.managers.ZIndexRegistry;
 import io.github.forest_of_dreams.managers.TurnManager;
 import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
+import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.utils.ColorSettings;
 import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
-import io.github.forest_of_dreams.enums.GRID_DIRECTION;
-import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.supers.HigherOrderTexture;
 import io.github.forest_of_dreams.ui_objects.BoardIdentifierSymbol;
+import io.github.forest_of_dreams.utils.GraphicUtils;
+import io.github.forest_of_dreams.utils.Logger;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class Board extends HigherOrderTexture {
@@ -35,6 +34,16 @@ public class Board extends HigherOrderTexture {
     private final GamePiece [][] gamePieces;
     private final BoardIdentifierSymbol[] rowIdentifierSymbols;
     private final BoardIdentifierSymbol[] colIdentifierSymbols;
+
+    // Cached UI elements for compact health overlays on damaged pieces
+    private final Map<UUID, Text> hpTexts = new HashMap<>();
+    private final Map<UUID, Integer> hpCache = new HashMap<>();
+    // Semi-transparent dark background for HP label to avoid being obscured by later draws
+    private static final Color HP_BG_COLOR = new Color(1f, 1f, 1f, 0.6f).mul(Color.RED);
+    private static final int HP_PADDING_X = 2; // offset from plot corner
+    private static final int HP_PADDING_Y = 1; // offset from plot corner
+    private static final int HP_BG_PAD_X = 2;  // padding around text inside bg box
+    private static final int HP_BG_PAD_Y = 1;  // padding around text inside bg box
 
     public Board(int x, int y, int plot_width, int plot_height, int rows, int cols) {
         ROWS = rows;
@@ -55,6 +64,62 @@ public class Board extends HigherOrderTexture {
             }
         }
         setBoardIdentifierSymbols();
+    }
+
+    // --- Compact health overlay helpers ---
+    private void renderHpOverlay(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp, Set<UUID> seen) {
+        if (!(gp instanceof MonsterGamePiece mgp)) return;
+        GamePieceStats st = mgp.getStats();
+        int cur = st.getCurrentHealth();
+        int max = st.getMaxHealth();
+        if (cur >= max) return; // full health -> no overlay
+        UUID id = mgp.getId();
+        seen.add(id);
+        Text healthIndicatorText = hpTexts.get(id);
+        String label = cur + "/" + max;
+        int fontPx = Math.max(7, (int)(PLOT_HEIGHT * 0.16f));
+        if (healthIndicatorText == null) {
+            healthIndicatorText = new Text(label, FontType.WINDOW, 0, 0, zLevel+3, Color.WHITE);
+            healthIndicatorText.withFontSize(fontPx);
+            hpTexts.put(id, healthIndicatorText);
+            hpCache.put(id, cur);
+        } else {
+            Integer last = hpCache.get(id);
+            if (last == null || last != cur) {
+                healthIndicatorText.setText(label);
+                healthIndicatorText.withFontSize(fontPx);
+                hpCache.put(id, cur);
+            }
+        }
+        // Only render overlay elements during the text's own z-layer pass to avoid overdraw ordering issues
+        if (!healthIndicatorText.getZs().contains(zLevel)) {
+            return;
+        }
+        // Position at bottom-left of plot with padding
+        int tx = absX + HP_PADDING_X;
+        int ty = absY + HP_PADDING_Y;
+        // Background behind text to improve readability and visual cohesion
+        int textW = Math.max(1, healthIndicatorText.getWidth());
+        int textH = Math.max(1, healthIndicatorText.getHeight());
+        int bgX = tx - HP_BG_PAD_X;
+        int bgY = ty - HP_BG_PAD_Y;
+        int bgW = textW + HP_BG_PAD_X * 2;
+        int bgH = textH + HP_BG_PAD_Y * 2;
+        batch.draw(GraphicUtils.getPixelTexture(HP_BG_COLOR), bgX, bgY, bgW, bgH);
+        // Render text on top
+        healthIndicatorText.render(batch, zLevel, false, tx, ty);
+    }
+
+    private void cleanupStaleHpTexts(Set<UUID> seen) {
+        if (hpTexts.isEmpty()) return;
+        Iterator<Map.Entry<UUID, Text>> it = hpTexts.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Text> e = it.next();
+            if (!seen.contains(e.getKey())) {
+                it.remove();
+                hpCache.remove(e.getKey());
+            }
+        }
     }
 
     public class Position {
@@ -493,16 +558,25 @@ public class Board extends HigherOrderTexture {
         // Update candidate move spots and selected-target highlights
         updateCandidateMoveSpots();
         updatePlotHighlights();
+        Set<UUID> seen = new HashSet<>();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
                 renderable.render(batch, zLevel, isPaused, col*PLOT_WIDTH, row*PLOT_HEIGHT);
+                GamePiece gp = gamePieces[row][col];
+                if (gp != null) {
+                    // When using the non-offset render, sprites may be drawn elsewhere depending on pipeline,
+                    // but we still render the HP overlay here aligned to the plot.
+                    renderHpOverlay(batch, zLevel, col * PLOT_WIDTH, row * PLOT_HEIGHT, gp, seen);
+                }
             }
         }
         Arrays.stream(rowIdentifierSymbols).forEach(s -> {
             s.render(batch, zLevel, isPaused);
         });
         Arrays.stream(colIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
+        // Remove overlays for pieces not seen this frame (e.g., died or moved off-board)
+        cleanupStaleHpTexts(seen);
     }
 
     @Override
@@ -510,12 +584,18 @@ public class Board extends HigherOrderTexture {
         // Update candidate move spots and selected-target highlights
         updateCandidateMoveSpots();
         updatePlotHighlights();
+        Set<UUID> seen = new HashSet<>();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
                 Renderable renderable = board[row][col];
-                renderable.render(batch, zLevel, isPaused, x + col*(PLOT_WIDTH), y + row*(PLOT_HEIGHT));
-                if (gamePieces[row][col] != null)
-                    gamePieces[row][col].getSprite().render(batch, zLevel, isPaused, x + col*PLOT_WIDTH, y + row*PLOT_HEIGHT);
+                int absX = x + col * (PLOT_WIDTH);
+                int absY = y + row * (PLOT_HEIGHT);
+                renderable.render(batch, zLevel, isPaused, absX, absY);
+                GamePiece gp = gamePieces[row][col];
+                if (gp != null) {
+                    gp.getSprite().render(batch, zLevel, isPaused, absX, absY);
+                    renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
+                }
             }
         }
         Arrays.stream(rowIdentifierSymbols).forEach(s -> {
@@ -524,5 +604,6 @@ public class Board extends HigherOrderTexture {
         Arrays.stream(colIdentifierSymbols).forEach(s -> {
             s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY());
         });
+        cleanupStaleHpTexts(seen);
     }
 }
