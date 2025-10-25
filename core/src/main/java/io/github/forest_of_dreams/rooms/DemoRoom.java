@@ -42,7 +42,10 @@ public class DemoRoom extends Room {
     private static boolean LOGGER_REGISTERED = false;
     private final Board board;
     private final Hand hand;
+    private final Hand handP2;
     private final Deck deck;
+    private final Deck deckP2;
+    private final PassTurnButton passTurn;
     private final UIRenderable pauseMenuHint;
     private final Supplier<int[]> pauseMenuPos = () -> new int[]{20, SettingsManager.screenSize.getScreenHeight() - 40};
     private final int plot_width = 40;
@@ -82,7 +85,7 @@ public class DemoRoom extends Room {
         // Pass Turn button (mid-right)
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
-        PassTurnButton passTurn = PassTurnButton.fromColor(
+        passTurn = PassTurnButton.fromColor(
             Color.WHITE.cpy().mul(0.2f,0.2f,0.2f,1f),
             "Pass Turn",
             FontType.SILKSCREEN,
@@ -128,7 +131,7 @@ public class DemoRoom extends Room {
         addContent(deck);
 
         // P2 hand (top)
-        Hand handP2 = new Hand(
+        handP2 = new Hand(
             SettingsManager.screenSize.getScreenCenter()[0],
             0,
             125,
@@ -147,7 +150,7 @@ public class DemoRoom extends Room {
                 cardsP2.add(new WolfCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
             }
         }
-        Deck deckP2 = new Deck(
+        deckP2 = new Deck(
             cardsP2,
             0, SettingsManager.screenSize.getScreenHeight() - 200,
             125, 200,
@@ -225,6 +228,28 @@ public class DemoRoom extends Room {
         int[] pauseMenuPos = this.pauseMenuPos.get();
         pauseMenuHint.getBounds().setX(pauseMenuPos[0]);
         pauseMenuHint.getBounds().setY(pauseMenuPos[1]);
+
+        // Reposition UI elements and decks on resize
+        int screenW = SettingsManager.screenSize.getScreenWidth();
+        int screenH = SettingsManager.screenSize.getScreenHeight();
+        if (passTurn != null) {
+            passTurn.getBounds().setX(screenW - 150);
+            passTurn.getBounds().setY(screenH / 2 - 20);
+        }
+        if (deck != null) {
+            deck.getBounds().setX(screenW - deck.getWidth() - 10);
+            deck.getBounds().setY(10);
+        }
+        if (deckP2 != null) {
+            deckP2.getBounds().setX(screenW - deckP2.getWidth() - 10);
+            deckP2.getBounds().setY(screenH - deckP2.getHeight() - 10);
+        }
+        // Reposition P2 hand (top center)
+        if (handP2 != null) {
+            handP2.setCenterX(SettingsManager.screenSize.getScreenCenter()[0]);
+            handP2.setBottomY(screenH - handP2.getHeight());
+            handP2.updateBounds();
+        }
     }
 
     public static DemoRoom get() {
