@@ -3,6 +3,7 @@ package io.github.forest_of_dreams.managers;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
+import java.util.Map;
 
 /**
  * Minimal turn manager: tracks current player and invokes PlayerManager
@@ -21,7 +22,7 @@ public class TurnManager {
             PlayerManager.initializeIfNeeded();
             PlayerManager.onStartTurn(current);
             // Emit TURN_STARTED
-            EventBus.emit(GameEventType.TURN_STARTED, java.util.Map.of("player", current.name()));
+            EventBus.emit(GameEventType.TURN_STARTED, Map.of("player", current.name()));
         }
     }
 
@@ -29,7 +30,7 @@ public class TurnManager {
         current = player;
         if (!started) started = true;
         PlayerManager.onStartTurn(current);
-        EventBus.emit(GameEventType.TURN_STARTED, java.util.Map.of("player", current.name()));
+        EventBus.emit(GameEventType.TURN_STARTED, Map.of("player", current.name()));
     }
 
     public static void endTurn() {
@@ -37,12 +38,12 @@ public class TurnManager {
         // End current player's turn
         PlayerManager.onEndTurn(current);
         // Emit TURN_ENDED for the current player
-        EventBus.emit(GameEventType.TURN_ENDED, java.util.Map.of("player", current.name()));
+        EventBus.emit(GameEventType.TURN_ENDED, Map.of("player", current.name()));
         // Switch player
         current = (current == PieceAlignment.P1) ? PieceAlignment.P2 : PieceAlignment.P1;
         // Start next player's turn
         PlayerManager.onStartTurn(current);
-        EventBus.emit(GameEventType.TURN_STARTED, java.util.Map.of("player", current.name()));
+        EventBus.emit(GameEventType.TURN_STARTED, Map.of("player", current.name()));
     }
 
     /**

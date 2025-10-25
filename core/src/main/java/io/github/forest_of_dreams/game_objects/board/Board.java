@@ -391,13 +391,13 @@ public class Board extends HigherOrderTexture {
      * moving 4-directionally (N/E/S/W). Cannot pass through or end on occupied cells.
      * The origin cell is excluded from the results.
      */
-    public java.util.List<Plot> getReachablePlots(int row, int col, int speed) {
-        java.util.List<Plot> out = new java.util.ArrayList<>();
+    public List<Plot> getReachablePlots(int row, int col, int speed) {
+        List<Plot> out = new ArrayList<>();
         if (speed <= 0) return out;
         boolean[][] visited = new boolean[ROWS][COLS];
         int[][] dist = new int[ROWS][COLS];
-        for (int r = 0; r < ROWS; r++) java.util.Arrays.fill(dist[r], -1);
-        java.util.ArrayDeque<int[]> q = new java.util.ArrayDeque<>();
+        for (int r = 0; r < ROWS; r++) Arrays.fill(dist[r], -1);
+        ArrayDeque<int[]> q = new ArrayDeque<>();
         q.add(new int[]{row, col});
         visited[row][col] = true;
         dist[row][col] = 0;
@@ -429,7 +429,7 @@ public class Board extends HigherOrderTexture {
 
     /** Return adjacent hostile plots (cardinal) around (row,col). */
     public List<Plot> getAdjacentHostilePlots(int row, int col, PieceAlignment friendlyAlignment) {
-        List<Plot> out = new java.util.ArrayList<>();
+        List<Plot> out = new ArrayList<>();
         int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
         for (int[] d : dirs) {
             int nr = row + d[0];

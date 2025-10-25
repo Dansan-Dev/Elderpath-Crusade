@@ -18,6 +18,7 @@ import io.github.forest_of_dreams.managers.TurnManager;
 import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.utils.Logger;
+import java.util.Map;
 
 import java.util.HashMap;
 
@@ -89,7 +90,7 @@ public abstract class SummonCard extends Card implements TargetFilter {
                 // Emit generic CARD_PLAYED
                 EventBus.emit(
                     GameEventType.CARD_PLAYED,
-                    java.util.Map.of(
+                    Map.of(
                         "card", getCardName(),
                         "owner", alignment.name(),
                         "row", plotPos[0],
