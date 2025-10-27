@@ -1,8 +1,12 @@
 package io.github.forest_of_dreams.game_objects.board;
+import io.github.forest_of_dreams.abilities.Ability;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,9 +14,37 @@ public class MonsterGamePiece extends GamePiece {
 
     private record BoardContext(Board board, Board.Position position) {}
 
+    // Container for this piece's abilities (defined by concrete piece classes)
+    private final List<Ability> abilities = new ArrayList<>();
+
     public MonsterGamePiece(GamePieceStats stats, GamePieceType type, PieceAlignment alignment, UUID id, Renderable sprite) {
         super(stats, type, alignment, id, sprite);
         if (type.equals(GamePieceType.TERRAIN)) throw new IllegalArgumentException("Cannot create a monster as terrain");
+    }
+
+    // ---- Abilities API ----
+    public void addAbility(Ability ability) {
+        if (ability == null) return;
+        abilities.add(ability);
+        ability.onAttach(this);
+    }
+
+    public void removeAbility(Ability ability) {
+        if (ability == null) return;
+        if (abilities.remove(ability)) {
+            try { ability.onDetach(); } catch (Exception ignored) {}
+        }
+    }
+
+    public List<Ability> getAbilities() {
+        return Collections.unmodifiableList(abilities);
+    }
+
+    private void detachAllAbilities() {
+        for (Ability a : abilities) {
+            try { a.onDetach(); } catch (Exception ignored) {}
+        }
+        abilities.clear();
     }
 
     // Generic interaction triggered by Plot: move this piece one step upwards if possible
@@ -79,6 +111,9 @@ public class MonsterGamePiece extends GamePiece {
     public void die() {
         Optional<BoardContext> context = getBoardContext();
         if (context.isEmpty()) return;
+
+        // Detach abilities before removing from board
+        detachAllAbilities();
 
         BoardContext ctx = context.get();
         Board.Position pos = ctx.position;
