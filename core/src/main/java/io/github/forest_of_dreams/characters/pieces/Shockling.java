@@ -1,8 +1,9 @@
 package io.github.forest_of_dreams.characters.pieces;
 
-import io.github.forest_of_dreams.characters.sprites.checker_sprites.WolfCubSprite;
-import io.github.forest_of_dreams.characters.sprites.checker_sprites.WolfSprite;
+import io.github.forest_of_dreams.abilities.impl.OnSummonShockAbility;
+import io.github.forest_of_dreams.characters.sprites.checker_sprites.ShocklingSprite;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__.CheckerSprite;
+import io.github.forest_of_dreams.characters.sprites.checker_sprites.WarpMageSprite; // reuse a simple sprite for demo
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
@@ -11,23 +12,22 @@ import io.github.forest_of_dreams.game_objects.board.MonsterGamePiece;
 import java.util.UUID;
 
 /**
- * A smaller wolf unit with baseline low stats. Receives +1 attack when adjacent to an allied Wolf
- * (implemented as a passive buff calculated by Board when resolving attacks).
+ * A small electric creature that shocks adjacent pieces upon being summoned.
  */
-public class WolfCub extends MonsterGamePiece {
-
+public class Shockling extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
         // cost, hp, dmg, speed, actions
-        return GamePieceStats.getMonsterStats(0, 1, 0, 1, 1);
+        return GamePieceStats.getMonsterStats(1, 1, 0, 1, 1);
     }
 
-    public WolfCub(GamePieceStats stats, int x, int y, int width, int height, PieceAlignment alignment) {
+    public Shockling(GamePieceStats stats, int x, int y, int width, int height, PieceAlignment alignment) {
         super(
             stats,
             GamePieceType.MONSTER,
             alignment,
             UUID.randomUUID(),
-            new WolfCubSprite(
+            // Using WarpMageSprite for placeholder visuals to avoid asset additions
+            new ShocklingSprite(
                 x, y,
                 width, height,
                 switch (alignment) {
@@ -37,12 +37,11 @@ public class WolfCub extends MonsterGamePiece {
                 }
             )
         );
-        // Abilities: Attach piece-specific abilities here in future (e.g., Pack Hunter passive)
-        // Example (later): this.addAbility(new PackHunter());
+        // Attach triggered ability: On Summon shock adjacent pieces
+        this.addAbility(new OnSummonShockAbility());
     }
 
-    public WolfCub(int x, int y, int width, int height, PieceAlignment alignment) {
+    public Shockling(int x, int y, int width, int height, PieceAlignment alignment) {
         this(getBaselineStats(), x, y, width, height, alignment);
-        // Abilities for baseline ctor would also be attached in the main ctor above.
     }
 }

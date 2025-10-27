@@ -1,7 +1,9 @@
 package io.github.forest_of_dreams.rooms;
 
 import com.badlogic.gdx.graphics.Color;
+import io.github.forest_of_dreams.abilities.AbilityRelay;
 import io.github.forest_of_dreams.cards.WolfCard;
+import io.github.forest_of_dreams.cards.WolfCubCard;
 import io.github.forest_of_dreams.characters.pieces.WarpMage;
 import io.github.forest_of_dreams.characters.pieces.Wolf;
 import io.github.forest_of_dreams.enums.SpriteBoxPos;
@@ -112,12 +114,18 @@ public class DemoRoom extends Room {
 
         List<Card> cardsP1 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            if ( i % 2 == 0) {
+            int kind = i % 3;
+            if (kind == 0) {
                 cardsP1.add(new Card(0, 0, 125, 200, 0, null));
-            } else {
+            } else if (kind == 1) {
                 cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else {
+                cardsP1.add(new WolfCubCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
+        // Add a couple of ShocklingCards to demonstrate triggered on-summon damage
+        cardsP1.add(new io.github.forest_of_dreams.cards.ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+        cardsP1.add(new io.github.forest_of_dreams.cards.ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
 
         deck = new Deck(
             cardsP1,
@@ -126,6 +134,7 @@ public class DemoRoom extends Room {
             1,
             SpriteBoxPos.BOTTOM_LEFT
         );
+        deck.shuffle();
         deck.getBounds().setX(SettingsManager.screenSize.getScreenWidth() - deck.getWidth() - 10);
         deck.setOwner(PieceAlignment.P1);
         deck.setHand(hand);
@@ -172,6 +181,8 @@ public class DemoRoom extends Room {
 
         // Start turn flow if not started yet
         TurnManager.startIfNeeded();
+        // Ensure AbilityRelay is active so TriggeredAbilities receive global events in Demo
+        AbilityRelay.startIfNeeded();
 
         // Add HUDs (only in DemoRoom)
         ManaHud manaHud = new ManaHud();
