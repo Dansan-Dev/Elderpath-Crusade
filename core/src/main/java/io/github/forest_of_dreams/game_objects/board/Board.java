@@ -35,6 +35,30 @@ public class Board extends HigherOrderTexture {
     private final BoardIdentifierSymbol[] rowIdentifierSymbols;
     private final BoardIdentifierSymbol[] colIdentifierSymbols;
 
+    /** Notify all monster pieces on this board that a turn has started for the given player. */
+    public void notifyTurnStartedForPieces(PieceAlignment player) {
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                GamePiece gp = gamePieces[r][c];
+                if (gp instanceof MonsterGamePiece mgp) {
+                    try { mgp.notifyTurnStarted(player); } catch (Exception ignored) {}
+                }
+            }
+        }
+    }
+
+    /** Notify all monster pieces on this board that a turn has ended for the given player. */
+    public void notifyTurnEndedForPieces(PieceAlignment player) {
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                GamePiece gp = gamePieces[r][c];
+                if (gp instanceof MonsterGamePiece mgp) {
+                    try { mgp.notifyTurnEnded(player); } catch (Exception ignored) {}
+                }
+            }
+        }
+    }
+
     // Cached UI elements for compact health overlays on damaged pieces
     private final Map<UUID, Text> hpTexts = new HashMap<>();
     private final Map<UUID, Integer> hpCache = new HashMap<>();
@@ -341,6 +365,10 @@ public class Board extends HigherOrderTexture {
     public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
         setGamePiecePos(row, col, gamePiece);
         gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
+        // Notify abilities on spawn
+        if (gamePiece instanceof MonsterGamePiece mgp) {
+            mgp.notifySpawned(row, col);
+        }
         // Emit PIECE_SPAWNED when a piece is added to the board
         EventBus.emit(
                 GameEventType.PIECE_SPAWNED,
@@ -447,6 +475,15 @@ public class Board extends HigherOrderTexture {
         return out;
     }
 
+    /**
+     * Computes the effective attack damage for an attacker at a given source cell.
+     * Hook for future ability/buff modifiers; currently returns base stats damage.
+     */
+    private int getAttackDamage(MonsterGamePiece attacker, int srcRow, int srcCol) {
+        if (attacker == null) return 0;
+        return attacker.getStats().getDamage();
+    }
+
     public void resetActionsForOwner(PieceAlignment owner) {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
@@ -497,8 +534,11 @@ public class Board extends HigherOrderTexture {
         GamePiece targetPiece = getGamePieceAtPos(dr, dc);
         int manhattan = Math.abs(dr - sr) + Math.abs(dc - sc);
         if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment() && manhattan == 1) {
-            int dmg = mgp.getStats().getDamage();
+            int dmg = getAttackDamage(mgp, sr, sc);
             enemy.getStats().dealDamage(dmg);
+            // Ability notifications
+            try { mgp.notifyAttack(enemy, dmg); } catch (Exception ignored) {}
+            try { enemy.notifyDamaged(dmg, mgp); } catch (Exception ignored) {}
             // Emit attack event
             EventBus.emit(
                     GameEventType.PIECE_ATTACKED,
@@ -515,6 +555,8 @@ public class Board extends HigherOrderTexture {
                     )
             );
             if (enemy.getStats().getCurrentHealth() <= 0) {
+                // Notify before removal
+                try { enemy.notifyDied(); } catch (Exception ignored) {}
                 removeGamePieceAtPos(dr, dc);
                 EventBus.emit(
                         GameEventType.PIECE_DIED,
@@ -538,6 +580,8 @@ public class Board extends HigherOrderTexture {
         if (isOccupied(dr, dc)) return; // safety
         moveGamePiece(sr, sc, dr, dc);
         mgp.updateData(GamePieceData.POSITION, new Position(this, dr, dc));
+        // Ability notification for movement
+        try { mgp.notifyMoved(sr, sc, dr, dc); } catch (Exception ignored) {}
         // Emit move event
         EventBus.emit(
                 GameEventType.PIECE_MOVED,

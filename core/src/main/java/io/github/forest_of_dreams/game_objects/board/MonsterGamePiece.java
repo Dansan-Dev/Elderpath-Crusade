@@ -1,5 +1,6 @@
 package io.github.forest_of_dreams.game_objects.board;
 import io.github.forest_of_dreams.abilities.Ability;
+import io.github.forest_of_dreams.abilities.TriggeredAbility;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
@@ -38,6 +39,45 @@ public class MonsterGamePiece extends GamePiece {
 
     public List<Ability> getAbilities() {
         return Collections.unmodifiableList(abilities);
+    }
+
+    private void forEachTriggered(java.util.function.Consumer<TriggeredAbility> action) {
+        if (abilities.isEmpty()) return;
+        abilities.stream()
+            .filter(ability -> ability instanceof TriggeredAbility)
+            .map(ability -> (TriggeredAbility) ability)
+            .forEach((triggeredAbility) -> {
+                try { action.accept(triggeredAbility);}
+                catch (Exception ignored){}
+            });
+    }
+
+    public void notifySpawned(int row, int col) {
+        forEachTriggered(a -> a.onOwnerSpawned(this, row, col));
+    }
+
+    public void notifyMoved(int fromRow, int fromCol, int toRow, int toCol) {
+        forEachTriggered(a -> a.onOwnerMoved(this, fromRow, fromCol, toRow, toCol));
+    }
+
+    public void notifyAttack(MonsterGamePiece target, int damage) {
+        forEachTriggered(a -> a.onOwnerAttack(this, target, damage));
+    }
+
+    public void notifyDamaged(int amount, MonsterGamePiece source) {
+        forEachTriggered(a -> a.onOwnerDamaged(this, amount, source));
+    }
+
+    public void notifyDied() {
+        forEachTriggered(a -> a.onOwnerDied(this));
+    }
+
+    public void notifyTurnStarted(PieceAlignment currentPlayer) {
+        forEachTriggered(a -> a.onTurnStarted(currentPlayer));
+    }
+
+    public void notifyTurnEnded(PieceAlignment endingPlayer) {
+        forEachTriggered(a -> a.onTurnEnded(endingPlayer));
     }
 
     private void detachAllAbilities() {
