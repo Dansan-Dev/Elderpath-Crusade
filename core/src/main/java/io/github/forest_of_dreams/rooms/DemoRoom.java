@@ -22,6 +22,8 @@ import io.github.forest_of_dreams.ui_objects.CardPreviewPanel;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
+import io.github.forest_of_dreams.enums.GameMode;
+import io.github.forest_of_dreams.managers.GameModeManager;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.board.Plot;
@@ -57,6 +59,8 @@ public class DemoRoom extends Room {
 
         // Reset turn and player state for a fresh DemoRoom instance
         TurnManager.reset();
+        // Ensure game mode is explicitly set when entering DemoRoom
+        GameModeManager.setCurrent(GameMode.DEMO);
 
         board = new Board(0, 0, plot_width, plot_height, 7, 5);
         board.initializePlots();

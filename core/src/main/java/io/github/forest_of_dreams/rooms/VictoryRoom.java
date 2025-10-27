@@ -5,10 +5,12 @@ import io.github.forest_of_dreams.data_objects.Box;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
+import io.github.forest_of_dreams.enums.GameMode;
 import io.github.forest_of_dreams.managers.Game;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.WinConditionManager;
 import io.github.forest_of_dreams.managers.PlayerManager;
+import io.github.forest_of_dreams.managers.GameModeManager;
 import io.github.forest_of_dreams.supers.Room;
 import io.github.forest_of_dreams.ui_objects.Button;
 import io.github.forest_of_dreams.ui_objects.Text;
@@ -30,16 +32,12 @@ public class VictoryRoom extends Room {
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
 
-        // Title shows localized victory/defeat from the local player's perspective
-        PieceAlignment local = PlayerManager.getLocalPlayer();
-        boolean localWon = (winner == local);
-        String titleText;
-        if (localWon) {
-            titleText = "Victory!";
-        } else {
-            // Per requirements: capitalization differs depending on which side the local player is
-            titleText = (local == PieceAlignment.P1) ? "Game Over!" : "Game over!";
-        }
+        // Title depends on game mode
+        GameMode mode = GameModeManager.getCurrent();
+        String titleText = switch (mode) {
+            case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
+            case DEMO, ROUGELIKE_RUN -> (winner == PlayerManager.getLocalPlayer()) ? "Victory!" : "Game Over!";
+        };
         title = new Text(titleText, FontType.SILKSCREEN, 0, 0, 5, Color.WHITE)
             .withFontSize(FontSize.TITLE_LARGE);
         addUI(title);
