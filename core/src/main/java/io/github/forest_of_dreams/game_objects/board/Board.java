@@ -481,7 +481,8 @@ public class Board extends HigherOrderTexture {
      */
     private int getAttackDamage(MonsterGamePiece attacker, int srcRow, int srcCol) {
         if (attacker == null) return 0;
-        return attacker.getStats().getDamage();
+        // Use effective damage (base + passive modifiers)
+        return attacker.getEffectiveDamage();
     }
 
     public void resetActionsForOwner(PieceAlignment owner) {
@@ -489,7 +490,7 @@ public class Board extends HigherOrderTexture {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
                 if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == owner) {
-                    mgp.updateData(GamePieceData.ACTIONS_REMAINING, mgp.getStats().getActions());
+                    mgp.updateData(GamePieceData.ACTIONS_REMAINING, mgp.getEffectiveActions());
                 }
             }
         }
@@ -572,7 +573,7 @@ public class Board extends HigherOrderTexture {
         }
 
         // Move branch: empty destination within reach by Speed
-        int speed = mgp.getStats().getSpeed();
+        int speed = mgp.getEffectiveSpeed();
         java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
         boolean ok = false;
         for (Plot p : reachable) { if (p == dst) { ok = true; break; } }

@@ -1,5 +1,6 @@
 package io.github.forest_of_dreams.characters.pieces;
 
+import io.github.forest_of_dreams.abilities.impl.PackHunterAbility;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.WolfSprite;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__.CheckerSprite;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
@@ -36,6 +37,8 @@ public class Wolf extends MonsterGamePiece {
                 }
             )
         );
+        // Example passive ability: +1 damage when adjacent to an allied Wolf
+        this.addAbility(new PackHunterAbility());
     }
 
     public Wolf(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -54,5 +57,7 @@ public class Wolf extends MonsterGamePiece {
                 }
             )
         );
+        // Example passive ability: +1 damage when adjacent to an allied Wolf
+        this.addAbility(new io.github.forest_of_dreams.abilities.impl.PackHunterAbility());
     }
 }

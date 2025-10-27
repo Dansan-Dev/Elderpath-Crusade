@@ -1,15 +1,20 @@
 package io.github.forest_of_dreams.game_objects.board;
 import io.github.forest_of_dreams.abilities.Ability;
+import io.github.forest_of_dreams.abilities.stats.StatsAccumulator;
+import io.github.forest_of_dreams.abilities.stats.StatsModifier;
 import io.github.forest_of_dreams.abilities.TriggeredAbility;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 import io.github.forest_of_dreams.interfaces.Renderable;
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class MonsterGamePiece extends GamePiece {
 
@@ -17,6 +22,9 @@ public class MonsterGamePiece extends GamePiece {
 
     // Container for this piece's abilities (defined by concrete piece classes)
     private final List<Ability> abilities = new ArrayList<>();
+    // Accumulator of all modifiers affecting this piece (local + auras from others)
+    @Getter
+    private final StatsAccumulator statsAccumulator = new StatsAccumulator();
 
     public MonsterGamePiece(GamePieceStats stats, GamePieceType type, PieceAlignment alignment, UUID id, Renderable sprite) {
         super(stats, type, alignment, id, sprite);
@@ -41,14 +49,13 @@ public class MonsterGamePiece extends GamePiece {
         return Collections.unmodifiableList(abilities);
     }
 
-    private void forEachTriggered(java.util.function.Consumer<TriggeredAbility> action) {
+    private void forEachTriggered(Consumer<TriggeredAbility> action) {
         if (abilities.isEmpty()) return;
         abilities.stream()
             .filter(ability -> ability instanceof TriggeredAbility)
             .map(ability -> (TriggeredAbility) ability)
             .forEach((triggeredAbility) -> {
-                try { action.accept(triggeredAbility);}
-                catch (Exception ignored){}
+                try { action.accept(triggeredAbility);} catch (Exception ignored){}
             });
     }
 
@@ -85,6 +92,44 @@ public class MonsterGamePiece extends GamePiece {
             try { a.onDetach(); } catch (Exception ignored) {}
         }
         abilities.clear();
+        // Clear any lingering external modifiers targeting this piece
+        // External abilities should call StatsModifier.clear(), but as a safety, remove by null source does nothing.
+    }
+
+    // ---- Effective stats (base + accumulated modifiers) ----
+    public int getEffectiveDamage() {
+        int base = getStats().getDamage();
+        int add = 0; float mult = 0f;
+        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addDamage; mult += m.multDamage; }
+        return StatsModifier.applyInt(base, add, mult);
+    }
+
+    public int getEffectiveSpeed() {
+        int base = getStats().getSpeed();
+        int add = 0; float mult = 0f;
+        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addSpeed; mult += m.multSpeed; }
+        return StatsModifier.applyInt(base, add, mult);
+    }
+
+    public int getEffectiveActions() {
+        int base = getStats().getActions();
+        int add = 0; float mult = 0f;
+        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addActions; mult += m.multActions; }
+        return StatsModifier.applyInt(base, add, mult);
+    }
+
+    public int getEffectiveMaxHealth() {
+        int base = getStats().getMaxHealth();
+        int add = 0; float mult = 0f;
+        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addMaxHealth; mult += m.multMaxHealth; }
+        return StatsModifier.applyInt(base, add, mult);
+    }
+
+    public int getEffectiveCost() {
+        int base = getStats().getCost();
+        int add = 0; float mult = 0f;
+        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addCost; mult += m.multCost; }
+        return StatsModifier.applyInt(base, add, mult);
     }
 
     // Generic interaction triggered by Plot: move this piece one step upwards if possible
