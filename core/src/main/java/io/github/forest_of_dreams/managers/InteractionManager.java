@@ -31,16 +31,28 @@ public class InteractionManager {
         // If the game just became paused while interaction selection was in progress, clear it.
         if (paused && selectedCount != 0) cleanInteraction();
 
+        // Two-pass click resolution: prioritize UI clickables (buttons, text) over world elements (plots)
+        // Pass 1: UI clickables
+        Clickable hit = null;
         for (Clickable clickable : clickables) {
-            // When paused, only allow UI elements to receive clicks
+            if (!(clickable instanceof UIRenderable)) continue;
+            // When paused, only allow UI elements explicitly marked for pause; generic UI is blocked
             if (paused && !clickable.isPauseUIElement()) continue;
-            if (clickable.inRange(mouseX, mouseY)) {
-                if (selectedCount == 0) {
-                    addInitialInteraction(clickable);
-                } else {
-                    addExtraTarget(clickable);
-                }
-                break;
+            if (clickable.inRange(mouseX, mouseY)) { hit = clickable; break; }
+        }
+        // Pass 2: Non-UI clickables (board, plots, sprites) if no UI element was hit
+        if (hit == null) {
+            for (Clickable clickable : clickables) {
+                if (clickable instanceof UIRenderable) continue;
+                if (paused) continue; // never allow non-UI while paused
+                if (clickable.inRange(mouseX, mouseY)) { hit = clickable; break; }
+            }
+        }
+        if (hit != null) {
+            if (selectedCount == 0) {
+                addInitialInteraction(hit);
+            } else {
+                addExtraTarget(hit);
             }
         }
     }

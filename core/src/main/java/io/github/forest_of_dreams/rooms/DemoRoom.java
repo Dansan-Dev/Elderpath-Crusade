@@ -15,11 +15,7 @@ import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEvent;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.tiles.MountainTile;
-import io.github.forest_of_dreams.ui_objects.PassTurnButton;
-import io.github.forest_of_dreams.ui_objects.ManaHud;
-import io.github.forest_of_dreams.ui_objects.TurnHud;
-import io.github.forest_of_dreams.ui_objects.CardPreviewPanel;
-import io.github.forest_of_dreams.ui_objects.Text;
+import io.github.forest_of_dreams.ui_objects.*;
 import io.github.forest_of_dreams.enums.FontType;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.GameMode;
@@ -182,6 +178,8 @@ public class DemoRoom extends Room {
         addUI(manaHud);
         TurnHud turnHud = new TurnHud();
         addUI(turnHud);
+        // Ability bubbles for actionable abilities (e.g., WarpMage Displace)
+        addUI(new AbilityPopup());
         // Big hover preview on right side
         addUI(new CardPreviewPanel());
 

@@ -36,6 +36,8 @@ public class WarpMage extends MonsterGamePiece {
                 }
             )
         );
+        // Attach actionable ability: Displace
+        this.addAbility(new io.github.forest_of_dreams.abilities.impl.DisplaceAbility(this));
     }
 
     public WarpMage(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -54,5 +56,7 @@ public class WarpMage extends MonsterGamePiece {
                 }
             )
         );
+        // Attach actionable ability: Displace
+        this.addAbility(new io.github.forest_of_dreams.abilities.impl.DisplaceAbility(this));
     }
 }

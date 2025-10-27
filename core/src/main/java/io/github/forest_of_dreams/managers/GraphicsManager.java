@@ -47,7 +47,9 @@ public class GraphicsManager {
     }
 
     public static void renderUI(SpriteBatch batch) {
-        uiRenderables.forEach(r -> r.renderUI(batch, isPaused));
+        // Iterate over a snapshot to avoid ConcurrentModificationException if UI mutates during render
+        List<UIRenderable> snapshot = new ArrayList<>(uiRenderables);
+        snapshot.forEach(r -> r.renderUI(batch, isPaused));
     }
 
     public static void renderPauseUI(SpriteBatch batch) {

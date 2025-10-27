@@ -146,7 +146,7 @@ public class Board extends HigherOrderTexture {
         }
     }
 
-    public class Position {
+    public static class Position {
         @Getter private final Board board;
         @Getter @Setter private int row;
         @Getter @Setter private int col;
@@ -158,7 +158,7 @@ public class Board extends HigherOrderTexture {
         }
 
         public boolean isValid(int row, int col) {
-            return row >= 0 && row < board.ROWS && col >= 0 && col < COLS;
+            return row >= 0 && row < board.getROWS() && col >= 0 && col < board.getCOLS();
         }
     }
 

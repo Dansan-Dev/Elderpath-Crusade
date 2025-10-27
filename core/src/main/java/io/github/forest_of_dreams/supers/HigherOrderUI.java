@@ -18,11 +18,15 @@ public class HigherOrderUI extends LowestOrderTexture implements UIRenderable {
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
-        renderableUIs.forEach(r -> r.renderUI(batch, isPaused));
+        // Iterate over a snapshot to avoid ConcurrentModificationException if children mutate during render
+        List<UIRenderable> snapshot = new ArrayList<>(renderableUIs);
+        snapshot.forEach(r -> r.renderUI(batch, isPaused));
     }
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
-        renderableUIs.forEach(r -> r.renderUI(batch, isPaused, x, y));
+        // Iterate over a snapshot to avoid ConcurrentModificationException if children mutate during render
+        List<UIRenderable> snapshot = new ArrayList<>(renderableUIs);
+        snapshot.forEach(r -> r.renderUI(batch, isPaused));
     }
 }
