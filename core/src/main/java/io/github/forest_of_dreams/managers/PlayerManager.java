@@ -50,6 +50,12 @@ public class PlayerManager {
 
     public static PlayerState getCurrent() { return get(TurnManager.getCurrentPlayer()); }
 
+    /**
+     * Returns the local human player's alignment. For now the local player is P1.
+     * This centralizes perspective decisions for UI like Victory/Loss screens.
+     */
+    public static PieceAlignment getLocalPlayer() { return PieceAlignment.P1; }
+
     // Wiring helpers
     public static void setHand(PieceAlignment id, Hand hand) { get(id).hand = hand; }
     public static void setDeck(PieceAlignment id, Deck deck) { get(id).deck = deck; }
