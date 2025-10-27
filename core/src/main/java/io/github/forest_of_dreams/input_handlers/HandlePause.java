@@ -13,6 +13,8 @@ import java.util.Map;
 public class HandlePause implements InputHandler {
     @Override
     public void handleInput(Map<InputHandlerData, Object> data) {
+        // When interactions are globally locked (e.g., win transition), ignore ESC entirely
+        if (GameManager.isInteractionsLocked()) return;
         // If a multi-selection is in progress, first cancel it, then proceed to pause toggle
         if (InteractionManager.hasActiveSelection()) {
             InteractionManager.cancelSelection();

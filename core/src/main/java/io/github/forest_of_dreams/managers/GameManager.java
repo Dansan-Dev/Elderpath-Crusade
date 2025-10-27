@@ -6,6 +6,7 @@ import lombok.Getter;
 
 public class GameManager {
     @Getter private static boolean isPaused = false;
+    @Getter private static boolean interactionsLocked = false;
 
     public static void initialize() {
         SettingsManager.initialize();
@@ -28,6 +29,18 @@ public class GameManager {
         unpauseGraphics();
         unpauseInputHandlers();
         PauseScreen.setCurrentPage(PauseScreenPage.NONE);
+    }
+
+    // Interaction lock: blocks all input processing without showing pause UI
+    public static void lockInteractions() {
+        interactionsLocked = true;
+        // Also pause input handlers to be safe; rendering continues
+        InputManager.setPaused(true);
+    }
+
+    public static void unlockInteractions() {
+        interactionsLocked = false;
+        InputManager.setPaused(false);
     }
 
     private static void pauseGraphics() {

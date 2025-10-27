@@ -60,10 +60,12 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void render() {
-        // Input
-        InputManager.checkInput();
-        handleInput();
-        InteractionManager.checkClick();
+        // Input (disabled when interactions are locked)
+        if (!GameManager.isInteractionsLocked()) {
+            InputManager.checkInput();
+            handleInput();
+            InteractionManager.checkClick();
+        }
 
         // RENDER
         if (GraphicsManager.isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());

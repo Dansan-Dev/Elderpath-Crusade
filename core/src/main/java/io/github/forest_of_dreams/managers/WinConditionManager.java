@@ -108,10 +108,26 @@ public final class WinConditionManager {
         String msg = "VICTORY: " + winner.name();
         System.out.println(msg);
         Logger.log("Win", msg);
+        // Immediately lock interactions and input during transition delay
+        try {
+            // Cancel any active multi-selection to avoid unintended resolves
+            if (InteractionManager.hasActiveSelection()) {
+                InteractionManager.cancelSelection();
+            }
+            // Pause the game: blocks InteractionManager clicks and halts bot actions
+//            GameManager.pause();
+            // Lock interactions so ESC and other inputs are ignored during the transition delay
+            GameManager.lockInteractions();
+        } catch (Exception ignored) {}
         // Show a simple Victory screen after a brief delay to let animations/events settle
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
+                // Restore interactivity for the Victory UI before switching rooms
+                try {
+                    GameManager.unlockInteractions();
+//                    GameManager.unpause();
+                } catch (Exception ignored) {}
                 Game.gotoRoom(() -> VictoryRoom.get(winner));
             }
         }, 0.6f);
