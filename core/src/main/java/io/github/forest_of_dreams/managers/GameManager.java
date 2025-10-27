@@ -13,6 +13,8 @@ public class GameManager {
         InputManager.initialize();
         // Initialize simple bot listener (idempotent)
         BotManager.initialize();
+        // Initialize win condition watcher (idempotent)
+        WinConditionManager.initialize();
     }
 
     public static void pause() {
