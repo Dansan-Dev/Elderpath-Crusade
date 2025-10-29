@@ -19,7 +19,7 @@ import lombok.Setter;
 
 import java.util.*;
 
-public class Deck extends SpriteObject implements Clickable {
+public class Deck extends SpriteObject{
     @Getter
     private final List<Card> cards = new ArrayList<>();
     @Getter
@@ -29,9 +29,6 @@ public class Deck extends SpriteObject implements Clickable {
     // Owner of this deck (P1 or P2)
     @Getter @Setter
     private PieceAlignment owner;
-
-    private OnClick onClick;
-    private ClickableEffectData clickableEffectData;
 
     private final Random rng = new Random();
 
@@ -50,10 +47,6 @@ public class Deck extends SpriteObject implements Clickable {
             List.of(sprite),
             0
         );
-        setClickableEffect(
-            (e) -> draw(),
-            ClickableEffectData.getImmediate()
-        );
     }
 
     public void addNewCards(List<Card> cards) {
@@ -64,13 +57,6 @@ public class Deck extends SpriteObject implements Clickable {
             });
         });
         this.cards.addAll(cards);
-    }
-
-    // Ensure InteractionManager can read the effect config by storing it here
-    @Override
-    public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
-        this.onClick = onClick;
-        this.clickableEffectData = effectData;
     }
 
     public void draw() {
@@ -105,21 +91,5 @@ public class Deck extends SpriteObject implements Clickable {
                         "deckSize", cards.size()
                 )
         );
-    }
-
-    public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
-         if (this.onClick == null) return;
-         onClick.run(interactionEntities);
-    };
-
-    @Override
-    public ClickableEffectData getClickableEffectData() {
-        // Only the current player's deck is active during their turn.
-        // Additionally, when P2 bot is enabled, block human clicks on P2's deck (the bot will trigger directly).
-        if (owner == null) return clickableEffectData;
-        if (owner == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot) {
-            return null;
-        }
-        return (owner == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
     }
 }
