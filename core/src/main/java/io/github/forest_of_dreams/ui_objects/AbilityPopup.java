@@ -1,5 +1,4 @@
 package io.github.forest_of_dreams.ui_objects;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -15,6 +14,7 @@ import io.github.forest_of_dreams.interfaces.Renderable;
 import io.github.forest_of_dreams.managers.GraphicsManager;
 import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.managers.TurnManager;
+import io.github.forest_of_dreams.managers.InteractionManager;
 import io.github.forest_of_dreams.supers.HigherOrderUI;
 
 import java.util.*;
@@ -103,6 +103,8 @@ public class AbilityPopup extends HigherOrderUI {
     private Set<AbilityKey> computeDesiredButtons() {
         Set<AbilityKey> out = new HashSet<>();
         if (GraphicsManager.isPaused()) return out;
+        // Hide all ability bubbles while any interaction selection is in progress
+        if (InteractionManager.hasActiveSelection()) return out;
         PieceAlignment current = TurnManager.getCurrentPlayer();
         // Mouse position in window coordinates
         int mouseX = Gdx.input.getX();
@@ -191,12 +193,14 @@ public class AbilityPopup extends HigherOrderUI {
     }
 
     private Set<AbilityKey> getActionableAbilityKeys(MonsterGamePiece mgp) {
-        Set<AbilityKey> keys = new HashSet<>();
+        // Deterministic ordering by ability name to keep stacks stable across frames
+        List<String> names = new ArrayList<>();
         for (Ability a : mgp.getAbilities()) {
-            if (a instanceof ActionableAbility) {
-                keys.add(new AbilityKey(mgp.getId(), a.getName()));
-            }
+            if (a instanceof ActionableAbility) names.add(a.getName());
         }
+        Collections.sort(names);
+        Set<AbilityKey> keys = new LinkedHashSet<>();
+        for (String n : names) keys.add(new AbilityKey(mgp.getId(), n));
         return keys;
     }
 
@@ -215,7 +219,12 @@ public class AbilityPopup extends HigherOrderUI {
                     int corridorLeft = btnX;
                     int corridorRight = btnX + BTN_W;
                     int corridorBottom = plotAbsY + board.getPLOT_HEIGHT();
-                    int corridorTop = btnY + BTN_H; // extend through the bubble
+                    // Extend corridor to cover the full vertical stack of ability buttons for this piece
+                    int actionableCount = 0;
+                    for (Ability a : mgp.getAbilities()) if (a instanceof ActionableAbility) actionableCount++;
+                    int spacing = 4;
+                    int stackHeight = (actionableCount <= 0) ? BTN_H : (actionableCount * BTN_H + Math.max(0, actionableCount - 1) * spacing);
+                    int corridorTop = btnY + stackHeight;
                     if (mouseX >= corridorLeft && mouseX <= corridorRight && mouseY >= corridorBottom && mouseY <= corridorTop) {
                         return mgp;
                     }
