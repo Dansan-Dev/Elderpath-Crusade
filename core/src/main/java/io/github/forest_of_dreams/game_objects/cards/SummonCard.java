@@ -20,9 +20,12 @@ import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
 import io.github.forest_of_dreams.ui_objects.Text;
 import io.github.forest_of_dreams.utils.Logger;
+import io.github.forest_of_dreams.utils.ColorSettings;
+import com.badlogic.gdx.utils.Align;
 import java.util.Map;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
@@ -41,6 +44,8 @@ public abstract class SummonCard extends Card implements TargetFilter {
     private Text spdText;    // bottom small (second-left)
     private Text actText;    // bottom small (second-right)
     private Text atkText;    // bottom-right big orb
+    // Card rules text area (optional)
+    private Text descText;   // centered rules text under title
 
     // Clickable plumbing for InteractionManager
     private OnClick onClick = null;
@@ -60,6 +65,13 @@ public abstract class SummonCard extends Card implements TargetFilter {
         setTitleColor(Color.WHITE);
         // Initialize stat text overlays
         initStatTexts();
+        // Initialize description text from card-provided ability descriptions (joined with two newlines)
+        List<String> descs = getAbilityDescriptionsForCard();
+        if (descs != null && !descs.isEmpty()) {
+            String desc = String.join("\n\n", descs);
+            descText = new Text(desc, FontType.SILKSCREEN, 0, 0, getZLayer(), ColorSettings.TEXT_DEFAULT.getColor());
+            // Initial wrap will be applied in setBounds and during render
+        }
         initializeClickableEffect();
     }
 
@@ -67,6 +79,8 @@ public abstract class SummonCard extends Card implements TargetFilter {
     protected abstract GamePieceStats buildStats();
     protected abstract String getCardName();
     protected abstract GamePiece instantiatePiece(GamePieceStats stats);
+    // Ability descriptions to show on the card (provided by the card itself)
+    protected abstract List<String> getAbilityDescriptionsForCard();
 
     // --- Stat overlay initialization and sizing ---
     private void initStatTexts() {
@@ -95,6 +109,15 @@ public abstract class SummonCard extends Card implements TargetFilter {
     public void setBounds(Box bounds) {
         super.setBounds(bounds);
         updateStatTextSizes();
+        // Update description wrap bounds on resize
+        if (descText != null) {
+            int w = getBounds().getWidth();
+            int h = getBounds().getHeight();
+            int marginX = Math.round(w * 0.07f);
+            int wrapW = Math.max(1, w - marginX * 2);
+            int wrapH = Math.max(1, Math.round(h * 0.18f));
+            descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
+        }
     }
 
     private void initializeClickableEffect() {
@@ -178,6 +201,19 @@ public abstract class SummonCard extends Card implements TargetFilter {
         drawCentered.accept(spdText, spdC);
         drawCentered.accept(actText, actC);
         drawCentered.accept(atkText, atkC);
+
+        // Render description text (if any), centered within its wrap box below the title
+        if (descText != null) {
+            int marginX = Math.round(w * 0.07f);
+            int wrapW = Math.max(1, w - marginX * 2);
+            int wrapH = Math.max(1, Math.round(h * 0.18f));
+            // Ensure wrapping matches current size each frame
+            descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
+            // Place roughly below the title area (centered horizontally)
+            int tx = baseX + (w - descText.getWidth()) / 2;
+            int ty = baseY + Math.round(h * 0.24f);
+            descText.render(batch, zLevel, isPaused, tx, ty);
+        }
     }
 
     // TargetFilter for InteractionManager validation

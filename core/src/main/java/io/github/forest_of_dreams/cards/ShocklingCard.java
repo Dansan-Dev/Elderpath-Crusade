@@ -1,11 +1,14 @@
 package io.github.forest_of_dreams.cards;
 
+import io.github.forest_of_dreams.abilities.impl.OnSummonShockAbility;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
 import io.github.forest_of_dreams.game_objects.cards.SummonCard;
 import io.github.forest_of_dreams.characters.pieces.Shockling;
+
+import java.util.List;
 
 public class ShocklingCard extends SummonCard {
 
@@ -40,5 +43,10 @@ public class ShocklingCard extends SummonCard {
             board.getPLOT_HEIGHT(),
             alignment
         );
+    }
+
+    @Override
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of(OnSummonShockAbility.getAbilityDescription());
     }
 }

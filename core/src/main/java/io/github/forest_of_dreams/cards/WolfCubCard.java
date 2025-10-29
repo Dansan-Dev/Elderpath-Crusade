@@ -6,6 +6,7 @@ import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
 import io.github.forest_of_dreams.game_objects.cards.SummonCard;
 import io.github.forest_of_dreams.characters.pieces.WolfCub;
+import java.util.List;
 
 public class WolfCubCard extends SummonCard {
 
@@ -40,5 +41,10 @@ public class WolfCubCard extends SummonCard {
             board.getPLOT_HEIGHT(),
             alignment
         );
+    }
+
+    @Override
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of();
     }
 }

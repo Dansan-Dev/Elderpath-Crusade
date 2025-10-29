@@ -37,7 +37,14 @@ public class DisplaceAbility implements ActionableAbility {
 
     @Override
     public String getDescription() {
-        return "Range 2 → move another target Monster 1 step (cardinal) to an adjacent empty square. Costs 1 action.";
+        return DisplaceAbility.getAbilityDescription();
+    }
+
+    public static String getAbilityDescription() {
+        return "Displace (1 action)\n" +
+            "Range 2 → move another target\n" +
+            "monster 1 step (cardinal) to\n" +
+            "an adjacent empty square";
     }
 
     @Override

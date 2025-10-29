@@ -1,11 +1,13 @@
 package io.github.forest_of_dreams.cards;
 
+import io.github.forest_of_dreams.abilities.impl.PackHunterAbility;
 import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
 import io.github.forest_of_dreams.game_objects.cards.SummonCard;
 import io.github.forest_of_dreams.characters.pieces.Wolf;
+import java.util.List;
 
 /**
  * WolfCard now extends SummonCard, providing stats, name, and piece instantiation.
@@ -44,5 +46,10 @@ public class WolfCard extends SummonCard {
             board.getPLOT_HEIGHT(),
             alignment
         );
+    }
+
+    @Override
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of(PackHunterAbility.getAbilityDescription());
     }
 }

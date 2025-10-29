@@ -9,8 +9,10 @@ import io.github.forest_of_dreams.enums.PieceAlignment;
 import io.github.forest_of_dreams.enums.settings.GamePieceType;
 
 import java.util.UUID;
+import java.util.List;
 
 public class Wolf extends MonsterGamePiece {
+
     private static GamePieceStats getBaselineStats() {
         return GamePieceStats.getMonsterStats(
             1,
@@ -58,6 +60,6 @@ public class Wolf extends MonsterGamePiece {
             )
         );
         // Example passive ability: +1 damage when adjacent to an allied Wolf
-        this.addAbility(new io.github.forest_of_dreams.abilities.impl.PackHunterAbility());
+        this.addAbility(new PackHunterAbility());
     }
 }

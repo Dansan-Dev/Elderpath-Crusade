@@ -18,7 +18,11 @@ public class OnSummonShockAbility implements TriggeredAbility {
     public String getName() { return "Static Shock"; }
 
     @Override
-    public String getDescription() { return "On Summon: deal 1 damage to adjacent pieces."; }
+    public String getDescription() { return OnSummonShockAbility.getAbilityDescription(); }
+
+    public static String getAbilityDescription() {
+        return "On Summon:\nDeal 1 damage\nto adjacent pieces";
+    }
 
     @Override
     public AbilityType getType() { return AbilityType.TRIGGERED; }

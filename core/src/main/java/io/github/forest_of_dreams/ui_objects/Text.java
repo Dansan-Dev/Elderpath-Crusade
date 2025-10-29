@@ -17,6 +17,7 @@ import io.github.forest_of_dreams.utils.HoverUtils;
 import io.github.forest_of_dreams.utils.FontSize;
 import lombok.Getter;
 import lombok.Setter;
+import com.badlogic.gdx.utils.Align;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     private int wrapWidth = 0;
     private int wrapHeight = 0;
     private boolean needsReflow = false;
+    private int alignment = Align.center;
 
     public Text(String text, FontType fontType, int x, int y, int z, Color color) {
         this.text = text;
@@ -107,11 +109,18 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         return this;
     }
 
+
     public Text clearWrap() {
         this.wrapEnabled = false;
         this.wrapWidth = 0;
         this.wrapHeight = 0;
         this.needsReflow = true;
+        update();
+        return this;
+    }
+
+    public Text withAlignment(int align) {
+        this.alignment = align;
         update();
         return this;
     }
@@ -129,14 +138,8 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     public void update() {
         style = FontManager.getLabelStyle(fontType);
         label = new Label(text, style);
-
-        // Wrapping configuration (width/height constraints)
-        if (wrapEnabled && wrapWidth > 0) {
-            label.setWrap(true);
-            label.setWidth(wrapWidth);
-        } else {
-            label.setWrap(false);
-        }
+        label.setAlignment(alignment);
+        label.setWrap(false);
 
         // Apply font sizing on the label (does not mutate the shared BitmapFont instance)
         if (!wrapEnabled) {
@@ -165,9 +168,11 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
             label.setFontScale(hi);
             label.pack();
             float targetH = (wrapHeight > 0 ? wrapHeight : Float.MAX_VALUE);
-            // Exponential grow until overflow
             int guard = 0;
-            while (label.getHeight() <= targetH && guard < 8) {
+            while (true) {
+                boolean heightOk = (label.getHeight() <= targetH);
+                boolean widthOk = (wrapWidth <= 0) || (label.getWidth() <= wrapWidth);
+                if (!(heightOk && widthOk) || guard >= 8) break;
                 lo = hi; // last fit
                 hi *= 2f;
                 label.setFontScale(hi);
@@ -179,7 +184,9 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
                 float mid = (lo + hi) * 0.5f;
                 label.setFontScale(mid);
                 label.pack();
-                if (label.getHeight() <= targetH) {
+                boolean heightOk = (label.getHeight() <= targetH);
+                boolean widthOk = (wrapWidth <= 0) || (label.getWidth() <= wrapWidth);
+                if (heightOk && widthOk) {
                     lo = mid; // fits, go higher
                 } else {
                     hi = mid; // too big

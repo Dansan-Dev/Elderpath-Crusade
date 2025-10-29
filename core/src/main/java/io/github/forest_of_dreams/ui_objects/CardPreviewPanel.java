@@ -2,7 +2,7 @@ package io.github.forest_of_dreams.ui_objects;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.forest_of_dreams.enums.PieceAlignment;
+import io.github.forest_of_dreams.abilities.Ability;
 import io.github.forest_of_dreams.game_objects.board.Board;
 import io.github.forest_of_dreams.game_objects.board.GamePiece;
 import io.github.forest_of_dreams.game_objects.board.MonsterGamePiece;
@@ -14,6 +14,7 @@ import io.github.forest_of_dreams.managers.SettingsManager;
 import io.github.forest_of_dreams.supers.LowestOrderTexture;
 import io.github.forest_of_dreams.utils.HoverUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,6 +98,23 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
         int dummyW = 125, dummyH = 200; // initial; resized on render
         previewCard = new PreviewCard(0, 0, dummyW, dummyH, PREVIEW_Z, title, piece.getStats());
         previewCard.showFront(); // ensure face-up
+        // Build description from the piece's attached abilities (exact text with internal \n)
+        List<Ability> abs = piece.getAbilities();
+        if (abs != null && !abs.isEmpty()) {
+            List<String> lines = new ArrayList<>();
+            for (Ability a : abs) {
+                String d = a.getDescription();
+                if (d != null && !d.isBlank()) lines.add(d);
+            }
+            if (!lines.isEmpty()) {
+                String desc = String.join("\n\n", lines);
+                previewCard.setDescription(desc);
+            } else {
+                previewCard.setDescription("");
+            }
+        } else {
+            previewCard.setDescription("");
+        }
     }
 
     private String prettifyName(String simpleName) {

@@ -42,7 +42,11 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
     public String getName() { return "Pack Hunter"; }
 
     @Override
-    public String getDescription() { return "+1 attack to adjacent allied WolfCubs"; }
+    public String getDescription() { return PackHunterAbility.getAbilityDescription(); }
+
+    public static String getAbilityDescription() {
+        return "+1 attack to adjacent\nallied WolfCubs";
+    }
 
     @Override
     public StatsModifier getModifier() { return mod; }

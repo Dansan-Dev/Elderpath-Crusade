@@ -1,5 +1,6 @@
 package io.github.forest_of_dreams.characters.pieces;
 
+import io.github.forest_of_dreams.abilities.impl.DisplaceAbility;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.WarpMageSprite;
 import io.github.forest_of_dreams.characters.sprites.checker_sprites.__super__.CheckerSprite;
 import io.github.forest_of_dreams.game_objects.board.GamePieceStats;
@@ -37,7 +38,7 @@ public class WarpMage extends MonsterGamePiece {
             )
         );
         // Attach actionable ability: Displace
-        this.addAbility(new io.github.forest_of_dreams.abilities.impl.DisplaceAbility(this));
+        this.addAbility(new DisplaceAbility(this));
     }
 
     public WarpMage(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -57,6 +58,6 @@ public class WarpMage extends MonsterGamePiece {
             )
         );
         // Attach actionable ability: Displace
-        this.addAbility(new io.github.forest_of_dreams.abilities.impl.DisplaceAbility(this));
+        this.addAbility(new DisplaceAbility(this));
     }
 }
