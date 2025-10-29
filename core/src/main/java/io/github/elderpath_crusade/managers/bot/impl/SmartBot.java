@@ -98,18 +98,34 @@ public class SmartBot implements Bot {
 
     private boolean executeBestIntent(Board b) {
         List<Intent> intents = new ArrayList<>();
+        // Immediate win (single or multi-action this turn direct to row 0) is handled in buildWinIntents/buildWinPathIntents
         buildWinIntents(b, intents);
+        buildWinPathIntents(b, intents);
         buildAdjacentAttackIntents(b, intents);
         buildAdvanceIntents(b, intents);
         buildSummonIntents(b, intents);
         if (intents.isEmpty()) return false;
-        intents.sort((a,bx) -> Integer.compare(bx.score, a.score));
+        intents.sort((a,bx) -> {
+            int cmp = Integer.compare(bx.score, a.score);
+            if (cmp != 0) return cmp;
+            // Tie-breaker: prefer ADJ_ATTACK over others, then WIN_* over ADVANCE, then DEF_SUMMON
+            return Integer.compare(tiePriority(a.kind), tiePriority(bx.kind));
+        });
         for (Intent it : intents) {
             try {
                 if (it.exec.get()) { Logger.log("[SmartBot]", "Intent executed: " + it.kind + " (score=" + it.score + ")"); return true; }
             } catch (Exception e) { /* ignore and try next */ }
         }
         return false;
+    }
+
+    private int tiePriority(String kind) {
+        if (kind == null) return 4;
+        if ("ADJ_ATTACK".equals(kind)) return 0;
+        if (kind.startsWith("WIN_")) return 1;
+        if ("ADVANCE".equals(kind)) return 2;
+        if ("DEF_SUMMON".equals(kind)) return 3;
+        return 4;
     }
 
     private void buildWinIntents(Board b, List<Intent> out) {
@@ -131,6 +147,100 @@ public class SmartBot implements Bot {
         }
     }
 
+    // Multi-turn (0–2 turns) win path intents; simple model (no attack edges inside search)
+    private void buildWinPathIntents(Board b, List<Intent> out) {
+        ThreatMap threats = computeThreatMap(b, PieceAlignment.P1);
+        int rows = b.getROWS(), cols = b.getCOLS();
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            int actionsRem = getRemainingActions(me);
+            if (actionsRem <= 0) continue;
+            WinPathResult res = estimateTurnsToRow0(b, me, r, c, threats, actionsRem);
+            if (res == null || res.turns > 2 || res.firstMove == null) continue;
+            int base;
+            if (res.turns == 0) base = 100; // win this turn via multi-move
+            else if (res.turns == 1) base = 95;
+            else base = 88; // 2 turns by user preference
+            int penalty = Math.min(20, res.threatExposure * 5);
+            if (res.endThreatThisTurn && res.turns > 0) penalty += 10; // extra risk if we end this turn threatened
+            int score = Math.max(55, base - penalty);
+            final int sr = r, sc = c; final Plot dest = res.firstMove; final GamePiece ref = gp; int[] di = b.getIndicesOfPlot(dest);
+            if (di == null) continue;
+            String kind = (res.turns == 0) ? "WIN_PATH0" : (res.turns == 1 ? "WIN_PATH1" : "WIN_PATH2");
+            out.add(new Intent(score, () -> moveAndVerify(b, sr, sc, dest, ref, di[0], di[1]), kind));
+        }
+    }
+
+    private static final int MAX_WIN_EXPANSIONS = 200;
+
+    private static class WinPathResult {
+        final int turns; final Plot firstMove; final int threatExposure; final boolean endThreatThisTurn;
+        WinPathResult(int turns, Plot firstMove, int threatExposure, boolean endThreatThisTurn) {
+            this.turns = turns; this.firstMove = firstMove; this.threatExposure = threatExposure; this.endThreatThisTurn = endThreatThisTurn;
+        }
+    }
+
+    private WinPathResult estimateTurnsToRow0(Board b, MonsterGamePiece me, int sr, int sc, ThreatMap threats, int actionsThisTurn) {
+        int effSpeed = me.getStats().getSpeed();
+        int effActions = me.getStats().getActions();
+        int rows = b.getROWS(), cols = b.getCOLS();
+        // Quick check: already on row 0
+        if (sr == 0) return new WinPathResult(0, null, 0, false);
+        // Cache of reachable plots for a source tile
+        Map<Integer, List<int[]>> reachCache = new HashMap<>();
+        java.util.function.Function<Integer, List<int[]>> getNeighbors = (key) -> {
+            List<int[]> cached = reachCache.get(key);
+            if (cached != null) return cached;
+            int r = key / 1000, c = key % 1000;
+            List<int[]> list = new ArrayList<>();
+            List<Plot> plots = b.getReachablePlots(r, c, effSpeed);
+            for (Plot p : plots) { int[] idx = b.getIndicesOfPlot(p); if (idx != null) list.add(new int[]{idx[0], idx[1]}); }
+            reachCache.put(key, list);
+            return list;
+        };
+        class State { int r,c,t,a,th; int fr=-1,fc=-1; boolean endThreat0=false; }
+        Deque<State> q = new ArrayDeque<>();
+        Set<String> seen = new HashSet<>();
+        State start = new State(); start.r=sr; start.c=sc; start.t=0; start.a=actionsThisTurn; start.th=0; q.add(start); seen.add(sr+","+sc+",0,"+start.a);
+        int expansions = 0;
+        while (!q.isEmpty() && expansions < MAX_WIN_EXPANSIONS) {
+            State s = q.poll();
+            // Goal check
+            if (s.r == 0) {
+                Plot first = null;
+                if (s.fr != -1) {
+                    Renderable rp = b.getPlotAtPos(s.fr, s.fc); if (rp instanceof Plot p) first = p;
+                }
+                return new WinPathResult(s.t, first, s.th, s.endThreat0);
+            }
+            if (s.t > 2) continue;
+            // Option: end turn now (roll to next layer) — once per (r,c,t)
+            {
+                int newT = s.t + 1;
+                if (newT <= 2) {
+                    int th = s.th + ((threats != null && threats.isThreatened(s.r, s.c)) ? 1 : 0);
+                    State ns = new State(); ns.r=s.r; ns.c=s.c; ns.t=newT; ns.a=effActions; ns.th=th; ns.fr=s.fr; ns.fc=s.fc; ns.endThreat0 = s.endThreat0 || (s.t==0 && threats != null && threats.isThreatened(s.r, s.c));
+                    String key = ns.r+","+ns.c+","+ns.t+","+ns.a;
+                    if (!seen.contains(key)) { seen.add(key); q.add(ns); }
+                }
+            }
+            // If no actions left, skip move expansions (turn roll handled above)
+            if (s.a <= 0) continue;
+            // Expand one move: all empty plots reachable from (r,c) within speed
+            int key = s.r*1000 + s.c;
+            for (int[] nb : getNeighbors.apply(key)) {
+                expansions++;
+                int nr = nb[0], nc = nb[1];
+                State ns = new State(); ns.r=nr; ns.c=nc; ns.t=s.t; ns.a=s.a-1; ns.th=s.th; ns.fr=(s.fr==-1? nr : s.fr); ns.fc=(s.fc==-1? nc : s.fc); ns.endThreat0 = s.endThreat0;
+                String k = ns.r+","+ns.c+","+ns.t+","+ns.a;
+                if (!seen.contains(k)) { seen.add(k); q.add(ns); }
+                if (expansions >= MAX_WIN_EXPANSIONS) break;
+            }
+        }
+        return null; // not found within caps
+    }
+
     private void buildAdjacentAttackIntents(Board b, List<Intent> out) {
         int rows = b.getROWS(), cols = b.getCOLS();
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
@@ -146,8 +256,12 @@ public class SmartBot implements Bot {
                 if (defender instanceof MonsterGamePiece em) {
                     int dmg = ((MonsterGamePiece) gp).getStats().getDamage();
                     int hp = em.getStats().getCurrentHealth();
-                    if (dmg >= hp) base = 80; // lethal preferred
+                    boolean lethal = dmg >= hp;
+                    if (lethal) base = 85; // lethal preferred (80 +5 bonus per user)
                     base += Math.min(10, em.getStats().getCost()); // small bump for value
+                    // Defensive urgency: closer to our home row (ROWS-1) is slightly higher priority
+                    int defensiveUrgency = Math.max(0, (b.getROWS()-1) - d[0]);
+                    base += Math.min(5, defensiveUrgency / 2);
                 }
                 final int sr=r, sc=c; final Plot target=dst; final MonsterGamePiece att = (MonsterGamePiece) gp;
                 final int score = base;
