@@ -45,4 +45,8 @@ public class GamePieceStats {
     public boolean isDead() {
         return currentHealth <= 0;
     }
+
+    public GamePieceStats copy() {
+        return new GamePieceStats(type, cost, maxHealth, damage, speed, actions);
+    }
 }

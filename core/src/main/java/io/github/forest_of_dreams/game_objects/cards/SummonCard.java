@@ -144,7 +144,7 @@ public abstract class SummonCard extends Card implements TargetFilter {
                 }
                 playerState.mana -= cost;
 
-                GamePiece piece = instantiatePiece(stats);
+                GamePiece piece = instantiatePiece(stats.copy());
                 if (piece == null) {
                     Logger.error("SummonCard", "instantiatePiece(stats) returned null for " + getCardName() + "Card");
                     return;
