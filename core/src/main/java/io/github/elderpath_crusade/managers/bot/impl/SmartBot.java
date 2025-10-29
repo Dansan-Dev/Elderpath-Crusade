@@ -289,20 +289,24 @@ public class SmartBot implements Bot {
 
     private void buildAdjacentAttackIntents(Board b, List<Intent> out) {
         int rows = b.getROWS(), cols = b.getCOLS();
+        // Precompute next-turn threat map (with attack rings) from enemies
+        ThreatMap threats = computeThreatMap(b, PieceAlignment.P1);
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
-            if (getRemainingActions(me) <= 0) continue;
+            int actionsBefore = getRemainingActions(me);
+            if (actionsBefore <= 0) continue;
             List<Plot> hostile = b.getAdjacentHostilePlots(r,c, PieceAlignment.P2);
             if (hostile == null || hostile.isEmpty()) continue;
             for (Plot dst : hostile) {
                 int[] d = b.getIndicesOfPlot(dst); if (d == null) continue;
                 GamePiece defender = b.getGamePieceAtPos(d[0], d[1]);
                 int base = 70;
+                boolean lethal = false;
                 if (defender instanceof MonsterGamePiece em) {
                     int dmg = ((MonsterGamePiece) gp).getEffectiveDamage();
                     int hp = em.getStats().getCurrentHealth();
-                    boolean lethal = dmg >= hp;
+                    lethal = dmg >= hp;
                     if (lethal) base = 85; // lethal preferred (80 +5 bonus per user)
                     base += Math.min(10, em.getStats().getCost()); // small bump for value
                     // Target danger: prefer removing higher-damage enemies
@@ -312,10 +316,16 @@ public class SmartBot implements Bot {
                     base += Math.min(3, defensiveUrgency / 2);
                 }
                 // Post-attack survivability: penalize if our current tile is lethal next turn and we likely can't move after attacking
-                int actionsBefore = getRemainingActions((MonsterGamePiece) gp);
                 boolean lethalHere = isLethalThreatNextTurn(b, (MonsterGamePiece) gp, r, c);
                 if (lethalHere && actionsBefore <= 1) {
                     base -= 20;
+                }
+                // Heavy non-lethal threat down-weight: if not one-shot lethal, penalize standing in threatened tile after the attack
+                if (!lethalHere && !lethal && threats != null && threats.isThreatened(r, c)) {
+                    int tCount = threats.getCount(r, c);
+                    int penalty = 8 + Math.min(12, 3 * Math.max(0, tCount - 1));
+                    if (actionsBefore <= 1) penalty += 5; // more cautious if we can't step away after
+                    base -= penalty;
                 }
                 final int sr=r, sc=c; final Plot target=dst; final MonsterGamePiece att = (MonsterGamePiece) gp;
                 final int score = base;
