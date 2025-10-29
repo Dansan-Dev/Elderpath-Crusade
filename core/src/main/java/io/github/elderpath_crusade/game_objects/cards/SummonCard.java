@@ -109,6 +109,14 @@ public abstract class SummonCard extends Card implements TargetFilter {
         return stats.getCost();
     }
 
+    /**
+     * Read-only access to the base stats represented by this card.
+     * Returns a copy to prevent external mutation of the card's internal state.
+     */
+    public GamePieceStats getStats() {
+        return stats.copy();
+    }
+
     @Override
     public void setBounds(Box bounds) {
         super.setBounds(bounds);

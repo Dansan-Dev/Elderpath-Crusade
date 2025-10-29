@@ -14,11 +14,9 @@ import io.github.elderpath_crusade.managers.bot.Bot;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.utils.Logger;
-import lombok.extern.java.Log;
 
 import java.util.*;
-
-import static io.github.elderpath_crusade.abilities.AbilityUtils.getRemainingActions;
+import java.util.function.Supplier;
 
 /**
  * Smarter bot implementing a simple urgency-driven policy with safeguards:
@@ -62,14 +60,8 @@ public class SmartBot implements Bot {
         // If there is nothing left to do, end the turn promptly
         if (shouldEndNow(board)) { Logger.log("[SmartBot]", "Nothing left to do; ending turn"); endTurn(); return; }
 
-        // 1) Win in one move (reach row 0 with any move action available this turn)
-        if (tryWinNow(board)) { scheduleNext(stepsDone+1); return; }
-        // 2) Adjacent attack (any)
-        if (tryBestAdjacentAttack(board)) { scheduleNext(stepsDone+1); return; }
-        // 3) Advance safely toward nearest enemy using BFS + threat map
-        if (trySmartAdvance(board)) { scheduleNext(stepsDone+1); return; }
-        // 4) Defensive summon using any SummonCard
-        if (tryDefensiveSummon(board)) { scheduleNext(stepsDone+1); return; }
+        // Intent/ordering engine: build intents, pick highest score, try to execute
+        if (executeBestIntent(board)) { scheduleNext(stepsDone+1); return; }
 
         Logger.log("[SmartBot]", "No more actions; ending turn");
         endTurn();
@@ -90,6 +82,197 @@ public class SmartBot implements Bot {
     private Board getActiveBoard() {
         for (Renderable r : GraphicsManager.getRenderables()) if (r instanceof Board b) return b;
         return null;
+    }
+
+    // --- Intent engine ---
+    private static class Intent {
+        final int score;
+        final Supplier<Boolean> exec;
+        final String kind;
+        Intent(int score, java.util.function.Supplier<Boolean> exec, String kind) {
+            this.score = score;
+            this.exec = exec;
+            this.kind = kind;
+        }
+    }
+
+    private boolean executeBestIntent(Board b) {
+        List<Intent> intents = new ArrayList<>();
+        buildWinIntents(b, intents);
+        buildAdjacentAttackIntents(b, intents);
+        buildAdvanceIntents(b, intents);
+        buildSummonIntents(b, intents);
+        if (intents.isEmpty()) return false;
+        intents.sort((a,bx) -> Integer.compare(bx.score, a.score));
+        for (Intent it : intents) {
+            try {
+                if (it.exec.get()) { Logger.log("[SmartBot]", "Intent executed: " + it.kind + " (score=" + it.score + ")"); return true; }
+            } catch (Exception e) { /* ignore and try next */ }
+        }
+        return false;
+    }
+
+    private void buildWinIntents(Board b, List<Intent> out) {
+        int rows = b.getROWS(), cols = b.getCOLS();
+        int targetRow = 0;
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            if (getRemainingActions(me) <= 0) continue;
+            int speed = me.getStats().getSpeed();
+            List<Plot> reach = b.getReachablePlots(r,c,speed);
+            for (Plot p : reach) {
+                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                if (idx[0] == targetRow) {
+                    final int sr=r, sc=c; final Plot dest=p; final GamePiece ref=gp;
+                    out.add(new Intent(100, () -> moveAndVerify(b, sr, sc, dest, ref, idx[0], idx[1]), "WIN_MOVE"));
+                }
+            }
+        }
+    }
+
+    private void buildAdjacentAttackIntents(Board b, List<Intent> out) {
+        int rows = b.getROWS(), cols = b.getCOLS();
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            if (getRemainingActions(me) <= 0) continue;
+            List<Plot> hostile = b.getAdjacentHostilePlots(r,c, PieceAlignment.P2);
+            if (hostile == null || hostile.isEmpty()) continue;
+            for (Plot dst : hostile) {
+                int[] d = b.getIndicesOfPlot(dst); if (d == null) continue;
+                GamePiece defender = b.getGamePieceAtPos(d[0], d[1]);
+                int base = 70;
+                if (defender instanceof MonsterGamePiece em) {
+                    int dmg = ((MonsterGamePiece) gp).getStats().getDamage();
+                    int hp = em.getStats().getCurrentHealth();
+                    if (dmg >= hp) base = 80; // lethal preferred
+                    base += Math.min(10, em.getStats().getCost()); // small bump for value
+                }
+                final int sr=r, sc=c; final Plot target=dst; final MonsterGamePiece att = (MonsterGamePiece) gp;
+                final int score = base;
+                out.add(new Intent(score, () -> attackAndVerify(b, sr, sc, target, att, d[0], d[1]), "ADJ_ATTACK"));
+            }
+        }
+    }
+
+    private void buildAdvanceIntents(Board b, List<Intent> out) {
+        ThreatMap threats = computeThreatMap(b, PieceAlignment.P1);
+        int rows = b.getROWS(), cols = b.getCOLS();
+        List<int[]> enemies = new ArrayList<>();
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (gp instanceof MonsterGamePiece em && em.getAlignment() == PieceAlignment.P1) enemies.add(new int[]{r,c});
+        }
+        if (enemies.isEmpty()) return;
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            if (getRemainingActions(me) <= 0) continue;
+            int speed = me.getStats().getSpeed();
+            List<Plot> reach = b.getReachablePlots(r,c,speed);
+            int currentDist = nearestManhattan(r,c,enemies);
+            Plot best = null; int bestDist = currentDist;
+            for (Plot p : reach) {
+                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int d = nearestManhattan(idx[0], idx[1], enemies);
+                if (d < bestDist && !threats.isThreatened(idx[0], idx[1])) { best = p; bestDist = d; }
+            }
+            if (best == null) {
+                for (Plot p : reach) {
+                    int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                    if (wouldEnableLethal(me, b, idx[0], idx[1])) { best = p; bestDist = nearestManhattan(idx[0], idx[1], enemies); break; }
+                }
+            }
+            if (best != null) {
+                final int sr=r, sc=c; final Plot dest=best; final GamePiece ref=gp; int[] bi = b.getIndicesOfPlot(best);
+                int gain = Math.max(0, currentDist - bestDist);
+                int score = 50 + Math.min(10, gain);
+                out.add(new Intent(score, () -> moveAndVerify(b, sr, sc, dest, ref, bi[0], bi[1]), "ADVANCE"));
+            }
+        }
+    }
+
+    private void buildSummonIntents(Board b, List<Intent> out) {
+        var ps = PlayerManager.get(PieceAlignment.P2);
+        if (ps == null || ps.hand == null) return;
+        int mana = ps.mana;
+        // Determine threatened column closest to our home row
+        int homeRow = b.getROWS() - 1;
+        int cols = b.getCOLS();
+        int bestCol = -1, bestDist = Integer.MAX_VALUE;
+        for (int c = 0; c < cols; c++) {
+            for (int r = 0; r < b.getROWS(); r++) {
+                GamePiece gp = b.getGamePieceAtPos(r,c);
+                if (gp instanceof MonsterGamePiece em && em.getAlignment() == PieceAlignment.P1) {
+                    int dist = Math.abs(homeRow - r);
+                    if (dist < bestDist) { bestDist = dist; bestCol = c; }
+                    break;
+                }
+            }
+        }
+        // Collect candidate plots (preferred col, else any home-row plot)
+        List<Plot> plots = new ArrayList<>();
+        if (bestCol != -1) {
+            Renderable rp = b.getPlotAtPos(homeRow, bestCol);
+            if (rp instanceof Plot p && b.isValidSummonTarget(p, PieceAlignment.P2)) plots.add(p);
+        }
+        if (plots.isEmpty()) {
+            for (int c = 0; c < cols; c++) {
+                Renderable rp = b.getPlotAtPos(homeRow, c);
+                if (rp instanceof Plot p && b.isValidSummonTarget(p, PieceAlignment.P2)) plots.add(p);
+            }
+        }
+        if (plots.isEmpty()) return;
+        // Choose best affordable card using base stats + cost
+        SummonCard bestCard = null; int bestScore = Integer.MIN_VALUE;
+        for (Card c : ps.hand.getCards()) {
+            if (!(c instanceof SummonCard sc)) continue;
+            int cost = sc.getManaCost(); if (cost > mana) continue;
+            var s = sc.getStats();
+            int value = (s.getMaxHealth()*2) + (s.getDamage()*3) + (s.getActions()) + (s.getSpeed()) + (cost); // simple heuristic
+            if (value > bestScore) { bestScore = value; bestCard = sc; }
+        }
+        if (bestCard == null) return;
+        Plot dest = plots.get(0);
+        final SummonCard card = bestCard; final Plot target = dest;
+        int finalScore = 45 + Math.min(30, bestScore/2);
+        out.add(new Intent(finalScore, () -> summonAndVerify(b, card, target), "DEF_SUMMON"));
+    }
+
+    private boolean moveAndVerify(Board b, int sr, int sc, Plot dest, GamePiece ref, int dr, int dc) {
+        Renderable srcR = b.getPlotAtPos(sr, sc);
+        if (!(srcR instanceof Plot srcPlot)) return false;
+        HashMap<Integer, CustomBox> entities = new HashMap<>();
+        entities.put(0, srcPlot); entities.put(1, dest);
+        srcPlot.triggerClickEffect(entities);
+        GamePiece after = b.getGamePieceAtPos(dr, dc);
+        return after == ref;
+    }
+
+    private boolean attackAndVerify(Board b, int sr, int sc, Plot dst, MonsterGamePiece attacker, int dr, int dc) {
+        Renderable srcR = b.getPlotAtPos(sr, sc);
+        if (!(srcR instanceof Plot srcPlot)) return false;
+        GamePiece defenderBefore = b.getGamePieceAtPos(dr, dc);
+        int actionsBefore = getRemainingActions(attacker);
+        HashMap<Integer, CustomBox> entities = new HashMap<>();
+        entities.put(0, srcPlot); entities.put(1, dst);
+        srcPlot.triggerClickEffect(entities);
+        GamePiece defenderAfter = b.getGamePieceAtPos(dr, dc);
+        if (defenderBefore != null && defenderAfter != defenderBefore) return true; // killed or moved
+        int actionsAfter = getRemainingActions(attacker);
+        return actionsAfter < actionsBefore; // action spent implies a hit
+    }
+
+    private boolean summonAndVerify(Board b, SummonCard card, Plot p) {
+        var ps = PlayerManager.get(PieceAlignment.P2);
+        int beforeSize = ps.hand.getCards().size(); int beforeMana = ps.mana;
+        HashMap<Integer, CustomBox> entities = new HashMap<>();
+        entities.put(0, card); entities.put(1, p);
+        card.triggerClickEffect(entities);
+        boolean consumed = !ps.hand.getCards().contains(card) || ps.hand.getCards().size() < beforeSize;
+        boolean spentMana = ps.mana < beforeMana;
+        return consumed || spentMana;
     }
 
     // --- Turn end checks and helpers ---
