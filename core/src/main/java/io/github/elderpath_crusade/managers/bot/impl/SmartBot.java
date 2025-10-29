@@ -127,11 +127,12 @@ public class SmartBot implements Bot {
     private boolean hasSummonCandidate(Board b) {
         var ps = PlayerManager.get(PieceAlignment.P2);
         if (ps == null || ps.hand == null) return false;
-        boolean hasSummonCard = false;
-        for (Card c : ps.hand.getCards()) { if (c instanceof SummonCard) { hasSummonCard = true; break; } }
-        if (!hasSummonCard) return false;
-        // Require at least some mana and at least one valid home-row plot
-        if (ps.mana <= 0) return false; // conservative; exact cost checked by card itself
+        int mana = ps.mana;
+        boolean hasAffordable = false;
+        for (Card c : ps.hand.getCards()) {
+            if (c instanceof SummonCard sc && sc.getManaCost() <= mana) { hasAffordable = true; break; }
+        }
+        if (!hasAffordable) return false;
         int homeRow = b.getROWS() - 1;
         for (int col = 0; col < b.getCOLS(); col++) {
             Renderable rp = b.getPlotAtPos(homeRow, col);
@@ -294,17 +295,16 @@ public class SmartBot implements Bot {
         }
         if (bestColAndDist[0] == -1) return false; // no enemies -> skip summoning for now
 
-        // Choose a SummonCard we can afford (simple highest-cost-first preference)
-        Card chosen = null; int bestCost = -1;
+        // Choose the best affordable SummonCard (highest cost we can afford)
+        SummonCard chosen = null; int bestCost = -1;
+        int mana = ps.mana;
         for (Card c : ps.hand.getCards()) {
             if (c instanceof SummonCard sc) {
-                // We don't have public accessors for stats from SummonCard; approximate by preferring later cards in hand
-                // and ensure we can afford them by attempting only if ps.mana > 0 (actual check happens in card logic).
-                int pseudoCostRank = 1; // simple tie-breaker placeholder
-                if (ps.mana > 0 && pseudoCostRank >= bestCost) { chosen = sc; bestCost = pseudoCostRank; }
+                int cost = sc.getManaCost();
+                if (cost <= mana && cost > bestCost) { chosen = sc; bestCost = cost; }
             }
         }
-        if (!(chosen instanceof SummonCard)) return false;
+        if (chosen == null) return false;
 
         // Try home row plots in the target column first; fallback to any valid home row plot
         List<Plot> candidates = new ArrayList<>();

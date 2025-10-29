@@ -105,6 +105,10 @@ public abstract class SummonCard extends Card implements TargetFilter {
         if (actText != null) actText.withFontSize(small);
     }
 
+    public int getManaCost() {
+        return stats.getCost();
+    }
+
     @Override
     public void setBounds(Box bounds) {
         super.setBounds(bounds);
