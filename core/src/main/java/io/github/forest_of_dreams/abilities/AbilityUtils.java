@@ -1,7 +1,9 @@
 package io.github.forest_of_dreams.abilities;
 
+import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.game_objects.board.MonsterGamePiece;
+import io.github.forest_of_dreams.interfaces.CustomBox;
 import io.github.forest_of_dreams.multiplayer.EventBus;
 import io.github.forest_of_dreams.multiplayer.GameEventType;
 
@@ -13,6 +15,18 @@ import java.util.Map;
  */
 public final class AbilityUtils {
     private AbilityUtils() {}
+
+    // --- Small API helpers for actionable abilities ---
+    /** Returns the selection flow for the given actionable ability (null-safe). */
+    public static ClickableEffectData selectionFor(ActionableAbility ability) {
+        if (ability == null) return null;
+        return ability.getClickableEffectData();
+    }
+    /** Executes the actionable ability with the given entities map (null-safe). */
+    public static boolean execute(ActionableAbility ability, HashMap<Integer, CustomBox> entities) {
+        if (ability == null || entities == null) return false;
+        return ability.execute(entities);
+    }
 
     // --- Event emit helpers ---
     public static void emit(GameEventType type, Map<String, Object> data) {

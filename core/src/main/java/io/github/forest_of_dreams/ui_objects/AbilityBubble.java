@@ -44,6 +44,8 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
 
     // Cache for generated circle textures per key (size+colors)
     private static final Map<String, Texture> CIRCLE_CACHE = new ConcurrentHashMap<>();
+    // App-lifetime cache for ability icon textures by internal path
+    private static final Map<String, Texture> ICON_CACHE = new ConcurrentHashMap<>();
 
     public AbilityBubble(int x, int y, int size, int z) {
         this(x, y, size, z, Color.WHITE.cpy().mul(0.15f, 0.15f, 0.35f, 0.95f), Color.WHITE.cpy().mul(0.8f));
@@ -61,7 +63,12 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
     public AbilityBubble withIcon(String internalPath) {
         if (internalPath != null && !internalPath.isBlank()) {
             try {
-                this.iconTexture = new Texture(Gdx.files.internal(internalPath));
+                Texture cached = ICON_CACHE.get(internalPath);
+                if (cached == null) {
+                    cached = new Texture(Gdx.files.internal(internalPath));
+                    ICON_CACHE.put(internalPath, cached);
+                }
+                this.iconTexture = cached;
             } catch (Exception ignored) {
                 this.iconTexture = null;
             }

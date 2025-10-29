@@ -78,3 +78,24 @@ This section documents the project’s Abilities architecture: how abilities are
 3) Attach the ability in the piece’s constructor (`this.addAbility(new YourAbility(...))`).
 4) If user-facing, provide `getDescription()` with explicit `\n` line breaks for the card/preview.
 5) Verify using the checklist above.
+
+
+#### 11. Ability bubbles: icons, indices, sizing, caching
+- Icons vs. index fallback
+  - Abilities may optionally provide an icon path via `Ability.getIconPath()` (LibGDX internal path relative to `assets/`, e.g., `"images/displace_ability.png"`).
+  - If an ability does not provide an icon (returns `null` or blank), the UI bubble shows a numeric 1-based index indicating the actionable ability’s position in the piece’s attachment order.
+  - Multiple actionable abilities are displayed as a centered horizontal row above the piece. Ordering is the attachment order (left-to-right, 1..n).
+- Sizing and layout
+  - Bubbles are round (circular) and sized dynamically to 70% of the plot size (min of plot width/height), clamped to sensible bounds.
+  - They are placed in a centered row `OFFSET_Y` pixels above the plot, with a small horizontal spacing between bubbles.
+  - A sticky hover corridor lets players move the cursor from the plot to the bubbles without hiding them.
+  - Bubbles are visible only for the current player’s pieces with remaining actions, and they hide while any selection is active.
+- Caching and lifetime
+  - Circle visuals are generated with Pixmap once per unique size/color combination and cached for the app lifetime to avoid per-frame allocations.
+  - Ability icons are loaded once per internal path and cached for the app lifetime. This keeps `AbilityPopup` and `AbilityBubble` lightweight and avoids reloading the same texture.
+  - If a future scene needs to aggressively unload UI resources, introduce a simple dispose/clear step for these caches (or move loading to a centralized asset manager). For now they are kept for the duration of the application session.
+- Hit-test
+  - Click hit-testing currently uses the square bounds of the bubble (by design). A radial hit-test can be added later if desired.
+- API helpers (optional convenience)
+  - `AbilityUtils.selectionFor(ActionableAbility)` returns the selection flow (`ClickableEffectData`).
+  - `AbilityUtils.execute(ActionableAbility, HashMap<Integer, CustomBox>)` executes the ability with the given entities map.
