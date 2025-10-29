@@ -30,8 +30,9 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     @Getter @Setter private int z;
 
     // Background options (only one should be used)
-    private Texture backgroundTexture; // full texture scaled to bounds
+    private Texture backgroundTexture; // full texture; scaled to bounds (optionally preserving aspect)
     private Color backgroundColor;     // solid color fill
+    private boolean preserveImageAspect = false;  // if true, image is fit-centered with aspect preserved
 
     // Optional hover / click visual tweaks (background)
     @Getter @Setter private Color hoverColor = null;      // background hover color
@@ -90,6 +91,12 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
         b.backgroundTexture = new Texture(Gdx.files.internal(imagePath));
         return b;
+    }
+
+    // Configure whether to preserve the image's aspect ratio when drawing
+    public Button withImagePreserveAspect(boolean preserve) {
+        this.preserveImageAspect = preserve;
+        return this;
     }
 
     // Protected setter for subclasses to configure background color
@@ -187,7 +194,23 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         int height = bounds.getHeight();
 
         if (backgroundTexture != null) {
-            batch.draw(backgroundTexture, xAbs, yAbs, width, height);
+            if (preserveImageAspect) {
+                // Fit the texture inside bounds while preserving its aspect ratio; center within box
+                int texW = backgroundTexture.getWidth();
+                int texH = backgroundTexture.getHeight();
+                if (texW > 0 && texH > 0) {
+                    float scale = Math.min((float) width / texW, (float) height / texH);
+                    int drawW = Math.max(1, Math.round(texW * scale));
+                    int drawH = Math.max(1, Math.round(texH * scale));
+                    int dx = xAbs + (width - drawW) / 2;
+                    int dy = yAbs + (height - drawH) / 2;
+                    batch.draw(backgroundTexture, dx, dy, drawW, drawH);
+                } else {
+                    batch.draw(backgroundTexture, xAbs, yAbs, width, height);
+                }
+            } else {
+                batch.draw(backgroundTexture, xAbs, yAbs, width, height);
+            }
         } else if (backgroundColor != null) {
             // Determine background color based on hover/click state (click overrides hover)
             Color bg = backgroundColor;

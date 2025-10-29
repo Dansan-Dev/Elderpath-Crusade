@@ -13,6 +13,12 @@ public interface Ability extends AutoCloseable {
     /** Short description shown on cards or UI. */
     String getDescription();
 
+    /**
+     * Optional icon for UI bubbles. Return a LibGDX internal path (relative to assets/),
+     * e.g., "images/displace_ability.png". Return null to use the fallback label.
+     */
+    default String getIconPath() { return null; }
+
     AbilityType getType();
 
     /** Called when this ability is attached to a piece. */

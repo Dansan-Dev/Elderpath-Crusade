@@ -49,6 +49,12 @@ public class DisplaceAbility implements ActionableAbility {
     }
 
     @Override
+    public String getIconPath() {
+        // LibGDX internal path relative to assets/
+        return "images/displace_ability.png";
+    }
+
+    @Override
     public AbilityType getType() { return AbilityType.ACTIONABLE; }
 
     @Override
