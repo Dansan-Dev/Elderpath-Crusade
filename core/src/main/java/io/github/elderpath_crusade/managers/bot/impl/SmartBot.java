@@ -31,6 +31,9 @@ public class SmartBot implements Bot {
     private static final float STEP_DELAY = 0.35f;
     private static final float END_DELAY = 0.4f;
     private static final int MAX_STEPS = 60;
+    // Directional bias for movement: prefer forward (toward row 0), neutral sideways, discourage backward
+    private static final int DIR_FORWARD_BONUS = 3;
+    private static final int DIR_BACKWARD_PENALTY = 3;
 
     // Per-turn state guards to avoid runaway loops after finishing
     private boolean turnActive = false;
@@ -103,6 +106,7 @@ public class SmartBot implements Bot {
         buildWinPathIntents(b, intents);
         buildAdjacentAttackIntents(b, intents);
         buildAdvanceIntents(b, intents);
+        buildManeuverIntents(b, intents);
         buildSummonIntents(b, intents);
         if (intents.isEmpty()) return false;
         intents.sort((a,bx) -> {
@@ -120,12 +124,13 @@ public class SmartBot implements Bot {
     }
 
     private int tiePriority(String kind) {
-        if (kind == null) return 4;
+        if (kind == null) return 5;
         if ("ADJ_ATTACK".equals(kind)) return 0;
         if (kind.startsWith("WIN_")) return 1;
         if ("ADVANCE".equals(kind)) return 2;
-        if ("DEF_SUMMON".equals(kind)) return 3;
-        return 4;
+        if ("MANEUVER".equals(kind)) return 3;
+        if ("DEF_SUMMON".equals(kind)) return 4;
+        return 5;
     }
 
     private void buildWinIntents(Board b, List<Intent> out) {
@@ -163,9 +168,15 @@ public class SmartBot implements Bot {
             else if (res.turns == 1) base = 95;
             else base = 88; // 2 turns by user preference
             int penalty = Math.min(20, res.threatExposure * 5);
-            if (res.endThreatThisTurn && res.turns > 0) penalty += 10; // extra risk if we end this turn threatened
+            final Plot dest = res.firstMove; int[] diTmp = b.getIndicesOfPlot(dest);
+            boolean lethalThisTurnEnd = false;
+            if (diTmp != null && res.turns > 0) {
+                lethalThisTurnEnd = isLethalThreatNextTurn(b, me, diTmp[0], diTmp[1]);
+            }
+            if (res.endThreatThisTurn && res.turns > 0) penalty += 15; // stronger penalty if merely threatened
+            if (lethalThisTurnEnd && res.turns > 0) penalty += 25; // extra strong penalty for lethal exposure
             int score = Math.max(55, base - penalty);
-            final int sr = r, sc = c; final Plot dest = res.firstMove; final GamePiece ref = gp; int[] di = b.getIndicesOfPlot(dest);
+            final int sr = r, sc = c; final GamePiece ref = gp; int[] di = diTmp;
             if (di == null) continue;
             String kind = (res.turns == 0) ? "WIN_PATH0" : (res.turns == 1 ? "WIN_PATH1" : "WIN_PATH2");
             out.add(new Intent(score, () -> moveAndVerify(b, sr, sc, dest, ref, di[0], di[1]), kind));
@@ -295,14 +306,144 @@ public class SmartBot implements Bot {
             if (best == null) {
                 for (Plot p : reach) {
                     int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
-                    if (wouldEnableLethal(me, b, idx[0], idx[1])) { best = p; bestDist = nearestManhattan(idx[0], idx[1], enemies); break; }
+                    // allow only if it enables immediate lethal AND destination is not one-shot lethal next turn
+                    if (wouldEnableLethal(me, b, idx[0], idx[1]) && !isLethalThreatNextTurn(b, me, idx[0], idx[1])) { best = p; bestDist = nearestManhattan(idx[0], idx[1], enemies); break; }
                 }
             }
             if (best != null) {
                 final int sr=r, sc=c; final Plot dest=best; final GamePiece ref=gp; int[] bi = b.getIndicesOfPlot(best);
                 int gain = Math.max(0, currentDist - bestDist);
                 int score = 50 + Math.min(10, gain);
+                // Directional bias: prefer moving forward (toward row 0) over backward
+                if (bi[0] < sr) score += DIR_FORWARD_BONUS; // forward (toward row 0)
+                else if (bi[0] > sr) score -= DIR_BACKWARD_PENALTY; // backward (toward our home row)
                 out.add(new Intent(score, () -> moveAndVerify(b, sr, sc, dest, ref, bi[0], bi[1]), "ADVANCE"));
+            }
+        }
+    }
+
+    // Fallback: safer repositioning or standing still to avoid harm and unblock lanes
+    private void buildManeuverIntents(Board b, List<Intent> out) {
+        ThreatMap threats = computeThreatMap(b, PieceAlignment.P1);
+        int rows = b.getROWS(), cols = b.getCOLS();
+        // Precompute enemy positions for distance shaping
+        List<int[]> enemies = new ArrayList<>();
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (gp instanceof MonsterGamePiece em && em.getAlignment() == PieceAlignment.P1) enemies.add(new int[]{r,c});
+        }
+        for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
+            GamePiece gp = b.getGamePieceAtPos(r,c);
+            if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            int actionsRem = getRemainingActions(me);
+            if (actionsRem <= 0) continue;
+            int speed = me.getStats().getSpeed();
+            List<Plot> reach = b.getReachablePlots(r,c,speed);
+            // Include staying put as a candidate
+            Plot stayPlot = null; Renderable rr = b.getPlotAtPos(r,c); if (rr instanceof Plot sp) stayPlot = sp;
+            List<Plot> candidates = new ArrayList<>();
+            if (stayPlot != null) candidates.add(stayPlot);
+            if (reach != null) candidates.addAll(reach);
+
+            boolean underAdjThreatNow = threats.isThreatened(r, c);
+            int bestScore = Integer.MIN_VALUE; Plot bestDest = null; int[] bestIdx = null;
+
+            // Identify closest ally behind in same column for decongestion
+            class AllyInfo { MonsterGamePiece ally; int row; int col; int weight; }
+            AllyInfo laneAlly = null;
+            for (int rrw = r+1; rrw < rows; rrw++) {
+                GamePiece g2 = b.getGamePieceAtPos(rrw, c);
+                if (g2 instanceof MonsterGamePiece m2) {
+                    if (m2.getAlignment() == PieceAlignment.P2) {
+                        laneAlly = new AllyInfo(); laneAlly.ally = m2; laneAlly.row = rrw; laneAlly.col = c;
+                        // Compute ally weight
+                        int w = m2.getStats().getDamage()*2 + m2.getStats().getActions() + m2.getStats().getSpeed();
+                        // turns-to-win comparison bonus
+                        WinPathResult myTTW = estimateTurnsToRow0(b, me, r, c, threats, actionsRem);
+                        WinPathResult allyTTW = estimateTurnsToRow0(b, m2, rrw, c, threats, getRemainingActions(m2));
+                        if (myTTW != null && allyTTW != null && allyTTW.turns < (myTTW.turns == 0 ? 0 : myTTW.turns)) w += 6;
+                        laneAlly.weight = w;
+                        break;
+                    } else {
+                        // enemy piece in same column blocks; stop scanning
+                        break;
+                    }
+                }
+            }
+
+            int currentDist = enemies.isEmpty() ? Integer.MAX_VALUE : nearestManhattan(r,c,enemies);
+            WinPathResult myTTWNow = estimateTurnsToRow0(b, me, r, c, threats, actionsRem);
+
+            for (Plot p : candidates) {
+                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int dr = idx[0], dc = idx[1];
+                // Discard one-shot lethal
+                if (isLethalThreatNextTurn(b, me, dr, dc)) continue;
+                int score = 40;
+                // Penalize threatened (non-lethal)
+                if (threats.isThreatened(dr, dc)) score -= 20;
+                // Directional bias (forward > sideways > backward). Apply after safety check.
+                if (dr < r) score += DIR_FORWARD_BONUS; // forward
+                else if (dr > r) score -= DIR_BACKWARD_PENALTY; // backward
+
+                // Under immediate adjacency threat at current tile: discourage sidestep unless it fully exits threat and unblocks
+                boolean isSidestep = (dc != c) || (dr == r && dc != c);
+                if (underAdjThreatNow && !(dr == r && dc == c)) {
+                    boolean exitsThreat = !threats.isThreatened(dr, dc);
+                    int unblockBonus = 0;
+                    if (laneAlly != null && dc != c) {
+                        unblockBonus = 8 + Math.min(7, laneAlly.weight / 4);
+                    }
+                    if (!(exitsThreat && unblockBonus >= 10)) {
+                        score -= 12; // prefer standing still
+                    } else {
+                        score += unblockBonus;
+                    }
+                }
+
+                // Decongestion scoring when not in immediate-adj case
+                if (!underAdjThreatNow) {
+                    if (laneAlly != null) {
+                        if (dc == c) {
+                            // staying in lane ahead of ally → blocking penalty
+                            int blockPenalty = 6 + Math.min(10, laneAlly.weight / 3);
+                            // If we move further up (smaller row index), still blocking; if we move off-lane later, that's in other branch
+                            score -= blockPenalty;
+                        } else {
+                            // Move off lane to free ally
+                            int bonus = 8 + Math.min(7, laneAlly.weight / 4);
+                            score += bonus;
+                        }
+                    }
+                }
+
+                // Future opportunity: win path improvement relative to staying (account for action spend)
+                int actionsAfter = actionsRem - ((dr == r && dc == c) ? 0 : 1);
+                if (actionsAfter < 0) actionsAfter = 0;
+                WinPathResult myTTWDest = estimateTurnsToRow0(b, me, dr, dc, threats, actionsAfter);
+                if (myTTWNow != null && myTTWDest != null) {
+                    int from = myTTWNow.turns; int to = myTTWDest.turns;
+                    if (from > to) {
+                        if ((from == 2 && to == 1)) score += 6;
+                        else if (to == 0) score += 10;
+                        else score += 4; // small improvement otherwise
+                    }
+                }
+
+                // Enemy engagement shaping (only if dest not threatened)
+                if (!threats.isThreatened(dr, dc) && !enemies.isEmpty()) {
+                    int newDist = nearestManhattan(dr, dc, enemies);
+                    if (newDist < currentDist) score += Math.min(6, currentDist - newDist);
+                }
+
+                if (score > bestScore) { bestScore = score; bestDest = p; bestIdx = idx; }
+            }
+
+            // Only emit if bestDest is a different tile (real action); otherwise we implicitly stand still
+            if (bestDest != null && !(bestIdx[0] == r && bestIdx[1] == c)) {
+                final int sr=r, sc=c; final Plot dest=bestDest; final GamePiece ref=gp; final int dr=bestIdx[0], dc=bestIdx[1];
+                int finalScore = bestScore;
+                out.add(new Intent(finalScore, () -> moveAndVerify(b, sr, sc, dest, ref, dr, dc), "MANEUVER"));
             }
         }
     }
@@ -530,7 +671,8 @@ public class SmartBot implements Bot {
                 for (Plot p : reach) {
                     int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
                     // If this move would place us adjacent to an enemy we can kill immediately this turn, allow it
-                    if (wouldEnableLethal(me, b, idx[0], idx[1])) { best = p; break; }
+                    // but avoid stepping into a tile that is lethal next turn for us
+                    if (wouldEnableLethal(me, b, idx[0], idx[1]) && !isLethalThreatNextTurn(b, me, idx[0], idx[1])) { best = p; break; }
                 }
             }
             if (best != null) {
@@ -638,31 +780,37 @@ public class SmartBot implements Bot {
     private ThreatMap computeThreatMap(Board b, PieceAlignment enemySide) {
         int rows = b.getROWS(), cols = b.getCOLS();
         ThreatMap map = new ThreatMap(rows, cols);
-        // For each enemy, mark tiles within T = (actions-1)*speed + 1 steps (cardinal BFS)
+        // For each enemy with non-zero attack, mark tiles they can attack NEXT TURN
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece em) || em.getAlignment() != enemySide) continue;
-            int actions;
-            Object v = em.getData(GamePieceData.ACTIONS_REMAINING);
-            if (v instanceof Integer n) actions = n; else actions = em.getStats().getActions();
+            // Skip enemies that cannot deal damage
+            if (em.getEffectiveDamage() <= 0) continue;
+            int actions = em.getEffectiveActions();
             if (actions <= 0) continue;
             int speed = em.getStats().getSpeed();
-            int T = Math.max(1, (actions - 1) * speed + 1);
-            // BFS flood up to T steps through empty or enemy-occupied tiles (cannot pass through any piece), but we just mark reachable empty squares plus the ring for attack
+            // Movement steps available before an attack next turn
+            int moveStepsForAttack = Math.max(0, (actions - 1) * Math.max(0, speed));
+            // BFS flood up to moveStepsForAttack steps through empty tiles (cannot pass through any piece)
             Queue<int[]> q = new ArrayDeque<>();
             boolean[][] seen = new boolean[rows][cols];
             q.add(new int[]{r,c,0}); seen[r][c] = true;
+            final int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
             while (!q.isEmpty()) {
                 int[] cur = q.poll();
                 int cr = cur[0], cc = cur[1], d = cur[2];
-                if (d > T) continue;
-                map.mark(cr, cc);
-                if (d == T) continue;
-                int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
+                if (d > moveStepsForAttack) continue;
+                // From any tile we can occupy after moving 'd' steps (including start), we can attack its 4-adjacent tiles
+                for (int[] dir : dirs) {
+                    int ar = cr + dir[0], ac = cc + dir[1];
+                    map.mark(ar, ac);
+                }
+                if (d == moveStepsForAttack) continue;
+                // Continue flood through empty tiles only
                 for (int[] dir : dirs) {
                     int nr = cr + dir[0], nc = cc + dir[1];
                     if (nr<0||nc<0||nr>=rows||nc>=cols||seen[nr][nc]) continue;
-                    // cannot traverse through any occupied tile except potentially the origin? Keep simple: block if occupied.
+                    // cannot traverse through occupied tiles
                     if (b.getGamePieceAtPos(nr,nc) != null) continue;
                     seen[nr][nc] = true;
                     q.add(new int[]{nr,nc,d+1});
@@ -670,5 +818,45 @@ public class SmartBot implements Bot {
             }
         }
         return map;
+    }
+
+    // Check if tile (r,c) would be one-shot lethal for 'me' on the enemy's next turn
+    private boolean isLethalThreatNextTurn(Board b, MonsterGamePiece me, int r, int c) {
+        int rows = b.getROWS(), cols = b.getCOLS();
+        int myHp = Math.max(0, me.getStats().getCurrentHealth());
+        PieceAlignment enemySide = (me.getAlignment() == PieceAlignment.P1) ? PieceAlignment.P2 : PieceAlignment.P1;
+        for (int er = 0; er < rows; er++) for (int ec = 0; ec < cols; ec++) {
+            GamePiece gp = b.getGamePieceAtPos(er, ec);
+            if (!(gp instanceof MonsterGamePiece em) || em.getAlignment() != enemySide) continue;
+            int dmg = em.getEffectiveDamage();
+            if (dmg <= 0) continue; // non-attacking pieces pose no lethal threat
+            int actions = em.getEffectiveActions();
+            if (actions <= 0) continue;
+            int speed = em.getStats().getSpeed();
+            int T = Math.max(1, (actions - 1) * speed + 1);
+            // BFS to enumerate end positions the enemy can occupy by end of its next turn
+            Queue<int[]> q = new ArrayDeque<>();
+            boolean[][] seen = new boolean[rows][cols];
+            q.add(new int[]{er, ec, 0}); seen[er][ec] = true;
+            while (!q.isEmpty()) {
+                int[] cur = q.poll();
+                int cr = cur[0], cc = cur[1], d = cur[2];
+                if (d > T) continue;
+                // If from (cr,cc) the enemy can attack (r,c) next turn (adjacent), check lethal
+                if (Math.abs(cr - r) + Math.abs(cc - c) == 1) {
+                    if (dmg >= myHp) return true;
+                }
+                if (d == T) continue;
+                int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
+                for (int[] dir : dirs) {
+                    int nr = cr + dir[0], nc = cc + dir[1];
+                    if (nr<0||nc<0||nr>=rows||nc>=cols||seen[nr][nc]) continue;
+                    if (b.getGamePieceAtPos(nr, nc) != null) continue; // cannot pass through pieces
+                    seen[nr][nc] = true;
+                    q.add(new int[]{nr, nc, d+1});
+                }
+            }
+        }
+        return false;
     }
 }
