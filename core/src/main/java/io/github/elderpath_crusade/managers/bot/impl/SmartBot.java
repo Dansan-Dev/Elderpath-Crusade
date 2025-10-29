@@ -99,6 +99,17 @@ public class SmartBot implements Bot {
         }
     }
 
+    private final Random rng = new Random(initSeed());
+
+    private static long initSeed() {
+        try {
+            String prop = System.getProperty("smartBotSeed");
+            if (prop == null || prop.isBlank()) prop = System.getenv("SMARTBOT_SEED");
+            if (prop != null && !prop.isBlank()) return Long.parseLong(prop.trim());
+        } catch (Exception ignored) {}
+        return 1337L;
+    }
+
     private boolean executeBestIntent(Board b) {
         List<Intent> intents = new ArrayList<>();
         // Immediate win (single or multi-action this turn direct to row 0) is handled in buildWinIntents/buildWinPathIntents
@@ -109,16 +120,36 @@ public class SmartBot implements Bot {
         buildManeuverIntents(b, intents);
         buildSummonIntents(b, intents);
         if (intents.isEmpty()) return false;
+        // Determine the best score and tie-priority, then pick deterministically with seeded RNG among equals
+        int bestScore = intents.stream().mapToInt(it -> it.score).max().orElse(Integer.MIN_VALUE);
+        List<Intent> best = new ArrayList<>();
+        for (Intent it : intents) if (it.score == bestScore) best.add(it);
+        if (best.isEmpty()) return false;
+        int bestPri = best.stream().mapToInt(it -> tiePriority(it.kind)).min().orElse(5);
+        List<Intent> finalists = new ArrayList<>();
+        for (Intent it : best) if (tiePriority(it.kind) == bestPri) finalists.add(it);
+        // Shuffle finalists deterministically by seeded RNG to break ties reproducibly
+        for (int i = finalists.size()-1; i > 0; i--) {
+            int j = rng.nextInt(i+1);
+            Intent tmp = finalists.get(i);
+            finalists.set(i, finalists.get(j));
+            finalists.set(j, tmp);
+        }
+        for (Intent it : finalists) {
+            try {
+                if (it.exec.get()) { Logger.log("[SmartBot]", "Intent executed: " + it.kind + " (score=" + it.score + ")"); return true; }
+            } catch (Exception e) { /* try next finalist */ }
+        }
+        // Fallback: try remaining non-finalists in sorted order
         intents.sort((a,bx) -> {
             int cmp = Integer.compare(bx.score, a.score);
             if (cmp != 0) return cmp;
-            // Tie-breaker: prefer ADJ_ATTACK over others, then WIN_* over ADVANCE, then DEF_SUMMON
             return Integer.compare(tiePriority(a.kind), tiePriority(bx.kind));
         });
         for (Intent it : intents) {
-            try {
-                if (it.exec.get()) { Logger.log("[SmartBot]", "Intent executed: " + it.kind + " (score=" + it.score + ")"); return true; }
-            } catch (Exception e) { /* ignore and try next */ }
+            if (finalists.contains(it)) continue;
+            try { if (it.exec.get()) { Logger.log("[SmartBot]", "Intent executed(fallback): " + it.kind + " (score=" + it.score + ")"); return true; } }
+            catch (Exception ignore) {}
         }
         return false;
     }
@@ -140,7 +171,7 @@ public class SmartBot implements Bot {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
             if (getRemainingActions(me) <= 0) continue;
-            int speed = me.getStats().getSpeed();
+            int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             for (Plot p : reach) {
                 int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
@@ -173,7 +204,11 @@ public class SmartBot implements Bot {
             if (diTmp != null && res.turns > 0) {
                 lethalThisTurnEnd = isLethalThreatNextTurn(b, me, diTmp[0], diTmp[1]);
             }
-            if (res.endThreatThisTurn && res.turns > 0) penalty += 15; // stronger penalty if merely threatened
+            if (res.endThreatThisTurn && res.turns > 0 && diTmp != null) {
+                int count = threats.getCount(diTmp[0], diTmp[1]);
+                int extra = Math.min(15, 5 * Math.max(0, count - 1));
+                penalty += 15 + extra; // stronger penalty scaled by number of threat sources
+            }
             if (lethalThisTurnEnd && res.turns > 0) penalty += 25; // extra strong penalty for lethal exposure
             int score = Math.max(55, base - penalty);
             final int sr = r, sc = c; final GamePiece ref = gp; int[] di = diTmp;
@@ -193,8 +228,8 @@ public class SmartBot implements Bot {
     }
 
     private WinPathResult estimateTurnsToRow0(Board b, MonsterGamePiece me, int sr, int sc, ThreatMap threats, int actionsThisTurn) {
-        int effSpeed = me.getStats().getSpeed();
-        int effActions = me.getStats().getActions();
+        int effSpeed = me.getEffectiveSpeed();
+        int effActions = me.getEffectiveActions();
         int rows = b.getROWS(), cols = b.getCOLS();
         // Quick check: already on row 0
         if (sr == 0) return new WinPathResult(0, null, 0, false);
@@ -265,14 +300,22 @@ public class SmartBot implements Bot {
                 GamePiece defender = b.getGamePieceAtPos(d[0], d[1]);
                 int base = 70;
                 if (defender instanceof MonsterGamePiece em) {
-                    int dmg = ((MonsterGamePiece) gp).getStats().getDamage();
+                    int dmg = ((MonsterGamePiece) gp).getEffectiveDamage();
                     int hp = em.getStats().getCurrentHealth();
                     boolean lethal = dmg >= hp;
                     if (lethal) base = 85; // lethal preferred (80 +5 bonus per user)
                     base += Math.min(10, em.getStats().getCost()); // small bump for value
+                    // Target danger: prefer removing higher-damage enemies
+                    base += Math.min(3, Math.max(0, em.getEffectiveDamage()));
                     // Defensive urgency: closer to our home row (ROWS-1) is slightly higher priority
                     int defensiveUrgency = Math.max(0, (b.getROWS()-1) - d[0]);
-                    base += Math.min(5, defensiveUrgency / 2);
+                    base += Math.min(3, defensiveUrgency / 2);
+                }
+                // Post-attack survivability: penalize if our current tile is lethal next turn and we likely can't move after attacking
+                int actionsBefore = getRemainingActions((MonsterGamePiece) gp);
+                boolean lethalHere = isLethalThreatNextTurn(b, (MonsterGamePiece) gp, r, c);
+                if (lethalHere && actionsBefore <= 1) {
+                    base -= 20;
                 }
                 final int sr=r, sc=c; final Plot target=dst; final MonsterGamePiece att = (MonsterGamePiece) gp;
                 final int score = base;
@@ -294,7 +337,7 @@ public class SmartBot implements Bot {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
             if (getRemainingActions(me) <= 0) continue;
-            int speed = me.getStats().getSpeed();
+            int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             int currentDist = nearestManhattan(r,c,enemies);
             Plot best = null; int bestDist = currentDist;
@@ -337,7 +380,7 @@ public class SmartBot implements Bot {
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
             int actionsRem = getRemainingActions(me);
             if (actionsRem <= 0) continue;
-            int speed = me.getStats().getSpeed();
+            int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             // Include staying put as a candidate
             Plot stayPlot = null; Renderable rr = b.getPlotAtPos(r,c); if (rr instanceof Plot sp) stayPlot = sp;
@@ -381,7 +424,11 @@ public class SmartBot implements Bot {
                 if (isLethalThreatNextTurn(b, me, dr, dc)) continue;
                 int score = 40;
                 // Penalize threatened (non-lethal)
-                if (threats.isThreatened(dr, dc)) score -= 20;
+                if (threats.isThreatened(dr, dc)) {
+                    int tCount = threats.getCount(dr, dc);
+                    int penalty = 20 + Math.min(15, 5 * Math.max(0, tCount - 1));
+                    score -= penalty;
+                }
                 // Directional bias (forward > sideways > backward). Apply after safety check.
                 if (dr < r) score += DIR_FORWARD_BONUS; // forward
                 else if (dr > r) score -= DIR_BACKWARD_PENALTY; // backward
@@ -700,7 +747,7 @@ public class SmartBot implements Bot {
             if (gp instanceof MonsterGamePiece em && em.getAlignment() == PieceAlignment.P1) {
                 int dmg = me.getStats().getDamage();
                 int hp = em.getStats().getCurrentHealth();
-                if (dmg >= hp) return true;
+                if (me.getEffectiveDamage() >= hp) return true;
             }
         }
         return false;
@@ -771,10 +818,11 @@ public class SmartBot implements Bot {
 
     // --- Threat map ---
     private static class ThreatMap {
-        private final boolean[][] threatened;
-        ThreatMap(int rows, int cols) { threatened = new boolean[rows][cols]; }
-        void mark(int r, int c) { if (r>=0 && c>=0 && r<threatened.length && c<threatened[0].length) threatened[r][c] = true; }
-        boolean isThreatened(int r, int c) { return r>=0 && c>=0 && r<threatened.length && c<threatened[0].length && threatened[r][c]; }
+        private final int[][] threatCount;
+        ThreatMap(int rows, int cols) { threatCount = new int[rows][cols]; }
+        void mark(int r, int c) { if (r>=0 && c>=0 && r<threatCount.length && c<threatCount[0].length) threatCount[r][c]++; }
+        boolean isThreatened(int r, int c) { return r>=0 && c>=0 && r<threatCount.length && c<threatCount[0].length && threatCount[r][c] > 0; }
+        int getCount(int r, int c) { return (r>=0 && c>=0 && r<threatCount.length && c<threatCount[0].length) ? threatCount[r][c] : 0; }
     }
 
     private ThreatMap computeThreatMap(Board b, PieceAlignment enemySide) {
@@ -788,7 +836,7 @@ public class SmartBot implements Bot {
             if (em.getEffectiveDamage() <= 0) continue;
             int actions = em.getEffectiveActions();
             if (actions <= 0) continue;
-            int speed = em.getStats().getSpeed();
+            int speed = em.getEffectiveSpeed();
             // Movement steps available before an attack next turn
             int moveStepsForAttack = Math.max(0, (actions - 1) * Math.max(0, speed));
             // BFS flood up to moveStepsForAttack steps through empty tiles (cannot pass through any piece)
