@@ -8,10 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.interfaces.Clickable;
-import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.Renderable;
-import io.github.elderpath_crusade.interfaces.UIRenderable;
+import io.github.elderpath_crusade.interfaces.*;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.ColorSettings;
@@ -40,7 +37,7 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
 
     // Clickable plumbing
     private ClickableEffectData effectData;
-    private io.github.elderpath_crusade.interfaces.OnClick onClick;
+    private OnClick onClick;
 
     // Cache for generated circle textures per key (size+colors)
     private static final Map<String, Texture> CIRCLE_CACHE = new ConcurrentHashMap<>();
@@ -84,7 +81,7 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
         return this;
     }
 
-    public AbilityBubble withOnClick(io.github.elderpath_crusade.interfaces.OnClick onClick, ClickableEffectData data) {
+    public AbilityBubble withOnClick(OnClick onClick, ClickableEffectData data) {
         this.onClick = onClick;
         this.effectData = data;
         return this;

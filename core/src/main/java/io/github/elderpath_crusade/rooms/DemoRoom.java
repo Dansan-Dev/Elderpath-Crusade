@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.abilities.AbilityRelay;
+import io.github.elderpath_crusade.cards.ShocklingCard;
 import io.github.elderpath_crusade.cards.WolfCard;
 import io.github.elderpath_crusade.cards.WolfCubCard;
 import io.github.elderpath_crusade.characters.pieces.WarpMage;
@@ -124,8 +125,8 @@ public class DemoRoom extends Room {
             }
         }
         // Add a couple of ShocklingCards to demonstrate triggered on-summon damage
-        cardsP1.add(new io.github.elderpath_crusade.cards.ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-        cardsP1.add(new io.github.elderpath_crusade.cards.ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+        cardsP1.add(new ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+        cardsP1.add(new ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
 
         deck = new Deck(
             cardsP1,

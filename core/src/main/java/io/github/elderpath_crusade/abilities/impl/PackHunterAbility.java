@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl;
 
+import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
  */
 public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
     @Override
-    public io.github.elderpath_crusade.abilities.AbilityType getType() { return io.github.elderpath_crusade.abilities.AbilityType.PASSIVE; }
+    public AbilityType getType() { return io.github.elderpath_crusade.abilities.AbilityType.PASSIVE; }
     private final StatsModifier mod;
     private MonsterGamePiece owner;
     private final Set<MonsterGamePiece> appliedTo = new HashSet<>();

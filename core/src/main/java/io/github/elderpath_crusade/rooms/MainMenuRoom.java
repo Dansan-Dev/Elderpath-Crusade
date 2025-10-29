@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.rooms.main_menu.MainMenuNavbar;
 import io.github.elderpath_crusade.supers.Room;
+import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.SpriteCreator;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
@@ -49,7 +50,7 @@ public class MainMenuRoom extends Room {
 
         // Title remains as content
         title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
-            .withFontSize(io.github.elderpath_crusade.utils.FontSize.BODY_LARGE);
+            .withFontSize(FontSize.BODY_LARGE);
         addContent(title);
 
         // Initial layout

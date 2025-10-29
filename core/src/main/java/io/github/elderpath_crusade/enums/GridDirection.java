@@ -1,5 +1,5 @@
 package io.github.elderpath_crusade.enums;
 
-public enum GRID_DIRECTION {
+public enum GridDirection {
     ROW, COLUMN;
 }

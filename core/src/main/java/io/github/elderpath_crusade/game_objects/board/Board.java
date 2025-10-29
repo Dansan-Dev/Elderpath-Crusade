@@ -1,7 +1,6 @@
 package io.github.elderpath_crusade.game_objects.board;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -18,7 +17,6 @@ import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.ui_objects.BoardIdentifierSymbol;
 import io.github.elderpath_crusade.utils.GraphicUtils;
-import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -201,7 +199,7 @@ public class Board extends HigherOrderTexture {
                 String.valueOf(toLetter(i)),
                 -PLOT_WIDTH/4,
                 PLOT_HEIGHT/2+PLOT_HEIGHT*i,
-                GRID_DIRECTION.ROW,
+                GridDirection.ROW,
                 true
             ));
         IntStream.iterate(0, i -> i + 1).limit(COLS)
@@ -209,7 +207,7 @@ public class Board extends HigherOrderTexture {
                 String.valueOf(i+1),
                 (PLOT_WIDTH)/2+PLOT_WIDTH*i,
                 -PLOT_HEIGHT/4,
-                GRID_DIRECTION.COLUMN,
+                GridDirection.COLUMN,
                 true
             ));
         // Board now contains label Texts at z=0; ensure z-buckets reindex

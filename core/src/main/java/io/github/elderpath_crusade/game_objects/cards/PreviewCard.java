@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.game_objects.cards;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
+import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -118,7 +119,7 @@ public class PreviewCard extends Card {
 
     // Non-interactive: never returns a click effect
     @Override
-    public io.github.elderpath_crusade.data_objects.ClickableEffectData getClickableEffectData() {
+    public ClickableEffectData getClickableEffectData() {
         return null;
     }
 }
