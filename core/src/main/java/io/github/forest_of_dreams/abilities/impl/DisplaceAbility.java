@@ -2,6 +2,7 @@ package io.github.forest_of_dreams.abilities.impl;
 
 import io.github.forest_of_dreams.abilities.AbilityType;
 import io.github.forest_of_dreams.abilities.ActionableAbility;
+import io.github.forest_of_dreams.abilities.AbilityUtils;
 import io.github.forest_of_dreams.data_objects.ClickableEffectData;
 import io.github.forest_of_dreams.enums.ClickableTargetType;
 import io.github.forest_of_dreams.enums.GamePieceData;
@@ -62,7 +63,7 @@ public class DisplaceAbility implements ActionableAbility {
         // Basic turn and actions gating
         if (owner == null) return false;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
-        if (getRemainingActions(owner) <= 0) return false;
+        if (AbilityUtils.getRemainingActions(owner) <= 0) return false;
 
         // Extract selections: index 1 = target piece, index 2 = destination plot
         Object t = entities.get(1);
@@ -117,27 +118,8 @@ public class DisplaceAbility implements ActionableAbility {
         );
 
         // Spend 1 action from owner
-        spendAction(owner);
+        AbilityUtils.spendAction(owner);
         return true;
-    }
-
-    private static int getRemainingActions(MonsterGamePiece mgp) {
-        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-        if (v instanceof Integer n) return n;
-        return mgp.getStats().getActions();
-    }
-
-    private static void spendAction(MonsterGamePiece mgp) {
-        int left = Math.max(0, getRemainingActions(mgp) - 1);
-        mgp.updateData(GamePieceData.ACTIONS_REMAINING, left);
-        EventBus.emit(
-                GameEventType.ACTION_SPENT,
-                Map.of(
-                        "pieceId", mgp.getId().toString(),
-                        "owner", mgp.getAlignment().name(),
-                        "remaining", left
-                )
-        );
     }
 
     private static Board.Position getPos(GamePiece gp) {

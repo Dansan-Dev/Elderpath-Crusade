@@ -1,6 +1,7 @@
 package io.github.forest_of_dreams.abilities.impl;
 
 import io.github.forest_of_dreams.abilities.AbilityType;
+import io.github.forest_of_dreams.abilities.AbilityUtils;
 import io.github.forest_of_dreams.abilities.TriggeredAbility;
 import io.github.forest_of_dreams.enums.GamePieceData;
 import io.github.forest_of_dreams.game_objects.board.Board;
@@ -51,12 +52,8 @@ public class OnSummonShockAbility implements TriggeredAbility {
             GamePiece gp = board.getGamePieceAtPos(nr, nc);
             if (gp instanceof MonsterGamePiece target) {
                 if (target == owner) continue; // safety: never damage self
-                target.getStats().dealDamage(1);
-                if (target.getStats().isDead()) {
-                    // Let the target handle its own cleanup and board removal
-                    target.die();
-                } else {
-                    // Optional: notify damaged
+                boolean alive = AbilityUtils.dealDamage(target, 1, owner, true);
+                if (alive) {
                     try { target.notifyDamaged(1, owner); } catch (Exception ignored) {}
                 }
             }
