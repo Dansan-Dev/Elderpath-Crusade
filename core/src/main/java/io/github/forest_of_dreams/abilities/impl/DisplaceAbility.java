@@ -27,7 +27,7 @@ import java.util.Map;
  * Costs 1 action from the WarpMage (owner) on success.
  */
 public class DisplaceAbility implements ActionableAbility {
-    private MonsterGamePiece owner;
+    private final MonsterGamePiece owner;
 
     public DisplaceAbility(MonsterGamePiece owner) {
         this.owner = owner;
@@ -53,9 +53,6 @@ public class DisplaceAbility implements ActionableAbility {
         // LibGDX internal path relative to assets/
         return "images/displace_ability.png";
     }
-
-    @Override
-    public AbilityType getType() { return AbilityType.ACTIONABLE; }
 
     @Override
     public ClickableEffectData getClickableEffectData() {
