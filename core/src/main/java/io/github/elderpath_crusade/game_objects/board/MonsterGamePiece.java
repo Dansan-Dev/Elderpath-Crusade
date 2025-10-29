@@ -96,6 +96,17 @@ public class MonsterGamePiece extends GamePiece {
         // External abilities should call StatsModifier.clear(), but as a safety, remove by null source does nothing.
     }
 
+    public GamePieceStats getEffectiveStats() {
+        int damage = getEffectiveDamage();
+        int speed = getEffectiveSpeed();
+        int actions = getEffectiveActions();
+        int maxHealth = getEffectiveMaxHealth();
+        int cost = getEffectiveCost();
+        return GamePieceStats.getMonsterStats(
+            cost, maxHealth, damage, speed, actions
+        );
+    }
+
     // ---- Effective stats (base + accumulated modifiers) ----
     public int getEffectiveDamage() {
         int base = getStats().getDamage();

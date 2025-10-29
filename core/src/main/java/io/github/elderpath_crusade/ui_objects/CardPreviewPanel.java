@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
+import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
 import io.github.elderpath_crusade.interfaces.Renderable;
@@ -13,6 +14,7 @@ import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.HoverUtils;
+import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,7 +98,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
         // Create a fresh preview card based on the piece stats
         String title = prettifyName(piece.getClass().getSimpleName());
         int dummyW = 125, dummyH = 200; // initial; resized on render
-        previewCard = new PreviewCard(0, 0, dummyW, dummyH, PREVIEW_Z, title, piece.getStats());
+        previewCard = new PreviewCard(0, 0, dummyW, dummyH, PREVIEW_Z, title, piece.getEffectiveStats());
         previewCard.showFront(); // ensure face-up
         // Build description from the piece's attached abilities (exact text with internal \n)
         List<Ability> abs = piece.getAbilities();
