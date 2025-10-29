@@ -18,6 +18,8 @@ import lombok.extern.java.Log;
 
 import java.util.*;
 
+import static io.github.elderpath_crusade.abilities.AbilityUtils.getRemainingActions;
+
 /**
  * Smarter bot implementing a simple urgency-driven policy with safeguards:
  * - Win-opportunity: If any unit can reach the opponent home row (row 0) this turn, do it first.
@@ -32,22 +34,33 @@ public class SmartBot implements Bot {
     private static final float END_DELAY = 0.4f;
     private static final int MAX_STEPS = 60;
 
+    // Per-turn state guards to avoid runaway loops after finishing
+    private boolean turnActive = false;
+    private boolean ended = false;
+
     @Override
     public String getName() { return "SmartBot"; }
 
     @Override
     public void onTurnStarted(PieceAlignment player) {
         if (player != PieceAlignment.P2) return;
+        // Initialize per-turn flags
+        this.turnActive = true;
+        this.ended = false;
         Logger.log("[SmartBot]", "Turn start");
         step(0);
     }
 
     private void step(int stepsDone) {
+        // Abort if turn has ended or not our turn anymore
+        if (!turnActive || ended) return;
         if (GraphicsManager.isPaused() || TurnManager.getCurrentPlayer() != PieceAlignment.P2) return;
         if (stepsDone >= MAX_STEPS) { Logger.log("[SmartBot]", "Reached step cap"); endTurn(); return; }
         Board board = getActiveBoard();
         if (board == null) { endTurn(); return; }
         Logger.log("[SmartBot]", "Step tracker: " + stepsDone);
+        // If there is nothing left to do, end the turn promptly
+        if (shouldEndNow(board)) { Logger.log("[SmartBot]", "Nothing left to do; ending turn"); endTurn(); return; }
 
         // 1) Win in one move (reach row 0 with any move action available this turn)
         if (tryWinNow(board)) { scheduleNext(stepsDone+1); return; }
@@ -63,16 +76,68 @@ public class SmartBot implements Bot {
     }
 
     private void scheduleNext(final int stepsDone) {
+        if (!turnActive || ended) return;
         Timer.schedule(new Timer.Task() { @Override public void run() { step(stepsDone); } }, STEP_DELAY);
     }
 
     private void endTurn() {
+        if (ended) return;
+        ended = true;
+        turnActive = false;
         Timer.schedule(new Timer.Task() { @Override public void run() { if (!GraphicsManager.isPaused()) TurnManager.endTurn(); } }, END_DELAY);
     }
 
     private Board getActiveBoard() {
         for (Renderable r : GraphicsManager.getRenderables()) if (r instanceof Board b) return b;
         return null;
+    }
+
+    // --- Turn end checks and helpers ---
+    private boolean shouldEndNow(Board b) {
+        // If any of our pieces has an actionable option (attack or move) with actions remaining, keep going
+        int rows = b.getROWS(), cols = b.getCOLS();
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                GamePiece gp = b.getGamePieceAtPos(r, c);
+                if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+                int actions = getRemainingActions(me);
+                if (actions <= 0) continue;
+                // attack available?
+                List<Plot> hostile = b.getAdjacentHostilePlots(r, c, PieceAlignment.P2);
+                if (hostile != null && !hostile.isEmpty()) return false;
+                // can move somewhere?
+                int speed = me.getStats().getSpeed();
+                if (speed > 0) {
+                    List<Plot> reach = b.getReachablePlots(r, c, speed);
+                    if (reach != null && !reach.isEmpty()) return false;
+                }
+            }
+        }
+        // No unit can act; if we have a plausible summon candidate, keep going
+        if (hasSummonCandidate(b)) return false;
+        return true;
+    }
+
+    private int getRemainingActions(MonsterGamePiece mgp) {
+        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
+        if (v instanceof Integer n) return n;
+        return mgp.getStats().getActions();
+    }
+
+    private boolean hasSummonCandidate(Board b) {
+        var ps = PlayerManager.get(PieceAlignment.P2);
+        if (ps == null || ps.hand == null) return false;
+        boolean hasSummonCard = false;
+        for (Card c : ps.hand.getCards()) { if (c instanceof SummonCard) { hasSummonCard = true; break; } }
+        if (!hasSummonCard) return false;
+        // Require at least some mana and at least one valid home-row plot
+        if (ps.mana <= 0) return false; // conservative; exact cost checked by card itself
+        int homeRow = b.getROWS() - 1;
+        for (int col = 0; col < b.getCOLS(); col++) {
+            Renderable rp = b.getPlotAtPos(homeRow, col);
+            if (rp instanceof Plot p && b.isValidSummonTarget(p, PieceAlignment.P2)) return true;
+        }
+        return false;
     }
 
     // --- Win detection ---
@@ -117,14 +182,19 @@ public class SmartBot implements Bot {
             Plot dst = hostile.get(0);
             int[] d = b.getIndicesOfPlot(dst); if (d == null) continue;
             GamePiece defenderBefore = b.getGamePieceAtPos(d[0], d[1]);
+            // Track our actions before triggering to verify that an action was actually spent
+            int actionsBefore = getRemainingActions(me);
             HashMap<Integer, CustomBox> entities = new HashMap<>();
             entities.put(0, srcPlot); entities.put(1, dst);
             srcPlot.triggerClickEffect(entities);
             GamePiece defenderAfter = b.getGamePieceAtPos(d[0], d[1]);
             boolean killed = defenderBefore != null && defenderAfter != defenderBefore;
             if (killed) { Logger.log("[SmartBot]", "Attack -> kill"); return true; }
-            // Fallback: if action spent without state check available, still accept
-            return true;
+            // If no kill, only treat as a successful step when we actually spent an action (attack executed)
+            int actionsAfter = getRemainingActions(me);
+            if (actionsAfter < actionsBefore) { Logger.log("[SmartBot]", "Attack -> hit"); return true; }
+            // Otherwise, the attempt did nothing (likely no actions left); keep searching or end turn.
+            continue;
         }
         return false;
     }
