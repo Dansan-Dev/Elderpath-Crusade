@@ -1,0 +1,108 @@
+package io.github.elderpath_crusade.rooms;
+
+import com.badlogic.gdx.graphics.Color;
+import io.github.elderpath_crusade.data_objects.Box;
+import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.enums.FontType;
+import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.enums.GameMode;
+import io.github.elderpath_crusade.managers.Game;
+import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.WinConditionManager;
+import io.github.elderpath_crusade.managers.PlayerManager;
+import io.github.elderpath_crusade.managers.GameModeManager;
+import io.github.elderpath_crusade.supers.Room;
+import io.github.elderpath_crusade.ui_objects.Button;
+import io.github.elderpath_crusade.ui_objects.Text;
+import io.github.elderpath_crusade.utils.FontSize;
+
+/**
+ * Simple victory/defeat screen with two actions: Play Again and Main Menu.
+ * The screen text reflects whether the local perspective (P1 human) won or lost,
+ * but we show both winner and loser labels to satisfy the 2-way trigger requirement.
+ */
+public class VictoryRoom extends Room {
+    private final Text title;
+    private final Button playAgain;
+    private final Button mainMenu;
+
+    private VictoryRoom(PieceAlignment winner) {
+        // Entering the VictoryRoom should reset win/loss guard state for the next match
+        WinConditionManager.reset();
+        int screenW = SettingsManager.screenSize.getScreenWidth();
+        int screenH = SettingsManager.screenSize.getScreenHeight();
+
+        // Title depends on game mode
+        GameMode mode = GameModeManager.getCurrent();
+        String titleText = switch (mode) {
+            case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
+            case DEMO, ROUGELIKE_RUN -> (winner == PlayerManager.getLocalPlayer()) ? "Victory!" : "Game Over!";
+        };
+        title = new Text(titleText, FontType.SILKSCREEN, 0, 0, 5, Color.WHITE)
+            .withFontSize(FontSize.TITLE_LARGE);
+        addUI(title);
+
+        // Buttons
+        playAgain = Button.fromColor(
+            Color.WHITE.cpy().mul(0.2f,0.2f,0.2f,1f),
+            "Play Again",
+            FontType.SILKSCREEN,
+            FontSize.BODY_MEDIUM.getSize(),
+            screenW/2 - 150,
+            screenH/2 - 40,
+            300,
+            50,
+            5
+        ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
+         .withOnClick((e) -> Game.gotoRoom(DemoRoom::get), ClickableEffectData.getImmediate());
+        addUI(playAgain);
+
+        mainMenu = Button.fromColor(
+            Color.WHITE.cpy().mul(0.2f,0.2f,0.2f,1f),
+            "Main Menu",
+            FontType.SILKSCREEN,
+            FontSize.BODY_MEDIUM.getSize(),
+            screenW/2 - 150,
+            screenH/2 - 100,
+            300,
+            50,
+            5
+        ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
+         .withOnClick((e) -> Game.gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate());
+        addUI(mainMenu);
+
+        layout();
+    }
+
+    private void layout() {
+        int screenW = SettingsManager.screenSize.getScreenWidth();
+        int screenH = SettingsManager.screenSize.getScreenHeight();
+        // Center title near top
+        title.setBounds(new Box(
+            (screenW - title.getWidth())/2,
+            (int)(screenH * 0.65f),
+            title.getWidth(),
+            title.getHeight()
+        ));
+        // Buttons already positioned approximately around center
+    }
+
+    @Override
+    public void onScreenResize() {
+        layout();
+        int screenW = SettingsManager.screenSize.getScreenWidth();
+        int screenH = SettingsManager.screenSize.getScreenHeight();
+        if (playAgain != null) {
+            playAgain.getBounds().setX(screenW/2 - playAgain.getWidth()/2);
+            playAgain.getBounds().setY(screenH/2 - 40);
+        }
+        if (mainMenu != null) {
+            mainMenu.getBounds().setX(screenW/2 - mainMenu.getWidth()/2);
+            mainMenu.getBounds().setY(screenH/2 - 100);
+        }
+    }
+
+    public static VictoryRoom get(PieceAlignment winner) {
+        return new VictoryRoom(winner);
+    }
+}

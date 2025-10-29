@@ -66,7 +66,7 @@ High-level structure:
 ### Project Structure (selected)
 - assets/
   - images, audio, fonts, shaders, UI, language files
-- core/src/main/java/io/github/forest_of_dreams/
+- core/src/main/java/io/github/elderpath_crusade/
   - characters/ (pieces, sprites)
   - data_objects/
   - enums/
@@ -74,7 +74,7 @@ High-level structure:
   - managers/
   - rooms/ (e.g., MainMenuRoom, DemoRoom)
   - utils/
-- lwjgl3/src/main/java/io/github/forest_of_dreams/lwjgl3/
+- lwjgl3/src/main/java/io/github/elderpath_crusade/lwjgl3/
   - Lwjgl3Launcher (desktop entry point)
 
 ### License

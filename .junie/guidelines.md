@@ -3,7 +3,7 @@
 This section documents the project’s Abilities architecture: how abilities are modeled, attached to pieces, how passives affect stats, how actionable interactions work, and the small helpers available to keep ability code lean and consistent.
 
 #### 1. Core model
-- Ability interfaces live under `core/src/main/java/io/github/forest_of_dreams/abilities`.
+- Ability interfaces live under `core/src/main/java/io/github/elderpath_crusade/abilities`.
   - `Ability`: name, description, type, lifecycle hooks `onAttach(owner)` and `onDetach()`.
   - `AbilityType`: `TRIGGERED`, `ACTIONABLE`, `PASSIVE`.
   - `TriggeredAbility`: optional hooks: `onOwnerSpawned`, `onOwnerMoved`, `onOwnerAttack`, `onOwnerDamaged`, `onOwnerDied`, `onTurnStarted`, `onTurnEnded`, plus `onGameEvent(GameEvent)`.

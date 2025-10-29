@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Uninstall script for Forest of Dreams (per-user install)
+# Uninstall script for Elderpath Crusade (per-user install)
 # This removes files that install.sh created under $HOME only.
 # It is designed to be conservative and will abort if expected
 # paths do not match safe patterns.
 
-APP_ID=forestofdreams
-APP_NAME="Forest of Dreams"
+APP_ID=elderpathcrusade
+APP_NAME="Elderpath Crusade"
 INSTALL_DIR="$HOME/.local/share/$APP_ID"
-BIN_PATH="$INSTALL_DIR/ForestOfDreams"
+BIN_PATH="$INSTALL_DIR/ElderpathCrusade"
 ICON_DST="$HOME/.local/share/icons/hicolor/256x256/apps/${APP_ID}.png"
 DESKTOP_FILE="$HOME/.local/share/applications/${APP_ID}.desktop"
 

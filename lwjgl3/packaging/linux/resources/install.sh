@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_ID=forestofdreams
-APP_NAME="Forest of Dreams"
+APP_ID=elderpathcrusade
+APP_NAME="Elderpath Crusade"
 INSTALL_DIR="$HOME/.local/share/$APP_ID"
-BIN_PATH="$INSTALL_DIR/ForestOfDreams"
+BIN_PATH="$INSTALL_DIR/ElderpathCrusade"
 ICON_SRC="./icons/icon-256.png"
 ICON_DST="$HOME/.local/share/icons/hicolor/256x256/apps/${APP_ID}.png"
 DESKTOP_FILE="$HOME/.local/share/applications/${APP_ID}.desktop"

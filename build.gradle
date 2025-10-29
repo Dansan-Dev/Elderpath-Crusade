@@ -65,7 +65,7 @@ configure(subprojects) {
 
 subprojects {
   version = "$projectVersion"
-  ext.appName = 'ForestOfDreams'
+  ext.appName = 'ElderpathCrusade'
   repositories {
     mavenCentral()
     maven { url 'https://s01.oss.sonatype.org' }
@@ -77,4 +77,4 @@ subprojects {
   }
 }
 
-eclipse.project.name = 'ForestOfDreams' + '-parent'
+eclipse.project.name = 'ElderpathCrusade' + '-parent'

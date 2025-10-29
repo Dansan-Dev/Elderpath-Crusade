@@ -66,7 +66,7 @@ Purpose
 - Prerequisites: Java 17+ (typical for current LibGDX templates), Gradle wrapper included.
 - Desktop run:
     - From repo root: ./gradlew :lwjgl3:run
-    - In IDE: run the main class io.github.forest_of_dreams.lwjgl3.Lwjgl3Launcher.
+    - In IDE: run the main class io.github.elderpath_crusade.lwjgl3.Lwjgl3Launcher.
 - Packaging (desktop):
     - See lwjgl3/build.gradle for packaging tasks; typical ones: :lwjgl3:jar or platform bundles if configured.
 - Shaders: If you change GLSL under assets/shaders, verify they compile at runtime via ShaderManager users (blur shader in pause flow).
@@ -128,20 +128,20 @@ Purpose
     - If sections grow large, factor deeper docs into README.md or a /docs folder and keep this file as an operational index.
 
 8) Quick navigation to important classes (copy/paste paths)
-- Desktop launcher: lwjgl3/src/main/java/io/github/forest_of_dreams/lwjgl3/Lwjgl3Launcher.java
-- App core: core/src/main/java/io/github/forest_of_dreams/Main.java
+- Desktop launcher: lwjgl3/src/main/java/io/github/elderpath_crusade/lwjgl3/Lwjgl3Launcher.java
+- App core: core/src/main/java/io/github/elderpath_crusade/Main.java
 - Rendering:
-    - core/src/main/java/io/github/forest_of_dreams/managers/GraphicsManager.java
-    - core/src/main/java/io/github/forest_of_dreams/managers/RenderPipeline.java
+    - core/src/main/java/io/github/elderpath_crusade/managers/GraphicsManager.java
+    - core/src/main/java/io/github/elderpath_crusade/managers/RenderPipeline.java
 - Input/Interaction:
-    - core/src/main/java/io/github/forest_of_dreams/managers/InputManager.java
-    - core/src/main/java/io/github/forest_of_dreams/managers/InteractionManager.java
+    - core/src/main/java/io/github/elderpath_crusade/managers/InputManager.java
+    - core/src/main/java/io/github/elderpath_crusade/managers/InteractionManager.java
 - Gameplay domain:
-    - core/src/main/java/io/github/forest_of_dreams/game_objects/board
-    - core/src/main/java/io/github/forest_of_dreams/game_objects/cards
-    - core/src/main/java/io/github/forest_of_dreams/cards/WolfCard.java
-    - core/src/main/java/io/github/forest_of_dreams/game_objects/sprites/SpriteObject.java
-- Demo scene: core/src/main/java/io/github/forest_of_dreams/rooms/DemoRoom.java
+    - core/src/main/java/io/github/elderpath_crusade/game_objects/board
+    - core/src/main/java/io/github/elderpath_crusade/game_objects/cards
+    - core/src/main/java/io/github/elderpath_crusade/cards/WolfCard.java
+    - core/src/main/java/io/github/elderpath_crusade/game_objects/sprites/SpriteObject.java
+- Demo scene: core/src/main/java/io/github/elderpath_crusade/rooms/DemoRoom.java
 
 9) How to add a new feature (example-driven)
 - New keybinding and handler
@@ -162,7 +162,7 @@ Purpose
 
 
 11) Asset paths and path_loaders (no hardcoded paths)
-- Policy: Do not hardcode asset paths (images, audio, music, fonts, shaders, UI). Always reference a path loader enum from core/src/main/java/io/github/forest_of_dreams/path_loaders.
+- Policy: Do not hardcode asset paths (images, audio, music, fonts, shaders, UI). Always reference a path loader enum from core/src/main/java/io/github/elderpath_crusade/path_loaders.
 - Existing loaders:
     - ImagePathSpritesAndAnimations: art for sprites, animations, card fronts/backs, terrain, etc.
     - ImagePathBackgroundAndUI: background and UI images.
@@ -184,8 +184,8 @@ Purpose
 12) Color and font size standardization (no hardcoded styling)
 - Goal: Avoid hardcoded colors and font sizes scattered in code. Use centralized enums/utilities.
 - Colors:
-    - ColorScheme (io.github.forest_of_dreams.utils.ColorScheme): Defines the project’s palette (what colors exist). Update this when adding or curating the palette.
-    - ColorSettings (io.github.forest_of_dreams.utils.ColorSettings): Functional mapping that applies palette colors to semantic roles (TEXT_DEFAULT, BUTTON_PRIMARY, PLOT_GREEN, etc.).
+    - ColorScheme (io.github.elderpath_crusade.utils.ColorScheme): Defines the project’s palette (what colors exist). Update this when adding or curating the palette.
+    - ColorSettings (io.github.elderpath_crusade.utils.ColorSettings): Functional mapping that applies palette colors to semantic roles (TEXT_DEFAULT, BUTTON_PRIMARY, PLOT_GREEN, etc.).
 - Long‑term approach:
     1. Define allowed colors in ColorScheme.java (the palette layer).
     2. Map palette entries to functional roles in ColorSettings.java.
@@ -196,7 +196,7 @@ Purpose
 - Adding/changing colors:
     - First add/update ColorScheme, then update ColorSettings to map the appropriate role to the new scheme color. Avoid introducing new ad‑hoc roles without need; prefer reusing roles.
 - Fonts and sizes:
-    - Use io.github.forest_of_dreams.utils.FontSize for standard sizing (e.g., BODY_SMALL, BODY_MEDIUM, TITLE_LARGE).
+    - Use io.github.elderpath_crusade.utils.FontSize for standard sizing (e.g., BODY_SMALL, BODY_MEDIUM, TITLE_LARGE).
     - Prefer .withFontSize(FontSize.X) or computed sizes derived from the standard tokens where available; avoid magic numbers.
     - If a dynamic size is necessary (responsive to container), compute it from a base FontSize and document rationale.
 - PR checklist for styling changes:
@@ -208,7 +208,7 @@ Purpose
 
 13) Rooms system (detailed)
 - What is a Room:
-    - Base class: core/src/main/java/io/github/forest_of_dreams/supers/Room.java.
+    - Base class: core/src/main/java/io/github/elderpath_crusade/supers/Room.java.
     - A Room represents a self-contained scene (e.g., Main Menu, Settings, Demo gameplay). It owns two lists:
         - contents: Renderable scene objects (Board, Hand, Deck, pieces, non-UI sprites).
         - ui: UIRenderable elements (Text, Button, overlays). These are rendered in the UI layer and can be allowed to receive clicks while the game is paused.
@@ -220,7 +220,7 @@ Purpose
         - onScreenResize(): override to realign or resize room elements when screen size changes.
 
 - Room lifecycle and switching:
-    - Game entry: Game.initialize() -> gotoRoom(MainMenuRoom::get). Path: core/src/main/java/io/github/forest_of_dreams/managers/Game.java.
+    - Game entry: Game.initialize() -> gotoRoom(MainMenuRoom::get). Path: core/src/main/java/io/github/elderpath_crusade/managers/Game.java.
     - Switching: Game.gotoRoom(Supplier<Room>) clears current scene, constructs the next Room, and calls room.showContent() + room.showUI(). Clearing uses:
         - GraphicsManager.clearRenderables(); GraphicsManager.clearUIRenderables(); InteractionManager.clearClickables();
     - Construction pattern: Rooms usually have a private constructor and a static get() factory that returns a new instance each time (e.g., DemoRoom.get(), MainMenuRoom.get(), SettingsRoom.get()). This ensures a fresh scene on each visit and avoids carrying state across scenes unless explicitly persisted elsewhere.
@@ -232,18 +232,18 @@ Purpose
     - Pause behavior: When paused, GraphicsManager.blurredDraw applies the blur pass to the scene; InteractionManager allows only UI elements flagged as pause UI to receive clicks. Room content itself does not manage pause—keep it data/UI driven.
 
 - Screen resize flow:
-    - ScreenSize updates call Game.currentRoom.onScreenResize() when resolution changes: core/src/main/java/io/github/forest_of_dreams/data_objects/settings/ScreenSize.java.
+    - ScreenSize updates call Game.currentRoom.onScreenResize() when resolution changes: core/src/main/java/io/github/elderpath_crusade/data_objects/settings/ScreenSize.java.
     - Override onScreenResize in your Room to reposition anchors, centers, and dependent child bounds based on SettingsManager.screenSize values.
 
 - Directory layout and examples:
-    - Rooms live in core/src/main/java/io/github/forest_of_dreams/rooms.
+    - Rooms live in core/src/main/java/io/github/elderpath_crusade/rooms.
         - DemoRoom.java: builds a Board, spawns sample pieces, sets up a Hand/Deck with Cards (including WolfCard), and adds a pause hint Text. Demonstrates layout recomputation in onScreenResize().
         - MainMenuRoom.java: constructs main menu UI and uses Game.gotoRoom(DemoRoom::get) etc. for navigation.
         - SettingsRoom.java: settings UI; buttons navigate back to MainMenuRoom.
         - rooms/main_menu/MainMenuNavbar.java: an example UI container used by MainMenuRoom.
 
 - How to create a new Room (pattern):
-    1. Create a class NewFeatureRoom extends Room under core/src/main/java/io/github/forest_of_dreams/rooms.
+    1. Create a class NewFeatureRoom extends Room under core/src/main/java/io/github/elderpath_crusade/rooms.
     2. Use a private constructor and a public static NewFeatureRoom get() factory.
     3. In the constructor:
         - Build your scene objects (Boards, sprites, containers) and call addContent(...) for each.
