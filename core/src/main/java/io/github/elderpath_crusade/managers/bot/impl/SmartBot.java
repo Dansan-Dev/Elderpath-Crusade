@@ -350,17 +350,61 @@ public class SmartBot implements Bot {
             int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             int currentDist = nearestManhattan(r,c,enemies);
+            // Detect Rogue free-strike ability once per unit
+            boolean hasRogue = false;
+            try {
+                for (var ab : me.getAbilities()) {
+                    if (ab != null && ab.getClass().getSimpleName().equals("RogueFreeStrikeAbility")) { hasRogue = true; break; }
+                }
+            } catch (Exception ignored) {}
             Plot best = null; int bestDist = currentDist;
+            // Rogue special: if moving to any reachable tile yields an immediate lethal free strike, prefer that outright
+            if (hasRogue && reach != null && !reach.isEmpty()) {
+                Plot lethalDest = null; int[] lethalIdx = null; int bestForwardBias = -9999;
+                for (Plot p : reach) {
+                    int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                    java.util.List<Plot> atkFromDest = b.getAttackableEnemyPlots(idx[0], idx[1], PieceAlignment.P2);
+                    if (atkFromDest == null || atkFromDest.isEmpty()) continue;
+                    boolean lethalExists = false;
+                    for (Plot tp : atkFromDest) {
+                        int[] di = b.getIndicesOfPlot(tp); if (di == null) continue;
+                        GamePiece tgp = b.getGamePieceAtPos(di[0], di[1]);
+                        if (tgp instanceof MonsterGamePiece em) {
+                            if (me.getEffectiveDamage() >= Math.max(0, em.getStats().getCurrentHealth())) { lethalExists = true; break; }
+                        }
+                    }
+                    if (lethalExists) {
+                        // prefer forward moves if multiple lethal options
+                        int forwardBias = (idx[0] < r ? 1 : (idx[0] > r ? -1 : 0));
+                        if (lethalDest == null || forwardBias > bestForwardBias) { lethalDest = p; lethalIdx = idx; bestForwardBias = forwardBias; }
+                    }
+                }
+                if (lethalDest != null) {
+                    final int sr=r, sc=c; final Plot dest=lethalDest; final GamePiece ref=gp; int[] bi = lethalIdx;
+                    int score = 95; // decisively prefer lethal move+free-strike over maneuvers
+                    // small directional seasoning
+                    if (bi[0] < sr) score += DIR_FORWARD_BONUS; else if (bi[0] > sr) score -= DIR_BACKWARD_PENALTY;
+                    out.add(new Intent(score, () -> moveAndVerify(b, sr, sc, dest, ref, bi[0], bi[1]), "ADVANCE"));
+                    continue; // skip generic pathing for this unit
+                }
+            }
             for (Plot p : reach) {
                 int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
                 int d = nearestManhattan(idx[0], idx[1], enemies);
-                if (d < bestDist && !threats.isThreatened(idx[0], idx[1])) { best = p; bestDist = d; }
+                boolean threatened = threats.isThreatened(idx[0], idx[1]);
+                boolean allowRogueThreat = false;
+                if (threatened && hasRogue) {
+                    // If Rogue can free-strike from this destination, allow stepping into a threatened tile
+                    java.util.List<Plot> atkFromDestCand = b.getAttackableEnemyPlots(idx[0], idx[1], PieceAlignment.P2);
+                    allowRogueThreat = atkFromDestCand != null && !atkFromDestCand.isEmpty();
+                }
+                if (d < bestDist && (!threatened || allowRogueThreat)) { best = p; bestDist = d; }
             }
             if (best == null) {
                 for (Plot p : reach) {
                     int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
-                    // allow only if it enables immediate lethal AND destination is not one-shot lethal next turn
-                    if (wouldEnableLethal(me, b, idx[0], idx[1]) && !isLethalThreatNextTurn(b, me, idx[0], idx[1])) { best = p; bestDist = nearestManhattan(idx[0], idx[1], enemies); break; }
+                    // allow if it enables immediate lethal (incl. Rogue free-strike) even if threatened
+                    if (wouldEnableLethal(me, b, idx[0], idx[1])) { best = p; bestDist = nearestManhattan(idx[0], idx[1], enemies); break; }
                 }
             }
             if (best != null) {
@@ -370,6 +414,35 @@ public class SmartBot implements Bot {
                 // Directional bias: prefer moving forward (toward row 0) over backward
                 if (bi[0] < sr) score += DIR_FORWARD_BONUS; // forward (toward row 0)
                 else if (bi[0] > sr) score -= DIR_BACKWARD_PENALTY; // backward (toward our home row)
+                // Rogue synergy: if this unit has a free strike after moving and destination yields an attack, boost score
+                boolean hasRogueFreeStrike = false;
+                if (gp instanceof MonsterGamePiece me2) {
+                    // Check by ability simple name to avoid tight coupling
+                    try {
+                        for (var ab : me2.getAbilities()) {
+                            if (ab != null && ab.getClass().getSimpleName().equals("RogueFreeStrikeAbility")) { hasRogueFreeStrike = true; break; }
+                        }
+                    } catch (Exception ignored) {}
+                    if (hasRogueFreeStrike) {
+                        // Compute attackables from the destination tile
+                        java.util.List<Plot> atkFromDest = b.getAttackableEnemyPlots(bi[0], bi[1], PieceAlignment.P2);
+                        if (atkFromDest != null && !atkFromDest.isEmpty()) {
+                            int bonus = 28; // baseline bonus for creating an immediate free strike
+                            // If any target at dest would be lethal, add larger bonus
+                            int dmg = me2.getEffectiveDamage();
+                            boolean lethalExists = false;
+                            for (Plot p2 : atkFromDest) {
+                                int[] di = b.getIndicesOfPlot(p2); if (di == null) continue;
+                                GamePiece tgp = b.getGamePieceAtPos(di[0], di[1]);
+                                if (tgp instanceof MonsterGamePiece em) {
+                                    if (dmg >= Math.max(0, em.getStats().getCurrentHealth())) { lethalExists = true; break; }
+                                }
+                            }
+                            if (lethalExists) bonus += 20;
+                            score += bonus;
+                        }
+                    }
+                }
                 out.add(new Intent(score, () -> moveAndVerify(b, sr, sc, dest, ref, bi[0], bi[1]), "ADVANCE"));
             }
         }

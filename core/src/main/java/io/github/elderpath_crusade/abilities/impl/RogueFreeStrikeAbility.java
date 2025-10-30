@@ -16,6 +16,8 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 
@@ -70,9 +72,83 @@ public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
         // Compute attackable enemy plots from the new position using owner's effective range
         List<Plot> attackables = board.getAttackableEnemyPlots(toRow, toCol, owner.getAlignment());
         if (attackables == null || attackables.isEmpty()) return; // per UX: no selection if no valid targets
-        // Start a programmatic selection with a temporary source that enforces valid targets
+
+        // Bot path vs Human path delegated to sub-methods for clarity
+        boolean botControlled = owner.getAlignment() == PieceAlignment.P2
+            && SettingsManager.debug.enableP2Bot
+            && TurnManager.getCurrentPlayer() == owner.getAlignment();
+        if (botControlled) {
+            handleBotFreeStrike(board, toRow, toCol, attackables);
+            return;
+        }
+        startHumanFreeStrikeSelection(board, owner, toRow, toCol, attackables);
+    }
+
+    // --- Sub-methods: split bot and human paths for clarity ---
+    private void handleBotFreeStrike(Board board, int toRow, int toCol, List<Plot> attackables) {
+        if (this.owner == null || board == null || attackables == null || attackables.isEmpty()) return;
+        Plot best = null;
+        int bestScore = Integer.MIN_VALUE;
+        int dmg = owner.getEffectiveDamage();
+        for (Plot p : attackables) {
+            int[] dIdx = board.getIndicesOfPlot(p); if (dIdx == null) continue;
+            GamePiece gp = board.getGamePieceAtPos(dIdx[0], dIdx[1]);
+            if (!(gp instanceof MonsterGamePiece enemy)) continue;
+            int hp = Math.max(0, enemy.getStats().getCurrentHealth());
+            boolean lethal = dmg >= hp;
+            int score = (lethal ? 1000 : 0)
+                + Math.min(10, Math.max(0, enemy.getStats().getCost())) * 5
+                + Math.min(5, Math.max(0, enemy.getEffectiveDamage())) * 2
+                - hp; // prefer lower HP if non-lethal
+            if (score > bestScore) { bestScore = score; best = p; }
+        }
+        if (best == null) return;
+        int[] dIdx = board.getIndicesOfPlot(best);
+        if (dIdx == null) return;
+        int dr = dIdx[0], dc = dIdx[1];
+        GamePiece targetPiece = board.getGamePieceAtPos(dr, dc);
+        if (!(targetPiece instanceof MonsterGamePiece enemy)) return;
+        if (enemy.getAlignment() == owner.getAlignment()) return;
+        // Re-validate still attackable from current position
+        boolean stillValid = false;
+        for (Plot p2 : board.getAttackableEnemyPlots(toRow, toCol, owner.getAlignment())) { if (p2 == best) { stillValid = true; break; } }
+        if (!stillValid) return;
+        int deal = owner.getEffectiveDamage();
+        enemy.getStats().dealDamage(deal);
+        try { owner.notifyAttack(enemy, deal); } catch (Exception ignored) {}
+        try { enemy.notifyDamaged(deal, owner); } catch (Exception ignored) {}
+        EventBus.emit(
+            GameEventType.PIECE_ATTACKED,
+            Map.of(
+                "attackerId", owner.getId().toString(),
+                "defenderId", enemy.getId().toString(),
+                "row", dr,
+                "col", dc,
+                "attackerRow", toRow,
+                "attackerCol", toCol,
+                "defenderRow", dr,
+                "defenderCol", dc,
+                "damage", deal
+            )
+        );
+        if (enemy.getStats().getCurrentHealth() <= 0) {
+            try { enemy.notifyDied(); } catch (Exception ignored) {}
+            board.removeGamePieceAtPos(dr, dc);
+            EventBus.emit(
+                GameEventType.PIECE_DIED,
+                Map.of(
+                    "pieceId", enemy.getId().toString(),
+                    "row", dr,
+                    "col", dc
+                )
+            );
+        }
+    }
+
+    private void startHumanFreeStrikeSelection(Board board, MonsterGamePiece owner, int toRow, int toCol, List<Plot> attackables) {
+        if (board == null || owner == null || attackables == null || attackables.isEmpty()) return;
         FreeStrikeSource source = new FreeStrikeSource(board, owner, toRow, toCol, attackables);
-        if (!InteractionManager.startProgrammaticInteraction(source)) return;
+        InteractionManager.startProgrammaticInteraction(source);
     }
 
     // Temporary source for InteractionManager. Not rendered; only used to capture the next target.
