@@ -124,9 +124,6 @@ public class DemoRoom extends Room {
                 cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
-        // Add a couple of ShocklingCards to demonstrate triggered on-summon damage
-        cardsP1.add(new ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-        cardsP1.add(new ShocklingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
 
         deck = new Deck(
             cardsP1,
@@ -156,9 +153,10 @@ public class DemoRoom extends Room {
         List<Card> cardsP2 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             if ( i % 2 == 0) {
-                cardsP2.add(new Card(0, 0, 125, 200, 0, null));
+                cardsP2.add(new RiflemanCard(board, PieceAlignment.P2,0, 0, 125, 200, 0));
             } else {
-                cardsP2.add(new WolfCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
+                cardsP2.add(new RogueCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
+//                cardsP2.add(new WolfCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
             }
         }
         deckP2 = new Deck(
