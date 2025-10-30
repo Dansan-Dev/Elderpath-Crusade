@@ -2,10 +2,7 @@ package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.abilities.AbilityRelay;
-import io.github.elderpath_crusade.cards.RiflemanCard;
-import io.github.elderpath_crusade.cards.ShocklingCard;
-import io.github.elderpath_crusade.cards.WolfCard;
-import io.github.elderpath_crusade.cards.WolfCubCard;
+import io.github.elderpath_crusade.cards.*;
 import io.github.elderpath_crusade.characters.pieces.WarpMage;
 import io.github.elderpath_crusade.characters.pieces.Wolf;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
@@ -116,13 +113,15 @@ public class DemoRoom extends Room {
 
         List<Card> cardsP1 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            int kind = i % 3;
+            int kind = i % 4;
             if (kind == 0) {
                 cardsP1.add(new RiflemanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 1) {
                 cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else {
+            } else if (kind == 2) {
                 cardsP1.add(new WolfCubCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else {
+                cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
         // Add a couple of ShocklingCards to demonstrate triggered on-summon damage
