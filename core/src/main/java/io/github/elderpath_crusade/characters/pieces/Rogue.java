@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.RogueFreeStrikeAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * Rogue unit.
- * TODO (rules text): After moving, you may attack an adjacent enemy unit without using an action
+ * After moving, may perform a free attack (no action) using its effective range.
  */
 public class Rogue extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +36,7 @@ public class Rogue extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        this.addAbility(new RogueFreeStrikeAbility());
     }
 
     public Rogue(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +47,6 @@ public class Rogue extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        this.addAbility(new RogueFreeStrikeAbility());
     }
 }

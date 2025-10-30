@@ -21,6 +21,30 @@ public class InteractionManager {
     private static final HashMap<Integer, CustomBox> selected = new HashMap<>();
     @Getter
     private static int selectedCount = 0;
+    // If an ability tries to start a programmatic interaction while another selection is active,
+    // we queue it here and auto-start it right after the current interaction is cleaned up.
+    private static Clickable pendingProgrammaticSource = null;
+
+    /**
+     * Begin a selection programmatically using the provided source clickable.
+     * Returns true if the interaction was started. Does nothing if a selection is already active
+     * or if the source has no effect data.
+     */
+    public static boolean startProgrammaticInteraction(Clickable source) {
+        if (source == null) return false;
+        // If an interaction is already active, queue this source and auto-start it after cleanup.
+        if (hasActiveSelection()) {
+            pendingProgrammaticSource = source;
+            return true; // queued
+        }
+        currentEffect = source;
+        ClickableEffectData data = currentEffect.getClickableEffectData();
+        if (data == null) { currentEffect = null; return false; }
+        data.setConfirmed(false);
+        selected.clear();
+        selectedCount = 1; // mirror initial click state
+        return true;
+    }
 
     public static void checkClick() {
         if (!InputManager.getFunctionActivation(InputFunction.LEFT_CLICK)) return;
@@ -142,6 +166,13 @@ public class InteractionManager {
         currentEffect = null;
         selected.clear();
         selectedCount = 0;
+        // If a programmatic interaction was queued during the previous interaction (e.g., triggered by an ability
+        // inside currentEffect.triggerClickEffect), start it now.
+        if (pendingProgrammaticSource != null) {
+            Clickable queued = pendingProgrammaticSource;
+            pendingProgrammaticSource = null;
+            startProgrammaticInteraction(queued);
+        }
     }
 
     // Helper: deselect an already-selected target and compact indices

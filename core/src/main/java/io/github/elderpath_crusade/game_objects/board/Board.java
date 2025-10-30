@@ -644,6 +644,8 @@ public class Board extends HigherOrderTexture {
         if (isOccupied(dr, dc)) return; // safety
         moveGamePiece(sr, sc, dr, dc);
         mgp.updateData(GamePieceData.POSITION, new Position(this, dr, dc));
+        // Mark cause as MANUAL for abilities that react differently to manual vs ability-driven moves
+        mgp.updateData(GamePieceData.MOVE_CAUSE, "MANUAL");
         // Ability notification for movement
         try { mgp.notifyMoved(sr, sc, dr, dc); } catch (Exception ignored) {}
         // Emit move event

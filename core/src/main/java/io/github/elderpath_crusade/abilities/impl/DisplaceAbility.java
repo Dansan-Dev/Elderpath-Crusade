@@ -106,6 +106,8 @@ public class DisplaceAbility implements ActionableAbility {
         // Clear target's current cell and place into new cell
         board.moveGamePiece(tr, tc, dr, dc);
         target.updateData(GamePieceData.POSITION, new Board.Position(board, dr, dc));
+        // Mark cause as ABILITY-driven move
+        target.updateData(GamePieceData.MOVE_CAUSE, "ABILITY");
         try { target.notifyMoved(tr, tc, dr, dc); } catch (Exception ignored) {}
         // Emit PIECE_MOVED for the target
         EventBus.emit(
