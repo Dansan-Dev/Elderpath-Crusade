@@ -1,36 +1,33 @@
 package io.github.elderpath_crusade.characters.pieces;
 
-import io.github.elderpath_crusade.abilities.impl.DisplaceAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
+import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
+import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
-public class WarpMage extends MonsterGamePiece {
+/**
+ * Crossbowman unit.
+ * TODO (rules text): Ranged 2\nCan only attack once a turn\nExcess damage from attack carry over to the closest enemy unit behind the target in range
+ */
+public class Crossbowman extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
-        return GamePieceStats.getMonsterStats(
-            0,
-            1,
-            0,
-            1,
-            2
-        );
+        return GamePieceStats.getMonsterStats(3, 1, 2, 1, 2);
     }
 
     private static Supplier<NamedCheckerSprite> getNamedCheckerSprite(int x, int y, int width, int height, PieceAlignment alignment) {
         return () -> new NamedCheckerSprite(
             x, y,
             width, height,
-            "Warp Mage",
+            "Crossbowman",
             alignment
         );
     }
 
-    public WarpMage(GamePieceStats stats, int x, int y, int width, int height, PieceAlignment alignment) {
+    public Crossbowman(GamePieceStats stats, int x, int y, int width, int height, PieceAlignment alignment) {
         super(
             stats,
             GamePieceType.MONSTER,
@@ -38,11 +35,9 @@ public class WarpMage extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
-        // Attach actionable ability: Displace
-        this.addAbility(new DisplaceAbility(this));
     }
 
-    public WarpMage(int x, int y, int width, int height, PieceAlignment alignment) {
+    public Crossbowman(int x, int y, int width, int height, PieceAlignment alignment) {
         super(
             getBaselineStats(),
             GamePieceType.MONSTER,
@@ -50,7 +45,5 @@ public class WarpMage extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
-        // Attach actionable ability: Displace
-        this.addAbility(new DisplaceAbility(this));
     }
 }

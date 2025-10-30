@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.characters.sprites.checker_sprites.__super__
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -13,6 +14,14 @@ public abstract class CheckerSprite extends CharacterSprite {
 
     public enum AlignmentColor {
         RED, BLUE;
+    }
+
+    public static AlignmentColor getAlignmentColor(PieceAlignment alignment) {
+        return switch (alignment) {
+            case P1 -> AlignmentColor.BLUE;
+            case P2 -> AlignmentColor.RED;
+            default -> throw new IllegalArgumentException("Alignment must be to either P1 or P2");
+        };
     }
 
     private void initializeImage(AlignmentColor color) {
