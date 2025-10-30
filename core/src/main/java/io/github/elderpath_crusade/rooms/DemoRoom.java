@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.abilities.AbilityRelay;
+import io.github.elderpath_crusade.cards.RiflemanCard;
 import io.github.elderpath_crusade.cards.ShocklingCard;
 import io.github.elderpath_crusade.cards.WolfCard;
 import io.github.elderpath_crusade.cards.WolfCubCard;
@@ -117,7 +118,7 @@ public class DemoRoom extends Room {
         for (int i = 0; i < 10; i++) {
             int kind = i % 3;
             if (kind == 0) {
-                cardsP1.add(new Card(0, 0, 125, 200, 0, null));
+                cardsP1.add(new RiflemanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 1) {
                 cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else {
