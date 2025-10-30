@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.RiflemanRangeAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * Rifleman unit.
- * TODO (rules text): Ranged 2
+ * Ranged 2 via passive ability.
  */
 public class Rifleman extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +36,8 @@ public class Rifleman extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: +2 range
+        this.addAbility(new RiflemanRangeAbility());
     }
 
     public Rifleman(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +48,7 @@ public class Rifleman extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: +2 range
+        this.addAbility(new RiflemanRangeAbility());
     }
 }

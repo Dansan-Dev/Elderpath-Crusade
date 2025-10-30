@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableEffectType;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.settings.InputFunction;
+import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.interfaces.*;
 import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
@@ -252,7 +253,13 @@ public class InteractionManager {
     private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
         if (box == null || data == null) return false;
         ClickableTargetType targetType = data.getTargetType();
-        boolean typeOk = (targetType == null) || targetType.matches(box);
+        boolean typeOk;
+        // Special-case: allow clicking a GamePiece when the effect expects a PLOT; downstream will resolve to the plot.
+        if (targetType == ClickableTargetType.PLOT && box instanceof GamePiece) {
+            typeOk = true;
+        } else {
+            typeOk = (targetType == null) || targetType.matches(box);
+        }
         if (!typeOk) return false;
         if (currentEffect instanceof TargetFilter tf) {
             return tf.isValidTargetForEffect(box);

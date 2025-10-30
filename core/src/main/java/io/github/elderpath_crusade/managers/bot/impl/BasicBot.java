@@ -100,7 +100,7 @@ public class BasicBot implements Bot {
                 for (int c = 0; c < cols; c++) {
                     GamePiece gp = b.getGamePieceAtPos(r, c);
                     if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == PieceAlignment.P2) {
-                        List<Plot> hostile = b.getAdjacentHostilePlots(r, c, PieceAlignment.P2);
+                        List<Plot> hostile = b.getAttackableEnemyPlots(r, c, PieceAlignment.P2);
                         if (!hostile.isEmpty()) {
                             Renderable srcR = b.getPlotAtPos(r, c);
                             if (srcR instanceof Plot srcPlot) {

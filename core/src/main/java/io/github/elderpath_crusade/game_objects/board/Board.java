@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.game_objects.board;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.enums.*;
+import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
@@ -234,6 +235,48 @@ public class Board extends HigherOrderTexture {
         }
     }
 
+    // Return enemy plots attackable from (row,col) for a given alignment, using cardinal lines with blockers and range.
+    public List<Plot> getAttackableEnemyPlots(int row, int col, PieceAlignment friendlyAlignment) {
+        List<Plot> out = new ArrayList<>();
+        GamePiece src = getGamePieceAtPos(row, col);
+        if (!(src instanceof MonsterGamePiece attacker)) return out;
+        int effRange = Math.max(1, attacker.getEffectiveRange());
+        int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
+        boolean ignoreTerrain = attacker.ignoresTerrainAsBlockers();
+        boolean ignoreFriendly = attacker.ignoresFriendlyUnitsAsBlockers();
+        boolean ignoreHostile = attacker.ignoresHostileUnitsAsBlockers();
+        for (int[] d : dirs) {
+            for (int dist = 1; dist <= effRange; dist++) {
+                int nr = row + d[0] * dist;
+                int nc = col + d[1] * dist;
+                if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) break;
+                GamePiece gp = getGamePieceAtPos(nr, nc);
+                if (gp != null) {
+                    boolean isTerrain = gp.getType() == GamePieceType.TERRAIN;
+                    boolean isUnit = gp instanceof MonsterGamePiece;
+                    boolean hostile = isUnit && ((MonsterGamePiece) gp).getAlignment() != friendlyAlignment;
+                    boolean friendly = isUnit && ((MonsterGamePiece) gp).getAlignment() == friendlyAlignment;
+                    boolean blockedByTerrain = isTerrain && !ignoreTerrain;
+                    boolean blockedByFriendly = friendly && !ignoreFriendly;
+                    boolean blockedByHostile = hostile && !ignoreHostile;
+                    // If hostile is in line, it is a valid target (even if we will continue scanning when ignoreHostile=true)
+                    if (hostile) {
+                        Renderable r = board[nr][nc];
+                        if (r instanceof Plot p) out.add(p);
+                    }
+                    // Stop scanning if blocked by this entity; otherwise continue past it
+                    if (blockedByTerrain || blockedByFriendly || blockedByHostile || (!isTerrain && !isUnit)) {
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                // Empty tile: continue scanning
+            }
+        }
+        return out;
+    }
+
     // Mark candidate move plots (white dots) and attack plots (red glow) when a movement source is active
     private void updateCandidateMoveSpots() {
         Object src = InteractionManager.getActiveSource();
@@ -257,7 +300,7 @@ public class Board extends HigherOrderTexture {
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
         int speed = mgp.getStats().getSpeed();
         List<Plot> reachable = getReachablePlots(sr, sc, speed);
-        List<Plot> attackables = getAdjacentHostilePlots(sr, sc, ((MonsterGamePiece) gp).getAlignment());
+        List<Plot> attackables = getAttackableEnemyPlots(sr, sc, ((MonsterGamePiece) gp).getAlignment());
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
                 Renderable r = board[row][col];
@@ -517,7 +560,25 @@ public class Board extends HigherOrderTexture {
     private void handlePlotMove(HashMap<Integer, CustomBox> entities) {
         Object s = entities.get(0);
         Object t = entities.get(1);
-        if (!(s instanceof Plot src) || !(t instanceof Plot dst)) return;
+        // Resolve source and destination to Plots (accept GamePiece as well)
+        Plot src = null; Plot dst = null;
+        if (s instanceof Plot sp) src = sp;
+        else if (s instanceof GamePiece sgp) {
+            Object posObj = sgp.getData(GamePieceData.POSITION);
+            if (posObj instanceof Position pos && pos.getBoard() == this) {
+                Renderable r = getPlotAtPos(pos.getRow(), pos.getCol());
+                if (r instanceof Plot p) src = p;
+            }
+        }
+        if (t instanceof Plot tp) dst = tp;
+        else if (t instanceof GamePiece tgp) {
+            Object posObj = tgp.getData(GamePieceData.POSITION);
+            if (posObj instanceof Position pos && pos.getBoard() == this) {
+                Renderable r = getPlotAtPos(pos.getRow(), pos.getCol());
+                if (r instanceof Plot p) dst = p;
+            }
+        }
+        if (src == null || dst == null) return;
         int[] sIdx = getIndicesOfPlot(src);
         int[] dIdx = getIndicesOfPlot(dst);
         if (sIdx == null || dIdx == null) return;
@@ -529,10 +590,14 @@ public class Board extends HigherOrderTexture {
         // Must have actions remaining
         if (getRemainingActions(mgp) <= 0) return;
 
-        // Attack branch: adjacent hostile in 4-dir
+        // Attack branch: ranged/cardinal hostile target within effective range and line rules
         GamePiece targetPiece = getGamePieceAtPos(dr, dc);
-        int manhattan = Math.abs(dr - sr) + Math.abs(dc - sc);
-        if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment() && manhattan == 1) {
+        if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
+            // Validate that dst is among current attackable enemy plots from (sr,sc)
+            List<Plot> attackables = getAttackableEnemyPlots(sr, sc, mgp.getAlignment());
+            boolean valid = false;
+            for (Plot p : attackables) { if (p == dst) { valid = true; break; } }
+            if (!valid) return;
             int dmg = getAttackDamage(mgp, sr, sc);
             enemy.getStats().dealDamage(dmg);
             // Ability notifications

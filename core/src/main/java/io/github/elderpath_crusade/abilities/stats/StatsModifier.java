@@ -16,12 +16,21 @@ public final class StatsModifier {
     public int addDamage;
     public int addSpeed;
     public int addActions;
+    // New: attack range (tiles). Base is 0 on pieces; modifiers can increase or scale it.
+    public int addRange;
 
     public float multCost;
     public float multMaxHealth;
     public float multDamage;
     public float multSpeed;
     public float multActions;
+    // New: multiplicative range scale
+    public float multRange;
+
+    // Optional blocker overrides (OR-reduced across active modifiers)
+    public boolean ignoreTerrainAsBlockers;
+    public boolean ignoreFriendlyUnitsAsBlockers;
+    public boolean ignoreHostileUnitsAsBlockers;
 
     // Track which accumulators this modifier is currently applied to for fast removal.
     private final Set<StatsAccumulator> holders = new HashSet<>();
@@ -29,8 +38,9 @@ public final class StatsModifier {
     public static StatsModifier none() { return new StatsModifier(); }
 
     public boolean isNoOp() {
-        return addCost == 0 && addMaxHealth == 0 && addDamage == 0 && addSpeed == 0 && addActions == 0
-            && multCost == 0 && multMaxHealth == 0 && multDamage == 0 && multSpeed == 0 && multActions == 0;
+        return addCost == 0 && addMaxHealth == 0 && addDamage == 0 && addSpeed == 0 && addActions == 0 && addRange == 0
+            && multCost == 0 && multMaxHealth == 0 && multDamage == 0 && multSpeed == 0 && multActions == 0 && multRange == 0f
+            && !ignoreTerrainAsBlockers && !ignoreFriendlyUnitsAsBlockers && !ignoreHostileUnitsAsBlockers;
     }
 
     public static int applyInt(int base, int add, float mult) {

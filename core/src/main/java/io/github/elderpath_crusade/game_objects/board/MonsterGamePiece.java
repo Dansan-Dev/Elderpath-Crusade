@@ -143,6 +143,31 @@ public class MonsterGamePiece extends GamePiece {
         return StatsModifier.applyInt(base, add, mult);
     }
 
+    /**
+     * Effective attack range in tiles (cardinal lines). Base is 0 and must be modified by abilities.
+     */
+    public int getEffectiveRange() {
+        int base = 0; // default melee classification
+        int add = 0; float mult = 0f;
+        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addRange; mult += m.multRange; }
+        return StatsModifier.applyInt(base, add, mult);
+    }
+
+    public boolean ignoresTerrainAsBlockers() {
+        for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreTerrainAsBlockers) return true;
+        return false;
+    }
+
+    public boolean ignoresFriendlyUnitsAsBlockers() {
+        for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreFriendlyUnitsAsBlockers) return true;
+        return false;
+    }
+
+    public boolean ignoresHostileUnitsAsBlockers() {
+        for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreHostileUnitsAsBlockers) return true;
+        return false;
+    }
+
     // Generic interaction triggered by Plot: move this piece one step upwards if possible
     public void expendAction() {
         Optional<BoardContext> context = getBoardContext();

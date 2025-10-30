@@ -19,6 +19,7 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * A plot is a single square on a Board
@@ -252,11 +253,24 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     // Board back-reference wiring
     public void setBoard(Board board) { this.boardRef = board; }
 
-    // TargetFilter: validate movement targets when this plot is the active source
+    // TargetFilter: validate movement or attack targets when this plot is the active source
     @Override
     public boolean isValidTargetForEffect(CustomBox box) {
-        if (boardRef == null) return false;
-        if (!(box instanceof Plot target)) return false;
+        if (boardRef == null || box == null) return false;
+        // Resolve target to a Plot: accept either Plot or GamePiece (use its current plot)
+        Plot targetPlot = null;
+        if (box instanceof Plot p) {
+            targetPlot = p;
+        } else if (box instanceof GamePiece piece) {
+            Object posObj = piece.getData(GamePieceData.POSITION);
+            if (posObj instanceof Board.Position pos && pos.getBoard() == boardRef) {
+                var r = pos.getRow(); var c = pos.getCol();
+                var rp = boardRef.getPlotAtPos(r, c);
+                if (rp instanceof Plot pp) targetPlot = pp;
+            }
+        }
+        if (targetPlot == null) return false;
+
         int[] srcIdx = boardRef.getIndicesOfPlot(this);
         if (srcIdx == null) return false;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
@@ -264,18 +278,25 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         // Only allow interactions when the piece alignment matches current player's turn
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return false;
 
-        // Movement candidates: empty plots within BFS reach by Speed
-        int speed = mgp.getStats().getSpeed();
-        java.util.List<Plot> reachable = boardRef.getReachablePlots(srcIdx[0], srcIdx[1], speed);
-        for (Plot p : reachable) { if (p == target) return true; }
+        // Use Board helpers as source of truth
+        int sr = srcIdx[0], sc = srcIdx[1];
+        int[] dstIdx = boardRef.getIndicesOfPlot(targetPlot);
+        if (dstIdx == null) return false;
+        int dr = dstIdx[0], dc = dstIdx[1];
+        GamePiece dstPiece = boardRef.getGamePieceAtPos(dr, dc);
 
-        // Attack candidates: adjacent hostile monster in 4 directions (cardinal)
-        GamePiece dstPiece = boardRef.getGamePieceAtPlot(target);
+        if (dstPiece == null) {
+            // Movement to empty plot must be within reachable set
+            int speed = mgp.getEffectiveSpeed();
+            List<Plot> reachable = boardRef.getReachablePlots(sr, sc, speed);
+            for (Plot p : reachable) { if (p == targetPlot) return true; }
+            return false;
+        }
+        // Occupied: reject friendly; allow hostile only if in attackable set
         if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
-            int[] dstIdx = boardRef.getIndicesOfPlot(target);
-            if (dstIdx == null) return false;
-            int manhattan = Math.abs(dstIdx[0] - srcIdx[0]) + Math.abs(dstIdx[1] - srcIdx[1]);
-            return manhattan == 1;
+            List<Plot> attackables = boardRef.getAttackableEnemyPlots(sr, sc, mgp.getAlignment());
+            for (Plot p : attackables) { if (p == targetPlot) return true; }
+            return false;
         }
         return false;
     }

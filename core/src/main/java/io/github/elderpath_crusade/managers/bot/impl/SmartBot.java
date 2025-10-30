@@ -296,7 +296,7 @@ public class SmartBot implements Bot {
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
             int actionsBefore = getRemainingActions(me);
             if (actionsBefore <= 0) continue;
-            List<Plot> hostile = b.getAdjacentHostilePlots(r,c, PieceAlignment.P2);
+            List<Plot> hostile = b.getAttackableEnemyPlots(r,c, PieceAlignment.P2);
             if (hostile == null || hostile.isEmpty()) continue;
             for (Plot dst : hostile) {
                 int[] d = b.getIndicesOfPlot(dst); if (d == null) continue;
@@ -598,7 +598,7 @@ public class SmartBot implements Bot {
                 int actions = getRemainingActions(me);
                 if (actions <= 0) continue;
                 // attack available?
-                List<Plot> hostile = b.getAdjacentHostilePlots(r, c, PieceAlignment.P2);
+                List<Plot> hostile = b.getAttackableEnemyPlots(r, c, PieceAlignment.P2);
                 if (hostile != null && !hostile.isEmpty()) return false;
                 // can move somewhere?
                 int speed = me.getStats().getSpeed();
@@ -671,7 +671,7 @@ public class SmartBot implements Bot {
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
-            List<Plot> hostile = b.getAdjacentHostilePlots(r,c, PieceAlignment.P2);
+            List<Plot> hostile = b.getAttackableEnemyPlots(r,c, PieceAlignment.P2);
             if (hostile.isEmpty()) continue;
             Renderable srcR = b.getPlotAtPos(r,c);
             if (!(srcR instanceof Plot srcPlot)) continue;
