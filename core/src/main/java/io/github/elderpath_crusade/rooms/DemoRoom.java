@@ -113,15 +113,17 @@ public class DemoRoom extends Room {
 
         List<Card> cardsP1 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            int kind = i % 4;
+            int kind = i % 5;
             if (kind == 0) {
                 cardsP1.add(new RiflemanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 1) {
                 cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 2) {
                 cardsP1.add(new WolfCubCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else {
+            } else if (kind == 3) {
                 cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else {
+                cardsP1.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
         }
 
