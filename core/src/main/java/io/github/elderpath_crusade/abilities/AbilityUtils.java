@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.abilities;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.GamePieceData;
+import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.multiplayer.EventBus;
@@ -12,8 +13,59 @@ import java.util.Map;
 
 /**
  * Small static helpers for common ability-side operations.
+ * Returns boolean value for success/failure.
  */
 public final class AbilityUtils {
+    // Centralized basic attack resolution for abilities and interactions.
+    // Performs damage, notifies hooks, emits PIECE_ATTACKED, and removes/announces death with coordinates.
+    public static boolean performBasicAttack(
+            Board board,
+            MonsterGamePiece attacker,
+            MonsterGamePiece defender,
+            int attackerRow,
+            int attackerCol,
+            int targetRow,
+            int targetCol
+    ) {
+        if (board == null || attacker == null || defender == null) return false;
+        if (attacker == defender) return false;
+        // Damage amount uses effective stats of the attacker
+        int dmg = attacker.getEffectiveDamage();
+        // Notify hooks first (mirrors existing patterns where appropriate)
+        try { attacker.notifyAttack(defender, dmg); } catch (Exception ignored) {}
+        try { defender.notifyDamaged(dmg, attacker); } catch (Exception ignored) {}
+        // Deal damage
+        defender.getStats().dealDamage(dmg);
+        // Emit attack event with full coordinates
+        EventBus.emit(
+                GameEventType.PIECE_ATTACKED,
+                Map.of(
+                        "attackerId", attacker.getId().toString(),
+                        "defenderId", defender.getId().toString(),
+                        "row", targetRow,
+                        "col", targetCol,
+                        "attackerRow", attackerRow,
+                        "attackerCol", attackerCol,
+                        "defenderRow", targetRow,
+                        "defenderCol", targetCol,
+                        "damage", dmg
+                )
+        );
+        // Handle death
+        if (defender.getStats().getCurrentHealth() <= 0) {
+            try { defender.notifyDied(); } catch (Exception ignored) {}
+            board.removeGamePieceAtPos(targetRow, targetCol);
+            EventBus.emit(
+                    GameEventType.PIECE_DIED,
+                    Map.of(
+                            "pieceId", defender.getId().toString(),
+                            "row", targetRow,
+                            "col", targetCol
+                    )
+            );
+        }
+        return true;
+    }
     private AbilityUtils() {}
 
     // --- Small API helpers for actionable abilities ---
@@ -22,10 +74,12 @@ public final class AbilityUtils {
         if (ability == null) return null;
         return ability.getClickableEffectData();
     }
-    /** Executes the actionable ability with the given entities map (null-safe). */
-    public static boolean execute(ActionableAbility ability, HashMap<Integer, CustomBox> entities) {
-        if (ability == null || entities == null) return false;
-        return ability.execute(entities);
+    /**
+     * Executes the actionable ability with the given entities map (null-safe).
+     */
+    public static void execute(ActionableAbility ability, HashMap<Integer, CustomBox> entities) {
+        if (ability == null || entities == null) return;
+        ability.execute(entities);
     }
 
     // --- Event emit helpers ---

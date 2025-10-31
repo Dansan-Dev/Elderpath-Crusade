@@ -13,8 +13,42 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class InteractionManager {
+    // Request a pick without providing a concrete Clickable source.
+    // This creates an ephemeral source internally that participates in the normal selection flow.
+    public static boolean requestPick(
+        ClickableEffectData data,
+        TargetFilter filter,
+        Consumer<HashMap<Integer, CustomBox>> onPicked
+    ) {
+        if (data == null || onPicked == null) return false;
+        // Create a lightweight source implementing Clickable and TargetFilter so existing logic works.
+        class EphemeralSource implements Clickable, TargetFilter {
+            private final ClickableEffectData effectData;
+            private final Consumer<HashMap<Integer, CustomBox>> callback;
+            private final TargetFilter tf;
+
+            EphemeralSource(ClickableEffectData d, TargetFilter f, java.util.function.Consumer<HashMap<Integer, CustomBox>> cb) {
+                this.effectData = d; this.tf = f; this.callback = cb;
+            }
+            @Override public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) { /* not used */ }
+            @Override public ClickableEffectData getClickableEffectData() { return effectData; }
+            @Override public void triggerClickEffect(HashMap<Integer, CustomBox> entities) { callback.accept(entities); }
+            @Override public int getX() { return 0; }
+            @Override public int getY() { return 0; }
+            @Override public int getWidth() { return 0; }
+            @Override public int getHeight() { return 0; }
+            @Override public boolean isPauseUIElement() { return false; }
+            @Override public boolean isValidTargetForEffect(CustomBox box) {
+                if (tf == null) return true; return tf.isValidTargetForEffect(box);
+            }
+        }
+        return startProgrammaticInteraction(
+            new EphemeralSource(data, filter, onPicked)
+        );
+    }
     @Getter
     private static final List<Clickable> clickables = new ArrayList<>();
     private static Clickable currentEffect;
@@ -152,8 +186,6 @@ public class InteractionManager {
     }
 
     private static void triggerFullInteraction() {
-        ClickableEffectData data = currentEffect.getClickableEffectData();
-        ClickableEffectType type = data.getType();
         HashMap<Integer, CustomBox> entities = getSelectedEntities();
         currentEffect.triggerClickEffect(entities);
         cleanInteraction();

@@ -3,6 +3,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
+import io.github.elderpath_crusade.abilities.AbilityUtils;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.GamePieceData;
@@ -270,7 +271,7 @@ public class AbilityPopup extends HigherOrderUI {
                         // Wire click to start and execute ability
                         ClickableEffectData ced = act.getClickableEffectData();
                         bubble.withOnClick(entities -> {
-                            act.execute(entities);
+                            AbilityUtils.execute(act, entities);
                         }, ced);
                         // advance
                         x += bubbleSize + SPACING;

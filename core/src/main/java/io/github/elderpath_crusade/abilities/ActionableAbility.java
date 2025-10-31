@@ -16,5 +16,5 @@ public interface ActionableAbility extends Ability {
     ClickableEffectData getClickableEffectData();
 
     /** Execute with the entities map (0=source, 1..n=targets). Return true on success. */
-    boolean execute(HashMap<Integer, CustomBox> entities);
+    void execute(HashMap<Integer, CustomBox> entities);
 }

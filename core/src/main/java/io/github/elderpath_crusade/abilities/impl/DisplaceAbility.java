@@ -1,12 +1,10 @@
 package io.github.elderpath_crusade.abilities.impl;
 
-import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.GamePieceData;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
@@ -62,69 +60,87 @@ public class DisplaceAbility implements ActionableAbility {
     }
 
     @Override
-    public boolean execute(HashMap<Integer, CustomBox> entities) {
+    public void execute(HashMap<Integer, CustomBox> entities) {
         // Basic turn and actions gating
-        if (owner == null) return false;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return false;
+        if (owner == null) return;
+        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
+        if (AbilityUtils.getRemainingActions(owner) <= 0) return;
 
         // Extract selections: index 1 = target piece, index 2 = destination plot
-        Object t = entities.get(1);
-        Object p = entities.get(2);
-        if (!(t instanceof Plot src)) return false;
-        if (!(p instanceof Plot dst)) return false;
+        CustomBox firstClicked = entities.get(1);
+        CustomBox secondClicked = entities.get(2);
+        if (!(firstClicked instanceof Plot sourcePlot)) return;
+        if (!(secondClicked instanceof Plot destinationPlot)) return;
 
         // Resolve positions and board context
         Board.Position ownerPos = getPos(owner);
-        if (ownerPos == null) return false;
+        if (ownerPos == null) return;
         Board board = ownerPos.getBoard();
-        if (board == null) return false;
-        GamePiece srcPiece = board.getGamePieceAtPlot(src);
-        if (!(srcPiece instanceof MonsterGamePiece target)) return false;
-        if (target == owner) return false; // must be "another" target
-        int[] targetIndices = board.getIndicesOfPlot(src);
-        if (targetIndices == null) return false;
-        Board.Position targetPos = new Board.Position(board, targetIndices[0], targetIndices[1]);
+        if (board == null) return;
+        GamePiece sourcePiece = board.getGamePieceAtPlot(sourcePlot);
+        if (!(sourcePiece instanceof MonsterGamePiece target)) return;
+        if (target == owner) return; // must be "another" target
+        int[] sourceIndices = board.getIndicesOfPlot(sourcePlot);
+        if (sourceIndices == null) return;
+        Board.Position sourcePos = new Board.Position(board, sourceIndices[0], sourceIndices[1]);
+        int sourceRow = sourcePos.getRow();
+        int sourceCol = sourcePos.getCol();
 
-
-        int tr = targetPos.getRow();
-        int tc = targetPos.getCol();
-        int[] dIdx = board.getIndicesOfPlot(dst);
-        if (dIdx == null) return false;
-        int dr = dIdx[0], dc = dIdx[1];
+        int[] destinationIndices = board.getIndicesOfPlot(destinationPlot);
+        if (destinationIndices == null) return;
+        int destinationRow = destinationIndices[0];
+        int destinationCol = destinationIndices[1];
 
         // Validate range: square (Chebyshev) distance ≤ 2 from owner to target
-        int chebyshev = Math.max(Math.abs(ownerPos.getRow() - tr), Math.abs(ownerPos.getCol() - tc));
-        if (chebyshev > 2) return false;
+        int distanceMaxOfBothDimensions = Math.max(Math.abs(ownerPos.getRow() - sourceRow), Math.abs(ownerPos.getCol() - sourceCol));
+        if (distanceMaxOfBothDimensions > 2) return;
 
         // Destination must be cardinally adjacent to target and empty
-        int manhattan = Math.abs(dr - tr) + Math.abs(dc - tc);
-        if (manhattan != 1) return false;
-        if (board.getGamePieceAtPos(dr, dc) != null) return false;
+        boolean isAdjacent = (
+            Math.abs(destinationRow - sourceRow) +
+            Math.abs(destinationCol - sourceCol)
+        ) == 1;
+        if (!isAdjacent) return;
+
+        // Destination must be empty
+        if (board.getGamePieceAtPos(destinationRow, destinationCol) != null) return;
 
         // Perform move: move the TARGET into destination
         // Clear target's current cell and place into new cell
-        board.moveGamePiece(tr, tc, dr, dc);
-        target.updateData(GamePieceData.POSITION, new Board.Position(board, dr, dc));
+        board.moveGamePiece(
+            sourceRow, sourceCol,
+            destinationRow, destinationCol
+        );
+        target.updateData(
+            GamePieceData.POSITION,
+            new Board.Position(
+                board,
+                destinationRow, destinationCol
+            )
+        );
         // Mark cause as ABILITY-driven move
         target.updateData(GamePieceData.MOVE_CAUSE, "ABILITY");
-        try { target.notifyMoved(tr, tc, dr, dc); } catch (Exception ignored) {}
+        try {
+            target.notifyMoved(
+                sourceRow, sourceCol,
+                destinationRow, destinationCol
+            );
+        } catch (Exception ignored) {}
         // Emit PIECE_MOVED for the target
         EventBus.emit(
                 GameEventType.PIECE_MOVED,
                 Map.of(
                         "pieceId", target.getId().toString(),
                         "owner", target.getAlignment().name(),
-                        "fromRow", tr,
-                        "fromCol", tc,
-                        "toRow", dr,
-                        "toCol", dc
+                        "fromRow", sourceRow,
+                        "fromCol", sourceCol,
+                        "toRow", destinationRow,
+                        "toCol", destinationCol
                 )
         );
 
         // Spend 1 action from owner
         AbilityUtils.spendAction(owner);
-        return true;
     }
 
     private static Board.Position getPos(GamePiece gp) {
