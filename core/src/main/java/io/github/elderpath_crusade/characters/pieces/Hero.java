@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.GrowthOnKillAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * Hero unit.
- * TODO (rules text): ON KILL: gain 1 attack and heal 1
+ * ON KILL: gain 1 attack and heal 1.
  */
 public class Hero extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +36,8 @@ public class Hero extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Triggered: ON KILL: gain 1 attack and heal 1
+        this.addAbility(new GrowthOnKillAbility());
     }
 
     public Hero(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +48,7 @@ public class Hero extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Triggered: ON KILL: gain 1 attack and heal 1
+        this.addAbility(new GrowthOnKillAbility());
     }
 }

@@ -168,50 +168,6 @@ public class MonsterGamePiece extends GamePiece {
         return false;
     }
 
-    // Generic interaction triggered by Plot: move this piece one step upwards if possible
-    public void expendAction() {
-        Optional<BoardContext> context = getBoardContext();
-        if (context.isEmpty()) return;
-
-        BoardContext ctx = context.get();
-        Board.Position pos = ctx.position;
-        Board board = ctx.board;
-        int currentRow = pos.getRow();
-        int currentCol = pos.getCol();
-
-        boolean isMovablePiece = !type.equals(GamePieceType.TERRAIN) && alignment.equals(PieceAlignment.P1);
-        if (!isMovablePiece) return;
-
-        int newRow = currentRow + 1; // upwards
-        boolean isValidDestination = ctx.position.isValid(newRow, currentCol);
-        if (!isValidDestination) return;
-
-        GamePiece gamePiece = board.getGamePieceAtPos(newRow, currentCol);
-        if (gamePiece != null && gamePiece.type.equals(GamePieceType.TERRAIN)) return;
-        else if (board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp) {
-            if (mgp.alignment.equals(PieceAlignment.P2)) attack();
-        }
-        else {
-            moveUpOneStep();
-        }
-    }
-
-    private void moveUpOneStep() {
-        Optional<BoardContext> context = getBoardContext();
-        if (context.isEmpty()) return;
-
-        BoardContext ctx = context.get();
-        Board.Position pos = ctx.position;
-        Board board = ctx.board;
-        int currentRow = pos.getRow();
-        int currentCol = pos.getCol();
-
-        int newRow = currentRow + 1;
-        if (!pos.isValid(newRow, currentCol)) return;
-        board.moveGamePiece(currentRow, currentCol, newRow, currentCol);
-        pos.setRow(newRow);
-    }
-
     public void attack() {
         Optional<BoardContext> context = getBoardContext();
         if (context.isEmpty()) return;
@@ -227,6 +183,23 @@ public class MonsterGamePiece extends GamePiece {
         if (!(board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp)) return;
         mgp.stats.dealDamage(stats.getDamage());
         if (mgp.stats.getCurrentHealth()<=0) mgp.die();
+    }
+
+    /**
+     * Heal this piece by the specified amount, capped at max health.
+     * @param amount The amount of health to restore
+     * @return true if health increased, false if already at max health
+     */
+    public boolean heal(int amount) {
+        if (amount <= 0) return false;
+        int currentHealth = getStats().getCurrentHealth();
+        int maxHealth = getStats().getMaxHealth();
+        if (currentHealth >= maxHealth) {
+            return false; // Already at max health
+        }
+        int newHealth = Math.min(currentHealth + amount, maxHealth);
+        getStats().setCurrentHealth(newHealth);
+        return newHealth > currentHealth; // Return true if health actually increased
     }
 
     public void die() {
