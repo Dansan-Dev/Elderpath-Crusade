@@ -141,7 +141,7 @@ public class Card extends HigherOrderTexture implements Clickable {
         }
         // Keep title sizing in sync
         if (title != null) {
-            title.withFontSize(Math.max(12, (int)(bounds.getHeight() * 0.15f)));
+            title.withFontSize(Math.max(4, (int)(bounds.getHeight() * 0.05f)));
         }
     }
 
@@ -228,13 +228,13 @@ public class Card extends HigherOrderTexture implements Clickable {
         } else {
             hoverProgress = Math.max(0f, hoverProgress - HOVER_SPEED * dt);
         }
-        return (int) Math.round(hoverProgress * HOVER_LIFT_PX);
+        return Math.round(hoverProgress * HOVER_LIFT_PX);
     }
 
     private void renderTitle(SpriteBatch batch, int zLevel, int x, int y) {
         if (title != null) {
             int titleX = x + (getWidth() - title.getWidth()) / 2;
-            int titleY = y + (int)(getHeight() * 0.75f) - title.getHeight() / 2;
+            int titleY = y + (int)(getHeight() * 0.5f) - title.getHeight() / 2;
             title.render(batch, zLevel, false, titleX, titleY);
         }
     }
