@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.CommanderAuraAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +11,7 @@ import io.github.elderpath_crusade.characters.pieces.Commander;
 import java.util.List;
 
 /**
- * Commander card. TODO rules: Adjacent units has +1 attack
+ * Commander card. Adjacent friendly units gain +1 attack.
  */
 public class CommanderCard extends SummonCard {
     public CommanderCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -29,5 +30,5 @@ public class CommanderCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() { return List.of(CommanderAuraAbility.getAbilityDescription()); }
 }

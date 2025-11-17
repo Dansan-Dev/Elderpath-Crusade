@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.CommanderAuraAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * Commander unit.
- * TODO (rules text): Adjacent units has +1 attack
+ * Adjacent friendly units gain +1 attack.
  */
 public class Commander extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +36,8 @@ public class Commander extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: +1 attack to adjacent friendly units
+        this.addAbility(new CommanderAuraAbility());
     }
 
     public Commander(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +48,7 @@ public class Commander extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: +1 attack to adjacent friendly units
+        this.addAbility(new CommanderAuraAbility());
     }
 }
