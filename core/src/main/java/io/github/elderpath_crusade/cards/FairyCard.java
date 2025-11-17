@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.SwapOnAttackAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +11,7 @@ import io.github.elderpath_crusade.characters.pieces.Fairy;
 import java.util.List;
 
 /**
- * Fairy card. TODO rules: On attack: Swap places with the target
+ * Fairy card. ON ATTACK: Swap places with the target.
  */
 public class FairyCard extends SummonCard {
     public FairyCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -29,5 +30,5 @@ public class FairyCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() { return List.of(SwapOnAttackAbility.getAbilityDescription()); }
 }
