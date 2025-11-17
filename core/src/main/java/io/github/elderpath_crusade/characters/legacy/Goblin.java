@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.characters.pieces;
+package io.github.elderpath_crusade.characters.legacy;
 
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
