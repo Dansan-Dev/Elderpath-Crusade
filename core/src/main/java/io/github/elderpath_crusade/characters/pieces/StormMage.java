@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.StormActionAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,8 +12,8 @@ import java.util.function.Supplier;
 
 /**
  * Storm Mage unit.
- * TODO (rules text): STORM ACTION (1/turn): Within 2 squares, pick a square as the center, deal 2 damage in the center,
- * and 1 damage to all squares surrounding it
+ * STORM ACTION (1/turn): Within 2 squares, pick a square as the center, deal 2 damage in the center,
+ * and 1 damage to all squares surrounding it.
  */
 public class StormMage extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -36,6 +37,8 @@ public class StormMage extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Actionable: STORM ACTION (1/turn)
+        this.addAbility(new StormActionAbility(this));
     }
 
     public StormMage(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -46,5 +49,7 @@ public class StormMage extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Actionable: STORM ACTION (1/turn)
+        this.addAbility(new StormActionAbility(this));
     }
 }

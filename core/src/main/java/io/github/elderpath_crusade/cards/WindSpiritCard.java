@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.BoostActionAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +11,7 @@ import io.github.elderpath_crusade.characters.pieces.WindSpirit;
 import java.util.List;
 
 /**
- * Wind Spirit card. TODO rules: Cannot Attack; BOOST ACTION: Give an adjacent friendly unit +1 action this turn
+ * Wind Spirit card. Cannot Attack. BOOST ACTION: Give an adjacent friendly unit +1 action this turn.
  */
 public class WindSpiritCard extends SummonCard {
     public WindSpiritCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -29,5 +30,5 @@ public class WindSpiritCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() { return List.of(BoostActionAbility.getAbilityDescription()); }
 }

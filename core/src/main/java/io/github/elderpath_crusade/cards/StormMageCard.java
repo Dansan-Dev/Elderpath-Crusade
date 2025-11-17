@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.StormActionAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,8 +11,8 @@ import io.github.elderpath_crusade.characters.pieces.StormMage;
 import java.util.List;
 
 /**
- * Storm Mage card. TODO rules: STORM ACTION (1/turn): Within 2 squares, pick a square as the center,
- * deal 2 damage in the center, and 1 damage to all squares surrounding it
+ * Storm Mage card. STORM ACTION (1/turn): Within 2 squares, pick a square as the center,
+ * deal 2 damage in the center, and 1 damage to all squares surrounding it.
  */
 public class StormMageCard extends SummonCard {
     public StormMageCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -30,5 +31,5 @@ public class StormMageCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() { return List.of(StormActionAbility.getAbilityDescription()); }
 }

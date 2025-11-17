@@ -240,7 +240,9 @@ public class Board extends HigherOrderTexture {
         List<Plot> out = new ArrayList<>();
         GamePiece src = getGamePieceAtPos(row, col);
         if (!(src instanceof MonsterGamePiece attacker)) return out;
-        int effRange = Math.max(1, attacker.getEffectiveRange());
+        int effRange = attacker.getEffectiveRange();
+        if (effRange < 0) return out; // Cannot attack if range is negative
+        effRange = Math.max(1, effRange);
         int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
         boolean ignoreTerrain = attacker.ignoresTerrainAsBlockers();
         boolean ignoreFriendly = attacker.ignoresFriendlyUnitsAsBlockers();

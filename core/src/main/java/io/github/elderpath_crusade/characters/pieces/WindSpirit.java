@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.BoostActionAbility;
+import io.github.elderpath_crusade.abilities.impl.CannotAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +13,7 @@ import java.util.function.Supplier;
 
 /**
  * Wind Spirit unit.
- * TODO (rules text): Cannot Attack\nBOOST ACTION: Give an adjacent friendly unit +1 action this turn
+ * Cannot Attack. BOOST ACTION: Give an adjacent friendly unit +1 action this turn.
  */
 public class WindSpirit extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +37,10 @@ public class WindSpirit extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: Cannot Attack
+        this.addAbility(new CannotAttackAbility());
+        // Actionable: BOOST ACTION
+        this.addAbility(new BoostActionAbility(this));
     }
 
     public WindSpirit(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +51,9 @@ public class WindSpirit extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: Cannot Attack
+        this.addAbility(new CannotAttackAbility());
+        // Actionable: BOOST ACTION
+        this.addAbility(new BoostActionAbility(this));
     }
 }
