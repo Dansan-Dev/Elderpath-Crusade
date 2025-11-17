@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.managers;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.interfaces.Renderable;
-import io.github.elderpath_crusade.managers.Game;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
@@ -128,7 +127,7 @@ public final class WinConditionManager {
                     GameManager.unlockInteractions();
 //                    GameManager.unpause();
                 } catch (Exception ignored) {}
-                Game.gotoRoom(() -> VictoryRoom.get(winner));
+                RoomManager.gotoRoom(() -> VictoryRoom.get(winner));
             }
         }, 0.6f);
     }

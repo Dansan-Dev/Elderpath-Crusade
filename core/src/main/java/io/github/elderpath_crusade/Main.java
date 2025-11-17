@@ -1,12 +1,6 @@
 package io.github.elderpath_crusade;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.elderpath_crusade.api.BackendService;
 import io.github.elderpath_crusade.api.dto.UserListResponseDto;
 import io.github.elderpath_crusade.enums.settings.InputHandlerData;
@@ -38,7 +32,7 @@ public class Main extends ApplicationAdapter {
         SoundManager.queueMusic("Forgotten_Biomes.mp3");
         SoundManager.transition();
 
-        Game.initialize();
+        RoomManager.initialize();
     }
 
     private void handleInput() {

@@ -11,7 +11,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
-import io.github.elderpath_crusade.managers.Game;
+import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.rooms.DemoRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
@@ -45,13 +45,13 @@ public class MainMenuNavbar extends HigherOrderUI {
 
         // Build buttons
         playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
-            .withOnClick((e) -> Game.gotoRoom(DemoRoom::get), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> RoomManager.gotoRoom(DemoRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
-            .withOnClick((e) -> Game.gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> RoomManager.gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());

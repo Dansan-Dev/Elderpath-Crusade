@@ -5,10 +5,7 @@ import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import io.github.elderpath_crusade.Main;
-import io.github.elderpath_crusade.managers.Game;
-import io.github.elderpath_crusade.managers.GameManager;
-import io.github.elderpath_crusade.managers.GraphicsManager;
+import io.github.elderpath_crusade.managers.RoomManager;
 import lombok.Getter;
 
 public class ScreenSize {
@@ -27,8 +24,8 @@ public class ScreenSize {
         else updateToNonFullscreenSize();
         viewport.update(getScreenWidth(), getScreenHeight(), true);
         viewport.apply();
-        if (Game.currentRoom != null) {
-            Game.currentRoom.onScreenResize();
+        if (RoomManager.currentRoom != null) {
+            RoomManager.currentRoom.onScreenResize();
         }
     }
 

@@ -6,7 +6,7 @@ import io.github.elderpath_crusade.ui_objects.SelectionOverlay;
 
 import java.util.function.Supplier;
 
-public class Game {
+public class RoomManager {
     public static Room currentRoom;
 
     public static void initialize() {

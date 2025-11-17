@@ -6,7 +6,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.managers.Game;
+import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.WinConditionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
@@ -54,7 +54,7 @@ public class VictoryRoom extends Room {
             50,
             5
         ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
-         .withOnClick((e) -> Game.gotoRoom(DemoRoom::get), ClickableEffectData.getImmediate());
+         .withOnClick((e) -> RoomManager.gotoRoom(DemoRoom::get), ClickableEffectData.getImmediate());
         addUI(playAgain);
 
         mainMenu = Button.fromColor(
@@ -68,7 +68,7 @@ public class VictoryRoom extends Room {
             50,
             5
         ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
-         .withOnClick((e) -> Game.gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate());
+         .withOnClick((e) -> RoomManager.gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate());
         addUI(mainMenu);
 
         layout();
