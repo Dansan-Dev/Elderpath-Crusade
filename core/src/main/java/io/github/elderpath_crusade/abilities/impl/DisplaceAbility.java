@@ -14,6 +14,7 @@ import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.utils.Logger;
+import lombok.AllArgsConstructor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,12 +25,9 @@ import java.util.Map;
  * then select an adjacent empty plot (cardinal) next to that target. The target is moved into that plot.
  * Costs 1 action from the WarpMage (owner) on success.
  */
+@AllArgsConstructor
 public class DisplaceAbility implements ActionableAbility {
     private final MonsterGamePiece owner;
-
-    public DisplaceAbility(MonsterGamePiece owner) {
-        this.owner = owner;
-    }
 
     @Override
     public String getName() { return "Displace"; }
@@ -40,15 +38,15 @@ public class DisplaceAbility implements ActionableAbility {
     }
 
     public static String getAbilityDescription() {
-        return "Displace (1 action)\n" +
-            "Range 2 → move another target\n" +
-            "monster 1 step (cardinal) to\n" +
-            "an adjacent empty square";
+        return """
+            Displace (1 action)
+            Range 2 → move another target
+            monster 1 step (cardinal) to
+            an adjacent empty square""";
     }
 
     @Override
     public String getIconPath() {
-        // LibGDX internal path relative to assets/
         return "images/displace_ability.png";
     }
 
@@ -57,6 +55,13 @@ public class DisplaceAbility implements ActionableAbility {
         // Require two picks; InteractionManager will record them as indices 1 and 2.
         // We set NONE to allow both GAME_PIECE and PLOT to be selected; execute() performs strict validation.
         return ClickableEffectData.getMulti(ClickableTargetType.NONE, 2);
+    }
+
+    private static Board.Position getPos(GamePiece gp) {
+        Object posObj = gp.getData(GamePieceData.POSITION);
+        if (posObj instanceof Board.Position pos) return pos;
+        Logger.error("DisplaceAbility", "Missing POSITION on piece " + gp.getId());
+        return null;
     }
 
     @Override
@@ -141,12 +146,5 @@ public class DisplaceAbility implements ActionableAbility {
 
         // Spend 1 action from owner
         AbilityUtils.spendAction(owner);
-    }
-
-    private static Board.Position getPos(GamePiece gp) {
-        Object posObj = gp.getData(GamePieceData.POSITION);
-        if (posObj instanceof Board.Position pos) return pos;
-        Logger.error("DisplaceAbility", "Missing POSITION on piece " + gp.getId());
-        return null;
     }
 }
