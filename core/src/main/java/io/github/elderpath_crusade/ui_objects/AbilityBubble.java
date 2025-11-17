@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
@@ -38,6 +39,9 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
     // Clickable plumbing
     private ClickableEffectData effectData;
     private OnClick onClick;
+    
+    // Ability reference for TargetFilter access
+    private ActionableAbility ability;
 
     // Cache for generated circle textures per key (size+colors)
     private static final Map<String, Texture> CIRCLE_CACHE = new ConcurrentHashMap<>();
@@ -85,6 +89,15 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
         this.onClick = onClick;
         this.effectData = data;
         return this;
+    }
+
+    public AbilityBubble withAbility(ActionableAbility ability) {
+        this.ability = ability;
+        return this;
+    }
+
+    public ActionableAbility getAbility() {
+        return ability;
     }
 
     @Override

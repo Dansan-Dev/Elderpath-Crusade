@@ -270,6 +270,7 @@ public class AbilityPopup extends HigherOrderUI {
                         bubble.getBounds().setHeight(bubbleSize);
                         // Wire click to start and execute ability
                         ClickableEffectData ced = act.getClickableEffectData();
+                        bubble.withAbility(act);
                         bubble.withOnClick(entities -> {
                             AbilityUtils.execute(act, entities);
                         }, ced);

@@ -230,7 +230,7 @@ public abstract class SummonCard extends Card implements TargetFilter {
 
     // TargetFilter for InteractionManager validation
     @Override
-    public boolean isValidTargetForEffect(CustomBox box) {
+    public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (board == null) return false;
         if (!(box instanceof Plot plot)) return false;
         return board.isValidSummonTarget(plot, alignment);

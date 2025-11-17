@@ -117,7 +117,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
         if (board == null || owner == null || attackables == null || attackables.isEmpty()) return;
         // Use the new InteractionManager.requestPick API to initiate a one-shot selection without a surrogate Clickable.
         ClickableEffectData data = ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1);
-        TargetFilter filter = (box) -> {
+        TargetFilter filter = (box, targetIndex) -> {
             Plot p = resolveToPlot(board, box);
             if (p == null) return false;
             for (Plot allowed : attackables) { if (allowed == p) return true; }

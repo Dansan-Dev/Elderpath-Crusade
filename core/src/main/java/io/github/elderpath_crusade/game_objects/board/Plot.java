@@ -44,6 +44,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     private final EmergingBorderTexture highlightBorder;
     private final CandidateDotTexture candidateDot;
     private final CandidateAttackBorderTexture attackGlow;
+    private final CandidateFriendlyBorderTexture friendlyGlow;
 
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);
@@ -64,7 +65,10 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         // Attack candidate red glow
         attackGlow = new CandidateAttackBorderTexture(0, 0, width, height);
         attackGlow.setZ(2);
-        plotConstruction(plot, plotDirt, highlightBorder, candidateDot, attackGlow);
+        // Friendly candidate green glow
+        friendlyGlow = new CandidateFriendlyBorderTexture(0, 0, width, height);
+        friendlyGlow.setZ(2);
+        plotConstruction(plot, plotDirt, highlightBorder, candidateDot, attackGlow, friendlyGlow);
     }
 
     /**
@@ -174,6 +178,62 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     }
 
     /**
+     * Green glow border used to mark a friendly target.
+     */
+    private static class CandidateFriendlyBorderTexture extends TextureObject {
+        private boolean active = false;
+        private float progress = 0f; // 0..1 animation
+        private final float speed = 4f;
+        private final int maxThickness;
+        private final Color borderColor = Color.GREEN;
+
+        CandidateFriendlyBorderTexture(int x, int y, int width, int height) {
+            super(new Color(1,1,1,0f), x, y, width, height);
+            this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
+        }
+
+        void setActive(boolean active) {
+            if (active && !this.active) this.progress = 0f;
+            this.active = active;
+        }
+
+        private void step(boolean isPaused) {
+            if (isPaused) return;
+            float dt = Gdx.graphics.getDeltaTime();
+            if (active) progress = Math.min(1f, progress + speed * dt);
+            else progress = Math.max(0f, progress - speed * dt);
+        }
+
+        @Override
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
+            if (zLevel != this.getZ()) return;
+            step(isPaused);
+            if (progress <= 0f) return;
+            int[] pos = calculatePos();
+            drawBorder(batch, pos[0], pos[1]);
+        }
+
+        @Override
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
+            if (zLevel != this.getZ()) return;
+            step(isPaused);
+            if (progress <= 0f) return;
+            int[] base = calculatePos();
+            drawBorder(batch, x + base[0], y + base[1]);
+        }
+
+        private void drawBorder(SpriteBatch batch, int absX, int absY) {
+            int w = getWidth();
+            int h = getHeight();
+            int t = Math.max(1, Math.round(maxThickness * progress));
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
+            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
+        }
+    }
+
+    /**
      * Red glow border used to mark an attackable target (adjacent hostile).
      */
     private static class CandidateAttackBorderTexture extends TextureObject {
@@ -250,12 +310,16 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (attackGlow != null) attackGlow.setActive(candidate);
     }
 
+    public void setFriendlyCandidate(boolean candidate) {
+        if (friendlyGlow != null) friendlyGlow.setActive(candidate);
+    }
+
     // Board back-reference wiring
     public void setBoard(Board board) { this.boardRef = board; }
 
     // TargetFilter: validate movement or attack targets when this plot is the active source
     @Override
-    public boolean isValidTargetForEffect(CustomBox box) {
+    public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (boardRef == null || box == null) return false;
         // Resolve target to a Plot: accept either Plot or GamePiece (use its current plot)
         Plot targetPlot = null;
@@ -305,7 +369,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         // no-op; old tinting replaced by animated border
     }
 
-    private void plotConstruction(TextureObject plot, TextureObject plotDirt, EmergingBorderTexture border, CandidateDotTexture dot, CandidateAttackBorderTexture attack) {
+    private void plotConstruction(TextureObject plot, TextureObject plotDirt, EmergingBorderTexture border, CandidateDotTexture dot, CandidateAttackBorderTexture attack, CandidateFriendlyBorderTexture friendly) {
         int width = getWidth();
         int height = getHeight();
         int x = getX();
@@ -319,12 +383,13 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         plotDecorBack.setZ(2);
         if (dot != null) dot.setZ(2);
         if (attack != null) attack.setZ(2);
+        if (friendly != null) friendly.setZ(2);
         plotDecorFront.setZ(3);
 
         this.plot = plot;
         this.plotDirt = plotDirt;
-        // Include border, dot, and attack glow in renderables
-        setRenderables(Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt, border, dot, attack));
+        // Include border, dot, attack glow, and friendly glow in renderables
+        setRenderables(Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt, border, dot, attack, friendly));
 
         Box parentBox = new Box(x, y, width, height);
         plot.setParent(parentBox);
@@ -334,6 +399,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (border != null) border.setParent(parentBox);
         if (dot != null) dot.setParent(parentBox);
         if (attack != null) attack.setParent(parentBox);
+        if (friendly != null) friendly.setParent(parentBox);
     }
 
     @Override

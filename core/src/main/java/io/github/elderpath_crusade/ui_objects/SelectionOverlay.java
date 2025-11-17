@@ -33,6 +33,10 @@ public class SelectionOverlay extends LowestOrderTexture implements UIRenderable
     public void renderUI(SpriteBatch batch, boolean isPaused) {
         if (isPaused) return; // no overlay while paused
         if (!InteractionManager.hasActiveSelection()) return;
+        
+        // Render eligible target highlights
+        InteractionManager.renderEligibleTargets();
+        
         String msg = InteractionManager.getOverlayText();
         if (msg.isEmpty()) return;
 

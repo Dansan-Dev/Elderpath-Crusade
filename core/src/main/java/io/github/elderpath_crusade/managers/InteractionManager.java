@@ -4,9 +4,16 @@ import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableEffectType;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.InputFunction;
+import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
+import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.*;
+import io.github.elderpath_crusade.managers.GraphicsManager;
+import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.ui_objects.AbilityBubble;
 import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
 
@@ -18,6 +25,16 @@ import java.util.function.Consumer;
 public class InteractionManager {
     // Request a pick without providing a concrete Clickable source.
     // This creates an ephemeral source internally that participates in the normal selection flow.
+    @Getter
+    private static final List<Clickable> clickables = new ArrayList<>();
+    private static Clickable currentEffect;
+    private static final HashMap<Integer, CustomBox> selected = new HashMap<>();
+    @Getter
+    private static int selectedCount = 0;
+    // If an ability tries to start a programmatic interaction while another selection is active,
+    // we queue it here and auto-start it right after the current interaction is cleaned up.
+    private static Clickable pendingProgrammaticSource = null;
+
     public static boolean requestPick(
         ClickableEffectData data,
         TargetFilter filter,
@@ -41,23 +58,14 @@ public class InteractionManager {
             @Override public int getWidth() { return 0; }
             @Override public int getHeight() { return 0; }
             @Override public boolean isPauseUIElement() { return false; }
-            @Override public boolean isValidTargetForEffect(CustomBox box) {
-                if (tf == null) return true; return tf.isValidTargetForEffect(box);
+            @Override public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+                if (tf == null) return true; return tf.isValidTargetForEffect(box, targetIndex);
             }
         }
         return startProgrammaticInteraction(
             new EphemeralSource(data, filter, onPicked)
         );
     }
-    @Getter
-    private static final List<Clickable> clickables = new ArrayList<>();
-    private static Clickable currentEffect;
-    private static final HashMap<Integer, CustomBox> selected = new HashMap<>();
-    @Getter
-    private static int selectedCount = 0;
-    // If an ability tries to start a programmatic interaction while another selection is active,
-    // we queue it here and auto-start it right after the current interaction is cleaned up.
-    private static Clickable pendingProgrammaticSource = null;
 
     /**
      * Begin a selection programmatically using the provided source clickable.
@@ -312,6 +320,8 @@ public class InteractionManager {
      * Unified target validation:
      * 1) Coarse type check via ClickableTargetType.matches (NONE or null → allow all types)
      * 2) Optional fine-grained rules via the source's TargetFilter (if implemented)
+     *    - If currentEffect is an AbilityBubble, check the ability's TargetFilter
+     *    - Otherwise, check if currentEffect itself implements TargetFilter
      */
     private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
         if (box == null || data == null) return false;
@@ -324,8 +334,20 @@ public class InteractionManager {
             typeOk = (targetType == null) || targetType.matches(box);
         }
         if (!typeOk) return false;
-        if (currentEffect instanceof TargetFilter tf) {
-            return tf.isValidTargetForEffect(box);
+        
+        // Check TargetFilter: if currentEffect is AbilityBubble, use the ability's filter
+        TargetFilter filter = null;
+        if (currentEffect instanceof AbilityBubble bubble) {
+            var ability = bubble.getAbility();
+            if (ability instanceof TargetFilter tf) {
+                filter = tf;
+            }
+        } else if (currentEffect instanceof TargetFilter tf) {
+            filter = tf;
+        }
+        
+        if (filter != null) {
+            return filter.isValidTargetForEffect(box, selectedCount);
         }
         return true;
     }
@@ -344,5 +366,97 @@ public class InteractionManager {
             entities.put(i, selected.get(i));
         }
         return entities;
+    }
+
+    /**
+     * Renders eligible target highlights for the current interaction.
+     * Called by SelectionOverlay to show which plots are valid targets.
+     * Highlights plots with red borders for hostile targets, green borders for friendly targets.
+     */
+    public static void renderEligibleTargets() {
+        if (!hasActiveSelection() || currentEffect == null) return;
+        
+        // Only handle AbilityBubble as currentEffect
+        if (!(currentEffect instanceof AbilityBubble bubble)) return;
+        
+        // Get the ability from the bubble
+        var ability = bubble.getAbility();
+        if (ability == null) return;
+        
+        // Check if the ability implements TargetFilter
+        if (!(ability instanceof TargetFilter filter)) return;
+        
+        // Get eligible targets for the current target index (selectedCount)
+        List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
+        if (eligiblePlots == null || eligiblePlots.isEmpty()) return;
+        
+        // Get current player alignment for friendly/hostile determination
+        var currentPlayer = TurnManager.getCurrentPlayer();
+        if (currentPlayer == null) return;
+        
+        // Clear all existing candidate highlights first (only for ability interactions)
+        // Note: Board's updateCandidateMoveSpots() should skip when source is AbilityBubble
+        clearAllCandidateHighlights();
+        
+        // Highlight each eligible plot
+        for (Plot plot : eligiblePlots) {
+            if (plot == null) continue;
+            
+            // Determine if plot contains a piece and its alignment
+            Board board = getBoardForPlot(plot);
+            if (board == null) continue;
+            
+            GamePiece piece = board.getGamePieceAtPlot(plot);
+            if (piece instanceof MonsterGamePiece mgp) {
+                // Plot contains a piece: show red for hostile, green for friendly
+                PieceAlignment pieceAlignment = mgp.getAlignment();
+                if (pieceAlignment != currentPlayer && pieceAlignment != PieceAlignment.NEUTRAL) {
+                    // Hostile piece (different alignment, not neutral)
+                    plot.setAttackCandidate(true); // hostile = red
+                } else if (pieceAlignment == currentPlayer) {
+                    // Friendly piece (same alignment)
+                    plot.setFriendlyCandidate(true); // friendly = green
+                }
+                // Note: NEUTRAL pieces are not highlighted (could be extended if needed)
+            }
+            // Empty plots: don't show border (could be extended later if needed)
+        }
+    }
+    
+    /**
+     * Helper to find the Board containing a given Plot.
+     */
+    private static Board getBoardForPlot(Plot plot) {
+        if (plot == null) return null;
+        // Search through all renderables to find the board containing this plot
+        for (Renderable r : GraphicsManager.getRenderables()) {
+            if (!(r instanceof Board board)) continue;
+            for (int row = 0; row < board.getROWS(); row++) {
+                for (int col = 0; col < board.getCOLS(); col++) {
+                    if (board.getPlotAtPos(row, col) == plot) {
+                        return board;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Clear all candidate highlights from all plots on all boards.
+     */
+    private static void clearAllCandidateHighlights() {
+        for (Renderable r : GraphicsManager.getRenderables()) {
+            if (!(r instanceof Board board)) continue;
+            for (int row = 0; row < board.getROWS(); row++) {
+                for (int col = 0; col < board.getCOLS(); col++) {
+                    var plot = board.getPlotAtPos(row, col);
+                    if (plot instanceof Plot p) {
+                        p.setAttackCandidate(false);
+                        p.setFriendlyCandidate(false);
+                    }
+                }
+            }
+        }
     }
 }

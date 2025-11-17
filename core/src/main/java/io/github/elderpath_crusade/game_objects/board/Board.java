@@ -280,6 +280,8 @@ public class Board extends HigherOrderTexture {
     // Mark candidate move plots (white dots) and attack plots (red glow) when a movement source is active
     private void updateCandidateMoveSpots() {
         Object src = InteractionManager.getActiveSource();
+        // Skip if an ability interaction is active (let InteractionManager.renderEligibleTargets() handle highlighting)
+        if (src != null && !(src instanceof Plot)) return;
         // Clear all by default
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
@@ -287,6 +289,7 @@ public class Board extends HigherOrderTexture {
                 if (r instanceof Plot p) {
                     p.setCandidate(false);
                     p.setAttackCandidate(false);
+                    p.setFriendlyCandidate(false);
                 }
             }
         }
