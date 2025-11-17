@@ -417,8 +417,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (!(gp instanceof MonsterGamePiece mgp)) return null;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return null;
         // Require at least one action available
-        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-        int actionsLeft = (v instanceof Integer n) ? n : mgp.getStats().getActions();
+        int actionsLeft = mgp.getStats().getRemainingActions();
         if (actionsLeft <= 0) return null;
         return clickableEffectData; // multi-interaction set by Board
     }

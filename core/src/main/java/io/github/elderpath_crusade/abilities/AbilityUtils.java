@@ -99,17 +99,15 @@ public final class AbilityUtils {
         EventBus.emit(type, m);
     }
 
-    /** Returns remaining actions for the given piece (defaults to base actions if not set). */
+    /** Returns remaining actions for the given piece. */
     public static int getRemainingActions(MonsterGamePiece mgp) {
-        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-        if (v instanceof Integer n) return n;
-        return mgp.getStats().getActions();
+        return mgp.getStats().getRemainingActions();
     }
 
     /** Spend 1 action from the given piece and emit ACTION_SPENT. Never goes below zero. */
     public static void spendAction(MonsterGamePiece mgp) {
         int left = Math.max(0, getRemainingActions(mgp) - 1);
-        mgp.updateData(GamePieceData.ACTIONS_REMAINING, left);
+        mgp.getStats().setRemainingActions(left);
         EventBus.emit(
             GameEventType.ACTION_SPENT,
             Map.of(

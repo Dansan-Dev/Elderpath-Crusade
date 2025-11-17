@@ -687,9 +687,7 @@ public class SmartBot implements Bot {
     }
 
     private int getRemainingActions(MonsterGamePiece mgp) {
-        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-        if (v instanceof Integer n) return n;
-        return mgp.getStats().getActions();
+        return mgp.getStats().getRemainingActions();
     }
 
     private boolean hasSummonCandidate(Board b) {

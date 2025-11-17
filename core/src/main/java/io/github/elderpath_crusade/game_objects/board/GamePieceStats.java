@@ -16,6 +16,9 @@ public class GamePieceStats {
     @Getter @Setter
     private int currentHealth;
 
+    @Getter @Setter
+    private int remainingActions;
+
     private GamePieceStats(GamePieceType type, int cost, int maxHealth, int damage, int speed, int actions) {
         this.type = type;
         this.cost = cost;
@@ -24,6 +27,7 @@ public class GamePieceStats {
         this.speed = speed;
         this.actions = actions;
         resetCurrentHealth();
+        resetRemainingActions();
     }
 
     public static GamePieceStats getTerrainStats(int maxHealth, int damage) {
@@ -36,6 +40,10 @@ public class GamePieceStats {
 
     public void resetCurrentHealth() {
         currentHealth = maxHealth;
+    }
+
+    public void resetRemainingActions() {
+        remainingActions = actions;
     }
 
     public void dealDamage(int damage) {

@@ -534,21 +534,19 @@ public class Board extends HigherOrderTexture {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
                 if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == owner) {
-                    mgp.updateData(GamePieceData.ACTIONS_REMAINING, mgp.getEffectiveActions());
+                    mgp.getStats().setRemainingActions(mgp.getEffectiveActions());
                 }
             }
         }
     }
 
     private int getRemainingActions(MonsterGamePiece mgp) {
-        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-        if (v instanceof Integer n) return n;
-        return mgp.getStats().getActions();
+        return mgp.getStats().getRemainingActions();
     }
 
     private void spendAction(MonsterGamePiece mgp) {
         int left = Math.max(0, getRemainingActions(mgp) - 1);
-        mgp.updateData(GamePieceData.ACTIONS_REMAINING, left);
+        mgp.getStats().setRemainingActions(left);
         // Emit ACTION_SPENT with remaining actions
         EventBus.emit(
                 GameEventType.ACTION_SPENT,

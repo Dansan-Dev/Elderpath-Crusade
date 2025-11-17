@@ -110,8 +110,7 @@ public class BasicBot implements Bot {
                                 GamePiece defenderBefore = b.getGamePieceAtPos(dIdx[0], dIdx[1]);
                                 int defenderHpBefore = -1;
                                 if (defenderBefore instanceof MonsterGamePiece defM) defenderHpBefore = defM.getStats().getCurrentHealth();
-                                int actionsBefore; Object aVal = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-                                if (aVal instanceof Integer n) actionsBefore = n; else actionsBefore = mgp.getStats().getActions();
+                                int actionsBefore = mgp.getStats().getRemainingActions();
                                 HashMap<Integer, CustomBox> entities = new HashMap<>();
                                 entities.put(0, srcPlot); entities.put(1, dstPlot);
                                 srcPlot.triggerClickEffect(entities);
@@ -121,8 +120,7 @@ public class BasicBot implements Bot {
                                 if (defenderBefore instanceof MonsterGamePiece defM2 && defenderAfter instanceof MonsterGamePiece defM2After && defenderBefore == defenderAfter) {
                                     defenderDamaged = defM2After.getStats().getCurrentHealth() < defenderHpBefore;
                                 }
-                                int actionsAfter; Object aValAfter = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-                                if (aValAfter instanceof Integer n2) actionsAfter = n2; else actionsAfter = mgp.getStats().getActions();
+                                int actionsAfter = mgp.getStats().getRemainingActions();
                                 boolean spentAction = actionsAfter < actionsBefore;
                                 if (defenderDied || defenderDamaged || spentAction) return true;
                             }

@@ -285,8 +285,6 @@ public class AbilityPopup extends HigherOrderUI {
     }
 
     private static int getRemainingActions(MonsterGamePiece mgp) {
-        Object v = mgp.getData(GamePieceData.ACTIONS_REMAINING);
-        if (v instanceof Integer n) return n;
-        return mgp.getStats().getActions();
+        return mgp.getStats().getRemainingActions();
     }
 }
