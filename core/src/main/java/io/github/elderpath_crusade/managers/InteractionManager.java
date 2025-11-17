@@ -61,6 +61,9 @@ public class InteractionManager {
             @Override public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
                 if (tf == null) return true; return tf.isValidTargetForEffect(box, targetIndex);
             }
+            @Override public List<Plot> getEligibleTargets(int targetIndex) {
+                if (tf == null) return null; return tf.getEligibleTargets(targetIndex);
+            }
         }
         return startProgrammaticInteraction(
             new EphemeralSource(data, filter, onPicked)
@@ -206,6 +209,8 @@ public class InteractionManager {
         currentEffect = null;
         selected.clear();
         selectedCount = 0;
+        // Clear all candidate highlights when interaction ends
+        clearAllCandidateHighlights();
         // If a programmatic interaction was queued during the previous interaction (e.g., triggered by an ability
         // inside currentEffect.triggerClickEffect), start it now.
         if (pendingProgrammaticSource != null) {
@@ -376,15 +381,21 @@ public class InteractionManager {
     public static void renderEligibleTargets() {
         if (!hasActiveSelection() || currentEffect == null) return;
         
-        // Only handle AbilityBubble as currentEffect
-        if (!(currentEffect instanceof AbilityBubble bubble)) return;
+        TargetFilter filter = null;
         
-        // Get the ability from the bubble
-        var ability = bubble.getAbility();
-        if (ability == null) return;
+        // Handle AbilityBubble: get filter from the ability
+        if (currentEffect instanceof AbilityBubble bubble) {
+            var ability = bubble.getAbility();
+            if (ability instanceof TargetFilter tf) {
+                filter = tf;
+            }
+        }
+        // Handle direct TargetFilter implementations (like EphemeralSource)
+        else if (currentEffect instanceof TargetFilter tf) {
+            filter = tf;
+        }
         
-        // Check if the ability implements TargetFilter
-        if (!(ability instanceof TargetFilter filter)) return;
+        if (filter == null) return;
         
         // Get eligible targets for the current target index (selectedCount)
         List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
@@ -444,6 +455,7 @@ public class InteractionManager {
     
     /**
      * Clear all candidate highlights from all plots on all boards.
+     * Clears white dots (candidate), red borders (attack candidate), and green borders (friendly candidate).
      */
     private static void clearAllCandidateHighlights() {
         for (Renderable r : GraphicsManager.getRenderables()) {
@@ -452,8 +464,9 @@ public class InteractionManager {
                 for (int col = 0; col < board.getCOLS(); col++) {
                     var plot = board.getPlotAtPos(row, col);
                     if (plot instanceof Plot p) {
-                        p.setAttackCandidate(false);
-                        p.setFriendlyCandidate(false);
+                        p.setCandidate(false); // white dots
+                        p.setAttackCandidate(false); // red borders
+                        p.setFriendlyCandidate(false); // green borders
                     }
                 }
             }

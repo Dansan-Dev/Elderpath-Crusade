@@ -117,11 +117,21 @@ public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
         if (board == null || owner == null || attackables == null || attackables.isEmpty()) return;
         // Use the new InteractionManager.requestPick API to initiate a one-shot selection without a surrogate Clickable.
         ClickableEffectData data = ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1);
-        TargetFilter filter = (box, targetIndex) -> {
-            Plot p = resolveToPlot(board, box);
-            if (p == null) return false;
-            for (Plot allowed : attackables) { if (allowed == p) return true; }
-            return false;
+        // Create a TargetFilter that validates targets and provides eligible plots for highlighting
+        TargetFilter filter = new TargetFilter() {
+            @Override
+            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+                Plot p = resolveToPlot(board, box);
+                if (p == null) return false;
+                for (Plot allowed : attackables) { if (allowed == p) return true; }
+                return false;
+            }
+            
+            @Override
+            public List<Plot> getEligibleTargets(int targetIndex) {
+                // Return the list of attackable plots for highlighting
+                return attackables;
+            }
         };
         Consumer<HashMap<Integer, CustomBox>> onPicked = (entities) -> {
             CustomBox first = entities.get(1);
