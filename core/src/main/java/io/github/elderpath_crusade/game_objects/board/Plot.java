@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -350,6 +351,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         JumpMoveAbility jumpMoveAbility = null;
         BaseMoveAbility baseMoveAbility = null;
         BaseAttackAbility baseAttackAbility = null;
+        OncePerTurnAttackAbility oncePerTurnAttackAbility = null;
 
         for (Ability ability : mgp.getAbilities()) {
             if (ability instanceof BasicAbility basicAbility) {
@@ -359,6 +361,8 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
                     baseMoveAbility = (BaseMoveAbility) basicAbility;
                 } else if (basicAbility instanceof BaseAttackAbility) {
                     baseAttackAbility = (BaseAttackAbility) basicAbility;
+                } else if (basicAbility instanceof OncePerTurnAttackAbility) {
+                    oncePerTurnAttackAbility = (OncePerTurnAttackAbility) basicAbility;
                 }
             }
         }
@@ -370,8 +374,10 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         GamePiece dstPiece = boardRef.getGamePieceAtPos(dr, dc);
 
         if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
-            // Enemy piece: check attack ability
-            if (baseAttackAbility != null) {
+            // Enemy piece: check attack ability (prioritize OncePerTurnAttackAbility if exists)
+            if (oncePerTurnAttackAbility != null) {
+                return oncePerTurnAttackAbility.isValidTargetForEffect(targetPlot, targetIndex);
+            } else if (baseAttackAbility != null) {
                 return baseAttackAbility.isValidTargetForEffect(targetPlot, targetIndex);
             }
             return false;

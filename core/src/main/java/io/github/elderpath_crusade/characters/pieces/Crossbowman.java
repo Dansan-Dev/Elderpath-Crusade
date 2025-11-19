@@ -1,5 +1,9 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.CrossbowmanRangeAbility;
+import io.github.elderpath_crusade.abilities.impl.ExcessDamageCarryOverAbility;
+import io.github.elderpath_crusade.abilities.impl.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +15,9 @@ import java.util.function.Supplier;
 
 /**
  * Crossbowman unit.
- * TODO (rules text): Ranged 2\nCan only attack once a turn\nExcess damage from attack carry over to the closest enemy unit behind the target in range
+ * Ranged 2: Can attack enemies up to 2 squares away.
+ * Can only attack once per turn.
+ * Excess damage from attacks carries over to the closest enemy unit behind the target in range.
  */
 public class Crossbowman extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +41,18 @@ public class Crossbowman extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Remove default BaseAttackAbility and replace with OncePerTurnAttackAbility
+        var abilitiesToRemove = getAbilities().stream()
+            .filter(ability -> ability instanceof BaseAttackAbility)
+            .toList();
+        abilitiesToRemove.forEach(this::removeAbility);
+
+        // Passive: +2 range
+        this.addAbility(new CrossbowmanRangeAbility());
+        // Basic: Once-per-turn attack
+        this.addAbility(new OncePerTurnAttackAbility(this));
+        // Triggered: Excess damage carry over
+        this.addAbility(new ExcessDamageCarryOverAbility());
     }
 
     public Crossbowman(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +63,17 @@ public class Crossbowman extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Remove default BaseAttackAbility and replace with OncePerTurnAttackAbility
+        var abilitiesToRemove = getAbilities().stream()
+            .filter(ability -> ability instanceof BaseAttackAbility)
+            .toList();
+        abilitiesToRemove.forEach(this::removeAbility);
+
+        // Passive: +2 range
+        this.addAbility(new CrossbowmanRangeAbility());
+        // Basic: Once-per-turn attack
+        this.addAbility(new OncePerTurnAttackAbility(this));
+        // Triggered: Excess damage carry over
+        this.addAbility(new ExcessDamageCarryOverAbility());
     }
 }

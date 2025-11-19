@@ -7,6 +7,7 @@ import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
 import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
+import io.github.elderpath_crusade.abilities.impl.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -309,22 +310,32 @@ public class Board extends HigherOrderTexture {
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
 
-        // Use BasicAbility (BaseMoveAbility, JumpMoveAbility, and BaseAttackAbility) to get eligible targets
+        // Use BasicAbility (BaseMoveAbility, JumpMoveAbility, BaseAttackAbility, and OncePerTurnAttackAbility) to get eligible targets
         // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
         List<Plot> reachable = List.of();
         List<Plot> attackables = List.of();
         JumpMoveAbility jumpMoveAbility = null;
         BaseMoveAbility baseMoveAbility = null;
+        OncePerTurnAttackAbility oncePerTurnAttackAbility = null;
         for (Ability ability : mgp.getAbilities()) {
             if (ability instanceof BasicAbility basicAbility) {
                 if (basicAbility instanceof JumpMoveAbility) {
                     jumpMoveAbility = (JumpMoveAbility) basicAbility;
                 } else if (basicAbility instanceof BaseMoveAbility) {
                     baseMoveAbility = (BaseMoveAbility) basicAbility;
+                } else if (basicAbility instanceof OncePerTurnAttackAbility) {
+                    oncePerTurnAttackAbility = (OncePerTurnAttackAbility) basicAbility;
                 } else if (basicAbility instanceof BaseAttackAbility) {
-                    attackables = basicAbility.getEligibleTargets(1);
+                    // Only use BaseAttackAbility if OncePerTurnAttackAbility is not present
+                    if (oncePerTurnAttackAbility == null) {
+                        attackables = basicAbility.getEligibleTargets(1);
+                    }
                 }
             }
+        }
+        // Use OncePerTurnAttackAbility if available, otherwise BaseAttackAbility
+        if (oncePerTurnAttackAbility != null) {
+            attackables = oncePerTurnAttackAbility.getEligibleTargets(1);
         }
         // Use JumpMoveAbility if available, otherwise use BaseMoveAbility
         if (jumpMoveAbility != null) {
@@ -638,14 +649,28 @@ public class Board extends HigherOrderTexture {
         // Check if there's an enemy at destination -> try attack ability
         GamePiece targetPiece = getGamePieceAtPos(dr, dc);
         if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
-            // Find BasicAbility that is BaseAttackAbility
+            // Find BasicAbility that is an attack ability (prioritize OncePerTurnAttackAbility)
+            OncePerTurnAttackAbility oncePerTurnAttackAbility = null;
+            BaseAttackAbility baseAttackAbility = null;
             for (Ability ability : mgp.getAbilities()) {
-                if (ability instanceof BaseAttackAbility baseAttackAbility) {
-                    // Check if target is valid
-                    if (baseAttackAbility.isValidTargetForEffect(dst, 1)) {
-                        baseAttackAbility.execute(abilityEntities);
-                        return;
-                    }
+                if (ability instanceof OncePerTurnAttackAbility) {
+                    oncePerTurnAttackAbility = (OncePerTurnAttackAbility) ability;
+                } else if (ability instanceof BaseAttackAbility) {
+                    baseAttackAbility = (BaseAttackAbility) ability;
+                }
+            }
+            // Try OncePerTurnAttackAbility first if available
+            if (oncePerTurnAttackAbility != null) {
+                if (oncePerTurnAttackAbility.isValidTargetForEffect(dst, 1)) {
+                    oncePerTurnAttackAbility.execute(abilityEntities);
+                    return;
+                }
+            }
+            // Otherwise try BaseAttackAbility
+            if (baseAttackAbility != null) {
+                if (baseAttackAbility.isValidTargetForEffect(dst, 1)) {
+                    baseAttackAbility.execute(abilityEntities);
+                    return;
                 }
             }
             return; // No valid attack ability found
