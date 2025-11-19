@@ -13,7 +13,8 @@ public enum GameEventType {
 
     // Board / pieces
     PIECE_SPAWNED,
-    PIECE_MOVED,
+    ACTIVE_MOVEMENT,
+    FORCED_MOVEMENT,
     PIECE_ATTACKED,
     PIECE_DIED,
 

@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.game_objects.board;
 import io.github.elderpath_crusade.abilities.Ability;
+import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
@@ -29,6 +31,9 @@ public class MonsterGamePiece extends GamePiece {
     public MonsterGamePiece(GamePieceStats stats, GamePieceType type, PieceAlignment alignment, UUID id, Renderable sprite) {
         super(stats, type, alignment, id, sprite);
         if (type.equals(GamePieceType.TERRAIN)) throw new IllegalArgumentException("Cannot create a monster as terrain");
+        // Add default base abilities
+        this.addAbility(new BaseMoveAbility(this));
+        this.addAbility(new BaseAttackAbility(this));
     }
 
     // ---- Abilities API ----

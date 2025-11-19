@@ -41,7 +41,8 @@ public final class WinConditionManager {
         initialized = true;
 
         Consumer<GameEvent> listener = WinConditionManager::handleEvent;
-        EventBus.register(GameEventType.PIECE_MOVED, listener);
+        EventBus.register(GameEventType.ACTIVE_MOVEMENT, listener);
+        EventBus.register(GameEventType.FORCED_MOVEMENT, listener);
         EventBus.register(GameEventType.PIECE_SPAWNED, listener);
     }
 
@@ -60,12 +61,13 @@ public final class WinConditionManager {
         }
         // Destination row key differs per event
         Integer destRow = null;
-        if (evt.getType() == GameEventType.PIECE_MOVED) {
+        GameEventType eventType = evt.getType();
+        if (eventType == GameEventType.ACTIVE_MOVEMENT || eventType == GameEventType.FORCED_MOVEMENT) {
             Object v = data.get("toRow");
             if (v instanceof Integer i) destRow = i; else if (v != null) {
                 try { destRow = Integer.parseInt(v.toString()); } catch (NumberFormatException ignored) {}
             }
-        } else if (evt.getType() == GameEventType.PIECE_SPAWNED) {
+        } else if (eventType == GameEventType.PIECE_SPAWNED) {
             Object v = data.get("row");
             if (v instanceof Integer i) destRow = i; else if (v != null) {
                 try { destRow = Integer.parseInt(v.toString()); } catch (NumberFormatException ignored) {}

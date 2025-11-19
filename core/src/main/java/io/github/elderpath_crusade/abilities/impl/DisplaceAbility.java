@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.abilities.impl;
 
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
+import io.github.elderpath_crusade.abilities.MovementUtils;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.GamePieceData;
@@ -115,38 +116,16 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
         // Destination must be empty
         if (board.getGamePieceAtPos(destinationRow, destinationCol) != null) return;
 
-        // Perform move: move the TARGET into destination
-        // Clear target's current cell and place into new cell
-        board.moveGamePiece(
-            sourceRow, sourceCol,
-            destinationRow, destinationCol
-        );
-        target.updateData(
-            GamePieceData.POSITION,
-            new Board.Position(
-                board,
-                destinationRow, destinationCol
-            )
-        );
-        // Mark cause as ABILITY-driven move
-        target.updateData(GamePieceData.MOVE_CAUSE, "ABILITY");
-        try {
-            target.notifyMoved(
-                sourceRow, sourceCol,
-                destinationRow, destinationCol
-            );
-        } catch (Exception ignored) {}
-        // Emit PIECE_MOVED for the target
-        EventBus.emit(
-                GameEventType.PIECE_MOVED,
-                Map.of(
-                        "pieceId", target.getId().toString(),
-                        "owner", target.getAlignment().name(),
-                        "fromRow", sourceRow,
-                        "fromCol", sourceCol,
-                        "toRow", destinationRow,
-                        "toCol", destinationCol
-                )
+        // Perform forced movement using MovementUtils
+        MovementUtils.performForcedMovement(
+            board,
+            target,
+            sourceRow,
+            sourceCol,
+            destinationRow,
+            destinationCol,
+            "ABILITY",
+            "Displace"
         );
 
         // Spend 1 action from owner

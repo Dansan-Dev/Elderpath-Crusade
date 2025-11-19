@@ -6,5 +6,6 @@ package io.github.elderpath_crusade.abilities;
 public enum AbilityType {
     TRIGGERED,
     ACTIONABLE,
-    PASSIVE
+    PASSIVE,
+    BASIC
 }

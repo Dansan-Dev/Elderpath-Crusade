@@ -87,7 +87,8 @@ public class CommanderAuraAbility implements PassiveAbility, TriggeredAbility {
         if (owner == null) return;
         GameEventType t = event.getType();
         // Re-evaluate when any piece moves/spawns/dies on same board to keep adjacency correct
-        if (t == GameEventType.PIECE_MOVED || t == GameEventType.PIECE_SPAWNED || t == GameEventType.PIECE_DIED) {
+        if (t == GameEventType.ACTIVE_MOVEMENT || t == GameEventType.FORCED_MOVEMENT 
+            || t == GameEventType.PIECE_SPAWNED || t == GameEventType.PIECE_DIED) {
             refreshRecipients();
         }
     }
@@ -96,13 +97,17 @@ public class CommanderAuraAbility implements PassiveAbility, TriggeredAbility {
         moveListener = this::onGameEvent;
         spawnListener = this::onGameEvent;
         diedListener = this::onGameEvent;
-        EventBus.register(GameEventType.PIECE_MOVED, moveListener);
+        EventBus.register(GameEventType.ACTIVE_MOVEMENT, moveListener);
+        EventBus.register(GameEventType.FORCED_MOVEMENT, moveListener);
         EventBus.register(GameEventType.PIECE_SPAWNED, spawnListener);
         EventBus.register(GameEventType.PIECE_DIED, diedListener);
     }
 
     private void unregisterGlobalListeners() {
-        if (moveListener != null) EventBus.unregister(GameEventType.PIECE_MOVED, moveListener);
+        if (moveListener != null) {
+            EventBus.unregister(GameEventType.ACTIVE_MOVEMENT, moveListener);
+            EventBus.unregister(GameEventType.FORCED_MOVEMENT, moveListener);
+        }
         if (spawnListener != null) EventBus.unregister(GameEventType.PIECE_SPAWNED, spawnListener);
         if (diedListener != null) EventBus.unregister(GameEventType.PIECE_DIED, diedListener);
         moveListener = spawnListener = diedListener = null;

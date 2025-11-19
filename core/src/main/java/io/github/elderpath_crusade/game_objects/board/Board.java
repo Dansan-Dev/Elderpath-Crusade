@@ -2,6 +2,10 @@ package io.github.elderpath_crusade.game_objects.board;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.abilities.Ability;
+import io.github.elderpath_crusade.abilities.BasicAbility;
+import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -303,9 +307,19 @@ public class Board extends HigherOrderTexture {
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
-        int speed = mgp.getStats().getSpeed();
-        List<Plot> reachable = getReachablePlots(sr, sc, speed);
-        List<Plot> attackables = getAttackableEnemyPlots(sr, sc, ((MonsterGamePiece) gp).getAlignment());
+
+        // Use BasicAbility (BaseMoveAbility and BaseAttackAbility) to get eligible targets
+        List<Plot> reachable = List.of();
+        List<Plot> attackables = List.of();
+        for (Ability ability : mgp.getAbilities()) {
+            if (ability instanceof BasicAbility basicAbility) {
+                if (basicAbility instanceof BaseMoveAbility) {
+                    reachable = basicAbility.getEligibleTargets(1);
+                } else if (basicAbility instanceof BaseAttackAbility) {
+                    attackables = basicAbility.getEligibleTargets(1);
+                }
+            }
+        }
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
                 Renderable r = board[row][col];
@@ -593,77 +607,39 @@ public class Board extends HigherOrderTexture {
         // Must have actions remaining
         if (getRemainingActions(mgp) <= 0) return;
 
-        // Attack branch: ranged/cardinal hostile target within effective range and line rules
+        // Build entities map for ability execution (0=source, 1=target)
+        HashMap<Integer, CustomBox> abilityEntities = new HashMap<>();
+        abilityEntities.put(0, src);
+        abilityEntities.put(1, dst);
+
+        // Check if there's an enemy at destination -> try attack ability
         GamePiece targetPiece = getGamePieceAtPos(dr, dc);
         if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
-            // Validate that dst is among current attackable enemy plots from (sr,sc)
-            List<Plot> attackables = getAttackableEnemyPlots(sr, sc, mgp.getAlignment());
-            boolean valid = false;
-            for (Plot p : attackables) { if (p == dst) { valid = true; break; } }
-            if (!valid) return;
-            int dmg = getAttackDamage(mgp, sr, sc);
-            enemy.getStats().dealDamage(dmg);
-            // Ability notifications
-            try { mgp.notifyAttack(enemy, dmg); } catch (Exception ignored) {}
-            try { enemy.notifyDamaged(dmg, mgp); } catch (Exception ignored) {}
-            // Emit attack event
-            EventBus.emit(
-                    GameEventType.PIECE_ATTACKED,
-                    Map.of(
-                            "attackerId", mgp.getId().toString(),
-                            "defenderId", enemy.getId().toString(),
-                            "row", dr,
-                            "col", dc,
-                            "attackerRow", sr,
-                            "attackerCol", sc,
-                            "defenderRow", dr,
-                            "defenderCol", dc,
-                            "damage", dmg
-                    )
-            );
-            if (enemy.getStats().getCurrentHealth() <= 0) {
-                // Notify before removal
-                try { enemy.notifyDied(); } catch (Exception ignored) {}
-                removeGamePieceAtPos(dr, dc);
-                EventBus.emit(
-                        GameEventType.PIECE_DIED,
-                        Map.of(
-                                "pieceId", enemy.getId().toString(),
-                                "row", dr,
-                                "col", dc
-                        )
-                );
+            // Find BasicAbility that is BaseAttackAbility
+            for (Ability ability : mgp.getAbilities()) {
+                if (ability instanceof BaseAttackAbility baseAttackAbility) {
+                    // Check if target is valid
+                    if (baseAttackAbility.isValidTargetForEffect(dst, 1)) {
+                        baseAttackAbility.execute(abilityEntities);
+                        return;
+                    }
+                }
             }
-            spendAction(mgp);
-            return;
+            return; // No valid attack ability found
         }
 
-        // Move branch: empty destination within reach by Speed
-        int speed = mgp.getEffectiveSpeed();
-        java.util.List<Plot> reachable = getReachablePlots(sr, sc, speed);
-        boolean ok = false;
-        for (Plot p : reachable) { if (p == dst) { ok = true; break; } }
-        if (!ok) return;
-        if (isOccupied(dr, dc)) return; // safety
-        moveGamePiece(sr, sc, dr, dc);
-        mgp.updateData(GamePieceData.POSITION, new Position(this, dr, dc));
-        // Mark cause as MANUAL for abilities that react differently to manual vs ability-driven moves
-        mgp.updateData(GamePieceData.MOVE_CAUSE, "MANUAL");
-        // Ability notification for movement
-        try { mgp.notifyMoved(sr, sc, dr, dc); } catch (Exception ignored) {}
-        // Emit move event
-        EventBus.emit(
-                GameEventType.PIECE_MOVED,
-                Map.of(
-                        "pieceId", mgp.getId().toString(),
-                        "owner", mgp.getAlignment().name(),
-                        "fromRow", sr,
-                        "fromCol", sc,
-                        "toRow", dr,
-                        "toCol", dc
-                )
-        );
-        spendAction(mgp);
+        // Otherwise, try move ability
+        // Find BasicAbility that is BaseMoveAbility
+        for (Ability ability : mgp.getAbilities()) {
+            if (ability instanceof BaseMoveAbility baseMoveAbility) {
+                // Check if target is valid
+                if (baseMoveAbility.isValidTargetForEffect(dst, 1)) {
+                    baseMoveAbility.execute(abilityEntities);
+                    return;
+                }
+            }
+        }
+        // No valid move ability found
     }
 
     @Override
