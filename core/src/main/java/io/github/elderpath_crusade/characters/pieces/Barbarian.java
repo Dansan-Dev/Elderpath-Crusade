@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.CleaveAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * Barbarian unit.
- * TODO (rules text): Attacks deal damage to all adjacent squares
+ * ON ATTACK: Deal damage to all adjacent squares (cleave).
  */
 public class Barbarian extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +36,8 @@ public class Barbarian extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Triggered: Cleave on attack
+        this.addAbility(new CleaveAttackAbility());
     }
 
     public Barbarian(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +48,7 @@ public class Barbarian extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Triggered: Cleave on attack
+        this.addAbility(new CleaveAttackAbility());
     }
 }

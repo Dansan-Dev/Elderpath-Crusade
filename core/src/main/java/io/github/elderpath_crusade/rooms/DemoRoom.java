@@ -112,8 +112,8 @@ public class DemoRoom extends Room {
         addContent(hand);
 
         List<Card> cardsP1 = new ArrayList<>();
-        for (int i = 0; i < 24; i++) {
-            int kind = i % 12;
+        for (int i = 0; i < 26; i++) {
+            int kind = i % 13;
             if (kind == 0) {
                 cardsP1.add(new RiflemanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 1) {
@@ -136,6 +136,8 @@ public class DemoRoom extends Room {
                 cardsP1.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 10) {
                 cardsP1.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else if (kind == 11) {
+                cardsP1.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else {
                 cardsP1.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }

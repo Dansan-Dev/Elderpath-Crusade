@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.CleaveAttackAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +11,7 @@ import io.github.elderpath_crusade.characters.pieces.Barbarian;
 import java.util.List;
 
 /**
- * Barbarian card. TODO rules: Attacks deal damage to all adjacent squares
+ * Barbarian card. ON ATTACK: Deal damage to all adjacent squares (cleave).
  */
 public class BarbarianCard extends SummonCard {
     public BarbarianCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -29,5 +30,7 @@ public class BarbarianCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of(CleaveAttackAbility.getAbilityDescription());
+    }
 }
