@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.PushOnAttackAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +11,7 @@ import io.github.elderpath_crusade.characters.pieces.Charger;
 import java.util.List;
 
 /**
- * Charger card. TODO rules: On attack: push target 1 back and move 1 towards; if collision, all involved take 1 damage
+ * Charger card. ON ATTACK: Push target 1 back and move 1 forward. If blocked, target takes 1 damage.
  */
 public class ChargerCard extends SummonCard {
     public ChargerCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -29,5 +30,7 @@ public class ChargerCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of(PushOnAttackAbility.getAbilityDescription());
+    }
 }

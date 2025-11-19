@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.PushOnAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +12,8 @@ import java.util.function.Supplier;
 
 /**
  * Charger unit.
- * TODO (rules text): ON ATTACK: Push the target 1 square backwards and move 1 square towards the target.\nIf a unit or terrain is behind, instead all units involved in the collision take 1 damage
+ * ON ATTACK: Push the target 1 square backwards and move 1 square towards the target.
+ * If a unit or terrain is behind the target, instead only the attacked piece takes 1 damage.
  */
 public class Charger extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +37,8 @@ public class Charger extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Triggered: Push on attack
+        this.addAbility(new PushOnAttackAbility());
     }
 
     public Charger(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +49,7 @@ public class Charger extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Triggered: Push on attack
+        this.addAbility(new PushOnAttackAbility());
     }
 }

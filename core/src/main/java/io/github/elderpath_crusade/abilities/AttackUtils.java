@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities;
 
+import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.multiplayer.EventBus;
@@ -81,15 +82,25 @@ public final class AttackUtils {
         EventBus.emit(GameEventType.PIECE_ATTACKED, eventData);
 
         // Handle death
+        // IMPORTANT: Get defender's current position (may have changed due to abilities like PushOnAttackAbility)
+        // Use the position from the defender's GamePieceData, not the original parameters
+        int actualDefenderRow = defenderRow;
+        int actualDefenderCol = defenderCol;
+        Object defenderPosObj = defender.getData(GamePieceData.POSITION);
+        if (defenderPosObj instanceof Board.Position defenderPos) {
+            actualDefenderRow = defenderPos.getRow();
+            actualDefenderCol = defenderPos.getCol();
+        }
+        
         if (defender.getStats().getCurrentHealth() <= 0) {
             try { defender.notifyDied(); } catch (Exception ignored) {}
-            board.removeGamePieceAtPos(defenderRow, defenderCol);
+            board.removeGamePieceAtPos(actualDefenderRow, actualDefenderCol);
             EventBus.emit(
                     GameEventType.PIECE_DIED,
                     Map.of(
                             "pieceId", defender.getId().toString(),
-                            "row", defenderRow,
-                            "col", defenderCol
+                            "row", actualDefenderRow,
+                            "col", actualDefenderCol
                     )
             );
         }

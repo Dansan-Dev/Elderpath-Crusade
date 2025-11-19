@@ -10,7 +10,7 @@ import io.github.elderpath_crusade.characters.pieces.Rogue;
 import java.util.List;
 
 /**
- * Rogue card. TODO rules: After moving, you may attack an adjacent enemy unit without using an action
+ * Rogue card. After moving, you may attack an adjacent enemy unit without using an action
  */
 public class RogueCard extends SummonCard {
     public RogueCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {

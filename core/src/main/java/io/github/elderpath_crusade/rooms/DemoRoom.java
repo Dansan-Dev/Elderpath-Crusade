@@ -112,32 +112,26 @@ public class DemoRoom extends Room {
         addContent(hand);
 
         List<Card> cardsP1 = new ArrayList<>();
-        for (int i = 0; i < 26; i++) {
-            int kind = i % 13;
+        for (int i = 0; i < 18; i++) {
+            int kind = i % 9;
             if (kind == 0) {
-                cardsP1.add(new RiflemanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 1) {
                 cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 2) {
-                cardsP1.add(new WolfCubCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 3) {
+            } else if (kind == 1) {
                 cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 4) {
-                cardsP1.add(new CommanderCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 5) {
-                cardsP1.add(new HeroCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 6) {
+            } else if (kind == 2) {
                 cardsP1.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 7) {
-                cardsP1.add(new StormMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 8) {
+            } else if (kind == 3) {
                 cardsP1.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 9) {
+            } else if (kind == 4) {
+                cardsP1.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else if (kind == 5) {
+                cardsP1.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else if (kind == 6) {
                 cardsP1.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else if (kind == 10) {
-                cardsP1.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 11) {
                 cardsP1.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+            } else if (kind == 7) {
+                cardsP1.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             } else {
                 cardsP1.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
             }
