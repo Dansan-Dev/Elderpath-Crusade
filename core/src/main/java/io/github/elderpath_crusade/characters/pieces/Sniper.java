@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.SniperRangeAbility;
+import io.github.elderpath_crusade.abilities.impl.StunSelfOnAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +13,8 @@ import java.util.function.Supplier;
 
 /**
  * Sniper unit.
- * TODO (rules text): Ranged 3\nON ATTACK: Get stunned for 2 turns
+ * Ranged 3: Can attack enemies up to 3 squares away.
+ * ON ATTACK: Get stunned for 2 turns (cannot act during stun).
  */
 public class Sniper extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +38,10 @@ public class Sniper extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: +3 range
+        this.addAbility(new SniperRangeAbility());
+        // Triggered: Self-stun on attack
+        this.addAbility(new StunSelfOnAttackAbility());
     }
 
     public Sniper(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +52,9 @@ public class Sniper extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Passive: +3 range
+        this.addAbility(new SniperRangeAbility());
+        // Triggered: Self-stun on attack
+        this.addAbility(new StunSelfOnAttackAbility());
     }
 }

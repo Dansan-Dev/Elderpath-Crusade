@@ -562,6 +562,17 @@ public class Board extends HigherOrderTexture {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
                 if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == owner) {
+                    // Check if stunned - if so, don't reset actions (they should remain at 0)
+                    Object stunObj = mgp.getData(GamePieceData.STUN_TURNS_REMAINING);
+                    int stunTurns = 0;
+                    if (stunObj instanceof Integer) {
+                        stunTurns = (Integer) stunObj;
+                    }
+                    if (stunTurns > 0) {
+                        // Stunned: keep actions at 0 (already set by StunSelfOnAttackAbility.onTurnStarted)
+                        continue;
+                    }
+                    // Not stunned: reset actions normally
                     mgp.getStats().setRemainingActions(mgp.getEffectiveActions());
                 }
             }
