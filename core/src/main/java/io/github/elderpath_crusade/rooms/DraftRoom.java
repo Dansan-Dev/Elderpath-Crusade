@@ -139,15 +139,17 @@ public class DraftRoom extends Room {
         MenuLayout.centerHeader(progressionText, 100);
 
         // Deck preview on right side - position it clearly visible
-        // Update bounds first to get correct height
-        deckPreviewText.update();
+        // Fixed top position relative to screen height (top stays fixed as text expands downward)
         int previewWidth = 300;
         int previewX = screenWidth - previewWidth - 50; // Right side with margin
-        int previewY = (screenHeight * 2 / 3) - 100; // Center vertically
+        int fixedTopY = (screenHeight * 2 / 3) - 100; // Fixed top Y position
         deckPreviewText.getBounds().setX(previewX);
-        deckPreviewText.getBounds().setY(previewY);
         deckPreviewText.getBounds().setWidth(previewWidth);
-        // Height will be calculated from text content
+        // Update to calculate text bounds first
+        deckPreviewText.update();
+        // Set Y position so that top stays fixed (Y is bottom, so bottom = top - height)
+        int bottomY = fixedTopY - deckPreviewText.getBounds().getHeight();
+        deckPreviewText.getBounds().setY(bottomY);
 
         // Draft options hand centered in middle
         int cardWidth = 125;
@@ -250,19 +252,24 @@ public class DraftRoom extends Room {
 
         String previewText = "Deck:\n" + String.join("\n", formattedCards);
         deckPreviewText.setText(previewText);
-        // Force update to recalculate text bounds
-        deckPreviewText.update();
         
-        // Reposition deck preview after text update (right side)
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
+        // Calculate fixed top position (always relative to screen height)
         int screenHeight = SettingsManager.screenSize.getScreenHeight();
         int screenWidth = SettingsManager.screenSize.getScreenWidth();
+        int fixedTopY = (screenHeight * 2 / 3) - 100; // Fixed top Y position
         int previewWidth = 300;
         int previewX = screenWidth - previewWidth - 50; // Right side with margin
-        int previewY = (screenHeight * 2 / 3) - 100; // Center vertically
+        
+        // Set X and width before update
         deckPreviewText.getBounds().setX(previewX);
-        deckPreviewText.getBounds().setY(previewY);
         deckPreviewText.getBounds().setWidth(previewWidth);
+        
+        // Update to recalculate text bounds (height will grow)
+        deckPreviewText.update();
+        
+        // Set Y position so that top stays fixed (Y is bottom, so bottom = top - height)
+        int bottomY = fixedTopY - deckPreviewText.getBounds().getHeight();
+        deckPreviewText.getBounds().setY(bottomY);
     }
 
     private void transitionToDemoRoom() {
