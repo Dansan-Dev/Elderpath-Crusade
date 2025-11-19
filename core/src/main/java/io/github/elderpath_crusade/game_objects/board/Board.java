@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
 import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -308,17 +309,28 @@ public class Board extends HigherOrderTexture {
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
 
-        // Use BasicAbility (BaseMoveAbility and BaseAttackAbility) to get eligible targets
+        // Use BasicAbility (BaseMoveAbility, JumpMoveAbility, and BaseAttackAbility) to get eligible targets
+        // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
         List<Plot> reachable = List.of();
         List<Plot> attackables = List.of();
+        JumpMoveAbility jumpMoveAbility = null;
+        BaseMoveAbility baseMoveAbility = null;
         for (Ability ability : mgp.getAbilities()) {
             if (ability instanceof BasicAbility basicAbility) {
-                if (basicAbility instanceof BaseMoveAbility) {
-                    reachable = basicAbility.getEligibleTargets(1);
+                if (basicAbility instanceof JumpMoveAbility) {
+                    jumpMoveAbility = (JumpMoveAbility) basicAbility;
+                } else if (basicAbility instanceof BaseMoveAbility) {
+                    baseMoveAbility = (BaseMoveAbility) basicAbility;
                 } else if (basicAbility instanceof BaseAttackAbility) {
                     attackables = basicAbility.getEligibleTargets(1);
                 }
             }
+        }
+        // Use JumpMoveAbility if available, otherwise use BaseMoveAbility
+        if (jumpMoveAbility != null) {
+            reachable = jumpMoveAbility.getEligibleTargets(1);
+        } else if (baseMoveAbility != null) {
+            reachable = baseMoveAbility.getEligibleTargets(1);
         }
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
@@ -629,14 +641,28 @@ public class Board extends HigherOrderTexture {
         }
 
         // Otherwise, try move ability
-        // Find BasicAbility that is BaseMoveAbility
+        // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
+        JumpMoveAbility jumpMoveAbility = null;
+        BaseMoveAbility baseMoveAbility = null;
         for (Ability ability : mgp.getAbilities()) {
-            if (ability instanceof BaseMoveAbility baseMoveAbility) {
-                // Check if target is valid
-                if (baseMoveAbility.isValidTargetForEffect(dst, 1)) {
-                    baseMoveAbility.execute(abilityEntities);
-                    return;
-                }
+            if (ability instanceof JumpMoveAbility) {
+                jumpMoveAbility = (JumpMoveAbility) ability;
+            } else if (ability instanceof BaseMoveAbility) {
+                baseMoveAbility = (BaseMoveAbility) ability;
+            }
+        }
+        // Try JumpMoveAbility first if available
+        if (jumpMoveAbility != null) {
+            if (jumpMoveAbility.isValidTargetForEffect(dst, 1)) {
+                jumpMoveAbility.execute(abilityEntities);
+                return;
+            }
+        }
+        // Otherwise try BaseMoveAbility
+        if (baseMoveAbility != null) {
+            if (baseMoveAbility.isValidTargetForEffect(dst, 1)) {
+                baseMoveAbility.execute(abilityEntities);
+                return;
             }
         }
         // No valid move ability found

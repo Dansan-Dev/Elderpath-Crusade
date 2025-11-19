@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +11,7 @@ import io.github.elderpath_crusade.characters.pieces.BigToad;
 import java.util.List;
 
 /**
- * Big Toad card. TODO rules: JUMP ACTION: Move 2 steps in one direction, ignoring terrain in the way
+ * Big Toad card. Jump Movement: Can move in cardinal directions only, jumping over terrain and units.
  */
 public class BigToadCard extends SummonCard {
     public BigToadCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -18,7 +19,7 @@ public class BigToadCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(1, 2, 1, 1, 1); }
+    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(1, 2, 1, 2, 1); }
 
     @Override
     protected String getCardName() { return "Big Toad"; }
@@ -29,5 +30,7 @@ public class BigToadCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() { 
+        return List.of("Jump: Move in cardinal\ndirections only, ignoring\nterrain and units");
+    }
 }

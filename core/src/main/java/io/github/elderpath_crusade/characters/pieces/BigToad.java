@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,11 +13,11 @@ import java.util.function.Supplier;
 
 /**
  * Big Toad unit.
- * TODO (rules text): JUMP ACTION: Move 2 steps in one direction, ignoring terrain in the way
+ * Jump Movement: Can move in cardinal directions only, jumping over terrain and units.
  */
 public class BigToad extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
-        return GamePieceStats.getMonsterStats(1, 2, 1, 1, 1);
+        return GamePieceStats.getMonsterStats(1, 2, 1, 2, 1);
     }
 
     private static Supplier<NamedCheckerSprite> getNamedCheckerSprite(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -35,6 +37,13 @@ public class BigToad extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Remove default BaseMoveAbility and replace with JumpMoveAbility
+        // Collect abilities to remove first to avoid ConcurrentModificationException
+        var abilitiesToRemove = getAbilities().stream()
+            .filter(ability -> ability instanceof BaseMoveAbility)
+            .toList();
+        abilitiesToRemove.forEach(this::removeAbility);
+        this.addAbility(new JumpMoveAbility(this));
     }
 
     public BigToad(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +54,12 @@ public class BigToad extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Remove default BaseMoveAbility and replace with JumpMoveAbility
+        // Collect abilities to remove first to avoid ConcurrentModificationException
+        var abilitiesToRemove = getAbilities().stream()
+            .filter(ability -> ability instanceof BaseMoveAbility)
+            .toList();
+        abilitiesToRemove.forEach(this::removeAbility);
+        this.addAbility(new JumpMoveAbility(this));
     }
 }

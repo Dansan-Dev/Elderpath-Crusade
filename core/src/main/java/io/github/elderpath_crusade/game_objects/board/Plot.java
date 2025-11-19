@@ -2,9 +2,13 @@ package io.github.elderpath_crusade.game_objects.board;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.abilities.Ability;
+import io.github.elderpath_crusade.abilities.BasicAbility;
+import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.game_objects.sprites.TextureObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
@@ -19,7 +23,6 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * A plot is a single square on a Board
@@ -342,26 +345,45 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         // Only allow interactions when the piece alignment matches current player's turn
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return false;
 
-        // Use Board helpers as source of truth
-        int sr = srcIdx[0], sc = srcIdx[1];
+        // Use BasicAbility validation instead of old getReachablePlots logic
+        // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
+        JumpMoveAbility jumpMoveAbility = null;
+        BaseMoveAbility baseMoveAbility = null;
+        BaseAttackAbility baseAttackAbility = null;
+
+        for (Ability ability : mgp.getAbilities()) {
+            if (ability instanceof BasicAbility basicAbility) {
+                if (basicAbility instanceof JumpMoveAbility) {
+                    jumpMoveAbility = (JumpMoveAbility) basicAbility;
+                } else if (basicAbility instanceof BaseMoveAbility) {
+                    baseMoveAbility = (BaseMoveAbility) basicAbility;
+                } else if (basicAbility instanceof BaseAttackAbility) {
+                    baseAttackAbility = (BaseAttackAbility) basicAbility;
+                }
+            }
+        }
+
+        // Check if target is an enemy -> try attack ability first
         int[] dstIdx = boardRef.getIndicesOfPlot(targetPlot);
         if (dstIdx == null) return false;
         int dr = dstIdx[0], dc = dstIdx[1];
         GamePiece dstPiece = boardRef.getGamePieceAtPos(dr, dc);
 
-        if (dstPiece == null) {
-            // Movement to empty plot must be within reachable set
-            int speed = mgp.getEffectiveSpeed();
-            List<Plot> reachable = boardRef.getReachablePlots(sr, sc, speed);
-            for (Plot p : reachable) { if (p == targetPlot) return true; }
-            return false;
-        }
-        // Occupied: reject friendly; allow hostile only if in attackable set
         if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
-            List<Plot> attackables = boardRef.getAttackableEnemyPlots(sr, sc, mgp.getAlignment());
-            for (Plot p : attackables) { if (p == targetPlot) return true; }
+            // Enemy piece: check attack ability
+            if (baseAttackAbility != null) {
+                return baseAttackAbility.isValidTargetForEffect(targetPlot, targetIndex);
+            }
             return false;
         }
+
+        // Empty plot: check move ability (prioritize JumpMoveAbility)
+        if (jumpMoveAbility != null) {
+            return jumpMoveAbility.isValidTargetForEffect(targetPlot, targetIndex);
+        } else if (baseMoveAbility != null) {
+            return baseMoveAbility.isValidTargetForEffect(targetPlot, targetIndex);
+        }
+
         return false;
     }
 

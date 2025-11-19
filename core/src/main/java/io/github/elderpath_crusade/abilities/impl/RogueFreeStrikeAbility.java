@@ -121,10 +121,10 @@ public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
         TargetFilter filter = new TargetFilter() {
             @Override
             public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                Plot p = resolveToPlot(board, box);
-                if (p == null) return false;
-                for (Plot allowed : attackables) { if (allowed == p) return true; }
-                return false;
+            Plot p = resolveToPlot(board, box);
+            if (p == null) return false;
+            for (Plot allowed : attackables) { if (allowed == p) return true; }
+            return false;
             }
             
             @Override
