@@ -54,7 +54,7 @@ public class VictoryRoom extends Room {
             50,
             5
         ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
-         .withOnClick((e) -> RoomManager.gotoRoom(DemoRoom::get), ClickableEffectData.getImmediate());
+         .withOnClick((e) -> RoomManager.gotoRoom(DraftRoom::get), ClickableEffectData.getImmediate());
         addUI(playAgain);
 
         mainMenu = Button.fromColor(

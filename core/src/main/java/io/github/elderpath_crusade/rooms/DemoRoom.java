@@ -9,6 +9,8 @@ import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
+import io.github.elderpath_crusade.game_objects.cards.SummonCard;
+import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.TurnManager;
@@ -112,32 +114,48 @@ public class DemoRoom extends Room {
         addContent(hand);
 
         List<Card> cardsP1 = new ArrayList<>();
-        for (int i = 0; i < 24; i++) {
-            int kind = i % 12;
-            if (kind == 0) {
-                cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 1) {
-                cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 2) {
-                cardsP1.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 3) {
-                cardsP1.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 4) {
-                cardsP1.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 5) {
-                cardsP1.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 6) {
-                cardsP1.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 7) {
-                cardsP1.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 8) {
-                cardsP1.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 9) {
-                cardsP1.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else if (kind == 10) {
-                cardsP1.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-            } else {
-                cardsP1.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+        
+        // Check if a drafted deck exists in DeckManager
+        if (DeckManager.hasDraftedDeck()) {
+            // Use drafted deck from DeckManager
+            List<java.util.function.Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck();
+            for (java.util.function.Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
+                DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
+                    board, PieceAlignment.P1, 0, 0, 125, 200, 0
+                );
+                cardsP1.add(cardCreator.apply(params));
+            }
+            // Clear drafted deck after use (optional - could keep it for reference)
+            // DeckManager.clearDraftedDeck();
+        } else {
+            // Use default deck logic
+            for (int i = 0; i < 24; i++) {
+                int kind = i % 12;
+                if (kind == 0) {
+                    cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 1) {
+                    cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 2) {
+                    cardsP1.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 3) {
+                    cardsP1.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 4) {
+                    cardsP1.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 5) {
+                    cardsP1.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 6) {
+                    cardsP1.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 7) {
+                    cardsP1.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 8) {
+                    cardsP1.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 9) {
+                    cardsP1.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else if (kind == 10) {
+                    cardsP1.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                } else {
+                    cardsP1.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                }
             }
         }
 
