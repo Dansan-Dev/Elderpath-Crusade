@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.cards;
 
+import io.github.elderpath_crusade.abilities.impl.BombActionAbility;
+import io.github.elderpath_crusade.abilities.impl.CannotAttackAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -10,7 +12,7 @@ import io.github.elderpath_crusade.characters.pieces.SkeletonBomber;
 import java.util.List;
 
 /**
- * Skeleton Bomber card. TODO rules: Cannot Attack; BOMB ACTION: Deal damage equal to its attack to all units within 1 square
+ * Skeleton Bomber card. Cannot Attack; BOMB ACTION: Deal damage equal to its attack to all units within 1 square
  */
 public class SkeletonBomberCard extends SummonCard {
     public SkeletonBomberCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
@@ -29,5 +31,10 @@ public class SkeletonBomberCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(); }
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of(
+            CannotAttackAbility.getAbilityDescription(),
+            BombActionAbility.getAbilityDescription()
+        );
+    }
 }

@@ -22,7 +22,9 @@ public class CannotAttackAbility implements PassiveAbility {
     public String getName() { return "Cannot Attack"; }
 
     @Override
-    public String getDescription() { return "Cannot Attack"; }
+    public String getDescription() { return getAbilityDescription(); }
+
+    public static String getAbilityDescription() { return "Cannot Attack"; }
 
     @Override
     public AbilityType getType() { return AbilityType.PASSIVE; }
