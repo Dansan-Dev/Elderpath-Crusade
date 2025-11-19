@@ -3,8 +3,6 @@ package io.github.elderpath_crusade.rooms;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.abilities.AbilityRelay;
 import io.github.elderpath_crusade.cards.*;
-import io.github.elderpath_crusade.characters.pieces.WarpMage;
-import io.github.elderpath_crusade.characters.pieces.Wolf;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
@@ -69,10 +67,7 @@ public class DemoRoom extends Room {
 //        board.setGamePiecePos(1, 2, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
 //        board.setGamePiecePos(5, 3, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
 //        board.setGamePiecePos(4, 4, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
-        board.addGamePieceToPos(2, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
-        board.addGamePieceToPos(4, 0, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P2));
-        board.addGamePieceToPos(1, 4, new Wolf(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P2));
-        board.addGamePieceToPos(3, 2, new WarpMage(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
+        // Non-terrain pieces removed - board starts empty except for terrain
         board.addGamePieceToPos(4, 3, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
         board.addGamePieceToPos(2, 1, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
         board.addGamePieceToPos(5, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
