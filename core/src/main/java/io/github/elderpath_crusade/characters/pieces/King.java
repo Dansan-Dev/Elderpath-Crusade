@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.characters.pieces;
 
+import io.github.elderpath_crusade.abilities.impl.KingEnemyAuraAbility;
+import io.github.elderpath_crusade.abilities.impl.KingFriendlyAuraAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -11,7 +13,8 @@ import java.util.function.Supplier;
 
 /**
  * King unit.
- * TODO (rules text): All enemies within 1 square has +1 action\nAll other friendly units has +1 health
+ * Passive 1: All enemy pieces within 1 range gain +1 action (max actions increased by 1).
+ * Passive 2: All other friendly pieces gain +1 max health.
  */
 public class King extends MonsterGamePiece {
     private static GamePieceStats getBaselineStats() {
@@ -35,6 +38,9 @@ public class King extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Add both aura abilities directly
+        this.addAbility(new KingEnemyAuraAbility());
+        this.addAbility(new KingFriendlyAuraAbility());
     }
 
     public King(int x, int y, int width, int height, PieceAlignment alignment) {
@@ -45,5 +51,8 @@ public class King extends MonsterGamePiece {
             UUID.randomUUID(),
             getNamedCheckerSprite(x, y, width, height, alignment).get()
         );
+        // Add both aura abilities directly
+        this.addAbility(new KingEnemyAuraAbility());
+        this.addAbility(new KingFriendlyAuraAbility());
     }
 }

@@ -35,7 +35,7 @@ public class Board extends HigherOrderTexture {
     @Getter private final int PLOT_WIDTH;
     @Getter private final int PLOT_HEIGHT;
     private final Renderable[][] board;
-    private final GamePiece [][] gamePieces;
+    @Getter private final GamePiece [][] gamePieces;
     private final BoardIdentifierSymbol[] rowIdentifierSymbols;
     private final BoardIdentifierSymbol[] colIdentifierSymbols;
 
@@ -99,7 +99,7 @@ public class Board extends HigherOrderTexture {
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         GamePieceStats st = mgp.getStats();
         int cur = st.getCurrentHealth();
-        int max = st.getMaxHealth();
+        int max = mgp.getEffectiveMaxHealth(); // Use effective max health (includes modifiers)
         if (cur >= max) return; // full health -> no overlay
         UUID id = mgp.getId();
         seen.add(id);

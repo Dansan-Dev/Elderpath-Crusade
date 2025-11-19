@@ -26,6 +26,10 @@ public final class StatsAccumulator {
         }
     }
 
+    public boolean has(StatsModifier mod) {
+        return modifiers.contains(mod);
+    }
+
     public void removeBySource(Object source) {
         if (source == null) return;
         // Remove all modifiers whose source == source

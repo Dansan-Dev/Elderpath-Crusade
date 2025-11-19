@@ -198,7 +198,7 @@ public class MonsterGamePiece extends GamePiece {
     public boolean heal(int amount) {
         if (amount <= 0) return false;
         int currentHealth = getStats().getCurrentHealth();
-        int maxHealth = getStats().getMaxHealth();
+        int maxHealth = getEffectiveMaxHealth();
         if (currentHealth >= maxHealth) {
             return false; // Already at max health
         }
