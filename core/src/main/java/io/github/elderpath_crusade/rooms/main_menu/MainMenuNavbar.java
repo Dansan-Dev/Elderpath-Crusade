@@ -33,38 +33,42 @@ public class MainMenuNavbar extends HigherOrderUI {
     public MainMenuNavbar() {
         super();
         // Build background sprite
-        navbarBg = new SpriteObject(0, 0, NAVBAR_IMAGE_SIZE[0] / 3, NAVBAR_IMAGE_SIZE[1] / 3, -1, SpriteBoxPos.BOTTOM);
+        // Use divisor of 2.7 instead of 3 to match the larger size in MainMenuRoom
+        int bgW = (int)(NAVBAR_IMAGE_SIZE[0] / 2.7f);
+        int bgH = (int)(NAVBAR_IMAGE_SIZE[1] / 2.7f);
+        navbarBg = new SpriteObject(0, 0, bgW, bgH, -1, SpriteBoxPos.BOTTOM);
         navbarBg.addAnimation(
             "general",
             List.of(SpriteCreator.makeSprite(
                 ImagePathBackgroundAndUI.HOME_NAVBAR.getPath(),
                 0, 0,
                 NAVBAR_IMAGE_SIZE[0], NAVBAR_IMAGE_SIZE[1],
-                NAVBAR_IMAGE_SIZE[0] / 3, NAVBAR_IMAGE_SIZE[1] / 3
+                bgW, bgH
             )),
             0
         );
 
-        // Build buttons
-        playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
+        // Build buttons (width increased from 100 to 120 for better appearance)
+        int buttonWidth = 140;
+        playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> RoomManager.gotoRoom(DraftRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        localMultiplayerButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Local", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
+        localMultiplayerButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Local", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> RoomManager.gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
+        settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> RoomManager.gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
+        exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
@@ -110,8 +114,8 @@ public class MainMenuNavbar extends HigherOrderUI {
             buttonList.getRenderables().forEach(r -> {
                 Button b = (Button) r;
                 Box bb = b.getBounds();
-                // Keep existing width, only set height
-                if (bb.getWidth() == 0) bb.setWidth(100);
+                // Keep existing width, only set height (update default width to match buttonWidth)
+                if (bb.getWidth() == 0) bb.setWidth(140);
                 bb.setHeight(buttonHeight);
             });
             int offset = buttonHeight + spacing;

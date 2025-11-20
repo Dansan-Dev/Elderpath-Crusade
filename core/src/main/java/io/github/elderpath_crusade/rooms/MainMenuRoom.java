@@ -68,10 +68,11 @@ public class MainMenuRoom extends Room {
         // Title position via shared helper
         MenuLayout.centerHeader(title, 120);
 
-        // Navbar alignment stays at bottom center with original scale
-        int navW = navbarSize[0] / 3;
-        int navH = navbarSize[1] / 3;
-        int navX = screen_center[0] - (navbarSize[0] / 6);
+        // Navbar alignment stays at bottom center with slightly larger scale
+        // Use divisor of 2.7 instead of 3 to make navbar ~11% larger
+        int navW = (int)(navbarSize[0] / 2.7f);
+        int navH = (int)(navbarSize[1] / 2.7f);
+        int navX = screen_center[0] - (navW / 2);
         int navY = screen_center[1] - 210; // ScreenCenterX=360 | 360-150 = 210
         navbar.setBounds(new Box(navX, navY, navW, navH));
 
