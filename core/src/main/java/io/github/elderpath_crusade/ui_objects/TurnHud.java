@@ -40,13 +40,15 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
         int padding = 16;
         int curX = padding;
         int curY = (screenH - turnText.getHeight()) / 2;
-        // Background sized to text + padding
-        int bgX = curX - PAD_X;
-        int bgY = curY - PAD_Y;
-        int bgW = turnText.getWidth() + PAD_X * 2;
-        int bgH = turnText.getHeight() + PAD_Y * 2;
-        Color bg = (TurnManager.getCurrentPlayer() == PieceAlignment.P1) ? P1_BG : P2_BG;
-        batch.draw(GraphicUtils.getPixelTexture(bg), bgX, bgY, bgW, bgH);
+        // Background sized to text + padding (only render when not paused)
+        if (!isPaused) {
+            int bgX = curX - PAD_X;
+            int bgY = curY - PAD_Y;
+            int bgW = turnText.getWidth() + PAD_X * 2;
+            int bgH = turnText.getHeight() + PAD_Y * 2;
+            Color bg = (TurnManager.getCurrentPlayer() == PieceAlignment.P1) ? P1_BG : P2_BG;
+            batch.draw(GraphicUtils.getPixelTexture(bg), bgX, bgY, bgW, bgH);
+        }
         // Text on top
         turnText.setBounds(new Box(curX, curY, turnText.getWidth(), turnText.getHeight()));
         turnText.render(batch, 0, isPaused);
