@@ -345,6 +345,8 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (!(gp instanceof MonsterGamePiece mgp)) return false;
         // Only allow interactions when the piece alignment matches current player's turn
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return false;
+        // Stunned pieces cannot act (even if they have remaining actions)
+        if (mgp.isStunned()) return false;
 
         // Use BasicAbility validation instead of old getReachablePlots logic
         // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
@@ -445,6 +447,8 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return null;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return null;
+        // Stunned pieces cannot act - don't allow plot interaction
+        if (mgp.isStunned()) return null;
         // Require at least one action available
         int actionsLeft = mgp.getStats().getRemainingActions();
         if (actionsLeft <= 0) return null;

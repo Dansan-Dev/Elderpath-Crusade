@@ -45,7 +45,7 @@ public class BaseAttackAbility implements BasicAbility {
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null) return false;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return false;
+        if (!AbilityUtils.canAct(owner)) return false;
 
         // Resolve to Plot
         Plot plot = resolveToPlot(box);

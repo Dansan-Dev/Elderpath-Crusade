@@ -62,7 +62,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null) return false;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return false;
+        if (!AbilityUtils.canAct(owner)) return false;
 
         // Resolve to MonsterGamePiece
         MonsterGamePiece target = resolveToMonsterGamePiece(box);
@@ -94,7 +94,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     public List<Plot> getEligibleTargets(int targetIndex) {
         if (owner == null) return List.of();
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return List.of();
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return List.of();
+        if (!AbilityUtils.canAct(owner)) return List.of();
 
         Object ownerPosObj = owner.getData(GamePieceData.POSITION);
         if (!(ownerPosObj instanceof Board.Position ownerPos)) return List.of();
@@ -131,7 +131,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     public void execute(HashMap<Integer, CustomBox> entities) {
         if (owner == null) return;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return;
+        if (!AbilityUtils.canAct(owner)) return;
 
         // Get target
         CustomBox firstClicked = entities.get(1);

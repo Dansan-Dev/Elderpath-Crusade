@@ -170,7 +170,7 @@ public class SmartBot implements Bot {
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
-            if (getRemainingActions(me) <= 0) continue;
+            if (!canAct(me)) continue;
             int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             for (Plot p : reach) {
@@ -190,8 +190,8 @@ public class SmartBot implements Bot {
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            if (!canAct(me)) continue;
             int actionsRem = getRemainingActions(me);
-            if (actionsRem <= 0) continue;
             WinPathResult res = estimateTurnsToRow0(b, me, r, c, threats, actionsRem);
             if (res == null || res.turns > 2 || res.firstMove == null) continue;
             int base;
@@ -294,8 +294,8 @@ public class SmartBot implements Bot {
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            if (!canAct(me)) continue;
             int actionsBefore = getRemainingActions(me);
-            if (actionsBefore <= 0) continue;
             List<Plot> hostile = b.getAttackableEnemyPlots(r,c, PieceAlignment.P2);
             if (hostile == null || hostile.isEmpty()) continue;
             for (Plot dst : hostile) {
@@ -346,7 +346,7 @@ public class SmartBot implements Bot {
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
-            if (getRemainingActions(me) <= 0) continue;
+            if (!canAct(me)) continue;
             int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             int currentDist = nearestManhattan(r,c,enemies);
@@ -461,8 +461,8 @@ public class SmartBot implements Bot {
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             GamePiece gp = b.getGamePieceAtPos(r,c);
             if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+            if (!canAct(me)) continue;
             int actionsRem = getRemainingActions(me);
-            if (actionsRem <= 0) continue;
             int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             // Include staying put as a candidate
@@ -668,8 +668,8 @@ public class SmartBot implements Bot {
             for (int c = 0; c < cols; c++) {
                 GamePiece gp = b.getGamePieceAtPos(r, c);
                 if (!(gp instanceof MonsterGamePiece me) || me.getAlignment() != PieceAlignment.P2) continue;
+                if (!canAct(me)) continue;
                 int actions = getRemainingActions(me);
-                if (actions <= 0) continue;
                 // attack available?
                 List<Plot> hostile = b.getAttackableEnemyPlots(r, c, PieceAlignment.P2);
                 if (hostile != null && !hostile.isEmpty()) return false;
@@ -688,6 +688,14 @@ public class SmartBot implements Bot {
 
     private int getRemainingActions(MonsterGamePiece mgp) {
         return mgp.getStats().getRemainingActions();
+    }
+
+    private boolean canAct(MonsterGamePiece mgp) {
+        if (mgp == null) return false;
+        // Stunned pieces cannot act
+        if (mgp.isStunned()) return false;
+        // Must have remaining actions
+        return getRemainingActions(mgp) > 0;
     }
 
     private boolean hasSummonCandidate(Board b) {

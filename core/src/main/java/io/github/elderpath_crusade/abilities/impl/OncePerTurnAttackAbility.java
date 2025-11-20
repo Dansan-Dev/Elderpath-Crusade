@@ -51,7 +51,7 @@ public class OncePerTurnAttackAbility implements BasicAbility, TriggeredAbility 
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null) return false;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return false;
+        if (!AbilityUtils.canAct(owner)) return false;
         if (attackedThisTurn) return false; // Once per turn restriction
 
         // Resolve to Plot

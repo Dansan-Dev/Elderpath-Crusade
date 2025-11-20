@@ -104,6 +104,18 @@ public final class AbilityUtils {
         return mgp.getStats().getRemainingActions();
     }
 
+    /**
+     * Check if a piece can act (has actions and is not stunned).
+     * Stunned pieces cannot act even if they have remaining actions.
+     */
+    public static boolean canAct(MonsterGamePiece mgp) {
+        if (mgp == null) return false;
+        // Stunned pieces cannot act
+        if (mgp.isStunned()) return false;
+        // Must have remaining actions
+        return getRemainingActions(mgp) > 0;
+    }
+
     /** Spend 1 action from the given piece and emit ACTION_SPENT. Never goes below zero. */
     public static void spendAction(MonsterGamePiece mgp) {
         int left = Math.max(0, getRemainingActions(mgp) - 1);

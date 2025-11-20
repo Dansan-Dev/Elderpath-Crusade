@@ -55,7 +55,7 @@ public class BombActionAbility implements ActionableAbility, TriggeredAbility {
         if (owner == null) return;
         if (usedThisTurn) return;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return;
+        if (!AbilityUtils.canAct(owner)) return;
 
         // Get owner's position and board (bomb always centered on owner)
         Object ownerPosObj = owner.getData(GamePieceData.POSITION);

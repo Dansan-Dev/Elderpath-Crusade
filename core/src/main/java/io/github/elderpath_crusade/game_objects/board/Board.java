@@ -25,6 +25,9 @@ import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.ui_objects.BoardIdentifierSymbol;
 import io.github.elderpath_crusade.utils.GraphicUtils;
+import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Gdx;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -70,6 +73,9 @@ public class Board extends HigherOrderTexture {
     // Cached UI elements for compact health overlays on damaged pieces
     private final Map<UUID, Text> hpTexts = new HashMap<>();
     private final Map<UUID, Integer> hpCache = new HashMap<>();
+    
+    // Stun symbol texture cache
+    private static Texture stunTexture = null;
     // Semi-transparent dark background for HP label to avoid being obscured by later draws
     private static final Color HP_BG_COLOR = new Color(1f, 1f, 1f, 0.6f).mul(Color.RED);
     private static final int HP_PADDING_X = 2; // offset from plot corner
@@ -96,6 +102,77 @@ public class Board extends HigherOrderTexture {
             }
         }
         setBoardIdentifierSymbols();
+    }
+
+    // --- Status effect visual rendering ---
+    /**
+     * Render a piece sprite with status effect tinting (stun or exhaustion).
+     * Priority: Stun (purple/pink/blue tint) > Exhaustion (darkening).
+     * Exhaustion is only shown for the current player's pieces.
+     */
+    private void renderPieceWithStatusEffects(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp) {
+        if (!(gp instanceof MonsterGamePiece mgp)) {
+            // Non-monster pieces render normally without effects
+            gp.getSprite().render(batch, zLevel, false, absX, absY);
+            return;
+        }
+
+        // Save current batch color
+        Color originalColor = batch.getColor().cpy();
+
+        // Determine status effect and apply appropriate tint
+        if (mgp.isStunned()) {
+            // Stun: more purple/pink tint (apply color tint to sprite)
+            // More purple/pink: higher red and blue, lower green
+            Color stunTint = new Color(1f, 0.22f, 0.71f, 1f);
+            batch.setColor(stunTint);
+            gp.getSprite().render(batch, zLevel, false, absX, absY);
+            batch.setColor(originalColor);
+            
+            // Render stun symbol overlay on top of the piece
+            renderStunSymbol(batch, zLevel, absX, absY);
+        } else if (mgp.isExhausted()) {
+            // Exhaustion: darkening effect (only show for current player's pieces)
+            PieceAlignment currentPlayer = TurnManager.getCurrentPlayer();
+            if (mgp.getAlignment() == currentPlayer) {
+                // Multiply RGB by 0.6 to darken, keep alpha at 1.0
+                Color darkenTint = new Color(0.6f, 0.6f, 0.6f, 1.0f);
+                batch.setColor(darkenTint);
+                gp.getSprite().render(batch, zLevel, false, absX, absY);
+                batch.setColor(originalColor);
+            } else {
+                // Not current player's piece: render normally
+                gp.getSprite().render(batch, zLevel, false, absX, absY);
+            }
+        } else {
+            // No status effect: render normally
+            gp.getSprite().render(batch, zLevel, false, absX, absY);
+        }
+    }
+
+    // --- Stun symbol overlay rendering ---
+    /**
+     * Render the stun symbol overlay on top of a stunned piece.
+     * The symbol is centered on the plot and sized appropriately.
+     */
+    private void renderStunSymbol(SpriteBatch batch, int zLevel, int absX, int absY) {
+        // Load stun texture if not already loaded
+        if (stunTexture == null) {
+            try {
+                stunTexture = new Texture(Gdx.files.internal(ImagePathSpritesAndAnimations.STUN.getPath()));
+            } catch (Exception e) {
+                // If texture loading fails, just skip rendering the symbol
+                return;
+            }
+        }
+        
+        // Render stun symbol centered on the plot, sized to ~60% of plot size
+        int symbolSize = Math.min(PLOT_WIDTH, PLOT_HEIGHT) * 3 / 5; // 60% of smaller dimension
+        int symbolX = absX + (PLOT_WIDTH - symbolSize) / 2;
+        int symbolY = absY + (PLOT_HEIGHT - symbolSize) / 2;
+        
+        // Render the stun symbol at the same z-level as the piece (will appear on top due to draw order)
+        batch.draw(stunTexture, symbolX, symbolY, symbolSize, symbolSize);
     }
 
     // --- Compact health overlay helpers ---
@@ -312,6 +389,8 @@ public class Board extends HigherOrderTexture {
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
+        // Stunned pieces cannot act - don't show candidate dots
+        if (mgp.isStunned()) return;
 
         // Use BasicAbility (BaseMoveAbility, JumpMoveAbility, BaseAttackAbility, and OncePerTurnAttackAbility) to get eligible targets
         // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
@@ -401,10 +480,10 @@ public class Board extends HigherOrderTexture {
         if (idx == null) return false;
         // must be empty
         if (getGamePieceAtPos(idx[0], idx[1]) != null) return false;
-        
+
         // Check if board is currently flipped (for P2's turn in LOCAL_MATCH)
         boolean flipped = isFlipped();
-        
+
         // row policy: account for board flip state
         switch (alignment) {
             case P1:
@@ -460,8 +539,10 @@ public class Board extends HigherOrderTexture {
     public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
         setGamePiecePos(row, col, gamePiece);
         gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
-        // Notify abilities on spawn
+        // Apply summoning sickness: pieces start with 0 remaining actions unless an ability overrides
         if (gamePiece instanceof MonsterGamePiece mgp) {
+            mgp.getStats().setRemainingActions(0);
+            // Notify abilities on spawn (abilities can override summoning sickness by setting remainingActions)
             mgp.notifySpawned(row, col);
         }
         // Emit PIECE_SPAWNED when a piece is added to the board
@@ -585,17 +666,7 @@ public class Board extends HigherOrderTexture {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
                 if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == owner) {
-                    // Check if stunned - if so, don't reset actions (they should remain at 0)
-                    Object stunObj = mgp.getData(GamePieceData.STUN_TURNS_REMAINING);
-                    int stunTurns = 0;
-                    if (stunObj instanceof Integer) {
-                        stunTurns = (Integer) stunObj;
-                    }
-                    if (stunTurns > 0) {
-                        // Stunned: keep actions at 0 (already set by StunSelfOnAttackAbility.onTurnStarted)
-                        continue;
-                    }
-                    // Not stunned: reset actions normally
+                    // Reset actions normally (stun doesn't affect remainingActions, it only blocks execution)
                     mgp.getStats().setRemainingActions(mgp.getEffectiveActions());
                 }
             }
@@ -650,6 +721,8 @@ public class Board extends HigherOrderTexture {
         GamePiece gp = getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
+        // Stunned pieces cannot act (even if they have remaining actions)
+        if (mgp.isStunned()) return;
         // Must have actions remaining
         if (getRemainingActions(mgp) <= 0) return;
 
@@ -733,17 +806,17 @@ public class Board extends HigherOrderTexture {
         // Swap plots and game pieces in the arrays
         for (int row = 0; row < ROWS / 2; row++) {
             int swapRow = ROWS - 1 - row;
-            
+
             // Swap plots in board array
             Renderable[] tempRow = board[row];
             board[row] = board[swapRow];
             board[swapRow] = tempRow;
-            
+
             // Swap game pieces in gamePieces array
             GamePiece[] tempPieces = gamePieces[row];
             gamePieces[row] = gamePieces[swapRow];
             gamePieces[swapRow] = tempPieces;
-            
+
             // Update bounds for swapped plots in both rows
             for (int col = 0; col < COLS; col++) {
                 // Update plot bounds to match new row positions
@@ -752,7 +825,7 @@ public class Board extends HigherOrderTexture {
                     plot.getBounds().setX(col * PLOT_WIDTH);
                     plot.getBounds().setY(row * PLOT_HEIGHT);
                 }
-                
+
                 Renderable swapPlot = board[swapRow][col];
                 if (swapPlot != null && swapPlot.getBounds() != null) {
                     swapPlot.getBounds().setX(col * PLOT_WIDTH);
@@ -760,7 +833,7 @@ public class Board extends HigherOrderTexture {
                 }
             }
         }
-        
+
         // Update all game pieces' POSITION data to reflect new row positions
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
@@ -770,10 +843,10 @@ public class Board extends HigherOrderTexture {
                 }
             }
         }
-        
+
         // Toggle the tracked flip state
         physicallyFlipped = !physicallyFlipped;
-        
+
         // Notify z-index registry that board structure changed
         ZIndexRegistry.notifyZChanged(this);
     }
@@ -818,7 +891,8 @@ public class Board extends HigherOrderTexture {
                 renderable.render(batch, zLevel, isPaused, absX, absY);
                 GamePiece gp = gamePieces[row][col];
                 if (gp != null) {
-                    gp.getSprite().render(batch, zLevel, isPaused, absX, absY);
+                    // Render piece sprite with status effect tinting
+                    renderPieceWithStatusEffects(batch, zLevel, absX, absY, gp);
                     renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
                 }
             }

@@ -69,7 +69,7 @@ public class StormActionAbility implements ActionableAbility, TargetFilter, Trig
         if (owner == null) return false;
         if (usedThisTurn) return false;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return false;
+        if (!AbilityUtils.canAct(owner)) return false;
 
         // Resolve to Plot
         Plot plot = resolveToPlot(box);
@@ -101,7 +101,7 @@ public class StormActionAbility implements ActionableAbility, TargetFilter, Trig
         if (owner == null) return List.of();
         if (usedThisTurn) return List.of();
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return List.of();
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return List.of();
+        if (!AbilityUtils.canAct(owner)) return List.of();
 
         Object ownerPosObj = owner.getData(GamePieceData.POSITION);
         if (!(ownerPosObj instanceof Board.Position ownerPos)) return List.of();
@@ -135,7 +135,7 @@ public class StormActionAbility implements ActionableAbility, TargetFilter, Trig
         if (owner == null) return;
         if (usedThisTurn) return;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return;
+        if (!AbilityUtils.canAct(owner)) return;
 
         // Get center plot
         CustomBox firstClicked = entities.get(1);

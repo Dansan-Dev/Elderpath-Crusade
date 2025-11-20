@@ -206,6 +206,8 @@ public class AbilityPopup extends HigherOrderUI {
     private boolean isPieceEligible(MonsterGamePiece mgp, PieceAlignment current) {
         if (mgp == null) return false;
         if (mgp.getAlignment() != current) return false;
+        // Stunned pieces cannot act - don't show ability popup
+        if (mgp.isStunned()) return false;
         if (getRemainingActions(mgp) <= 0) return false;
         List<Ability> abilities = mgp.getAbilities();
         if (abilities == null || abilities.isEmpty()) return false;

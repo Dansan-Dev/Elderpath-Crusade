@@ -75,7 +75,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
         // Basic turn and actions gating
         if (owner == null) return;
         if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
-        if (AbilityUtils.getRemainingActions(owner) <= 0) return;
+        if (!AbilityUtils.canAct(owner)) return;
 
         // Extract selections: index 1 = target piece, index 2 = destination plot
         CustomBox firstClicked = entities.get(1);

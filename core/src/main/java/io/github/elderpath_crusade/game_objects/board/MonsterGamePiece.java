@@ -233,4 +233,26 @@ public class MonsterGamePiece extends GamePiece {
 
         return Optional.of(new BoardContext(board, pos));
     }
+
+    // --- Status effect checks ---
+    /**
+     * Check if this piece is currently stunned (cannot act).
+     * @return true if STUN_TURNS_REMAINING > 0
+     */
+    public boolean isStunned() {
+        Object stunObj = getData(GamePieceData.STUN_TURNS_REMAINING);
+        if (stunObj instanceof Integer stunTurns) {
+            return stunTurns > 0;
+        }
+        return false;
+    }
+
+    /**
+     * Check if this piece is currently exhausted (has 0 remaining actions).
+     * This includes both out-of-actions and summoning sickness.
+     * @return true if remainingActions == 0
+     */
+    public boolean isExhausted() {
+        return getStats().getRemainingActions() == 0;
+    }
 }

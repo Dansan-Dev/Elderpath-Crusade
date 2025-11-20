@@ -10,7 +10,8 @@ public enum ImagePathSpritesAndAnimations {
     BLUE_CHECKER("blue_checker.png"),
     MOUNTAIN_TERRAIN("mountain_tile.png"),
     CARD_BACK("card_back.png"),
-    CARD_FRONT("card_front.png");
+    CARD_FRONT("card_front.png"),
+    STUN("stun.png");
 
 
     private final String path;
