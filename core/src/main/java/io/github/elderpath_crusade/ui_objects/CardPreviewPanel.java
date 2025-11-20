@@ -26,7 +26,7 @@ import java.util.UUID;
  */
 public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable {
     private static final float HOVER_THRESHOLD_SEC = 0.6f; // confirmed by user
-    private static final int SCREEN_MARGIN = 20;
+    private static final int SCREEN_MARGIN = 190; // Increased from 20 to move preview left
     private static final int PREVIEW_Z = 10; // internal z for card overlays
 
     private UUID currentPieceId = null;
