@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
+import io.github.elderpath_crusade.game_objects.cards.DraftCard;
 import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.RoomManager;
@@ -202,17 +203,23 @@ public class DraftRoom extends Room {
             DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                 dummyBoard, PieceAlignment.P1, 0, 0, 125, 200, 0
             );
-            SummonCard card = cardType.creator.apply(params);
+            SummonCard realCard = cardType.creator.apply(params);
+            realCard.showFront(); // Make sure card is face up
+            
+            // Wrap in DraftCard to bypass mana checks
+            // Use array reference to allow referencing card in lambda before it's fully initialized
+            final CardType finalCardType = cardType;
+            final DraftCard[] cardRef = new DraftCard[1];
+            DraftCard card = new DraftCard(realCard, (e) -> {
+                if (!isProcessingPick && cardRef[0] != null) {
+                    onCardSelected(cardRef[0], finalCardType);
+                }
+            });
+            cardRef[0] = card; // Assign after creation
             card.showFront(); // Make sure card is face up
+            
             currentOptions.add(card);
             draftOptionsHand.addCard(card);
-
-            // Register click handler
-            card.setClickableEffect((e) -> {
-                if (!isProcessingPick) {
-                    onCardSelected(card, cardType);
-                }
-            }, ClickableEffectData.getImmediate());
         }
 
         isProcessingPick = false;

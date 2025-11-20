@@ -259,6 +259,19 @@ public abstract class SummonCard extends Card implements TargetFilter {
             && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH) {
             return null;
         }
-        return (alignment == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
+        
+        // Only allow playing if it's the current player's turn
+        if (alignment != TurnManager.getCurrentPlayer()) {
+            return null;
+        }
+        
+        // Check if player has enough mana to play this card
+        PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
+        int cost = stats.getCost();
+        if (playerState == null || playerState.mana < cost) {
+            return null; // Not enough mana - card is not clickable
+        }
+        
+        return clickableEffectData;
     }
 }
