@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.rooms.DraftRoom;
 import io.github.elderpath_crusade.managers.WinConditionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.GameModeManager;
@@ -54,7 +55,14 @@ public class VictoryRoom extends Room {
             50,
             5
         ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
-         .withOnClick((e) -> RoomManager.gotoRoom(DraftRoom::get), ClickableEffectData.getImmediate());
+         .withOnClick((e) -> {
+            // Navigate to DraftRoom - use Local Multiplayer if in LOCAL_MATCH mode
+            if (mode == GameMode.LOCAL_MATCH) {
+                RoomManager.gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1));
+            } else {
+                RoomManager.gotoRoom(DraftRoom::get);
+            }
+         }, ClickableEffectData.getImmediate());
         addUI(playAgain);
 
         mainMenu = Button.fromColor(

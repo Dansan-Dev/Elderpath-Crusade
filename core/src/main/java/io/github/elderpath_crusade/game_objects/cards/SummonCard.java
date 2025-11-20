@@ -16,6 +16,8 @@ import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.managers.GameModeManager;
+import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -251,8 +253,12 @@ public abstract class SummonCard extends Card implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        // Only allow playing on owner turn. If P2 bot is enabled, block human clicks on P2 cards.
-        if (alignment == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot) return null;
+        // Only allow playing on owner turn.
+        // If P2 bot is enabled AND not in LOCAL_MATCH mode, block human clicks on P2 cards.
+        if (alignment == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot 
+            && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH) {
+            return null;
+        }
         return (alignment == TurnManager.getCurrentPlayer()) ? clickableEffectData : null;
     }
 }

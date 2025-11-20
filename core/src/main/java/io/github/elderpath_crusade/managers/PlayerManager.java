@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.managers;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
@@ -119,6 +120,8 @@ public class PlayerManager {
 
     // --- Bot hand visibility helpers ---
     private static void applyBotHandVisibilityOnTurnStart(PieceAlignment current) {
+        // Skip in LOCAL_MATCH mode (both players are human, visibility handled by LocalMatchRoom)
+        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
         // Only applies when P2 is bot-controlled; feature flag lives in SettingsManager.debug.enableP2Bot
         if (!SettingsManager.debug.enableP2Bot) return;
         // When P2's turn starts, flip P2's hand cards face-down; when P1's turn starts, restore face-up.

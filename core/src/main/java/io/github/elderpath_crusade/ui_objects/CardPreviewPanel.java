@@ -135,6 +135,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
                 int baseY = b.getBounds().getY();
                 int cellW = b.getPLOT_WIDTH();
                 int cellH = b.getPLOT_HEIGHT();
+                // No need for visual flip logic - board is physically flipped now
                 for (int row = 0; row < rows; row++) {
                     for (int col = 0; col < cols; col++) {
                         int absX = baseX + col * cellW;

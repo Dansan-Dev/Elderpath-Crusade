@@ -11,6 +11,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.rooms.DraftRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
@@ -25,6 +26,7 @@ public class MainMenuNavbar extends HigherOrderUI {
     private SpriteObject navbarBg;
     private ButtonList buttonList;
     private Button playButton;
+    private Button localMultiplayerButton;
     private Button settingsButton;
     private Button exitButton;
 
@@ -50,6 +52,12 @@ public class MainMenuNavbar extends HigherOrderUI {
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
+        localMultiplayerButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Local", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
+            .withOnClick((e) -> RoomManager.gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)), ClickableEffectData.getImmediate())
+            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+
         settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 60, 0)
             .withOnClick((e) -> RoomManager.gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
@@ -65,6 +73,7 @@ public class MainMenuNavbar extends HigherOrderUI {
         // Create ButtonList and add buttons
         buttonList = new ButtonList();
         buttonList.addButton(playButton);
+        buttonList.addButton(localMultiplayerButton);
         buttonList.addButton(settingsButton);
         buttonList.addButton(exitButton);
 
@@ -94,7 +103,6 @@ public class MainMenuNavbar extends HigherOrderUI {
         if (navbarBg != null) navbarBg.setBounds(new Box(0, 0, navW, navH));
 
         // Button layout within navbar via ButtonList
-        int buttonWidth = 100;
         int buttonHeight = 60;
         int spacing = 10;
         // Ensure button sizes
@@ -102,7 +110,8 @@ public class MainMenuNavbar extends HigherOrderUI {
             buttonList.getRenderables().forEach(r -> {
                 Button b = (Button) r;
                 Box bb = b.getBounds();
-                bb.setWidth(buttonWidth);
+                // Keep existing width, only set height
+                if (bb.getWidth() == 0) bb.setWidth(100);
                 bb.setHeight(buttonHeight);
             });
             int offset = buttonHeight + spacing;

@@ -14,6 +14,7 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -39,6 +40,8 @@ public class Board extends HigherOrderTexture {
     @Getter private final GamePiece [][] gamePieces;
     private final BoardIdentifierSymbol[] rowIdentifierSymbols;
     private final BoardIdentifierSymbol[] colIdentifierSymbols;
+    // Track physical flip state (true = board is flipped for P2's perspective)
+    private boolean physicallyFlipped = false;
 
     /** Notify all monster pieces on this board that a turn has started for the given player. */
     public void notifyTurnStartedForPieces(PieceAlignment player) {
@@ -387,7 +390,10 @@ public class Board extends HigherOrderTexture {
 
     /**
      * Generalized summon target validation: a plot is valid if it is empty and lies on the
-     * appropriate summon row for the given alignment (P1 → first row 0, P2 → last row ROWS-1).
+     * appropriate summon row for the given alignment.
+     * Accounts for board flip state in LOCAL_MATCH mode:
+     * - When not flipped (P1's turn): P1 → row 0, P2 → row ROWS-1
+     * - When flipped (P2's turn): P1 → row ROWS-1, P2 → row 0
      */
     public boolean isValidSummonTarget(Plot plot, io.github.elderpath_crusade.enums.PieceAlignment alignment) {
         if (plot == null || alignment == null) return false;
@@ -395,12 +401,18 @@ public class Board extends HigherOrderTexture {
         if (idx == null) return false;
         // must be empty
         if (getGamePieceAtPos(idx[0], idx[1]) != null) return false;
-        // row policy
+        
+        // Check if board is currently flipped (for P2's turn in LOCAL_MATCH)
+        boolean flipped = isFlipped();
+        
+        // row policy: account for board flip state
         switch (alignment) {
             case P1:
-                return idx[0] == 0;
+                // When flipped, P1's home row is at ROWS-1; when not flipped, it's at 0
+                return flipped ? (idx[0] == ROWS - 1) : (idx[0] == 0);
             case P2:
-                return idx[0] == ROWS - 1;
+                // When flipped, P2's home row is at 0; when not flipped, it's at ROWS-1
+                return flipped ? (idx[0] == 0) : (idx[0] == ROWS - 1);
             default:
                 return false;
         }
@@ -702,6 +714,68 @@ public class Board extends HigherOrderTexture {
             }
         }
         // No valid move ability found
+    }
+
+    /**
+     * Check if board is currently flipped (row mirroring) for P2's perspective in LOCAL_MATCH mode.
+     * Uses the tracked physical flip state.
+     */
+    public boolean isFlipped() {
+        return physicallyFlipped;
+    }
+
+    /**
+     * Physically flip the board by swapping rows in the board and gamePieces arrays.
+     * Row 0 swaps with row (ROWS-1), row 1 swaps with row (ROWS-2), etc.
+     * Updates all plot bounds and GamePiece POSITION data to reflect new positions.
+     */
+    public void flipRows() {
+        // Swap plots and game pieces in the arrays
+        for (int row = 0; row < ROWS / 2; row++) {
+            int swapRow = ROWS - 1 - row;
+            
+            // Swap plots in board array
+            Renderable[] tempRow = board[row];
+            board[row] = board[swapRow];
+            board[swapRow] = tempRow;
+            
+            // Swap game pieces in gamePieces array
+            GamePiece[] tempPieces = gamePieces[row];
+            gamePieces[row] = gamePieces[swapRow];
+            gamePieces[swapRow] = tempPieces;
+            
+            // Update bounds for swapped plots in both rows
+            for (int col = 0; col < COLS; col++) {
+                // Update plot bounds to match new row positions
+                Renderable plot = board[row][col];
+                if (plot != null && plot.getBounds() != null) {
+                    plot.getBounds().setX(col * PLOT_WIDTH);
+                    plot.getBounds().setY(row * PLOT_HEIGHT);
+                }
+                
+                Renderable swapPlot = board[swapRow][col];
+                if (swapPlot != null && swapPlot.getBounds() != null) {
+                    swapPlot.getBounds().setX(col * PLOT_WIDTH);
+                    swapPlot.getBounds().setY(swapRow * PLOT_HEIGHT);
+                }
+            }
+        }
+        
+        // Update all game pieces' POSITION data to reflect new row positions
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                GamePiece gp = gamePieces[row][col];
+                if (gp != null) {
+                    gp.updateData(GamePieceData.POSITION, new Position(this, row, col));
+                }
+            }
+        }
+        
+        // Toggle the tracked flip state
+        physicallyFlipped = !physicallyFlipped;
+        
+        // Notify z-index registry that board structure changed
+        ZIndexRegistry.notifyZChanged(this);
     }
 
     @Override

@@ -77,16 +77,33 @@ public final class WinConditionManager {
 
         Integer rows = getActiveBoardRows();
         if (rows == null) return; // can't evaluate without a board
+        
+        // Get the active board to check flip state
+        Board activeBoard = getActiveBoard();
+        if (activeBoard == null) return;
+        
+        // Check if board is currently flipped (for P2's turn in LOCAL_MATCH)
+        boolean flipped = activeBoard.isFlipped();
 
         // Ignore neutral or undefined alignments
         if (owner == PieceAlignment.NEUTRAL) {
             return;
         }
+        
+        // Win condition: player wins when reaching opponent's home row
+        // When not flipped: P1's home row = 0, P2's home row = rows-1
+        //   - P1 wins when reaching rows-1 (P2's home row)
+        //   - P2 wins when reaching 0 (P1's home row)
+        // When flipped: P1's home row = rows-1, P2's home row = 0
+        //   - P1 wins when reaching 0 (P2's home row)
+        //   - P2 wins when reaching rows-1 (P1's home row)
         boolean win = false;
-        if (owner == PieceAlignment.P1 && destRow == rows - 1) {
-            win = true;
-        } else if (owner == PieceAlignment.P2 && destRow == 0) {
-            win = true;
+        if (owner == PieceAlignment.P1) {
+            // P1 wins when reaching P2's home row
+            win = flipped ? (destRow == 0) : (destRow == rows - 1);
+        } else if (owner == PieceAlignment.P2) {
+            // P2 wins when reaching P1's home row
+            win = flipped ? (destRow == rows - 1) : (destRow == 0);
         }
         if (win) {
             triggerWin(owner);
@@ -94,10 +111,15 @@ public final class WinConditionManager {
     }
 
     private static Integer getActiveBoardRows() {
+        Board board = getActiveBoard();
+        return (board != null) ? board.getROWS() : null;
+    }
+    
+    private static Board getActiveBoard() {
         List<Renderable> renderables = GraphicsManager.getRenderables();
         for (Renderable r : renderables) {
             if (r instanceof Board b) {
-                return b.getROWS();
+                return b;
             }
         }
         return null;

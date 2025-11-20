@@ -8,6 +8,9 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.GameModeManager;
+import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.FontSize;
 
@@ -48,13 +51,26 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
 
         int paddingX = 16; // moved further right from 16 to 48
         int paddingY = 50;
-        // P2 top-left (shifted right)
-        int p2x = paddingX;
-        int p2y = screenH/2 + paddingY;
-        p2Text.setBounds(new Box(p2x, p2y, p2Text.getWidth(), p2Text.getHeight()));
-        // P1 bottom-left (shifted right)
+        
+        // Swap positions in LOCAL_MATCH mode when P2's turn
+        boolean swapPositions = GameModeManager.getCurrent() == GameMode.LOCAL_MATCH && 
+                                TurnManager.getCurrentPlayer() == PieceAlignment.P2;
+        
         int p1x = paddingX;
-        int p1y = screenH/2 - paddingY - p1Text.getHeight();
+        int p2x = paddingX;
+        int p1y, p2y;
+        
+        if (swapPositions) {
+            // P2's turn: swap positions (P1 at top, P2 at bottom)
+            p2y = screenH/2 - paddingY - p2Text.getHeight();
+            p1y = screenH/2 + paddingY;
+        } else {
+            // Normal positions (P1 at bottom, P2 at top)
+            p1y = screenH/2 - paddingY - p1Text.getHeight();
+            p2y = screenH/2 + paddingY;
+        }
+        
+        p2Text.setBounds(new Box(p2x, p2y, p2Text.getWidth(), p2Text.getHeight()));
         p1Text.setBounds(new Box(p1x, p1y, p1Text.getWidth(), p1Text.getHeight()));
 
         // Render

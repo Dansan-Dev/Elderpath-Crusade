@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.utils.Logger;
+import io.github.elderpath_crusade.managers.GameModeManager;
 
 import java.util.function.Consumer;
 
@@ -42,6 +43,8 @@ public final class BotManager {
 
         Consumer<GameEvent> onTurn = (evt) -> {
             if (evt.getType() != GameEventType.TURN_STARTED) return;
+            // Never activate bots in LOCAL_MATCH mode (both players are human)
+            if (GameModeManager.getCurrent() == io.github.elderpath_crusade.enums.GameMode.LOCAL_MATCH) return;
             if (!SettingsManager.debug.enableP2Bot) return;
             Object p = evt.getData().get("player");
             if (p == null) return;

@@ -102,19 +102,25 @@ public class InteractionManager {
         if (paused && selectedCount != 0) cleanInteraction();
 
         // Two-pass click resolution: prioritize UI clickables (buttons, text) over world elements (plots)
+        // Use a snapshot to avoid concurrent modification issues if cards are removed during iteration
+        List<Clickable> clickablesSnapshot = new ArrayList<>(clickables);
         // Pass 1: UI clickables
         Clickable hit = null;
-        for (Clickable clickable : clickables) {
+        for (Clickable clickable : clickablesSnapshot) {
             if (!(clickable instanceof UIRenderable)) continue;
             // When paused, only allow UI elements explicitly marked for pause; generic UI is blocked
             if (paused && !clickable.isPauseUIElement()) continue;
+            // Skip if this clickable is no longer in the active list (removed during interaction)
+            if (!clickables.contains(clickable)) continue;
             if (clickable.inRange(mouseX, mouseY)) { hit = clickable; break; }
         }
         // Pass 2: Non-UI clickables (board, plots, sprites) if no UI element was hit
         if (hit == null) {
-            for (Clickable clickable : clickables) {
+            for (Clickable clickable : clickablesSnapshot) {
                 if (clickable instanceof UIRenderable) continue;
                 if (paused) continue; // never allow non-UI while paused
+                // Skip if this clickable is no longer in the active list (removed during interaction)
+                if (!clickables.contains(clickable)) continue;
                 if (clickable.inRange(mouseX, mouseY)) { hit = clickable; break; }
             }
         }
@@ -206,6 +212,10 @@ public class InteractionManager {
         // Reset confirmation state on the effect being cleaned up (if any)
         ClickableEffectData data = (currentEffect != null) ? currentEffect.getClickableEffectData() : null;
         if (data != null) data.setConfirmed(false);
+        
+        // Note: currentEffect might have been removed from clickables during triggerClickEffect
+        // (e.g., when a card is consumed and removed from hand), so we don't need to remove it here
+        
         currentEffect = null;
         selected.clear();
         selectedCount = 0;

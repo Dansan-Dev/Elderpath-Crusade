@@ -47,7 +47,7 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     @Getter @Setter private Color hoverBorderColor = null;
     @Getter @Setter private Color clickBorderColor = null;
 
-    private Text textObj;
+    protected Text textObj; // Protected so subclasses can access for dynamic text updates
 
     // Clickable integration
     private OnClick onClick = null;

@@ -430,6 +430,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (friendly != null) friendly.setParent(parentBox);
     }
 
+
     @Override
     public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
         this.onClick = onClick;

@@ -80,14 +80,24 @@ public class DraftRoom extends Room {
     private Board dummyBoard;
     private Random rng;
 
+    // Multiplayer support
+    private final PieceAlignment draftingPlayer;
+    private final boolean isLocalMultiplayer;
+
     // UI elements
     private Text progressionText;
     private Text deckPreviewText;
     private boolean isProcessingPick;
 
-    private DraftRoom() {
+    private DraftRoom(PieceAlignment player, boolean localMultiplayer) {
         super();
+        this.draftingPlayer = player;
+        this.isLocalMultiplayer = localMultiplayer;
         initializeDraft();
+    }
+
+    private DraftRoom() {
+        this(PieceAlignment.P1, false);
     }
 
     private void initializeDraft() {
@@ -103,7 +113,10 @@ public class DraftRoom extends Room {
         rng = new Random();
 
         // Create UI elements
-        progressionText = new Text("0/4", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+        String progressionPrefix = isLocalMultiplayer 
+            ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
+            : "";
+        progressionText = new Text(progressionPrefix + "0/4", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(progressionText);
 
@@ -168,7 +181,10 @@ public class DraftRoom extends Room {
         }
 
         // Update progression text
-        progressionText.setText(currentPick + "/" + DRAFT_PICKS);
+        String progressionPrefix = isLocalMultiplayer 
+            ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
+            : "";
+        progressionText.setText(progressionPrefix + currentPick + "/" + DRAFT_PICKS);
         progressionText.update();
 
         // Generate 3 unique random cards
@@ -279,11 +295,24 @@ public class DraftRoom extends Room {
             cardCreators.add(cardType.creator);
         }
 
-        // Store drafted deck in DeckManager
-        DeckManager.setDraftedDeck(cardCreators);
+        if (isLocalMultiplayer) {
+            // Store drafted deck in DeckManager for current drafting player
+            DeckManager.setDraftedDeck(draftingPlayer, cardCreators);
 
-        // Transition to DemoRoom
-        RoomManager.gotoRoom(DemoRoom::get);
+            // If P1 just finished, transition to P2 draft
+            if (draftingPlayer == PieceAlignment.P1) {
+                RoomManager.gotoRoom(() -> new DraftRoom(PieceAlignment.P2, true));
+            } else {
+                // P2 finished, transition to LocalMatchRoom
+                RoomManager.gotoRoom(LocalMatchRoom::get);
+            }
+        } else {
+            // Store drafted deck in DeckManager (legacy method for P1)
+            DeckManager.setDraftedDeck(cardCreators);
+
+            // Transition to DemoRoom
+            RoomManager.gotoRoom(DemoRoom::get);
+        }
     }
 
     @Override
@@ -293,6 +322,10 @@ public class DraftRoom extends Room {
 
     public static DraftRoom get() {
         return new DraftRoom();
+    }
+
+    public static DraftRoom getForLocalMultiplayer(PieceAlignment player) {
+        return new DraftRoom(player, true);
     }
 }
 
