@@ -127,8 +127,8 @@ public class DraftRoom extends Room {
 
         // Create hand for draft options
         int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
-        int cardWidth = 125;
-        int cardHeight = 200;
+        int cardWidth = 187;  // 1.5x larger for better visibility during drafting
+        int cardHeight = 300;  // 1.5x larger for better visibility during drafting
         draftOptionsHand = new Hand(screenCenter[0], screenCenter[1], cardWidth, cardHeight, 0);
         addContent(draftOptionsHand);
 
@@ -166,8 +166,8 @@ public class DraftRoom extends Room {
         deckPreviewText.getBounds().setY(bottomY);
 
         // Draft options hand centered in middle
-        int cardWidth = 125;
-        int cardHeight = 200;
+        int cardWidth = 187;  // 1.5x larger for better visibility during drafting
+        int cardHeight = 300;  // 1.5x larger for better visibility during drafting
         draftOptionsHand.setCenterX(screenCenter[0]);
         draftOptionsHand.setBottomY(screenCenter[1] - 50);
         // Update hand bounds to reposition cards
@@ -201,7 +201,7 @@ public class DraftRoom extends Room {
         for (int i = 0; i < CARDS_PER_PICK && i < availableCards.size(); i++) {
             CardType cardType = availableCards.get(i);
             DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                dummyBoard, PieceAlignment.P1, 0, 0, 125, 200, 0
+                dummyBoard, PieceAlignment.P1, 0, 0, 187, 300, 0  // 1.5x larger for better visibility during drafting
             );
             SummonCard realCard = cardType.creator.apply(params);
             realCard.showFront(); // Make sure card is face up

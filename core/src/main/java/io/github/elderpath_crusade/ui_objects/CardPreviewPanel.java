@@ -3,6 +3,8 @@ package io.github.elderpath_crusade.ui_objects;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
+import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
@@ -101,10 +103,15 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
         previewCard = new PreviewCard(0, 0, dummyW, dummyH, PREVIEW_Z, title, piece.getEffectiveStats());
         previewCard.showFront(); // ensure face-up
         // Build description from the piece's attached abilities (exact text with internal \n)
+        // Filter out BaseMoveAbility and BaseAttackAbility as they are default abilities that shouldn't be displayed
         List<Ability> abs = piece.getAbilities();
         if (abs != null && !abs.isEmpty()) {
             List<String> lines = new ArrayList<>();
             for (Ability a : abs) {
+                // Skip BaseMoveAbility and BaseAttackAbility - these are default abilities
+                if (a instanceof BaseMoveAbility || a instanceof BaseAttackAbility) {
+                    continue;
+                }
                 String d = a.getDescription();
                 if (d != null && !d.isBlank()) lines.add(d);
             }
