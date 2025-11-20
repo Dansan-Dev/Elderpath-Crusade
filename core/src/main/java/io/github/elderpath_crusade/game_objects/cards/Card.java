@@ -231,7 +231,7 @@ public class Card extends HigherOrderTexture implements Clickable {
         return Math.round(hoverProgress * HOVER_LIFT_PX);
     }
 
-    private void renderTitle(SpriteBatch batch, int zLevel, int x, int y) {
+    protected void renderTitle(SpriteBatch batch, int zLevel, int x, int y) {
         if (title != null) {
             int titleX = x + (getWidth() - title.getWidth()) / 2;
             int titleY = y + (int)(getHeight() * 0.5f) - title.getHeight() / 2;
