@@ -79,17 +79,22 @@ public class Deck extends SpriteObject{
     }
 
     public void shuffle() {
-        if (discardPile.isEmpty()) return;
-        cards.addAll(discardPile);
-        discardPile.clear();
-        Collections.shuffle(cards, rng);
-        // Emit CARD_SHUFFLED
-        EventBus.emit(
-                GameEventType.CARD_SHUFFLED,
-                Map.of(
-                        "owner", (owner == null ? "UNKNOWN" : owner.name()),
-                        "deckSize", cards.size()
-                )
-        );
+        // If discard pile is not empty, add it back to the deck
+        if (!discardPile.isEmpty()) {
+            cards.addAll(discardPile);
+            discardPile.clear();
+        }
+        // Always shuffle the cards list (both initial shuffle and reshuffle)
+        if (!cards.isEmpty()) {
+            Collections.shuffle(cards, rng);
+            // Emit CARD_SHUFFLED
+            EventBus.emit(
+                    GameEventType.CARD_SHUFFLED,
+                    Map.of(
+                            "owner", (owner == null ? "UNKNOWN" : owner.name()),
+                            "deckSize", cards.size()
+                    )
+            );
+        }
     }
 }

@@ -195,6 +195,7 @@ public class DemoRoom extends Room {
             1,
             SpriteBoxPos.BOTTOM_LEFT
         );
+        deckP2.shuffle();
         deckP2.getBounds().setX(SettingsManager.screenSize.getScreenWidth()-deckP2.getWidth() - 10);
         deckP2.getBounds().setY(SettingsManager.screenSize.getScreenHeight()-deckP2.getHeight() - 10);
         deckP2.setOwner(PieceAlignment.P2);
