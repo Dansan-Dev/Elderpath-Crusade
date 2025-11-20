@@ -35,7 +35,7 @@ public class ExcessDamageCarryOverAbility implements TriggeredAbility {
     public String getDescription() { return getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "Excess damage carries\nover to closest enemy\nbehind target";
+        return "Excess damage\ncarries over to closest\nenemy behind target";
     }
 
     @Override

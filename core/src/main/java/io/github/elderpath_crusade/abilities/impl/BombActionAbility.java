@@ -35,7 +35,7 @@ public class BombActionAbility implements ActionableAbility, TriggeredAbility {
     public String getDescription() { return BombActionAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "BOMB ACTION (1/turn):\nDeal damage equal\nto attack to all\nunits within 1 square";
+        return "BOMB ACTION (1/turn):\nDeal damage equal\nto attack to all units\nwithin 1 square";
     }
 
     @Override

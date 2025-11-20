@@ -45,7 +45,7 @@ public class CommanderAuraAbility implements PassiveAbility, TriggeredAbility {
     public String getDescription() { return CommanderAuraAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "Adjacent units has +1 attack";
+        return "Adjacent units\nhave +1 attack";
     }
 
     @Override

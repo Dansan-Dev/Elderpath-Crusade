@@ -31,6 +31,6 @@ public class BigToadCard extends SummonCard {
 
     @Override
     protected List<String> getAbilityDescriptionsForCard() { 
-        return List.of("Jump: Move in cardinal\ndirections only, ignoring\nterrain and units");
+        return List.of("Jump: Move in\ncardinal directions only,\nignoring terrain and units");
     }
 }
