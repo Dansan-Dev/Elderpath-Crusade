@@ -139,9 +139,9 @@ public class Card extends HigherOrderTexture implements Clickable {
             back.setBounds(new Box(childBounds.getX(), childBounds.getY(), childBounds.getWidth(), childBounds.getHeight()));
             back.setParent(new Box(0, 0, bounds.getWidth(), bounds.getHeight()));
         }
-        // Keep title sizing in sync
+        // Keep title sizing in sync with width constraint
         if (title != null) {
-            title.withFontSize(Math.max(4, (int)(bounds.getHeight() * 0.05f)));
+            updateTitleSize();
         }
     }
 
@@ -162,9 +162,64 @@ public class Card extends HigherOrderTexture implements Clickable {
             this.title.setText(text);
             this.title.setFontType(this.titleFont);
         }
-        // Size based on current bounds
+        updateTitleSize();
+    }
+
+    /**
+     * Updates title font size to fit within card width.
+     * Uses binary search to find the maximum font size that fits.
+     * Also respects a maximum font size based on card height.
+     */
+    private void updateTitleSize() {
+        if (title == null) return;
+        
         int h = getBounds().getHeight();
-        this.title.withFontSize(Math.max(12, (int)(h * 0.15f)));
+        int w = getBounds().getWidth();
+        // Add margin on sides (e.g., 10% on each side = 20% total margin)
+        int maxTitleWidth = Math.max(1, (int)(w * 0.8f));
+        
+        // Desired font size based on height
+        float desiredSize = Math.max(12, (int)(h * 0.15f));
+        
+        // Maximum font size based on card height (e.g., 12% of card height)
+        float maxFontSize = h * 0.07f;
+        
+        // Cap desired size to maximum
+        desiredSize = Math.min(desiredSize, maxFontSize);
+        
+        // Set maximum font size on title text
+        title.withMaxFontSize(maxFontSize);
+        
+        // Binary search to find maximum font size that fits width
+        float lo = 4f; // minimum font size
+        float hi = desiredSize; // start at desired size (capped to max)
+        
+        // Test if desired size fits
+        title.withFontSize(desiredSize);
+        title.update();
+        if (title.getWidth() <= maxTitleWidth) {
+            // Desired size fits, we're done
+            return;
+        }
+        
+        // Binary search between lo and hi
+        float bestFit = lo;
+        for (int i = 0; i < 14; i++) {
+            float mid = (lo + hi) * 0.5f;
+            title.withFontSize(mid);
+            title.update();
+            
+            if (title.getWidth() <= maxTitleWidth) {
+                bestFit = mid;
+                lo = mid; // fits, try larger
+            } else {
+                hi = mid; // too big, try smaller
+            }
+        }
+        
+        // Apply best fit (capped to maximum)
+        title.withFontSize(Math.min(bestFit, maxFontSize));
+        title.update();
     }
 
     public void setTitleColor(Color color) { this.titleColor = (color == null ? Color.WHITE : color); }

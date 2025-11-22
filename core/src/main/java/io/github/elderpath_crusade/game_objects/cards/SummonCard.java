@@ -218,14 +218,24 @@ public abstract class SummonCard extends Card implements TargetFilter {
 
         // Render description text (if any), centered within its wrap box below the title
         if (descText != null) {
-            int marginX = Math.round(w * 0.07f);
+            int marginX = Math.round(w * 0.1f);
             int wrapW = Math.max(1, w - marginX * 2);
-            int wrapH = Math.max(1, Math.round(h * 0.18f));
+            int wrapH = Math.max(1, Math.round(h * 0.16f));
             // Ensure wrapping matches current size each frame
             descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
-            // Place roughly below the title area (centered horizontally)
+            // Update text to get accurate height after wrapping
+            descText.update();
+
+            // Calculate text area bounds (starts at 24% of card height, height is 18%)
+            float textAreaBottomY = baseY + Math.round(h * 0.22f);
+            float textAreaTopY = textAreaBottomY + wrapH;
+            float textAreaCenterY = textAreaBottomY + wrapH / 2f;
+
+            // Center text vertically within the text area
+            // Text Y position is bottom-left, so center it by subtracting half its height
             int tx = baseX + (w - descText.getWidth()) / 2;
-            int ty = baseY + Math.round(h * 0.24f);
+            int ty = Math.round(textAreaCenterY - descText.getHeight() / 2f);
+
             descText.render(batch, zLevel, isPaused, tx, ty);
         }
     }
@@ -255,23 +265,23 @@ public abstract class SummonCard extends Card implements TargetFilter {
     public ClickableEffectData getClickableEffectData() {
         // Only allow playing on owner turn.
         // If P2 bot is enabled AND not in LOCAL_MATCH mode, block human clicks on P2 cards.
-        if (alignment == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot 
+        if (alignment == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot
             && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH) {
             return null;
         }
-        
+
         // Only allow playing if it's the current player's turn
         if (alignment != TurnManager.getCurrentPlayer()) {
             return null;
         }
-        
+
         // Check if player has enough mana to play this card
         PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
         int cost = stats.getCost();
         if (playerState == null || playerState.mana < cost) {
             return null; // Not enough mana - card is not clickable
         }
-        
+
         return clickableEffectData;
     }
 }

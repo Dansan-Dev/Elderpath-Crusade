@@ -41,6 +41,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     // Font sizing
     private Float desiredFontSize = null; // desired cap-height in pixels; if null, uses scale
     private float fontScale = 1f; // relative scale fallback
+    private Float maxFontSize = null; // maximum cap-height in pixels when wrapping; if null, no maximum
     // Wrapping support (X/Y)
     private boolean wrapEnabled = false;
     private int wrapWidth = 0;
@@ -88,6 +89,20 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     public Text withFontSize(float pixels) {
         this.desiredFontSize = pixels;
         update();
+        return this;
+    }
+
+    /**
+     * Set the maximum font size in pixels (approximately using cap-height) when wrapping.
+     * This caps the font size during the binary search algorithm to prevent text from being too large.
+     * @param maxPixels maximum cap-height in pixels, or null to remove the maximum
+     */
+    public Text withMaxFontSize(Float maxPixels) {
+        this.maxFontSize = maxPixels;
+        if (wrapEnabled) {
+            this.needsReflow = true;
+            update();
+        }
         return this;
     }
 
@@ -161,9 +176,18 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
             float startScale = (desiredFontSize != null && baseCap > 0f)
                 ? Math.max(0.1f, desiredFontSize / baseCap)
                 : Math.max(0.1f, fontScale);
+            
+            // Calculate maximum scale from maxFontSize if set
+            float maxScale = Float.MAX_VALUE;
+            if (maxFontSize != null && baseCap > 0f) {
+                maxScale = maxFontSize / baseCap;
+            }
+            
+            // Cap startScale to maximum
+            startScale = Math.min(startScale, maxScale);
 
             float lo = 0.1f;    // definitely fits at very small scale
-            float hi = startScale;
+            float hi = Math.min(startScale, maxScale);
             // Ensure baseline at least packs
             label.setFontScale(hi);
             label.pack();
@@ -174,7 +198,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
                 boolean widthOk = (wrapWidth <= 0) || (label.getWidth() <= wrapWidth);
                 if (!(heightOk && widthOk) || guard >= 8) break;
                 lo = hi; // last fit
-                hi *= 2f;
+                hi = Math.min(hi * 2f, maxScale); // Cap to max scale
                 label.setFontScale(hi);
                 label.pack();
                 guard++;
@@ -192,8 +216,8 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
                     hi = mid; // too big
                 }
             }
-            // Apply best scale (lo)
-            label.setFontScale(lo);
+            // Apply best scale (lo), capped to maximum
+            label.setFontScale(Math.min(lo, maxScale));
             label.pack();
         }
 
