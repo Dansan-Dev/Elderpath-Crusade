@@ -12,6 +12,9 @@ import java.util.List;
 public class SoundManager {
     private static Music currentMusic = null;
     private static final List<Music> musicQueue = new ArrayList<>();
+    // Track what music is currently playing to avoid restarting the same track
+    private static String currentTrackPath = null;
+    private static boolean isPlayingMenuMusic = false;
 
     @Setter
     private static boolean isMusicPlaying = false;
@@ -38,12 +41,17 @@ public class SoundManager {
             cleanupTrack();
             if (!musicQueue.isEmpty()) {
                 currentMusic = musicQueue.remove(0);
+                // Menu music tracking is maintained automatically - if isPlayingMenuMusic was true,
+                // it stays true until the queue is completely empty
                 if (!pauseOnCompletion) {
                     startTrack();
                     setPauseOnCompletion(false);
                 }
             } else {
+                // Queue is empty - no more music
                 currentMusic = null;
+                currentTrackPath = null;
+                isPlayingMenuMusic = false;
             }
         }
     };
@@ -56,11 +64,22 @@ public class SoundManager {
 
             if (immediateTransition) {
                 setImmediateTransition(false);
-                if (currentMusic != null) cleanupTrack();
+                if (currentMusic != null) {
+                    cleanupTrack();
+                    currentMusic = null;
+                }
 
-                currentMusic = musicQueue.remove(0);
-                currentMusic.setVolume(musicVolume);
-                currentMusic.play();
+                if (!musicQueue.isEmpty()) {
+                    currentMusic = musicQueue.remove(0);
+                    currentMusic.setVolume(musicVolume);
+                    currentMusic.play();
+                    setMusicPlaying(true);
+                    // Track what's playing - will be updated by playLoopingMusic/playMenuMusic
+                } else {
+                    setTransitioning(false);
+                    currentTrackPath = null;
+                    isPlayingMenuMusic = false;
+                }
             } else if (isFadingOut) {
                 fadeOutScale -= (fadeOutScale / fadeOutTime) * timeDelta;
                 currentMusic.setVolume(fadeOutScale * musicVolume);
@@ -111,9 +130,14 @@ public class SoundManager {
     }
 
     public static void queueMusic(String path) {
+        queueMusic(path, false);
+    }
+
+    public static void queueMusic(String path, boolean looping) {
         float volume = SettingsManager.sound.getVolumeScale(SoundType.Music);
         Music music = Gdx.audio.newMusic(Gdx.files.internal("music/" + path));
         music.setVolume(volume);
+        music.setLooping(looping);
         musicQueue.add(music);
     }
 
@@ -137,8 +161,11 @@ public class SoundManager {
     }
 
     private static void cleanupTrack() {
-        currentMusic.stop();
-        currentMusic.dispose();
+        if (currentMusic != null) {
+            currentMusic.stop();
+            currentMusic.dispose();
+        }
+        // Don't clear currentTrackPath or isPlayingMenuMusic here - they'll be updated when new music starts
     }
 
     private static void pauseTrack() {
@@ -151,5 +178,39 @@ public class SoundManager {
         float musicVolume = SettingsManager.sound.getVolumeScale(SoundType.Music);
         currentMusic.setVolume(musicVolume);
         currentMusic.play();
+    }
+
+    /**
+     * Play a looping music track, interrupting any currently playing music.
+     * If the same track is already playing, it will continue without restarting.
+     * @param path path to the music file (relative to music/ directory)
+     */
+    public static void playLoopingMusic(String path) {
+        // If the same track is already playing, don't restart it
+        if (isMusicPlaying && currentTrackPath != null && currentTrackPath.equals(path) && !isPlayingMenuMusic) {
+            return;
+        }
+
+        // Clear the queue and stop current music
+        if (currentMusic != null) {
+            cleanupTrack();
+            currentMusic = null;
+            setMusicPlaying(false);
+        }
+        musicQueue.clear();
+
+        // Reset transition flags
+        setTransitioning(false);
+        setImmediateTransition(false);
+        setFadingOut(false);
+        setFadingIn(false);
+
+        // Track this as a looping track (not menu music)
+        currentTrackPath = path;
+        isPlayingMenuMusic = false;
+
+        // Queue the looping music and transition immediately
+        queueMusic(path, true);
+        transition();
     }
 }

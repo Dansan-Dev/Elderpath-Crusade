@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.SoundManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
@@ -18,6 +19,9 @@ public class SettingsRoom extends Room {
 
     private SettingsRoom() {
         super();
+
+        // Play menu music
+        SoundManager.playLoopingMusic("Evening_Harmony.mp3");
 
         header = new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);

@@ -14,6 +14,7 @@ import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.SoundManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.enums.FontType;
@@ -92,6 +93,10 @@ public class DraftRoom extends Room {
 
     private DraftRoom(PieceAlignment player, boolean localMultiplayer) {
         super();
+        
+        // Play menu music
+        SoundManager.playLoopingMusic("Evening_Harmony.mp3");
+        
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;
         initializeDraft();

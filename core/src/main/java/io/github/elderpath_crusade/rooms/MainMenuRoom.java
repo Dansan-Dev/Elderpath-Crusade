@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.SoundManager;
 import io.github.elderpath_crusade.rooms.main_menu.MainMenuNavbar;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.utils.FontSize;
@@ -26,6 +27,10 @@ public class MainMenuRoom extends Room {
 
     private MainMenuRoom() {
         super();
+        
+        // Play menu music
+        SoundManager.playLoopingMusic("Evening_Harmony.mp3");
+        
         // Create objects
 
         int screen_width = SettingsManager.screenSize.getScreenWidth();
