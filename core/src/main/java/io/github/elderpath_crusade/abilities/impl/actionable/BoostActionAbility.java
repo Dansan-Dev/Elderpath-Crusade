@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.actionable;
 
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.abilities.AbilityType;
@@ -40,10 +40,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     public String getDescription() { return BoostActionAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return """
-            BOOST ACTION
-            Give adjacent friendly
-            unit +1 action this turn""";
+        return "BOOST ACTION: Give adjacent friendly unit +1 action this turn";
     }
 
     @Override
@@ -112,7 +109,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
             int r = ownerRow + dir[0];
             int c = ownerCol + dir[1];
             if (r < 0 || r >= board.getROWS() || c < 0 || c >= board.getCOLS()) continue;
-            
+
             GamePiece gp = board.getGamePieceAtPos(r, c);
             if (gp instanceof MonsterGamePiece mgp) {
                 if (mgp != owner && mgp.getAlignment() == ownerAlignment) {

@@ -1,6 +1,5 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
-import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
@@ -12,26 +11,21 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
-import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
  * Rogue passive/triggered: After each manual move, immediately allow an optional free attack
  * on a single valid target in range. The attack does not cost an action; the movement still does.
  */
-public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
+public class RogueFreeStrikeAbility implements TriggeredAbility {
     private MonsterGamePiece owner;
 
     @Override
@@ -39,12 +33,10 @@ public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
 
     @Override
     public String getDescription() {
-        return "After moving: you may make\n" +
-               "a free attack (no action).";
+        return RogueFreeStrikeAbility.getAbilityDescription();
     }
 
-    @Override
-    public AbilityType getType() { return AbilityType.TRIGGERED; }
+    public static String getAbilityDescription() { return "After moving: you may make a free attack.";}
 
     @Override
     public void onAttach(MonsterGamePiece owner) {
@@ -126,7 +118,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility, Ability {
             for (Plot allowed : attackables) { if (allowed == p) return true; }
             return false;
             }
-            
+
             @Override
             public List<Plot> getEligibleTargets(int targetIndex) {
                 // Return the list of attackable plots for highlighting

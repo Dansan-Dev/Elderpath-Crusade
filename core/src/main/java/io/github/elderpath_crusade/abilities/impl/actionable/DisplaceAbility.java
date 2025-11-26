@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.actionable;
 
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -15,15 +15,12 @@ import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.utils.Logger;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * WarpMage actionable ability: "Displace"
@@ -44,11 +41,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
     }
 
     public static String getAbilityDescription() {
-        return """
-            Displace (1 action)
-            Range 2 → move another target
-            monster 1 step (cardinal) to
-            an adjacent empty square""";
+        return "DISPLACE ACTION: move another target within 2 range 1 step in any cardinal direction";
     }
 
     @Override

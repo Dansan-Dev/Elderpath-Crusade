@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._base;
 
 import io.github.elderpath_crusade.abilities.AbilityUtils;
 import io.github.elderpath_crusade.abilities.BasicAbility;

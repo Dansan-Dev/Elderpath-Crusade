@@ -1,10 +1,9 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._multi.aura;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
-import io.github.elderpath_crusade.characters.pieces.WolfCub;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -19,12 +18,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * Pack Hunter (aura): A Wolf grants +1 attack to adjacent allied WolfCubs.
+ * Commander Aura: Adjacent friendly units gain +1 attack.
  * Implemented as a PassiveAbility that actively manages its StatsModifier in recipients' accumulators.
  */
-public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
+public class CommanderAuraAbility implements PassiveAbility, TriggeredAbility {
     @Override
-    public AbilityType getType() { return io.github.elderpath_crusade.abilities.AbilityType.PASSIVE; }
+    public AbilityType getType() { return AbilityType.PASSIVE; }
     private final StatsModifier mod;
     private MonsterGamePiece owner;
     private final Set<MonsterGamePiece> appliedTo = new HashSet<>();
@@ -33,20 +32,20 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
     private Consumer<GameEvent> spawnListener;
     private Consumer<GameEvent> diedListener;
 
-    public PackHunterAbility() {
+    public CommanderAuraAbility() {
         this.mod = new StatsModifier();
         this.mod.source = this;
         this.mod.addDamage = 1;
     }
 
     @Override
-    public String getName() { return "Pack Hunter"; }
+    public String getName() { return "Commander Aura"; }
 
     @Override
-    public String getDescription() { return PackHunterAbility.getAbilityDescription(); }
+    public String getDescription() { return CommanderAuraAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "+1 attack to adjacent\nallied WolfCubs";
+        return "Adjacent units have +1 attack";
     }
 
     @Override
@@ -88,7 +87,7 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
         if (owner == null) return;
         GameEventType t = event.getType();
         // Re-evaluate when any piece moves/spawns/dies on same board to keep adjacency correct
-        if (t == GameEventType.ACTIVE_MOVEMENT || t == GameEventType.FORCED_MOVEMENT 
+        if (t == GameEventType.ACTIVE_MOVEMENT || t == GameEventType.FORCED_MOVEMENT
             || t == GameEventType.PIECE_SPAWNED || t == GameEventType.PIECE_DIED) {
             refreshRecipients();
         }
@@ -131,7 +130,8 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
             if (nr < 0 || nr >= board.getROWS() || nc < 0 || nc >= board.getCOLS()) continue;
             GamePiece gp = board.getGamePieceAtPos(nr, nc);
             if (gp instanceof MonsterGamePiece mgp) {
-                if (mgp.getAlignment() == align && mgp instanceof WolfCub) {
+                // Apply to adjacent friendly units, excluding self
+                if (mgp.getAlignment() == align && mgp != owner) {
                     now.add(mgp);
                 }
             }
@@ -152,3 +152,4 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
         }
     }
 }
+

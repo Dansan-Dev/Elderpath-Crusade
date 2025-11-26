@@ -3,11 +3,11 @@ package io.github.elderpath_crusade.ui_objects;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
-import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
+import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
 import io.github.elderpath_crusade.interfaces.Renderable;
@@ -16,7 +16,6 @@ import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.HoverUtils;
-import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +31,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
     private static final int PREVIEW_Z = 10; // internal z for card overlays
 
     private UUID currentPieceId = null;
+    private UUID previewedPieceId = null; // ID of the piece currently shown in previewCard
     private float hoverAccum = 0f;
     private PreviewCard previewCard = null;
 
@@ -67,7 +67,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
                 int y = (screenH - height) / 2;
                 // Update bounds if size changed (use setter so child sprites rescale correctly)
                 if (previewCard.getWidth() != width || previewCard.getHeight() != height) {
-                    previewCard.setBounds(new io.github.elderpath_crusade.data_objects.Box(0, 0, width, height));
+                    previewCard.setBounds(new Box(0, 0, width, height));
                 }
                 // Render preview at computed position
                 previewCard.render(batch, PREVIEW_Z, false, x, y);
@@ -83,6 +83,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
 
     private void clearPreview() {
         currentPieceId = null;
+        previewedPieceId = null;
         hoverAccum = 0f;
         previewCard = null;
     }
@@ -93,17 +94,20 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
     }
 
     private void ensurePreviewFor(MonsterGamePiece piece) {
-        if (previewCard != null && currentPieceId != null && currentPieceId.equals(piece.getId())) {
+        if (previewCard != null && previewedPieceId != null && previewedPieceId.equals(piece.getId())) {
             // Keep existing preview; nothing to rebuild
             return;
         }
         // Create a fresh preview card based on the piece stats
+        previewedPieceId = piece.getId();
         String title = prettifyName(piece.getClass().getSimpleName());
         int dummyW = 125, dummyH = 200; // initial; resized on render
         previewCard = new PreviewCard(0, 0, dummyW, dummyH, PREVIEW_Z, title, piece.getEffectiveStats());
         previewCard.showFront(); // ensure face-up
-        // Build description from the piece's attached abilities (exact text with internal \n)
-        // Filter out BaseMoveAbility and BaseAttackAbility as they are default abilities that shouldn't be displayed
+        // Build description from the piece's attached abilities (exact text with
+        // internal \n)
+        // Filter out BaseMoveAbility and BaseAttackAbility as they are default
+        // abilities that shouldn't be displayed
         List<Ability> abs = piece.getAbilities();
         if (abs != null && !abs.isEmpty()) {
             List<String> lines = new ArrayList<>();
@@ -113,7 +117,8 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
                     continue;
                 }
                 String d = a.getDescription();
-                if (d != null && !d.isBlank()) lines.add(d);
+                if (d != null && !d.isBlank())
+                    lines.add(d);
             }
             if (!lines.isEmpty()) {
                 String desc = String.join("\n\n", lines);
@@ -128,7 +133,8 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
 
     private String prettifyName(String simpleName) {
         // Remove common suffix if present
-        if (simpleName.endsWith("Piece")) simpleName = simpleName.substring(0, simpleName.length()-5);
+        if (simpleName.endsWith("Piece"))
+            simpleName = simpleName.substring(0, simpleName.length() - 5);
         return simpleName;
     }
 

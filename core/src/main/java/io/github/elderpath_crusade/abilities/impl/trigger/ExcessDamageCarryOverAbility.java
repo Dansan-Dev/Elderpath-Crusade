@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -35,7 +35,7 @@ public class ExcessDamageCarryOverAbility implements TriggeredAbility {
     public String getDescription() { return getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "Excess damage\ncarries over to closest\nenemy behind target";
+        return "Excess damage carries over to closest enemy behind target";
     }
 
     @Override

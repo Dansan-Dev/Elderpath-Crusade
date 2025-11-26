@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.characters.pieces;
 
-import io.github.elderpath_crusade.abilities.impl.DisplaceAbility;
+import io.github.elderpath_crusade.abilities.impl.actionable.DisplaceAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;

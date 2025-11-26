@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.characters.pieces;
 
-import io.github.elderpath_crusade.abilities.impl.BoostActionAbility;
-import io.github.elderpath_crusade.abilities.impl.CannotAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.actionable.BoostActionAbility;
+import io.github.elderpath_crusade.abilities.impl.passive.CannotAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;

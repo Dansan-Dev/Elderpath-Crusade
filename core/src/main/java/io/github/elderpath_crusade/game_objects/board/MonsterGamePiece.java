@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.game_objects.board;
 import io.github.elderpath_crusade.abilities.Ability;
-import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;

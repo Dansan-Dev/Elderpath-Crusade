@@ -1,8 +1,8 @@
 package io.github.elderpath_crusade.characters.pieces;
 
-import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl.BombActionAbility;
-import io.github.elderpath_crusade.abilities.impl.CannotAttackAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.actionable.BombActionAbility;
+import io.github.elderpath_crusade.abilities.impl.passive.CannotAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;

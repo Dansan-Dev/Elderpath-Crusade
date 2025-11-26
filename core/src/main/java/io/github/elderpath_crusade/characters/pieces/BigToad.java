@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.characters.pieces;
 
-import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
-import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;

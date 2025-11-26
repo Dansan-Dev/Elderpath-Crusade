@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
-import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -30,7 +30,7 @@ public class BigToadCard extends SummonCard {
     }
 
     @Override
-    protected List<String> getAbilityDescriptionsForCard() { 
-        return List.of("Jump: Move in\ncardinal directions only,\nignoring terrain and units");
+    protected List<String> getAbilityDescriptionsForCard() {
+        return List.of(JumpMoveAbility.getAbilityDescription());
     }
 }

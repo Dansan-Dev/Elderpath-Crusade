@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._base_override;
 
 import io.github.elderpath_crusade.abilities.AbilityUtils;
 import io.github.elderpath_crusade.abilities.BasicAbility;
@@ -6,7 +6,6 @@ import io.github.elderpath_crusade.abilities.MovementUtils;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.GamePieceData;
-import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
@@ -37,7 +36,9 @@ public class JumpMoveAbility implements BasicAbility {
     public String getName() { return "Jump Move"; }
 
     @Override
-    public String getDescription() { return "Jump to a plot in cardinal direction, ignoring terrain and units"; }
+    public String getDescription() { return JumpMoveAbility.getAbilityDescription(); }
+
+    public static String getAbilityDescription() { return "Jump to a plot in cardinal direction, ignoring terrain and units"; }
 
     @Override
     public ClickableEffectData getClickableEffectData() {
@@ -179,14 +180,14 @@ public class JumpMoveAbility implements BasicAbility {
                     if (indices == null) return false;
                     int plotRow = indices[0];
                     int plotCol = indices[1];
-                    
+
                     // Explicitly check cardinal direction only (safety check)
                     int rowDiff = Math.abs(plotRow - ownerRow);
                     int colDiff = Math.abs(plotCol - ownerCol);
                     // Must be cardinal direction (one of rowDiff or colDiff must be 0, but not both)
                     if (rowDiff > 0 && colDiff > 0) return false; // Diagonal not allowed
                     if (rowDiff == 0 && colDiff == 0) return false; // Same position
-                    
+
                     // Must be empty (jump can pass through but not end on occupied)
                     return !board.isOccupied(plotRow, plotCol);
                 })

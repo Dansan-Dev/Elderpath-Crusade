@@ -95,6 +95,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     /**
      * Set the maximum font size in pixels (approximately using cap-height) when wrapping.
      * This caps the font size during the binary search algorithm to prevent text from being too large.
+     *
      * @param maxPixels maximum cap-height in pixels, or null to remove the maximum
      */
     public Text withMaxFontSize(Float maxPixels) {
@@ -123,7 +124,6 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         update();
         return this;
     }
-
 
     public Text clearWrap() {
         this.wrapEnabled = false;
@@ -154,7 +154,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         style = FontManager.getLabelStyle(fontType);
         label = new Label(text, style);
         label.setAlignment(alignment);
-        label.setWrap(false);
+        label.setWrap(wrapEnabled);
 
         // Apply font sizing on the label (does not mutate the shared BitmapFont instance)
         if (!wrapEnabled) {
@@ -174,51 +174,55 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
             // Wrapped behavior: search for the largest scale that fits into wrapHeight (if provided)
             float baseCap = Math.abs(style.font.getCapHeight());
             float startScale = (desiredFontSize != null && baseCap > 0f)
-                ? Math.max(0.1f, desiredFontSize / baseCap)
-                : Math.max(0.1f, fontScale);
-            
+                    ? Math.max(0.1f, desiredFontSize / baseCap)
+                    : Math.max(0.1f, fontScale);
+
             // Calculate maximum scale from maxFontSize if set
             float maxScale = Float.MAX_VALUE;
             if (maxFontSize != null && baseCap > 0f) {
                 maxScale = maxFontSize / baseCap;
             }
-            
+
             // Cap startScale to maximum
             startScale = Math.min(startScale, maxScale);
 
-            float lo = 0.1f;    // definitely fits at very small scale
+            float lo = 0.01f; // definitely fits at very small scale
             float hi = Math.min(startScale, maxScale);
-            // Ensure baseline at least packs
+
+            // Initial check at high scale
             label.setFontScale(hi);
-            label.pack();
+            label.setWidth(wrapWidth); // Must set width for wrapping to calculate height
+            label.pack(); // Force layout recalc (but resets width to prefWidth which is 0 for wrap)
+            // Actually, for wrapping labels, pack() sets width to 0. We must set it back.
+            label.setWidth(wrapWidth);
+
             float targetH = (wrapHeight > 0 ? wrapHeight : Float.MAX_VALUE);
-            int guard = 0;
-            while (true) {
-                boolean heightOk = (label.getHeight() <= targetH);
-                boolean widthOk = (wrapWidth <= 0) || (label.getWidth() <= wrapWidth);
-                if (!(heightOk && widthOk) || guard >= 8) break;
-                lo = hi; // last fit
-                hi = Math.min(hi * 2f, maxScale); // Cap to max scale
-                label.setFontScale(hi);
-                label.pack();
-                guard++;
-            }
-            // Now binary search between lo (fits) and hi (overflows) for max fit
-            for (int i = 0; i < 14; i++) {
-                float mid = (lo + hi) * 0.5f;
-                label.setFontScale(mid);
-                label.pack();
-                boolean heightOk = (label.getHeight() <= targetH);
-                boolean widthOk = (wrapWidth <= 0) || (label.getWidth() <= wrapWidth);
-                if (heightOk && widthOk) {
-                    lo = mid; // fits, go higher
-                } else {
-                    hi = mid; // too big
+
+            // Check if hi fits immediately
+            if (label.getPrefHeight() <= targetH) {
+                // It fits, keep hi
+                lo = hi;
+            } else {
+                // Binary search
+                for (int i = 0; i < 14; i++) {
+                    float mid = (lo + hi) * 0.5f;
+                    label.setFontScale(mid);
+                    label.setWidth(wrapWidth); // Ensure width is set for calc
+                    // No need to pack, getPrefHeight uses current width/scale
+
+                    if (label.getPrefHeight() <= targetH) {
+                        lo = mid; // fits, try larger
+                    } else {
+                        hi = mid; // too big
+                    }
                 }
             }
-            // Apply best scale (lo), capped to maximum
-            label.setFontScale(Math.min(lo, maxScale));
-            label.pack();
+
+            // Apply best scale (lo)
+            label.setFontScale(lo);
+            label.setWidth(wrapWidth);
+            label.pack(); // Calculate final height
+            label.setWidth(wrapWidth); // Restore width after pack
         }
 
         Box bounds = getBounds();
@@ -229,20 +233,18 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         int w = (int) label.getWidth();
         int h = (int) label.getHeight();
         if (wrapEnabled && wrapWidth > 0) w = Math.min(wrapWidth, w);
-        if (wrapEnabled && wrapHeight > 0) h = Math.min(wrapHeight, h);
+
         getBounds().setWidth(Math.max(0, w));
         getBounds().setHeight(Math.max(0, h));
         needsReflow = false;
     }
 
-
-
     public void setCenterX() {
-        getBounds().setX((int)(SettingsManager.screenSize.getScreenCenter()[0] - (label.getWidth() / 2)));
+        getBounds().setX((int) (SettingsManager.screenSize.getScreenCenter()[0] - (label.getWidth() / 2)));
     }
 
     public void setCenterY() {
-        getBounds().setY((int)(SettingsManager.screenSize.getScreenCenter()[1] - (label.getHeight() / 2)));
+        getBounds().setY((int) (SettingsManager.screenSize.getScreenCenter()[1] - (label.getHeight() / 2)));
     }
 
     private boolean isHovered(int relX, int relY) {
@@ -261,7 +263,9 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     }
 
     @Override
-    public boolean isPauseUIElement() { return pauseUIElement; }
+    public boolean isPauseUIElement() {
+        return pauseUIElement;
+    }
 
     @Override
     public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
@@ -290,9 +294,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         }
         if (isHovered(0, 0)) {
             if (hoverColor != null) label.setColor(hoverColor);
-            if (isClicked() && clickColor != null) {
-                label.setColor(clickColor);
-            }
+            if (isClicked() && clickColor != null) label.setColor(clickColor);
         }
         label.draw(batch, 1);
         label.setColor(color);

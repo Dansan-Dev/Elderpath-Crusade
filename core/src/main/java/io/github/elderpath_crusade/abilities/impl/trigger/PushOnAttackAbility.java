@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -22,11 +22,8 @@ public class PushOnAttackAbility implements TriggeredAbility {
     public String getDescription() { return getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "ON ATTACK: Push target\n1 back and move\n1 forward. If blocked,\ntarget takes 1 damage";
+        return "ON ATTACK: Push target 1 back and move 1 forward. On push collision the target takes 1 extra damage instead";
     }
-
-    @Override
-    public AbilityType getType() { return AbilityType.TRIGGERED; }
 
     @Override
     public void onAttach(MonsterGamePiece owner) {

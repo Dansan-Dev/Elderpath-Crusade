@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.cards;
 
-import io.github.elderpath_crusade.abilities.impl.PackHunterAbility;
+import io.github.elderpath_crusade.abilities.impl._multi.aura.PackHunterAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;

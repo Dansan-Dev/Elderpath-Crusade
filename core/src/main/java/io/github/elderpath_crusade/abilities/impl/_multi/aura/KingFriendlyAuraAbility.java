@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._multi.aura;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
@@ -45,7 +45,7 @@ public class KingFriendlyAuraAbility implements PassiveAbility, TriggeredAbility
     public String getDescription() { return KingFriendlyAuraAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "Other friendly units\nhave +1 health";
+        return "Other friendly units have +1 health";
     }
 
     @Override

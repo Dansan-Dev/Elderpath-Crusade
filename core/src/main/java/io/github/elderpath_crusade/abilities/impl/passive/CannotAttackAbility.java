@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.passive;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
@@ -25,9 +25,6 @@ public class CannotAttackAbility implements PassiveAbility {
     public String getDescription() { return getAbilityDescription(); }
 
     public static String getAbilityDescription() { return "Cannot Attack"; }
-
-    @Override
-    public AbilityType getType() { return AbilityType.PASSIVE; }
 
     @Override
     public StatsModifier getModifier() { return mod; }

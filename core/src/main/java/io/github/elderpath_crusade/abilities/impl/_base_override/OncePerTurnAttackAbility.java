@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._base_override;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -39,7 +39,9 @@ public class OncePerTurnAttackAbility implements BasicAbility, TriggeredAbility 
     public String getName() { return "Attack"; }
 
     @Override
-    public String getDescription() { return "Attack an enemy within range (once per turn)"; }
+    public String getDescription() { return OncePerTurnAttackAbility.getAbilityDescription(); }
+
+    public static String getAbilityDescription() { return "Can only attack once per turn"; }
 
     @Override
     public ClickableEffectData getClickableEffectData() {

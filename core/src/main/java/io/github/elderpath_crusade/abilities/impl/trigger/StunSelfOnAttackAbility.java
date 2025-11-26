@@ -1,6 +1,5 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
-import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -21,7 +20,7 @@ public class StunSelfOnAttackAbility implements TriggeredAbility {
     public String getDescription() { return getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "ON ATTACK: Get stunned\nfor 2 turns";
+        return "ON ATTACK: This gets stunned for 2 turns";
     }
 
     @Override

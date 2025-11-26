@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
@@ -33,11 +33,8 @@ public class GrowthOnKillAbility implements TriggeredAbility {
     public String getDescription() { return GrowthOnKillAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "ON KILL: gain 1 attack\nand heal 1";
+        return "ON KILL: gain 1 attack and heal 1";
     }
-
-    @Override
-    public AbilityType getType() { return AbilityType.TRIGGERED; }
 
     @Override
     public void onAttach(MonsterGamePiece owner) {
@@ -59,10 +56,10 @@ public class GrowthOnKillAbility implements TriggeredAbility {
     public void onOwnerAttack(MonsterGamePiece owner, MonsterGamePiece target, int damage) {
         if (this.owner == null || owner != this.owner) return;
         if (target == null) return;
-        
+
         // Clear any previous tracking (new attack sequence starting)
         clearTracking();
-        
+
         // Start tracking this target for the current attack sequence
         trackedTargetId = target.getId().toString();
         trackedTargetAttackedByOwner = false; // Will be set to true when we see PIECE_ATTACKED event
@@ -72,12 +69,12 @@ public class GrowthOnKillAbility implements TriggeredAbility {
     public void onGameEvent(GameEvent event) {
         if (owner == null) return;
         GameEventType type = event.getType();
-        
+
         // Check PIECE_ATTACKED events to verify the owner attacked the tracked target
         if (type == GameEventType.PIECE_ATTACKED) {
             String attackerId = (String) event.getData().get("attackerId");
             String defenderId = (String) event.getData().get("defenderId");
-            
+
             // If this attack is from the owner and targets our tracked target, mark it
             if (attackerId != null && attackerId.equals(owner.getId().toString())) {
                 if (trackedTargetId != null && trackedTargetId.equals(defenderId)) {
@@ -88,32 +85,32 @@ public class GrowthOnKillAbility implements TriggeredAbility {
                 }
             }
         }
-        
+
         // Check PIECE_DIED events to see if our tracked target died
         if (type == GameEventType.PIECE_DIED) {
             String deadPieceId = (String) event.getData().get("pieceId");
-            
+
             // Only process if:
             // 1. We have a tracked target
             // 2. The dead piece matches our tracked target
             // 3. We confirmed the owner attacked this target (verified via PIECE_ATTACKED event)
-            if (trackedTargetId != null 
-                && deadPieceId != null 
+            if (trackedTargetId != null
+                && deadPieceId != null
                 && trackedTargetId.equals(deadPieceId)
                 && trackedTargetAttackedByOwner) {
-                
+
                 // Apply growth: permanently increase damage by 1
                 growthModifier.addDamage += 1;
-                
+
                 // Remove and re-add the modifier to ensure it's in the accumulator
                 // (it may not have been added initially since it was a no-op)
                 owner.getStatsAccumulator().remove(growthModifier);
                 owner.getStatsAccumulator().add(growthModifier);
-                
+
                 // Heal 1 HP (capped at max health)
                 owner.heal(1);
             }
-            
+
             // Clear tracking after processing death (whether it was our kill or not)
             // This ensures we only track immediate kills from the current attack
             clearTracking();

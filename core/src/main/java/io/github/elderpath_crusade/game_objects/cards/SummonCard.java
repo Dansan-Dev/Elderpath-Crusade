@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.game_objects.cards;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -24,11 +25,11 @@ import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import com.badlogic.gdx.utils.Align;
+import io.github.elderpath_crusade.utils.CardRenderUtils;
 import java.util.Map;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 /**
  * Base class for summon-type cards. Handles multi-target click flow, mana cost,
@@ -41,13 +42,13 @@ public abstract class SummonCard extends Card implements TargetFilter {
     protected final GamePieceStats stats; // unified stats used by both card and resulting piece
 
     // Cached stat texts (rendered inside orbs)
-    private Text manaText;   // top-right big orb
-    private Text hpText;     // bottom-left big orb (health = maxHealth)
-    private Text spdText;    // bottom small (second-left)
-    private Text actText;    // bottom small (second-right)
-    private Text atkText;    // bottom-right big orb
+    private Text manaText; // top-right big orb
+    private Text hpText; // bottom-left big orb (health = maxHealth)
+    private Text spdText; // bottom small (second-left)
+    private Text actText; // bottom small (second-right)
+    private Text atkText; // bottom-right big orb
     // Card rules text area (optional)
-    private Text descText;   // centered rules text under title
+    private Text descText; // centered rules text under title
 
     // Clickable plumbing for InteractionManager
     private OnClick onClick = null;
@@ -89,17 +90,17 @@ public abstract class SummonCard extends Card implements TargetFilter {
         Color c = Color.WHITE;
         int z = getZLayer();
         manaText = new Text(String.valueOf(stats.getCost()), FontType.SILKSCREEN, 0, 0, z, c);
-        hpText   = new Text(String.valueOf(stats.getMaxHealth()), FontType.SILKSCREEN, 0, 0, z, c);
-        spdText  = new Text(String.valueOf(stats.getSpeed()), FontType.SILKSCREEN, 0, 0, z, c);
-        actText  = new Text(String.valueOf(stats.getActions()), FontType.SILKSCREEN, 0, 0, z, c);
-        atkText  = new Text(String.valueOf(stats.getDamage()), FontType.SILKSCREEN, 0, 0, z, c);
+        hpText = new Text(String.valueOf(stats.getMaxHealth()), FontType.SILKSCREEN, 0, 0, z, c);
+        spdText = new Text(String.valueOf(stats.getSpeed()), FontType.SILKSCREEN, 0, 0, z, c);
+        actText = new Text(String.valueOf(stats.getActions()), FontType.SILKSCREEN, 0, 0, z, c);
+        atkText = new Text(String.valueOf(stats.getDamage()), FontType.SILKSCREEN, 0, 0, z, c);
         updateStatTextSizes();
     }
 
     private void updateStatTextSizes() {
         int h = getBounds().getHeight();
-        int big = Math.max(8, (int)(h * 0.08f));
-        int small = Math.max(8, (int)(h * 0.06f));
+        int big = Math.max(8, (int) (h * 0.08f));
+        int small = Math.max(8, (int) (h * 0.06f));
         if (manaText != null) manaText.withFontSize(big);
         if (hpText != null) hpText.withFontSize(big);
         if (atkText != null) atkText.withFontSize(big);
@@ -127,9 +128,9 @@ public abstract class SummonCard extends Card implements TargetFilter {
         if (descText != null) {
             int w = getBounds().getWidth();
             int h = getBounds().getHeight();
-            int marginX = Math.round(w * 0.07f);
+            int marginX = Math.round(w * CardRenderUtils.DESC_MARGIN_X_PCT);
             int wrapW = Math.max(1, w - marginX * 2);
-            int wrapH = Math.max(1, Math.round(h * 0.18f));
+            int wrapH = Math.max(1, Math.round(h * CardRenderUtils.DESC_HEIGHT_PCT));
             descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
         }
     }
@@ -187,57 +188,11 @@ public abstract class SummonCard extends Card implements TargetFilter {
     // Render stat texts inside orbs (face-up only; Card controls gating and z-level)
     @Override
     protected void renderExtraOverlays(SpriteBatch batch, int zLevel, boolean isPaused, int baseX, int baseY) {
-        if (manaText == null) return;
-        // Card dimensions
-        int w = getWidth();
-        int h = getHeight();
-        // Normalized centers tuned for the provided template
-        float MANA_CX = 0.825f, MANA_CY = 0.890f;   // top-right big orb
-        float HP_CX   = 0.160f, HP_CY   = 0.130f;   // bottom-left big orb
-        float SPD_CX  = 0.365f, SPD_CY  = 0.110f;   // bottom row small (second-left)
-        float ACT_CX  = 0.635f, ACT_CY  = 0.110f;   // bottom row small (second-right)
-        float ATK_CX  = 0.840f, ATK_CY  = 0.130f;   // bottom-right big orb
-        // Helper to center draw
-        BiConsumer<Text, int[]> drawCentered = (t, center) -> {
-            int tx = baseX + center[0] - t.getWidth()/2;
-            int ty = baseY + center[1] - t.getHeight()/2;
-            t.render(batch, zLevel, false, tx, ty);
-        };
-        // Compute centers in pixel space
-        int[] manaC = new int[]{Math.round(w * MANA_CX), Math.round(h * MANA_CY)};
-        int[] hpC   = new int[]{Math.round(w * HP_CX),   Math.round(h * HP_CY)};
-        int[] spdC  = new int[]{Math.round(w * SPD_CX),  Math.round(h * SPD_CY)};
-        int[] actC  = new int[]{Math.round(w * ACT_CX),  Math.round(h * ACT_CY)};
-        int[] atkC  = new int[]{Math.round(w * ATK_CX),  Math.round(h * ATK_CY)};
-        // Render
-        drawCentered.accept(manaText, manaC);
-        drawCentered.accept(hpText, hpC);
-        drawCentered.accept(spdText, spdC);
-        drawCentered.accept(actText, actC);
-        drawCentered.accept(atkText, atkC);
-
-        // Render description text (if any), centered within its wrap box below the title
-        if (descText != null) {
-            int marginX = Math.round(w * 0.1f);
-            int wrapW = Math.max(1, w - marginX * 2);
-            int wrapH = Math.max(1, Math.round(h * 0.16f));
-            // Ensure wrapping matches current size each frame
-            descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
-            // Update text to get accurate height after wrapping
-            descText.update();
-
-            // Calculate text area bounds (starts at 24% of card height, height is 18%)
-            float textAreaBottomY = baseY + Math.round(h * 0.22f);
-            float textAreaTopY = textAreaBottomY + wrapH;
-            float textAreaCenterY = textAreaBottomY + wrapH / 2f;
-
-            // Center text vertically within the text area
-            // Text Y position is bottom-left, so center it by subtracting half its height
-            int tx = baseX + (w - descText.getWidth()) / 2;
-            int ty = Math.round(textAreaCenterY - descText.getHeight() / 2f);
-
-            descText.render(batch, zLevel, isPaused, tx, ty);
-        }
+        CardRenderUtils.renderUnitCardOverlays(
+                batch, zLevel, isPaused,
+                baseX, baseY, getWidth(), getHeight(),
+                manaText, hpText, spdText, actText, atkText,
+                descText);
     }
 
     // TargetFilter for InteractionManager validation
@@ -265,8 +220,11 @@ public abstract class SummonCard extends Card implements TargetFilter {
     public ClickableEffectData getClickableEffectData() {
         // Only allow playing on owner turn.
         // If P2 bot is enabled AND not in LOCAL_MATCH mode, block human clicks on P2 cards.
-        if (alignment == PieceAlignment.P2 && SettingsManager.debug.enableP2Bot
-            && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH) {
+        if (
+            alignment == PieceAlignment.P2
+            && SettingsManager.debug.enableP2Bot
+            && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH
+        ) {
             return null;
         }
 

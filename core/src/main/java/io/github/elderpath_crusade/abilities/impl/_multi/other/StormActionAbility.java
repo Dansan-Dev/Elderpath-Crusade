@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._multi.other;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
@@ -16,21 +16,17 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * StormMage actionable ability: "Storm"
  * Range 2 (Chebyshev distance): select a plot as center, deal 2 damage to center and 1 damage to all 8 surrounding squares.
  * Costs 1 action and can only be used once per turn.
  */
-public class StormActionAbility implements ActionableAbility, TargetFilter, TriggeredAbility {
+public class StormActionAbility implements ActionableAbility, TriggeredAbility, TargetFilter {
     private final MonsterGamePiece owner;
     private boolean usedThisTurn = false;
 
@@ -45,11 +41,7 @@ public class StormActionAbility implements ActionableAbility, TargetFilter, Trig
     public String getDescription() { return StormActionAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return """
-            STORM ACTION (1/turn)
-            Range 2 → deal 2 damage
-            in center, 1 damage to
-            surrounding squares""";
+        return "STORM ACTION (1/turn): Pick a center within 2 range. Deal 2 damage in center and 1 damage to surrounding squares";
     }
 
     @Override
@@ -182,7 +174,7 @@ public class StormActionAbility implements ActionableAbility, TargetFilter, Trig
             int r = centerRow + dir[0];
             int c = centerCol + dir[1];
             if (r < 0 || r >= board.getROWS() || c < 0 || c >= board.getCOLS()) continue;
-            
+
             GamePiece piece = board.getGamePieceAtPos(r, c);
             if (piece instanceof MonsterGamePiece target) {
                 AbilityUtils.dealDamage(target, 1, owner, true);
@@ -194,7 +186,7 @@ public class StormActionAbility implements ActionableAbility, TargetFilter, Trig
 
         // Mark as used this turn
         usedThisTurn = true;
-        
+
         // Spend 1 action from owner
         AbilityUtils.spendAction(owner);
     }

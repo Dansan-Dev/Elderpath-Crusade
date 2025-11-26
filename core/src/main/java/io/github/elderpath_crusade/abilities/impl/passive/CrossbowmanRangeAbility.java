@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.passive;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
@@ -19,9 +19,6 @@ public class CrossbowmanRangeAbility implements PassiveAbility {
         this.mod.source = this;
         this.mod.addRange = 2;
     }
-
-    @Override
-    public AbilityType getType() { return AbilityType.PASSIVE; }
 
     @Override
     public String getName() { return "Crossbow Range"; }

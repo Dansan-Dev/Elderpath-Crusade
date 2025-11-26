@@ -4,17 +4,16 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.BasicAbility;
-import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl.BaseMoveAbility;
-import io.github.elderpath_crusade.abilities.impl.JumpMoveAbility;
-import io.github.elderpath_crusade.abilities.impl.OncePerTurnAttackAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
+import io.github.elderpath_crusade.abilities.impl._base_override.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -73,7 +72,7 @@ public class Board extends HigherOrderTexture {
     // Cached UI elements for compact health overlays on damaged pieces
     private final Map<UUID, Text> hpTexts = new HashMap<>();
     private final Map<UUID, Integer> hpCache = new HashMap<>();
-    
+
     // Stun symbol texture cache
     private static Texture stunTexture = null;
     // Semi-transparent dark background for HP label to avoid being obscured by later draws
@@ -128,7 +127,7 @@ public class Board extends HigherOrderTexture {
             batch.setColor(stunTint);
             gp.getSprite().render(batch, zLevel, false, absX, absY);
             batch.setColor(originalColor);
-            
+
             // Render stun symbol overlay on top of the piece
             renderStunSymbol(batch, zLevel, absX, absY);
         } else if (mgp.isExhausted()) {
@@ -165,12 +164,12 @@ public class Board extends HigherOrderTexture {
                 return;
             }
         }
-        
+
         // Render stun symbol centered on the plot, sized to ~60% of plot size
         int symbolSize = Math.min(PLOT_WIDTH, PLOT_HEIGHT) * 3 / 5; // 60% of smaller dimension
         int symbolX = absX + (PLOT_WIDTH - symbolSize) / 2;
         int symbolY = absY + (PLOT_HEIGHT - symbolSize) / 2;
-        
+
         // Render the stun symbol at the same z-level as the piece (will appear on top due to draw order)
         batch.draw(stunTexture, symbolX, symbolY, symbolSize, symbolSize);
     }

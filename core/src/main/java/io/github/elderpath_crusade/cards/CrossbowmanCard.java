@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.cards;
 
-import io.github.elderpath_crusade.abilities.impl.CrossbowmanRangeAbility;
-import io.github.elderpath_crusade.abilities.impl.ExcessDamageCarryOverAbility;
+import io.github.elderpath_crusade.abilities.impl.passive.CrossbowmanRangeAbility;
+import io.github.elderpath_crusade.abilities.impl.trigger.ExcessDamageCarryOverAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;

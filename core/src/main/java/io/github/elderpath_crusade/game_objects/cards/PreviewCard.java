@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import com.badlogic.gdx.utils.Align;
+import io.github.elderpath_crusade.utils.CardRenderUtils;
 
 /**
  * Non-interactive large card preview used by the hover panel.
@@ -55,17 +56,18 @@ public class PreviewCard extends Card {
         Color c = Color.WHITE;
         int z = getZLayer();
         manaText = new Text(String.valueOf(stats.getCost()), FontType.SILKSCREEN, 0, 0, z, c);
-        hpText   = new Text(String.valueOf(stats.getMaxHealth()), FontType.SILKSCREEN, 0, 0, z, c);
-        spdText  = new Text(String.valueOf(stats.getSpeed()), FontType.SILKSCREEN, 0, 0, z, c);
-        actText  = new Text(String.valueOf(stats.getActions()), FontType.SILKSCREEN, 0, 0, z, c);
-        atkText  = new Text(String.valueOf(stats.getDamage()), FontType.SILKSCREEN, 0, 0, z, c);
+        hpText = new Text(String.valueOf(stats.getMaxHealth()), FontType.SILKSCREEN, 0, 0, z, c);
+        spdText = new Text(String.valueOf(stats.getSpeed()), FontType.SILKSCREEN, 0, 0, z, c);
+        actText = new Text(String.valueOf(stats.getActions()), FontType.SILKSCREEN, 0, 0, z, c);
+        atkText = new Text(String.valueOf(stats.getDamage()), FontType.SILKSCREEN, 0, 0, z, c);
         updateTextSizes();
     }
 
     private void updateTextSizes() {
         int h = getBounds().getHeight();
-        int big = Math.max(10, (int)(h * 0.10f));
-        int small = Math.max(8, (int)(h * 0.075f));
+        // Match SummonCard sizing factors
+        int big = Math.max(8, (int) (h * 0.08f));
+        int small = Math.max(8, (int) (h * 0.06f));
         if (manaText != null) manaText.withFontSize(big);
         if (hpText != null) hpText.withFontSize(big);
         if (atkText != null) atkText.withFontSize(big);
@@ -78,43 +80,24 @@ public class PreviewCard extends Card {
     public void setBounds(Box bounds) {
         super.setBounds(bounds);
         updateTextSizes();
+        // Update description wrap bounds on resize (consistent with SummonCard)
+        if (descText != null) {
+            int w = getBounds().getWidth();
+            int h = getBounds().getHeight();
+            int marginX = Math.round(w * CardRenderUtils.DESC_MARGIN_X_PCT);
+            int wrapW = Math.max(1, w - marginX * 2);
+            int wrapH = Math.max(1, Math.round(h * CardRenderUtils.DESC_HEIGHT_PCT));
+            descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
+        }
     }
 
     @Override
     protected void renderExtraOverlays(SpriteBatch batch, int zLevel, boolean isPaused, int baseX, int baseY) {
-        if (manaText == null) return;
-        int w = getBounds().getWidth();
-        int h = getBounds().getHeight();
-        // Normalized positions tuned to default template
-        float MANA_CX = 0.825f, MANA_CY = 0.890f;   // top-right big orb
-        float HP_CX   = 0.160f, HP_CY   = 0.130f;   // bottom-left big orb
-        float SPD_CX  = 0.365f, SPD_CY  = 0.110f;   // bottom row small (second-left)
-        float ACT_CX  = 0.635f, ACT_CY  = 0.110f;   // bottom row small (second-right)
-        float ATK_CX  = 0.840f, ATK_CY  = 0.130f;   // bottom-right big orb
-        // Draw centered helper
-        renderCenteredText(batch, zLevel, manaText, baseX + Math.round(w * MANA_CX), baseY + Math.round(h * MANA_CY));
-        renderCenteredText(batch, zLevel, hpText,   baseX + Math.round(w * HP_CX),   baseY + Math.round(h * HP_CY));
-        renderCenteredText(batch, zLevel, spdText,  baseX + Math.round(w * SPD_CX),  baseY + Math.round(h * SPD_CY));
-        renderCenteredText(batch, zLevel, actText,  baseX + Math.round(w * ACT_CX),  baseY + Math.round(h * ACT_CY));
-        renderCenteredText(batch, zLevel, atkText,  baseX + Math.round(w * ATK_CX),  baseY + Math.round(h * ATK_CY));
-
-        // Description: compute wrap bounds each frame and render centered under title
-        if (descText != null) {
-            int marginX = Math.round(w * 0.07f);
-            int wrapW = Math.max(1, w - marginX * 2);
-            int wrapH = Math.max(1, Math.round(h * 0.18f));
-            descText.withWrapBounds(wrapW, wrapH).withAlignment(Align.center);
-            int tx = baseX + (w - descText.getWidth()) / 2;
-            int ty = baseY + Math.round(h * 0.24f);
-            descText.render(batch, zLevel, isPaused, tx, ty);
-        }
-    }
-
-    private static void renderCenteredText(SpriteBatch batch, int zLevel, Text t, int cx, int cy) {
-        if (t == null) return;
-        int tx = cx - t.getWidth()/2;
-        int ty = cy - t.getHeight()/2;
-        t.render(batch, zLevel, false, tx, ty);
+        CardRenderUtils.renderUnitCardOverlays(
+                batch, zLevel, isPaused,
+                baseX, baseY, getWidth(), getHeight(),
+                manaText, hpText, spdText, actText, atkText,
+                descText);
     }
 
     // Non-interactive: never returns a click effect

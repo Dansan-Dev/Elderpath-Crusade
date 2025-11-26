@@ -1,9 +1,9 @@
 package io.github.elderpath_crusade.characters.pieces;
 
-import io.github.elderpath_crusade.abilities.impl.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl.CrossbowmanRangeAbility;
-import io.github.elderpath_crusade.abilities.impl.ExcessDamageCarryOverAbility;
-import io.github.elderpath_crusade.abilities.impl.OncePerTurnAttackAbility;
+import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
+import io.github.elderpath_crusade.abilities.impl.passive.CrossbowmanRangeAbility;
+import io.github.elderpath_crusade.abilities.impl.trigger.ExcessDamageCarryOverAbility;
+import io.github.elderpath_crusade.abilities.impl._base_override.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;

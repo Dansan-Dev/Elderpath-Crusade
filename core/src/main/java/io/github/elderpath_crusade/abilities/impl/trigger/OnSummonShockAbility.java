@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -22,11 +22,8 @@ public class OnSummonShockAbility implements TriggeredAbility {
     public String getDescription() { return OnSummonShockAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "On Summon:\nDeal 1 damage\nto adjacent pieces";
+        return "On Summon: Deal 1 damage to adjacent pieces";
     }
-
-    @Override
-    public AbilityType getType() { return AbilityType.TRIGGERED; }
 
     @Override
     public void onAttach(MonsterGamePiece owner) {

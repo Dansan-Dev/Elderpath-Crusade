@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.MovementUtils;
@@ -21,11 +21,8 @@ public class SwapOnAttackAbility implements TriggeredAbility {
     public String getDescription() { return SwapOnAttackAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "ON ATTACK: Swap places\nwith the target";
+        return "ON ATTACK: Swap places with the target";
     }
-
-    @Override
-    public AbilityType getType() { return AbilityType.TRIGGERED; }
 
     @Override
     public void onAttach(MonsterGamePiece owner) {

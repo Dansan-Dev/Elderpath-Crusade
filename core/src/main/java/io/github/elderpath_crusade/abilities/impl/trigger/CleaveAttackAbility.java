@@ -1,6 +1,5 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.trigger;
 
-import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
@@ -26,7 +25,7 @@ public class CleaveAttackAbility implements TriggeredAbility {
     public String getDescription() { return getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "ON ATTACK: Deal damage\nto all adjacent squares";
+        return "ON ATTACK: Deal damage to all pieces within 1 range";
     }
 
     @Override

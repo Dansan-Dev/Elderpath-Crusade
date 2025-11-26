@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl.actionable;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -35,7 +35,7 @@ public class BombActionAbility implements ActionableAbility, TriggeredAbility {
     public String getDescription() { return BombActionAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "BOMB ACTION (1/turn):\nDeal damage equal\nto attack to all units\nwithin 1 square";
+        return "BOMB ACTION (1/turn): Deal damage equal to attack to all units within 1 square";
     }
 
     @Override
@@ -75,7 +75,7 @@ public class BombActionAbility implements ActionableAbility, TriggeredAbility {
                 int r = centerRow + dr;
                 int c = centerCol + dc;
                 if (r < 0 || r >= board.getROWS() || c < 0 || c >= board.getCOLS()) continue;
-                
+
                 GamePiece piece = board.getGamePieceAtPos(r, c);
                 if (piece instanceof MonsterGamePiece target) {
                     // Deal damage to all units (both friendly and enemy)
@@ -89,7 +89,7 @@ public class BombActionAbility implements ActionableAbility, TriggeredAbility {
 
         // Mark as used this turn
         usedThisTurn = true;
-        
+
         // Spend 1 action from owner
         AbilityUtils.spendAction(owner);
     }

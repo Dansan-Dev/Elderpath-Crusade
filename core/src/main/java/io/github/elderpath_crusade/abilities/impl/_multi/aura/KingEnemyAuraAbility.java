@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.abilities.impl;
+package io.github.elderpath_crusade.abilities.impl._multi.aura;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.AbilityUtils;
@@ -49,7 +49,7 @@ public class KingEnemyAuraAbility implements PassiveAbility, TriggeredAbility {
     public String getDescription() { return KingEnemyAuraAbility.getAbilityDescription(); }
 
     public static String getAbilityDescription() {
-        return "Enemies within 1 range\nhave +1 action";
+        return "Enemies within 1 range have +1 action";
     }
 
     @Override
@@ -199,7 +199,7 @@ public class KingEnemyAuraAbility implements PassiveAbility, TriggeredAbility {
                 }
             }
         }
-        
+
         // Remove from pieces no longer eligible
         for (MonsterGamePiece prev : new HashSet<>(appliedTo)) {
             if (!now.contains(prev)) {
@@ -208,7 +208,7 @@ public class KingEnemyAuraAbility implements PassiveAbility, TriggeredAbility {
                 grantedThisTurn.remove(prev); // Also remove from tracking if out of range
             }
         }
-        
+
         // Add to new recipients
         for (MonsterGamePiece target : now) {
             if (!appliedTo.contains(target)) {
