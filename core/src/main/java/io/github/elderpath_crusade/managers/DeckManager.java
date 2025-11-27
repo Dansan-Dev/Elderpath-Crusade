@@ -22,21 +22,15 @@ public final class DeckManager {
     /**
      * Parameters needed to create a card instance.
      */
-    public static class CardCreationParams {
-        public final Board board;
-        public final PieceAlignment alignment;
-        public final int x, y, width, height, z;
-
-        public CardCreationParams(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
-            this.board = board;
-            this.alignment = alignment;
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-            this.z = z;
-        }
-    }
+    public record CardCreationParams(
+        Board board,
+        PieceAlignment alignment,
+        int x,
+        int y,
+        int width,
+        int height,
+        int z
+    ) {}
 
     private DeckManager() {}
 
