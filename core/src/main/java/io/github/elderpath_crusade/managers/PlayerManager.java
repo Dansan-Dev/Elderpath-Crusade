@@ -130,12 +130,12 @@ public class PlayerManager {
         if (current == PieceAlignment.P2) {
             // Flip any face-up cards to back; leave already face-down cards untouched to respect persistence
             for (Card c : bot.hand.getCards()) {
-                if (c != null && !c.isFaceDown()) c.showBack();
+                if (c != null && c.isFaceUp()) c.showBack();
             }
         } else if (current == PieceAlignment.P1) {
             // Restore visibility for demo purposes: show P2 hand fronts when it's not the bot's turn
             for (Card c : bot.hand.getCards()) {
-                if (c != null && c.isFaceDown()) c.showFront();
+                if (c != null && !c.isFaceUp()) c.showFront();
             }
         }
     }
