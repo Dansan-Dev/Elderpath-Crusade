@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.managers;
 
 import com.badlogic.gdx.utils.Timer;
+import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.managers.bot.Bot;
 import io.github.elderpath_crusade.managers.bot.impl.BasicBot;
@@ -9,7 +10,7 @@ import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.utils.Logger;
-import io.github.elderpath_crusade.managers.GameModeManager;
+import lombok.Setter;
 
 import java.util.function.Consumer;
 
@@ -20,13 +21,9 @@ import java.util.function.Consumer;
 public final class BotManager {
     private static boolean initialized = false;
     private static final float DELAY_BEFORE_ACT = 0.4f;
-    private static Bot bot = null;
+    @Setter private static Bot bot = null;
 
     private BotManager() {}
-
-    public static void setBot(Bot customBot) {
-        bot = customBot;
-    }
 
     public static void initialize() {
         if (initialized) return;
@@ -44,7 +41,7 @@ public final class BotManager {
         Consumer<GameEvent> onTurn = (evt) -> {
             if (evt.getType() != GameEventType.TURN_STARTED) return;
             // Never activate bots in LOCAL_MATCH mode (both players are human)
-            if (GameModeManager.getCurrent() == io.github.elderpath_crusade.enums.GameMode.LOCAL_MATCH) return;
+            if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
             if (!SettingsManager.debug.enableP2Bot) return;
             Object p = evt.getData().get("player");
             if (p == null) return;
