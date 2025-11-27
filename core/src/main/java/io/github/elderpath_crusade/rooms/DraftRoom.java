@@ -1,9 +1,8 @@
 package io.github.elderpath_crusade.rooms;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.cards.*;
-import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.characters.pieces.WolfCub;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
@@ -37,24 +36,23 @@ public class DraftRoom extends Room {
 
     // All card types that can be drafted (excluding Wolf and WolfCub from starting deck)
     private static final List<CardType> DRAFTABLE_CARDS = Arrays.asList(
-        new CardType("Rogue", (params) -> new RogueCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Fairy", (params) -> new FairyCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Wind Spirit", (params) -> new WindSpiritCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Big Toad", (params) -> new BigToadCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Sniper", (params) -> new SniperCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Barbarian", (params) -> new BarbarianCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("King", (params) -> new KingCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Charger", (params) -> new ChargerCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Crossbowman", (params) -> new CrossbowmanCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Skeleton Bomber", (params) -> new SkeletonBomberCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Warp Mage", (params) -> new WarpMageCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Commander", (params) -> new CommanderCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Hero", (params) -> new HeroCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Storm Mage", (params) -> new StormMageCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Rifleman", (params) -> new RiflemanCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Crow", (params) -> new CrowCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Shockling", (params) -> new ShocklingCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z))
-    );
+            createCardType("Rogue", RogueCard.class),
+            createCardType("Fairy", FairyCard.class),
+            createCardType("Wind Spirit", WindSpiritCard.class),
+            createCardType("Big Toad", BigToadCard.class),
+            createCardType("Sniper", SniperCard.class),
+            createCardType("Barbarian", BarbarianCard.class),
+            createCardType("King", KingCard.class),
+            createCardType("Charger", ChargerCard.class),
+            createCardType("Crossbowman", CrossbowmanCard.class),
+            createCardType("Skeleton Bomber", SkeletonBomberCard.class),
+            createCardType("Warp Mage", WarpMageCard.class),
+            createCardType("Commander", CommanderCard.class),
+            createCardType("Hero", HeroCard.class),
+            createCardType("Storm Mage", StormMageCard.class),
+            createCardType("Rifleman", RiflemanCard.class),
+            createCardType("Crow", CrowCard.class),
+            createCardType("Shockling", ShocklingCard.class));
 
     private static class CardType {
         final String name;
@@ -66,12 +64,39 @@ public class DraftRoom extends Room {
         }
     }
 
+    private static CardType createCardType(String name, Class<? extends SummonCard> summonClass) {
+        return new CardType(name, (params) -> {
+            try {
+                return summonClass
+                        .getConstructor(
+                            Board.class,
+                            PieceAlignment.class,
+                            int.class,
+                            int.class,
+                            int.class,
+                            int.class,
+                            int.class)
+                        .newInstance(
+                            params.board(),
+                            params.alignment(),
+                            params.x(),
+                            params.y(),
+                            params.width(),
+                            params.height(),
+                            params.z()
+                        );
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to instantiate card: " + name, e);
+            }
+        });
+    }
+
     // Starting deck cards
     private static final List<CardType> STARTING_DECK = Arrays.asList(
-        new CardType("Wolf", (params) -> new WolfCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Wolf", (params) -> new WolfCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Wolf Cub", (params) -> new WolfCubCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z)),
-        new CardType("Wolf Cub", (params) -> new WolfCubCard(params.board, params.alignment, params.x, params.y, params.width, params.height, params.z))
+        createCardType("Wolf", WolfCard.class),
+        createCardType("Wolf", WolfCard.class),
+        createCardType("Wolf Cub", WolfCubCard.class),
+        createCardType("Wolf Cub", WolfCubCard.class)
     );
 
     // Draft state
@@ -93,10 +118,10 @@ public class DraftRoom extends Room {
 
     private DraftRoom(PieceAlignment player, boolean localMultiplayer) {
         super();
-        
+
         // Play menu music
         SoundManager.playLoopingMusic("Evening_Harmony.mp3");
-        
+
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;
         initializeDraft();
@@ -119,7 +144,7 @@ public class DraftRoom extends Room {
         rng = new Random();
 
         // Create UI elements
-        String progressionPrefix = isLocalMultiplayer 
+        String progressionPrefix = isLocalMultiplayer
             ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
             : "";
         progressionText = new Text(progressionPrefix + "0/4", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
@@ -132,8 +157,8 @@ public class DraftRoom extends Room {
 
         // Create hand for draft options
         int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
-        int cardWidth = 187;  // 1.5x larger for better visibility during drafting
-        int cardHeight = 300;  // 1.5x larger for better visibility during drafting
+        int cardWidth = 187; // 1.5x larger for better visibility during drafting
+        int cardHeight = 300; // 1.5x larger for better visibility during drafting
         draftOptionsHand = new Hand(screenCenter[0], screenCenter[1], cardWidth, cardHeight, 0);
         addContent(draftOptionsHand);
 
@@ -171,8 +196,6 @@ public class DraftRoom extends Room {
         deckPreviewText.getBounds().setY(bottomY);
 
         // Draft options hand centered in middle
-        int cardWidth = 187;  // 1.5x larger for better visibility during drafting
-        int cardHeight = 300;  // 1.5x larger for better visibility during drafting
         draftOptionsHand.setCenterX(screenCenter[0]);
         draftOptionsHand.setBottomY(screenCenter[1] - 50);
         // Update hand bounds to reposition cards
@@ -187,7 +210,7 @@ public class DraftRoom extends Room {
         }
 
         // Update progression text
-        String progressionPrefix = isLocalMultiplayer 
+        String progressionPrefix = isLocalMultiplayer
             ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
             : "";
         progressionText.setText(progressionPrefix + currentPick + "/" + DRAFT_PICKS);
@@ -210,7 +233,7 @@ public class DraftRoom extends Room {
             );
             SummonCard realCard = cardType.creator.apply(params);
             realCard.showFront(); // Make sure card is face up
-            
+
             // Wrap in DraftCard to bypass mana checks
             // Use array reference to allow referencing card in lambda before it's fully initialized
             final CardType finalCardType = cardType;
@@ -222,7 +245,7 @@ public class DraftRoom extends Room {
             });
             cardRef[0] = card; // Assign after creation
             card.showFront(); // Make sure card is face up
-            
+
             currentOptions.add(card);
             draftOptionsHand.addCard(card);
         }
@@ -280,21 +303,21 @@ public class DraftRoom extends Room {
 
         String previewText = "Deck:\n" + String.join("\n", formattedCards);
         deckPreviewText.setText(previewText);
-        
+
         // Calculate fixed top position (always relative to screen height)
         int screenHeight = SettingsManager.screenSize.getScreenHeight();
         int screenWidth = SettingsManager.screenSize.getScreenWidth();
         int fixedTopY = (screenHeight * 2 / 3) - 100; // Fixed top Y position
         int previewWidth = 300;
         int previewX = screenWidth - previewWidth - 50; // Right side with margin
-        
+
         // Set X and width before update
         deckPreviewText.getBounds().setX(previewX);
         deckPreviewText.getBounds().setWidth(previewWidth);
-        
+
         // Update to recalculate text bounds (height will grow)
         deckPreviewText.update();
-        
+
         // Set Y position so that top stays fixed (Y is bottom, so bottom = top - height)
         int bottomY = fixedTopY - deckPreviewText.getBounds().getHeight();
         deckPreviewText.getBounds().setY(bottomY);
@@ -340,4 +363,3 @@ public class DraftRoom extends Room {
         return new DraftRoom(player, true);
     }
 }
-
