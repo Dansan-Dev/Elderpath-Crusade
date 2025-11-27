@@ -34,87 +34,99 @@ public final class WinConditionManager {
         gameWon = false;
     }
 
-    private WinConditionManager() {}
+    private WinConditionManager() {
+    }
 
     public static void initialize() {
-        if (initialized) return;
+        if (initialized)
+            return;
         initialized = true;
 
+        List<GameEventType> relevantEventTypes = List.of(
+                GameEventType.ACTIVE_MOVEMENT,
+                GameEventType.FORCED_MOVEMENT,
+                GameEventType.PIECE_SPAWNED);
+
         Consumer<GameEvent> listener = WinConditionManager::handleEvent;
-        EventBus.register(GameEventType.ACTIVE_MOVEMENT, listener);
-        EventBus.register(GameEventType.FORCED_MOVEMENT, listener);
-        EventBus.register(GameEventType.PIECE_SPAWNED, listener);
+        relevantEventTypes.forEach(evt -> EventBus.register(evt, listener));
     }
 
     private static void handleEvent(GameEvent evt) {
-        if (gameWon) return;
-        Map<String, Object> data = evt.getData();
-        if (data == null) return;
-        // Owner alignment is provided as string name in events we emit
-        Object ownerObj = data.get("owner");
-        if (ownerObj == null) return;
-        PieceAlignment owner;
-        try {
-            owner = PieceAlignment.valueOf(ownerObj.toString());
-        } catch (IllegalArgumentException ex) {
+        if (gameWon)
             return;
+        Map<String, Object> data = evt.getData();
+        if (data == null)
+            return;
+
+        PieceAlignment alignment = extractAlignment(data);
+        if (alignment == null || alignment == PieceAlignment.NEUTRAL)
+            return;
+
+        Integer destRow = extractDestRow(evt, data);
+        if (destRow == null)
+            return;
+
+        Integer rows = getActiveBoardRows();
+        if (rows == null)
+            return;
+
+        Board activeBoard = getActiveBoard();
+        if (activeBoard == null)
+            return;
+
+        if (checkWinCondition(alignment, destRow, rows, activeBoard.isFlipped())) {
+            triggerWin(alignment);
         }
-        // Destination row key differs per event
+    }
+
+    private static PieceAlignment extractAlignment(Map<String, Object> data) {
+        Object ownerObj = data.get("owner");
+        if (ownerObj == null)
+            return null;
+        try {
+            return PieceAlignment.valueOf(ownerObj.toString());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private static Integer extractDestRow(GameEvent evt, Map<String, Object> data) {
         Integer destRow = null;
         GameEventType eventType = evt.getType();
         if (eventType == GameEventType.ACTIVE_MOVEMENT || eventType == GameEventType.FORCED_MOVEMENT) {
-            Object v = data.get("toRow");
-            if (v instanceof Integer i) destRow = i; else if (v != null) {
-                try { destRow = Integer.parseInt(v.toString()); } catch (NumberFormatException ignored) {}
-            }
+            destRow = parseInteger(data.get("toRow"));
         } else if (eventType == GameEventType.PIECE_SPAWNED) {
-            Object v = data.get("row");
-            if (v instanceof Integer i) destRow = i; else if (v != null) {
-                try { destRow = Integer.parseInt(v.toString()); } catch (NumberFormatException ignored) {}
+            destRow = parseInteger(data.get("row"));
+        }
+        return destRow;
+    }
+
+    private static Integer parseInteger(Object v) {
+        if (v instanceof Integer i)
+            return i;
+        if (v != null) {
+            try {
+                return Integer.parseInt(v.toString());
+            } catch (NumberFormatException ignored) {
             }
         }
-        if (destRow == null) return;
+        return null;
+    }
 
-        Integer rows = getActiveBoardRows();
-        if (rows == null) return; // can't evaluate without a board
-        
-        // Get the active board to check flip state
-        Board activeBoard = getActiveBoard();
-        if (activeBoard == null) return;
-        
-        // Check if board is currently flipped (for P2's turn in LOCAL_MATCH)
-        boolean flipped = activeBoard.isFlipped();
-
-        // Ignore neutral or undefined alignments
-        if (owner == PieceAlignment.NEUTRAL) {
-            return;
+    private static boolean checkWinCondition(PieceAlignment alignment, int destRow, int rows, boolean flipped) {
+        if (alignment == PieceAlignment.P1) {
+            return flipped ? (destRow == 0) : (destRow == rows - 1);
+        } else if (alignment == PieceAlignment.P2) {
+            return flipped ? (destRow == rows - 1) : (destRow == 0);
         }
-        
-        // Win condition: player wins when reaching opponent's home row
-        // When not flipped: P1's home row = 0, P2's home row = rows-1
-        //   - P1 wins when reaching rows-1 (P2's home row)
-        //   - P2 wins when reaching 0 (P1's home row)
-        // When flipped: P1's home row = rows-1, P2's home row = 0
-        //   - P1 wins when reaching 0 (P2's home row)
-        //   - P2 wins when reaching rows-1 (P1's home row)
-        boolean win = false;
-        if (owner == PieceAlignment.P1) {
-            // P1 wins when reaching P2's home row
-            win = flipped ? (destRow == 0) : (destRow == rows - 1);
-        } else if (owner == PieceAlignment.P2) {
-            // P2 wins when reaching P1's home row
-            win = flipped ? (destRow == rows - 1) : (destRow == 0);
-        }
-        if (win) {
-            triggerWin(owner);
-        }
+        return false;
     }
 
     private static Integer getActiveBoardRows() {
         Board board = getActiveBoard();
         return (board != null) ? board.getROWS() : null;
     }
-    
+
     private static Board getActiveBoard() {
         List<Renderable> renderables = GraphicsManager.getRenderables();
         for (Renderable r : renderables) {
@@ -126,7 +138,8 @@ public final class WinConditionManager {
     }
 
     private static void triggerWin(PieceAlignment winner) {
-        if (gameWon) return;
+        if (gameWon)
+            return;
         gameWon = true;
         String msg = "VICTORY: " + winner.name();
         System.out.println(msg);
@@ -138,19 +151,23 @@ public final class WinConditionManager {
                 InteractionManager.cancelSelection();
             }
             // Pause the game: blocks InteractionManager clicks and halts bot actions
-//            GameManager.pause();
-            // Lock interactions so ESC and other inputs are ignored during the transition delay
+            // GameManager.pause();
+            // Lock interactions so ESC and other inputs are ignored during the transition
+            // delay
             GameManager.lockInteractions();
-        } catch (Exception ignored) {}
-        // Show a simple Victory screen after a brief delay to let animations/events settle
+        } catch (Exception ignored) {
+        }
+        // Show a simple Victory screen after a brief delay to let animations/events
+        // settle
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
                 // Restore interactivity for the Victory UI before switching rooms
                 try {
                     GameManager.unlockInteractions();
-//                    GameManager.unpause();
-                } catch (Exception ignored) {}
+                    // GameManager.unpause();
+                } catch (Exception ignored) {
+                }
                 RoomManager.gotoRoom(() -> VictoryRoom.get(winner));
             }
         }, 0.6f);
