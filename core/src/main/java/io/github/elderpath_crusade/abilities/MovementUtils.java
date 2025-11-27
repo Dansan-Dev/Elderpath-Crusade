@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
+import io.github.elderpath_crusade.utils.AbilityUtils;
 
 import java.util.HashMap;
 import java.util.Map;

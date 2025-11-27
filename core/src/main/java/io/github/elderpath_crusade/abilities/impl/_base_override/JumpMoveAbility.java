@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl._base_override;
 
-import io.github.elderpath_crusade.abilities.AbilityUtils;
+import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.MovementUtils;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;

@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.abilities.impl.actionable;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
-import io.github.elderpath_crusade.abilities.AbilityUtils;
+import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;

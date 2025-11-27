@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.abilities.impl.trigger;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
-import io.github.elderpath_crusade.abilities.AbilityUtils;
+import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.game_objects.board.Board;

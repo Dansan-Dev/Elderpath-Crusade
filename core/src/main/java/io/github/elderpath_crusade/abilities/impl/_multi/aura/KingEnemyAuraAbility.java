@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.abilities.impl._multi.aura;
 
 import io.github.elderpath_crusade.abilities.AbilityType;
-import io.github.elderpath_crusade.abilities.AbilityUtils;
+import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
