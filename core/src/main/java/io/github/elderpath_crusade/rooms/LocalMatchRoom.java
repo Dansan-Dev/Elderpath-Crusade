@@ -8,9 +8,8 @@ import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.managers.DeckManager;
-import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
-import io.github.elderpath_crusade.managers.SoundManager;
+import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
@@ -56,7 +55,7 @@ public class LocalMatchRoom extends Room {
         super();
 
         // Play match music (looping)
-        SoundManager.playLoopingMusic("Daniel_Game.mp3");
+        MusicManager.playLoopingMusic("Daniel_Game.mp3");
 
         // Reset turn and player state for a fresh LocalMatchRoom instance
         TurnManager.reset();

@@ -2,7 +2,6 @@ package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.cards.*;
-import io.github.elderpath_crusade.characters.pieces.WolfCub;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
@@ -13,7 +12,7 @@ import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.managers.SoundManager;
+import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.enums.FontType;
@@ -120,7 +119,7 @@ public class DraftRoom extends Room {
         super();
 
         // Play menu music
-        SoundManager.playLoopingMusic("Evening_Harmony.mp3");
+        MusicManager.playLoopingMusic("Evening_Harmony.mp3");
 
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;

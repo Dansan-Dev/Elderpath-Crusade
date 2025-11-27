@@ -28,9 +28,7 @@ public class Main extends ApplicationAdapter {
 
         SettingsManager.sound.setMusicVolume(3);
         SettingsManager.sound.setMasterVolume(7);
-        SoundManager.queueMusic("Evening_Harmony.mp3");
-        SoundManager.queueMusic("Forgotten_Biomes.mp3");
-        SoundManager.transition();
+        MusicManager.playLoopingMusic("Evening_Harmony.mp3");
 
         RoomManager.initialize();
     }
@@ -67,7 +65,7 @@ public class Main extends ApplicationAdapter {
         GraphicsManager.drawPauseUI(GraphicsManager.getBatch());
 
         // SOUND
-        SoundManager.update();
+        MusicManager.update();
     }
 
     @Override

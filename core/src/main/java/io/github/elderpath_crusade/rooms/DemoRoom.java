@@ -11,7 +11,7 @@ import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
-import io.github.elderpath_crusade.managers.SoundManager;
+import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
@@ -23,15 +23,12 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.enums.ClickableTargetType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +53,7 @@ public class DemoRoom extends Room {
         super();
 
         // Play match music (looping)
-        SoundManager.playLoopingMusic("Daniel_Game.mp3");
+        MusicManager.playLoopingMusic("Daniel_Game.mp3");
 
         // Reset turn and player state for a fresh DemoRoom instance
         TurnManager.reset();
@@ -113,7 +110,7 @@ public class DemoRoom extends Room {
         addContent(hand);
 
         List<Card> cardsP1 = new ArrayList<>();
-        
+
         // Check if a drafted deck exists in DeckManager
         if (DeckManager.hasDraftedDeck()) {
             // Use drafted deck from DeckManager
