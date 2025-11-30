@@ -613,7 +613,7 @@ public class SmartBot implements Bot {
         SummonCard bestCard = null; int bestScore = Integer.MIN_VALUE;
         for (Card c : ps.hand.getCards()) {
             if (!(c instanceof SummonCard sc)) continue;
-            int cost = sc.getManaCost(); if (cost > mana) continue;
+            int cost = sc.getStats().getCost(); if (cost > mana) continue;
             var s = sc.getStats();
             int value = (s.getMaxHealth()*2) + (s.getDamage()*3) + (s.getActions()) + (s.getSpeed()) + (cost); // simple heuristic
             if (value > bestScore) { bestScore = value; bestCard = sc; }
@@ -704,7 +704,7 @@ public class SmartBot implements Bot {
         int mana = ps.mana;
         boolean hasAffordable = false;
         for (Card c : ps.hand.getCards()) {
-            if (c instanceof SummonCard sc && sc.getManaCost() <= mana) { hasAffordable = true; break; }
+            if (c instanceof SummonCard sc && sc.getStats().getCost() <= mana) { hasAffordable = true; break; }
         }
         if (!hasAffordable) return false;
         int homeRow = b.getROWS() - 1;
@@ -847,7 +847,12 @@ public class SmartBot implements Bot {
     }
 
     private int nearestManhattan(int r, int c, List<int[]> enemies) {
-        int best = Integer.MAX_VALUE; for (int[] e : enemies) { int d = Math.abs(e[0]-r)+Math.abs(e[1]-c); if (d<best) best=d; } return best;
+        int best = Integer.MAX_VALUE;
+        for (int[] e : enemies) {
+            int d = Math.abs(e[0]-r)+Math.abs(e[1]-c);
+            if (d<best) best=d;
+        }
+        return best;
     }
 
     // --- Defensive summon using any SummonCard ---
@@ -875,7 +880,7 @@ public class SmartBot implements Bot {
         int mana = ps.mana;
         for (Card c : ps.hand.getCards()) {
             if (c instanceof SummonCard sc) {
-                int cost = sc.getManaCost();
+                int cost = sc.getStats().getCost();
                 if (cost <= mana && cost > bestCost) { chosen = sc; bestCost = cost; }
             }
         }
