@@ -91,13 +91,7 @@ public class InteractionManager {
         return true;
     }
 
-    public static void checkClick() {
-        if (!InputManager.getFunctionActivation(InputFunction.LEFT_CLICK)) return;
-
-        int mouseX = Gdx.input.getX();
-        int mouseY = SettingsManager.screenSize.getScreenHeight() - Gdx.input.getY();
-        boolean paused = GraphicsManager.isPaused();
-
+    public static void processLeftClick(int mouseX, int mouseY, boolean paused) {
         // If the game just became paused while interaction selection was in progress, clear it.
         if (paused && selectedCount != 0) cleanInteraction();
 
@@ -114,33 +108,28 @@ public class InteractionManager {
 
     private static Clickable findHit(int mouseX, int mouseY, boolean paused) {
         // Two-pass click resolution: prioritize UI clickables (buttons, text) over world elements (plots)
-        // Use a snapshot to avoid concurrent modification issues if cards are removed during iteration
-        List<Clickable> snapshot = new ArrayList<>(clickables);
-
         // Pass 1: UI clickables
-        for (Clickable clickable : snapshot) {
+        for (Clickable clickable : clickables) {
             if (!(clickable instanceof UIRenderable)) continue;
             // When paused, only allow UI elements explicitly marked for pause; generic UI is blocked
             if (paused && !clickable.isPauseUIElement()) continue;
-            // Skip if this clickable is no longer in the active list (removed during interaction)
-            if (!clickables.contains(clickable)) continue;
             if (clickable.inRange(mouseX, mouseY)) return clickable;
         }
+
+        if (paused) return null; // never allow non-UI while paused
 
         // Pass 2: Non-UI clickables (board, plots, sprites) if no UI element was hit
         // Check Board and its plots first via BoardManager for O(1) lookup
         Board activeBoard = BoardManager.getBoard();
-        if (activeBoard != null && !paused && activeBoard.inRange(mouseX, mouseY)) {
+        if (activeBoard != null && activeBoard.inRange(mouseX, mouseY)) {
             Plot plot = activeBoard.getPlotAtScreen(mouseX, mouseY);
             if (plot != null) return plot;
         }
 
         // Check remaining non-UI clickables (sprites, etc.)
-        for (Clickable clickable : snapshot) {
+        for (Clickable clickable : clickables) {
             if (clickable instanceof UIRenderable) continue;
             if (clickable instanceof Plot) continue; // Already handled via BoardManager
-            if (paused) continue; // never allow non-UI while paused
-            if (!clickables.contains(clickable)) continue;
             if (clickable.inRange(mouseX, mouseY)) return clickable;
         }
 
@@ -277,7 +266,7 @@ public class InteractionManager {
     }
     /** Returns a copy of the entities map following the indexing contract (0=source, 1..n=targets). */
     public static HashMap<Integer, CustomBox> getActiveEntities() {
-        return new HashMap<>(getSelectedEntities());
+        return getSelectedEntities();
     }
 
     // Selection state helpers for confirmation/cancellation flows
@@ -354,10 +343,9 @@ public class InteractionManager {
         if (box == null || data == null) return false;
         ClickableTargetType targetType = data.getTargetType();
 
-        // Type check: special-case allow clicking GamePiece for PLOT effects
+        // Type check: special-case allow clicking GamePiece for PLOT effects if it were clickable
         boolean typeOk = (targetType == null)
-            || targetType.matches(box)
-            || (targetType == ClickableTargetType.PLOT && box instanceof GamePiece);
+            || targetType.matches(box);
 
         if (!typeOk) return false;
 
@@ -375,10 +363,7 @@ public class InteractionManager {
             Logger.error("InteractionManager", "currentEffect is null when compiling selected entities");
         }
         // Subsequent indices are the selected target entities.
-        // Note: selectedCount is advanced after each addition, so valid indices are 1..selected.size().
-        for (int i = 1; i <= selected.size(); i++) {
-            entities.put(i, selected.get(i));
-        }
+        entities.putAll(selected);
         return entities;
     }
 

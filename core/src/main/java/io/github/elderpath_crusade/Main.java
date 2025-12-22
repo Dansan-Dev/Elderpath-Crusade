@@ -47,6 +47,8 @@ public class Main extends ApplicationAdapter {
     private Map<InputHandlerData, Object> getInputHandlerData() {
         Map<InputHandlerData, Object> data = new HashMap<>();
         data.put(InputHandlerData.IS_PAUSED, GraphicsManager.isPaused());
+        data.put(InputHandlerData.MOUSE_X, com.badlogic.gdx.Gdx.input.getX());
+        data.put(InputHandlerData.MOUSE_Y, SettingsManager.screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
         return data;
     }
 
@@ -57,7 +59,6 @@ public class Main extends ApplicationAdapter {
         if (!GameManager.isInteractionsLocked()) {
             InputManager.checkInput();
             handleInput();
-            InteractionManager.checkClick();
         }
 
         // UPDATE
