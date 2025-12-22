@@ -13,7 +13,6 @@ import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.managers.TextureManager;
 import io.github.elderpath_crusade.interfaces.Updatable;
-import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
@@ -49,8 +48,6 @@ public class Board extends HigherOrderTexture implements Updatable {
 
     @Override
     public void update(float delta) {
-        updateCandidateMoveSpots();
-        updatePlotHighlights();
     }
 
     /** Notify all monster pieces on this board that a turn has started for the given player. */
@@ -306,25 +303,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         markDirtyAndNotify();
     }
 
-    // Update plot highlighting by comparing this board's plots with the InteractionManager's active targets.
-    private void updatePlotHighlights() {
-        boolean active = InteractionManager.hasActiveSelection();
-        List<CustomBox> targets = InteractionManager.getActiveTargets();
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                Renderable r = board[row][col];
-                if (r instanceof Plot p) {
-                    boolean shouldHighlight = false;
-                    if (active && !targets.isEmpty()) {
-                        for (CustomBox b : targets) {
-                            if (b == p) { shouldHighlight = true; break; }
-                        }
-                    }
-                    p.setHighlighted(shouldHighlight);
-                }
-            }
-        }
-    }
 
     // Return enemy plots attackable from (row,col) for a given alignment, using cardinal lines with blockers and range.
     public List<Plot> getAttackableEnemyPlots(int row, int col, PieceAlignment friendlyAlignment) {
@@ -370,84 +348,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         return out;
     }
 
-    // Mark candidate move plots (white dots) and attack plots (red glow) when a movement source is active
-    private void updateCandidateMoveSpots() {
-        Object src = InteractionManager.getActiveSource();
-        // Skip if an ability interaction is active (let InteractionManager.renderEligibleTargets() handle highlighting)
-        if (src != null && !(src instanceof Plot)) return;
-        // Clear all by default
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                Renderable r = board[row][col];
-                if (r instanceof Plot p) {
-                    p.setCandidate(false);
-                    p.setAttackCandidate(false);
-                    p.setFriendlyCandidate(false);
-                }
-            }
-        }
-        if (!(src instanceof Plot plot)) return;
-        // Ensure the source plot belongs to this board
-        int[] sIdx = getIndicesOfPlot(plot);
-        if (sIdx == null) return;
-        int sr = sIdx[0], sc = sIdx[1];
-        GamePiece gp = getGamePieceAtPos(sr, sc);
-        if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
-        // Stunned pieces cannot act - don't show candidate dots
-        if (mgp.isStunned()) return;
-
-        // Use BasicAbility (BaseMoveAbility, JumpMoveAbility, BaseAttackAbility, and OncePerTurnAttackAbility) to get eligible targets
-        // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
-        List<Plot> reachable = List.of();
-        List<Plot> attackables = List.of();
-        JumpMoveAbility jumpMoveAbility = null;
-        BaseMoveAbility baseMoveAbility = null;
-        OncePerTurnAttackAbility oncePerTurnAttackAbility = null;
-        for (Ability ability : mgp.getAbilities()) {
-            if (ability instanceof BasicAbility basicAbility) {
-                if (basicAbility instanceof JumpMoveAbility) {
-                    jumpMoveAbility = (JumpMoveAbility) basicAbility;
-                } else if (basicAbility instanceof BaseMoveAbility) {
-                    baseMoveAbility = (BaseMoveAbility) basicAbility;
-                } else if (basicAbility instanceof OncePerTurnAttackAbility) {
-                    oncePerTurnAttackAbility = (OncePerTurnAttackAbility) basicAbility;
-                } else if (basicAbility instanceof BaseAttackAbility) {
-                    // Only use BaseAttackAbility if OncePerTurnAttackAbility is not present
-                    if (oncePerTurnAttackAbility == null) {
-                        attackables = basicAbility.getEligibleTargets(1);
-                    }
-                }
-            }
-        }
-        // Use OncePerTurnAttackAbility if available, otherwise BaseAttackAbility
-        if (oncePerTurnAttackAbility != null) {
-            attackables = oncePerTurnAttackAbility.getEligibleTargets(1);
-        }
-        // Use JumpMoveAbility if available, otherwise use BaseMoveAbility
-        if (jumpMoveAbility != null) {
-            reachable = jumpMoveAbility.getEligibleTargets(1);
-        } else if (baseMoveAbility != null) {
-            reachable = baseMoveAbility.getEligibleTargets(1);
-        }
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                Renderable r = board[row][col];
-                if (r instanceof Plot p) {
-                    boolean isAttack = false;
-                    for (Plot a : attackables) { if (a == p) { isAttack = true; break; } }
-                    if (isAttack) {
-                        p.setAttackCandidate(true);
-                        p.setCandidate(false); // no dot on enemies
-                        continue;
-                    }
-                    boolean moveCand = false;
-                    for (Plot q : reachable) { if (q == p) { moveCand = true; break; } }
-                    p.setCandidate(moveCand);
-                }
-            }
-        }
-    }
 
     public Renderable getPlotAtPos(int row, int col) {
         return board[row][col];

@@ -16,7 +16,6 @@ import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
-import io.github.elderpath_crusade.tiles.MountainTile;
 import io.github.elderpath_crusade.ui_objects.*;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -35,266 +34,72 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class DemoRoom extends Room {
-    // Guard against duplicate event logger registration within the same JVM session
-    private static boolean LOGGER_REGISTERED = false;
-    private final Board board;
-    private final Hand hand;
-    private final Hand handP2;
-    private final Deck deck;
-    private final Deck deckP2;
-    private final PassTurnButton passTurn;
-    private final UIRenderable pauseMenuHint;
-    private final Supplier<int[]> pauseMenuPos = () -> new int[]{20, SettingsManager.screenSize.getScreenHeight() - 40};
-    private final int plot_width = 40;
-    private final int plot_height = 40;
+public class DemoRoom extends BattleRoom {
 
     private DemoRoom() {
-        super();
+        super(GameMode.DEMO);
 
-        // Play match music (looping)
-        MusicManager.playLoopingMusic("Daniel_Game.mp3");
-
-        // Reset turn and player state for a fresh DemoRoom instance
-        TurnManager.reset();
-        // Ensure game mode is explicitly set when entering DemoRoom
-        GameModeManager.setCurrent(GameMode.DEMO);
-
-        board = new Board(0, 0, plot_width, plot_height, 7, 5);
-        board.initializePlots();
-
-//        board.setGamePiecePos(2, 0, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
-//        board.setGamePiecePos(3, 1, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P2));
-//        board.setGamePiecePos(1, 2, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.P1));
-//        board.setGamePiecePos(5, 3, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
-//        board.setGamePiecePos(4, 4, new Goblin(0, 10, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), PieceAlignment.NEUTRAL));
-        // Non-terrain pieces removed - board starts empty except for terrain
-        board.addGamePieceToPos(4, 3, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-        board.addGamePieceToPos(2, 1, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-        board.addGamePieceToPos(5, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-        board.addGamePieceToPos(1, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-
-        addContent(board);
-
-        int[] pauseMenuPos = this.pauseMenuPos.get();
-        pauseMenuHint = new Text("ESC", FontType.SILKSCREEN, pauseMenuPos[0], pauseMenuPos[1], 1, Color.WHITE)
-            .withFontSize(FontSize.BODY_MEDIUM);
-        addUI(pauseMenuHint);
-
-
-        // Pass Turn button (mid-right)
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
-        passTurn = PassTurnButton.fromColor(
-            Color.WHITE.cpy().mul(0.2f,0.2f,0.2f,1f),
-            "Pass Turn",
-            FontType.SILKSCREEN,
-            (int)FontSize.BODY_MEDIUM.getSize(),
-            screenW - 150, screenH/2 - 20,
-            130, 40,
-            2
-        );
-        passTurn.withTextColors(Color.WHITE, Color.WHITE, Color.WHITE);
-        passTurn.withOnClick((e) -> TurnManager.endTurn(), ClickableEffectData.getImmediate());
-        addUI(passTurn);
-
-        // P1 hand (bottom)
-        hand = new Hand(
-            SettingsManager.screenSize.getScreenCenter()[0],
-            -80,
-            125,
-            200,
-            0
-        );
-        hand.setOwner(PieceAlignment.P1);
-        addContent(hand);
-
-        List<Card> cardsP1 = new ArrayList<>();
-
-        // Check if a drafted deck exists in DeckManager
-        if (DeckManager.hasDraftedDeck()) {
-            // Use drafted deck from DeckManager
-            List<java.util.function.Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck();
-            for (java.util.function.Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
-                DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                    board, PieceAlignment.P1, 0, 0, 125, 200, 0
-                );
-                cardsP1.add(cardCreator.apply(params));
-            }
-            // Clear drafted deck after use (optional - could keep it for reference)
-            // DeckManager.clearDraftedDeck();
-        } else {
-            // Use default deck logic
-            for (int i = 0; i < 24; i++) {
-                int kind = i % 12;
-                if (kind == 0) {
-                    cardsP1.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 1) {
-                    cardsP1.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 2) {
-                    cardsP1.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 3) {
-                    cardsP1.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 4) {
-                    cardsP1.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 5) {
-                    cardsP1.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 6) {
-                    cardsP1.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 7) {
-                    cardsP1.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 8) {
-                    cardsP1.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 9) {
-                    cardsP1.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else if (kind == 10) {
-                    cardsP1.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                } else {
-                    cardsP1.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                }
-            }
-        }
-
-        deck = new Deck(
-            cardsP1,
-            0, 10,
-            125, 200,
-            1,
-            SpriteBoxPos.BOTTOM_LEFT
-        );
-        deck.shuffle();
-        deck.getBounds().setX(SettingsManager.screenSize.getScreenWidth() - deck.getWidth() - 10);
-        deck.setOwner(PieceAlignment.P1);
-        deck.setHand(hand);
-        addContent(deck);
-
-        // P2 hand (top)
-        handP2 = new Hand(
-            SettingsManager.screenSize.getScreenCenter()[0],
-            0,
-            125,
-            200,
-            0
-        );
-        handP2.setBottomY(SettingsManager.screenSize.getScreenHeight() - handP2.getHeight());
-        handP2.setOwner(PieceAlignment.P2);
-        addContent(handP2);
-
-        List<Card> cardsP2 = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            if ( i % 2 == 0) {
-                cardsP2.add(new RiflemanCard(board, PieceAlignment.P2,0, 0, 125, 200, 0));
-            } else {
-                cardsP2.add(new RogueCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
-//                cardsP2.add(new WolfCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
-            }
-        }
-        deckP2 = new Deck(
-            cardsP2,
-            0, SettingsManager.screenSize.getScreenHeight() - 200,
-            125, 200,
-            1,
-            SpriteBoxPos.BOTTOM_LEFT
-        );
-        deckP2.shuffle();
-        deckP2.getBounds().setX(SettingsManager.screenSize.getScreenWidth()-deckP2.getWidth() - 10);
-        deckP2.getBounds().setY(SettingsManager.screenSize.getScreenHeight()-deckP2.getHeight() - 10);
-        deckP2.setOwner(PieceAlignment.P2);
-        deckP2.setHand(handP2);
-        addContent(deckP2);
-
-        // Wire PlayerManager ownership
-        PlayerManager.setHand(PieceAlignment.P1, hand);
-        PlayerManager.setDeck(PieceAlignment.P1, deck);
-        PlayerManager.setHand(PieceAlignment.P2, handP2);
-        PlayerManager.setDeck(PieceAlignment.P2, deckP2);
-
-        // Start turn flow if not started yet
-        TurnManager.startIfNeeded();
-        // Ensure AbilityRelay is active so TriggeredAbilities receive global events in Demo
-        AbilityRelay.startIfNeeded();
-
-        // Add HUDs (only in DemoRoom)
-        ManaHud manaHud = new ManaHud();
-        addUI(manaHud);
-        TurnHud turnHud = new TurnHud();
-        addUI(turnHud);
-        // Ability bubbles for actionable abilities (e.g., WarpMage Displace)
-        addUI(new AbilityPopup());
-        // Big hover preview on right side
-        addUI(new CardPreviewPanel());
-
-        // Optional: Register an all-events logger for debugging in DemoRoom
-        if (SettingsManager.debug.eventsLoggerInDemo) {
-            // Guard against double-registration if DemoRoom is recreated without clearing the EventBus
-            if (!LOGGER_REGISTERED) {
-                Consumer<GameEvent> eventLogger = (evt) -> {
-                    Logger.log("DemoRoom/Event", evt.getType() + " -> " + evt.getData());
-                };
-                for (GameEventType t : GameEventType.values()) {
-                    EventBus.register(t, eventLogger);
-                }
-                LOGGER_REGISTERED = true;
-            }
-        }
-
-        System.out.println("InteractionManager.getClickables().size() = " + InteractionManager.getClickables().size());
-        InteractionManager.getClickables().forEach((c) -> {
-            if (c instanceof WolfCard wolfCard) {
-                System.out.println("wolfCard = " + wolfCard);
-            } else if (c instanceof Text text) {
-                System.out.println("text.getText() = " + text.getText());
-            } else if (c instanceof PassTurnButton) {
-                System.out.println("pass turn button clickable registered");
-            } else {
-                System.out.println("c = " + c);
-            }
-        });
-
-        int[] board_size = board.getPixelSize();
-        layoutBoard(board_size[0], board_size[1]);
-    }
-
-    private void layoutBoard(int boardPixelWidth, int boardPixelHeight) {
-        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int boardCenteredX = screen_center[0] - boardPixelWidth / 2;
-        int boardCenteredY = screen_center[1] - boardPixelHeight / 2;
-        board.getBounds().setX(boardCenteredX);
-        board.getBounds().setY(boardCenteredY);
-        hand.setCenterX(screen_center[0]);
-        hand.updateBounds();
+        // Finalize layout
+        layoutBoard();
     }
 
     @Override
-    public void onScreenResize() {
-        int boardPixelWidth = plot_width * 5;
-        int boardPixelHeight = plot_height * 7;
-        layoutBoard(boardPixelWidth, boardPixelHeight);
+    protected void onPassTurnClicked() {
+        TurnManager.endTurn();
+    }
 
-        int[] pauseMenuPos = this.pauseMenuPos.get();
-        pauseMenuHint.getBounds().setX(pauseMenuPos[0]);
-        pauseMenuHint.getBounds().setY(pauseMenuPos[1]);
-
-        // Reposition UI elements and decks on resize
+    @Override
+    protected Deck createDeck(PieceAlignment alignment, Hand hand) {
+        List<Card> cards = new ArrayList<>();
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
-        if (passTurn != null) {
-            passTurn.getBounds().setX(screenW - 150);
-            passTurn.getBounds().setY(screenH / 2 - 20);
-        }
-        if (deck != null) {
+
+        if (alignment == PieceAlignment.P1) {
+            // P1 Deck Logic
+            if (DeckManager.hasDraftedDeck()) {
+                List<java.util.function.Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck();
+                for (java.util.function.Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
+                    DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
+                        board, PieceAlignment.P1, 0, 0, 125, 200, 0
+                    );
+                    cards.add(cardCreator.apply(params));
+                }
+            } else {
+                for (int i = 0; i < 24; i++) {
+                    int kind = i % 12;
+                    if (kind == 0) cards.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 1) cards.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 2) cards.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 3) cards.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 4) cards.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 5) cards.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 6) cards.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 7) cards.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 8) cards.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 9) cards.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else if (kind == 10) cards.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    else cards.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                }
+            }
+            Deck deck = new Deck(cards, 0, 10, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+            deck.shuffle();
             deck.getBounds().setX(screenW - deck.getWidth() - 10);
-            deck.getBounds().setY(10);
-        }
-        if (deckP2 != null) {
-            deckP2.getBounds().setX(screenW - deckP2.getWidth() - 10);
-            deckP2.getBounds().setY(screenH - deckP2.getHeight() - 10);
-        }
-        // Reposition P2 hand (top center)
-        if (handP2 != null) {
-            handP2.setCenterX(SettingsManager.screenSize.getScreenCenter()[0]);
-            handP2.setBottomY(screenH - handP2.getHeight());
-            handP2.updateBounds();
+            deck.setOwner(PieceAlignment.P1);
+            deck.setHand(hand);
+            return deck;
+        } else {
+            // P2 Deck Logic
+            for (int i = 0; i < 10; i++) {
+                if (i % 2 == 0) cards.add(new RiflemanCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
+                else cards.add(new RogueCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
+            }
+            Deck deck = new Deck(cards, 0, screenH - 200, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+            deck.shuffle();
+            deck.getBounds().setX(screenW - deck.getWidth() - 10);
+            deck.getBounds().setY(screenH - deck.getHeight() - 10);
+            deck.setOwner(PieceAlignment.P2);
+            deck.setHand(hand);
+            return deck;
         }
     }
 

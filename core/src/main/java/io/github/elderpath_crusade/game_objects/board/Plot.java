@@ -19,6 +19,7 @@ import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.GraphicUtils;
+import io.github.elderpath_crusade.managers.HighlightManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import lombok.Getter;
 
@@ -40,15 +41,10 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     private ClickableEffectData clickableEffectData = null;
 
     // Board back-reference for movement logic
+    @Getter
     private Board boardRef = null;
 
-    // Highlighting state
-    @Getter
-    private boolean highlighted = false;
-    private final EmergingBorderTexture highlightBorder;
-    private final CandidateDotTexture candidateDot;
-    private final CandidateAttackBorderTexture attackGlow;
-    private final CandidateFriendlyBorderTexture friendlyGlow;
+    public Board getBoard() { return boardRef; }
 
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);
@@ -60,262 +56,13 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
         plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());
-        // Emerging highlight border (animated)
-        highlightBorder = new EmergingBorderTexture(0, 0, width, height);
-        highlightBorder.setZ(1);
-        // Candidate move spot indicator
-        candidateDot = new CandidateDotTexture(0, 0, width, height);
-        candidateDot.setZ(2);
-        // Attack candidate red glow
-        attackGlow = new CandidateAttackBorderTexture(0, 0, width, height);
-        attackGlow.setZ(2);
-        // Friendly candidate green glow
-        friendlyGlow = new CandidateFriendlyBorderTexture(0, 0, width, height);
-        friendlyGlow.setZ(2);
-        plotConstruction(plot, plotDirt, highlightBorder, candidateDot, attackGlow, friendlyGlow);
-    }
 
-    /**
-     * Animated border used to highlight a Plot during multi-selection.
-     * Border thickness smoothly grows when active and shrinks when inactive.
-     */
-    private static class EmergingBorderTexture extends TextureObject {
-        private boolean active = false;
-        private float progress = 0f; // 0..1
-        private final float speed = 4f; // seconds to full thickness ~0.25s
-        private final int maxThickness;
-        private final Color borderColor = Color.WHITE;
-
-        EmergingBorderTexture(int x, int y, int width, int height) {
-            super(new Color(1,1,1,0f), x, y, width, height);
-            // Use a small relative max thickness; at least 2px for visibility
-            this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
-        }
-
-        void setActive(boolean active) {
-            if (active && !this.active) {
-                // Restart emergence when turning on
-                this.progress = 0f;
-            }
-            this.active = active;
-        }
-
-        private void step(boolean isPaused) {
-            if (isPaused) return;
-            float dt = Gdx.graphics.getDeltaTime();
-            if (active) {
-                progress = Math.min(1f, progress + speed * dt);
-            } else {
-                progress = Math.max(0f, progress - speed * dt);
-            }
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-            if (zLevel != this.getZ()) return;
-            step(isPaused);
-            if (progress <= 0f) return;
-            int[] pos = calculatePos();
-            drawBorder(batch, pos[0], pos[1]);
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-            if (zLevel != this.getZ()) return;
-            step(isPaused);
-            if (progress <= 0f) return;
-            int[] base = calculatePos();
-            drawBorder(batch, x + base[0], y + base[1]);
-        }
-
-        private void drawBorder(SpriteBatch batch, int absX, int absY) {
-            int w = getWidth();
-            int h = getHeight();
-            int t = Math.max(1, Math.round(maxThickness * progress));
-            // Top
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
-            // Bottom
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
-            // Left
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
-            // Right
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
-        }
-    }
-
-    /**
-     * Simple centered dot indicating a plot is a valid movement target while selecting.
-     */
-    private static class CandidateDotTexture extends TextureObject {
-        private boolean active = false;
-        private final Color dotColor = Color.WHITE;
-        private final float sizeFactor = 0.25f; // 25% of the smaller dimension
-
-        CandidateDotTexture(int x, int y, int width, int height) {
-            super(new Color(1,1,1,0f), x, y, width, height);
-        }
-
-        void setActive(boolean active) { this.active = active; }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-            if (!active || zLevel != this.getZ()) return;
-            int[] pos = calculatePos();
-            drawDot(batch, pos[0], pos[1]);
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-            if (!active || zLevel != this.getZ()) return;
-            int[] base = calculatePos();
-            drawDot(batch, x + base[0], y + base[1]);
-        }
-
-        private void drawDot(SpriteBatch batch, int absX, int absY) {
-            int w = getWidth();
-            int h = getHeight();
-            int s = Math.max(2, Math.round(Math.min(w, h) * sizeFactor));
-            int cx = absX + (w - s) / 2;
-            int cy = absY + (h - s) / 2;
-            batch.draw(GraphicUtils.getPixelTexture(dotColor), cx, cy, s, s);
-        }
-    }
-
-    /**
-     * Green glow border used to mark a friendly target.
-     */
-    private static class CandidateFriendlyBorderTexture extends TextureObject {
-        private boolean active = false;
-        private float progress = 0f; // 0..1 animation
-        private final float speed = 4f;
-        private final int maxThickness;
-        private final Color borderColor = Color.GREEN;
-
-        CandidateFriendlyBorderTexture(int x, int y, int width, int height) {
-            super(new Color(1,1,1,0f), x, y, width, height);
-            this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
-        }
-
-        void setActive(boolean active) {
-            if (active && !this.active) this.progress = 0f;
-            this.active = active;
-        }
-
-        private void step(boolean isPaused) {
-            if (isPaused) return;
-            float dt = Gdx.graphics.getDeltaTime();
-            if (active) progress = Math.min(1f, progress + speed * dt);
-            else progress = Math.max(0f, progress - speed * dt);
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-            if (zLevel != this.getZ()) return;
-            step(isPaused);
-            if (progress <= 0f) return;
-            int[] pos = calculatePos();
-            drawBorder(batch, pos[0], pos[1]);
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-            if (zLevel != this.getZ()) return;
-            step(isPaused);
-            if (progress <= 0f) return;
-            int[] base = calculatePos();
-            drawBorder(batch, x + base[0], y + base[1]);
-        }
-
-        private void drawBorder(SpriteBatch batch, int absX, int absY) {
-            int w = getWidth();
-            int h = getHeight();
-            int t = Math.max(1, Math.round(maxThickness * progress));
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
-        }
-    }
-
-    /**
-     * Red glow border used to mark an attackable target (adjacent hostile).
-     */
-    private static class CandidateAttackBorderTexture extends TextureObject {
-        private boolean active = false;
-        private float progress = 0f; // 0..1 animation
-        private final float speed = 4f;
-        private final int maxThickness;
-        private final Color borderColor = Color.RED;
-
-        CandidateAttackBorderTexture(int x, int y, int width, int height) {
-            super(new Color(1,1,1,0f), x, y, width, height);
-            this.maxThickness = Math.max(2, Math.round(Math.min(width, height) * 0.08f));
-        }
-
-        void setActive(boolean active) {
-            if (active && !this.active) this.progress = 0f;
-            this.active = active;
-        }
-
-        private void step(boolean isPaused) {
-            if (isPaused) return;
-            float dt = Gdx.graphics.getDeltaTime();
-            if (active) progress = Math.min(1f, progress + speed * dt);
-            else progress = Math.max(0f, progress - speed * dt);
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-            if (zLevel != this.getZ()) return;
-            step(isPaused);
-            if (progress <= 0f) return;
-            int[] pos = calculatePos();
-            drawBorder(batch, pos[0], pos[1]);
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-            if (zLevel != this.getZ()) return;
-            step(isPaused);
-            if (progress <= 0f) return;
-            int[] base = calculatePos();
-            drawBorder(batch, x + base[0], y + base[1]);
-        }
-
-        private void drawBorder(SpriteBatch batch, int absX, int absY) {
-            int w = getWidth();
-            int h = getHeight();
-            int t = Math.max(1, Math.round(maxThickness * progress));
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY + h - t, w, t);
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, w, t);
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX, absY, t, h);
-            batch.draw(GraphicUtils.getPixelTexture(borderColor), absX + w - t, absY, t, h);
-        }
+        plotConstruction(plot, plotDirt);
     }
 
     public Plot withPlotColor(Color color) {
         plot.setColor(color);
         return this;
-    }
-
-    /** Public API for Board to toggle selection highlight */
-    public void setHighlighted(boolean highlighted) {
-        if (this.highlighted == highlighted) return;
-        this.highlighted = highlighted;
-        if (highlightBorder != null) highlightBorder.setActive(highlighted);
-    }
-
-    // Candidate indicator control
-    public void setCandidate(boolean candidate) {
-        if (candidateDot != null) candidateDot.setActive(candidate);
-    }
-
-    public void setAttackCandidate(boolean candidate) {
-        if (attackGlow != null) attackGlow.setActive(candidate);
-    }
-
-    public void setFriendlyCandidate(boolean candidate) {
-        if (friendlyGlow != null) friendlyGlow.setActive(candidate);
     }
 
     // Board back-reference wiring
@@ -395,11 +142,8 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         return false;
     }
 
-    private void applyHighlightTint() {
-        // no-op; old tinting replaced by animated border
-    }
 
-    private void plotConstruction(TextureObject plot, TextureObject plotDirt, EmergingBorderTexture border, CandidateDotTexture dot, CandidateAttackBorderTexture attack, CandidateFriendlyBorderTexture friendly) {
+    private void plotConstruction(TextureObject plot, TextureObject plotDirt) {
         int width = getWidth();
         int height = getHeight();
         int x = getX();
@@ -407,29 +151,19 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
         plotDirt.setZ(-1);
         plot.setZ(0);
-        // Border sits above the base plot but below decor
-        if (border != null) border.setZ(1);
-        // Back decor and candidate indicators share z=2; front decor z=3
+        // Back decor shares z=2; front decor z=3
         plotDecorBack.setZ(2);
-        if (dot != null) dot.setZ(2);
-        if (attack != null) attack.setZ(2);
-        if (friendly != null) friendly.setZ(2);
         plotDecorFront.setZ(3);
 
         this.plot = plot;
         this.plotDirt = plotDirt;
-        // Include border, dot, attack glow, and friendly glow in renderables
-        setRenderables(Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt, border, dot, attack, friendly));
+        setRenderables(Arrays.asList(plotDecorFront, plotDecorBack, plot, plotDirt));
 
         Box parentBox = new Box(x, y, width, height);
         plot.setParent(parentBox);
         plotDirt.setParent(parentBox);
         plotDecorFront.setParent(parentBox);
         plotDecorBack.setParent(new Box(x, y + height/2, width, height*2));
-        if (border != null) border.setParent(parentBox);
-        if (dot != null) dot.setParent(parentBox);
-        if (attack != null) attack.setParent(parentBox);
-        if (friendly != null) friendly.setParent(parentBox);
     }
 
 

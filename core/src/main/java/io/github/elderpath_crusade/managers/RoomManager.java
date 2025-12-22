@@ -31,5 +31,8 @@ public class RoomManager {
         // Global overlays (persist per room instance): selection hint
         SelectionOverlay selectionOverlay = new SelectionOverlay();
         GraphicsManager.addUIRenderable(selectionOverlay);
+
+        // Global highlight renderer
+        GraphicsManager.addRenderable(HighlightManager.get());
     }
 }

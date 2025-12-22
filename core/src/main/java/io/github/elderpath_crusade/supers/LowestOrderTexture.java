@@ -13,7 +13,7 @@ public abstract class LowestOrderTexture implements CustomBox {
     private Box parent;
     private Box bounds;
 
-    protected int[] calculatePos() {
+    public int[] calculatePos() {
         if (bounds == null) return new int[]{0, 0};
         if (parent == null) return new int[]{bounds.getX(), bounds.getY()};
         return new int[]{parent.getX() + bounds.getX(), parent.getY() + bounds.getY()};

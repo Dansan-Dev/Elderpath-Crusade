@@ -215,8 +215,6 @@ public class InteractionManager {
         currentEffect = null;
         selected.clear();
         selectedCount = 0;
-        // Clear all candidate highlights when interaction ends
-        clearAllCandidateHighlights();
         // If a programmatic interaction was queued during the previous interaction (e.g., triggered by an ability
         // inside currentEffect.triggerClickEffect), start it now.
         if (pendingProgrammaticSource != null) {
@@ -379,103 +377,4 @@ public class InteractionManager {
         return entities;
     }
 
-    /**
-     * Renders eligible target highlights for the current interaction.
-     * Called by SelectionOverlay to show which plots are valid targets.
-     * Highlights plots with red borders for hostile targets, green borders for friendly targets.
-     */
-    public static void renderEligibleTargets() {
-        if (!hasActiveSelection() || currentEffect == null) return;
-
-        TargetFilter filter = null;
-
-        // Handle AbilityBubble: get filter from the ability
-        if (currentEffect instanceof AbilityBubble bubble) {
-            var ability = bubble.getAbility();
-            if (ability instanceof TargetFilter tf) {
-                filter = tf;
-            }
-        }
-        // Handle direct TargetFilter implementations (like EphemeralSource)
-        else if (currentEffect instanceof TargetFilter tf) {
-            filter = tf;
-        }
-
-        if (filter == null) return;
-
-        // Get eligible targets for the current target index (selectedCount)
-        List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
-        if (eligiblePlots == null || eligiblePlots.isEmpty()) return;
-
-        // Get current player alignment for friendly/hostile determination
-        var currentPlayer = TurnManager.getCurrentPlayer();
-        if (currentPlayer == null) return;
-
-        // Clear all existing candidate highlights first (only for ability interactions)
-        // Note: Board's updateCandidateMoveSpots() should skip when source is AbilityBubble
-        clearAllCandidateHighlights();
-
-        // Highlight each eligible plot
-        for (Plot plot : eligiblePlots) {
-            if (plot == null) continue;
-
-            // Determine if plot contains a piece and its alignment
-            Board board = getBoardForPlot(plot);
-            if (board == null) continue;
-
-            GamePiece piece = board.getGamePieceAtPlot(plot);
-            if (piece instanceof MonsterGamePiece mgp) {
-                // Plot contains a piece: show red for hostile, green for friendly
-                PieceAlignment pieceAlignment = mgp.getAlignment();
-                if (pieceAlignment != currentPlayer && pieceAlignment != PieceAlignment.NEUTRAL) {
-                    // Hostile piece (different alignment, not neutral)
-                    plot.setAttackCandidate(true); // hostile = red
-                } else if (pieceAlignment == currentPlayer) {
-                    // Friendly piece (same alignment)
-                    plot.setFriendlyCandidate(true); // friendly = green
-                }
-                // Note: NEUTRAL pieces are not highlighted (could be extended if needed)
-            }
-            // Empty plots: don't show border (could be extended later if needed)
-        }
-    }
-
-    /**
-     * Helper to find the Board containing a given Plot.
-     */
-    private static Board getBoardForPlot(Plot plot) {
-        if (plot == null) return null;
-        // Search through all renderables to find the board containing this plot
-        for (Renderable r : GraphicsManager.getRenderables()) {
-            if (!(r instanceof Board board)) continue;
-            for (int row = 0; row < board.getROWS(); row++) {
-                for (int col = 0; col < board.getCOLS(); col++) {
-                    if (board.getPlotAtPos(row, col) == plot) {
-                        return board;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Clear all candidate highlights from all plots on all boards.
-     * Clears white dots (candidate), red borders (attack candidate), and green borders (friendly candidate).
-     */
-    private static void clearAllCandidateHighlights() {
-        for (Renderable r : GraphicsManager.getRenderables()) {
-            if (!(r instanceof Board board)) continue;
-            for (int row = 0; row < board.getROWS(); row++) {
-                for (int col = 0; col < board.getCOLS(); col++) {
-                    var plot = board.getPlotAtPos(row, col);
-                    if (plot instanceof Plot p) {
-                        p.setCandidate(false); // white dots
-                        p.setAttackCandidate(false); // red borders
-                        p.setFriendlyCandidate(false); // green borders
-                    }
-                }
-            }
-        }
-    }
 }

@@ -61,6 +61,7 @@ public class Main extends ApplicationAdapter {
         }
 
         // UPDATE
+        HighlightManager.update();
         GraphicsManager.update(delta);
 
         // RENDER
