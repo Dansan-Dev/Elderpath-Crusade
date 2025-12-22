@@ -97,7 +97,7 @@ public class BasicBot implements Bot {
                         Renderable srcR = b.getPlotAtPos(r, c);
                         if (srcR instanceof Plot srcPlot) {
                             Plot dstPlot = hostile.get(0);
-                            int[] dIdx = b.getIndicesOfPlot(dstPlot);
+                            int[] dIdx = dstPlot.getIndices();
                             if (dIdx == null) continue;
                             GamePiece defenderBefore = b.getGamePieceAtPos(dIdx[0], dIdx[1]);
                             int defenderHpBefore = -1;
@@ -141,14 +141,14 @@ public class BasicBot implements Bot {
             if (reachable.isEmpty()) continue;
             Plot best = null; int bestDist = currentDist;
             for (Plot p : reachable) {
-                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int[] idx = p.getIndices(); if (idx == null) continue;
                 int d = nearestEnemyManhattan(idx[0], idx[1], enemies);
                 if (d < bestDist) { bestDist = d; best = p; }
             }
             if (best != null) {
                 Renderable srcR = b.getPlotAtPos(r,c);
                 if (srcR instanceof Plot srcPlot) {
-                    int[] bestIdx = b.getIndicesOfPlot(best); if (bestIdx == null) continue;
+                    int[] bestIdx = best.getIndices(); if (bestIdx == null) continue;
                     GamePiece before = b.getGamePieceAtPos(r,c);
                     HashMap<Integer, CustomBox> entities = new HashMap<>();
                     entities.put(0, srcPlot); entities.put(1, best);

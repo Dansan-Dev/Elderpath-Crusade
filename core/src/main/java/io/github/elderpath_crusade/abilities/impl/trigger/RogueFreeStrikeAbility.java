@@ -98,7 +98,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility {
         int bestScore = Integer.MIN_VALUE;
         int dmg = owner.getEffectiveDamage();
         for (Plot p : attackables) {
-            int[] dIdx = board.getIndicesOfPlot(p);
+            int[] dIdx = p.getIndices();
             if (dIdx == null)
                 continue;
             GamePiece gp = board.getGamePieceAtPos(dIdx[0], dIdx[1]);
@@ -157,7 +157,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility {
             Plot destinationPlot = resolveToPlot(board, first);
             if (destinationPlot == null)
                 return;
-            int[] destinationPos = board.getIndicesOfPlot(destinationPlot);
+            int[] destinationPos = destinationPlot.getIndices();
             if (destinationPos == null)
                 return;
             int dr = destinationPos[0];

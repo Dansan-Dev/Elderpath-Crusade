@@ -388,7 +388,7 @@ public class Board extends HigherOrderTexture implements Updatable {
      */
     public boolean isValidSummonTarget(Plot plot, io.github.elderpath_crusade.enums.PieceAlignment alignment) {
         if (plot == null || alignment == null) return false;
-        int[] idx = getIndicesOfPlot(plot);
+        int[] idx = plot.getIndices();
         if (idx == null) return false;
         // must be empty
         if (getGamePieceAtPos(idx[0], idx[1]) != null) return false;
@@ -409,14 +409,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         }
     }
 
-    /**
-     * Find the grid indices of a given Plot instance.
-     * @return int[]{row, col} if found, otherwise null.
-     */
-    public int[] getIndicesOfPlot(Plot plot) {
-        if (plot == null) return null;
-        return new int[]{plot.getRow(), plot.getCol()};
-    }
 
     public void removePlotAtPos(int row, int col) {
         Renderable renderable = board[row][col];
@@ -618,8 +610,8 @@ public class Board extends HigherOrderTexture implements Updatable {
             }
         }
         if (src == null || dst == null) return;
-        int[] sIdx = getIndicesOfPlot(src);
-        int[] dIdx = getIndicesOfPlot(dst);
+        int[] sIdx = src.getIndices();
+        int[] dIdx = dst.getIndices();
         if (sIdx == null || dIdx == null) return;
         int sr = sIdx[0], sc = sIdx[1];
         int dr = dIdx[0], dc = dIdx[1];

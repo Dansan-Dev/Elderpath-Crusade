@@ -171,7 +171,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
         if (box instanceof Plot plot) {
             Board board = BoardManager.getBoard();
             if (board != null) {
-                int[] indices = board.getIndicesOfPlot(plot);
+                int[] indices = plot.getIndices();
                 if (indices != null) {
                     GamePiece gp = board.getGamePieceAtPos(indices[0], indices[1]);
                     if (gp instanceof MonsterGamePiece mgp) return mgp;

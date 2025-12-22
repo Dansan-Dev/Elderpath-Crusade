@@ -83,7 +83,7 @@ public class OncePerTurnAttackAbility implements BasicAbility, TriggeredAbility 
             return false;
 
         // Get plot's position
-        if (board.getIndicesOfPlot(plot) == null)
+        if (plot.getIndices() == null)
             return false;
 
         // Check if there's an attackable enemy at this plot
@@ -149,7 +149,7 @@ public class OncePerTurnAttackAbility implements BasicAbility, TriggeredAbility 
         int ownerCol = ownerPos.getCol();
 
         // Get target plot's position
-        int[] targetIndices = board.getIndicesOfPlot(targetPlot);
+        int[] targetIndices = targetPlot.getIndices();
         if (targetIndices == null)
             return;
         int targetRow = targetIndices[0];

@@ -56,6 +56,10 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         this.col = col;
     }
 
+    public int[] getIndices() {
+        return new int[]{row, col};
+    }
+
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);
         Color hoverColor = plot.getColor().cpy().lerp(Color.BLACK, 0.5f);
@@ -96,7 +100,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         }
         if (targetPlot == null) return false;
 
-        int[] srcIdx = boardRef.getIndicesOfPlot(this);
+        int[] srcIdx = this.getIndices();
         if (srcIdx == null) return false;
         GamePiece gp = boardRef.getGamePieceAtPlot(this);
         if (!(gp instanceof MonsterGamePiece mgp)) return false;
@@ -127,7 +131,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         }
 
         // Check if target is an enemy -> try attack ability first
-        int[] dstIdx = boardRef.getIndicesOfPlot(targetPlot);
+        int[] dstIdx = targetPlot.getIndices();
         if (dstIdx == null) return false;
         int dr = dstIdx[0], dc = dstIdx[1];
         GamePiece dstPiece = boardRef.getGamePieceAtPos(dr, dc);

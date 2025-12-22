@@ -84,13 +84,13 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
         GamePiece sourcePiece = board.getGamePieceAtPlot(sourcePlot);
         if (!(sourcePiece instanceof MonsterGamePiece target)) return;
         if (target == owner) return; // must be "another" target
-        int[] sourceIndices = board.getIndicesOfPlot(sourcePlot);
+        int[] sourceIndices = sourcePlot.getIndices();
         if (sourceIndices == null) return;
         Board.Position sourcePos = new Board.Position(board, sourceIndices[0], sourceIndices[1]);
         int sourceRow = sourcePos.getRow();
         int sourceCol = sourcePos.getCol();
 
-        int[] destinationIndices = board.getIndicesOfPlot(destinationPlot);
+        int[] destinationIndices = destinationPlot.getIndices();
         if (destinationIndices == null) return;
         int destinationRow = destinationIndices[0];
         int destinationCol = destinationIndices[1];
@@ -144,7 +144,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
             if (!(piece instanceof MonsterGamePiece target)) return false;
             if (target == owner) return false; // must be "another" target
 
-            int[] targetIndices = board.getIndicesOfPlot(targetPlot);
+            int[] targetIndices = targetPlot.getIndices();
             if (targetIndices == null) return false;
             int targetRow = targetIndices[0];
             int targetCol = targetIndices[1];
@@ -163,9 +163,9 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
             Plot firstPlot = resolveToPlot(board, firstTarget);
             if (firstPlot == null) return false;
 
-            int[] firstIndices = board.getIndicesOfPlot(firstPlot);
+            int[] firstIndices = firstPlot.getIndices();
             if (firstIndices == null) return false;
-            int[] secondIndices = board.getIndicesOfPlot(targetPlot);
+            int[] secondIndices = targetPlot.getIndices();
             if (secondIndices == null) return false;
 
             // Must be cardinally adjacent
@@ -226,7 +226,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
             Plot firstPlot = resolveToPlot(board, firstTarget);
             if (firstPlot == null) return null;
 
-            int[] firstIndices = board.getIndicesOfPlot(firstPlot);
+            int[] firstIndices = firstPlot.getIndices();
             if (firstIndices == null) return null;
             int firstRow = firstIndices[0];
             int firstCol = firstIndices[1];

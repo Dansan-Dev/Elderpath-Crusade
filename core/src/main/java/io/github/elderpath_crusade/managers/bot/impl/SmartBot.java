@@ -169,7 +169,7 @@ public class SmartBot implements Bot {
             int speed = me.getEffectiveSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             for (Plot p : reach) {
-                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int[] idx = p.getIndices(); if (idx == null) continue;
                 if (idx[0] == targetRow) {
                     final int sr=r, sc=c; final Plot dest=p; final GamePiece ref=gp;
                     out.add(new Intent(100, () -> moveAndVerify(b, sr, sc, dest, ref, idx[0], idx[1]), "WIN_MOVE"));
@@ -194,7 +194,7 @@ public class SmartBot implements Bot {
             else if (res.turns == 1) base = 95;
             else base = 88; // 2 turns by user preference
             int penalty = Math.min(20, res.threatExposure * 5);
-            final Plot dest = res.firstMove; int[] diTmp = b.getIndicesOfPlot(dest);
+            final Plot dest = res.firstMove; int[] diTmp = dest.getIndices();
             boolean lethalThisTurnEnd = false;
             if (diTmp != null && res.turns > 0) {
                 lethalThisTurnEnd = isLethalThreatNextTurn(b, me, diTmp[0], diTmp[1]);
@@ -236,7 +236,7 @@ public class SmartBot implements Bot {
             int r = key / 1000, c = key % 1000;
             List<int[]> list = new ArrayList<>();
             List<Plot> plots = b.getReachablePlots(r, c, effSpeed);
-            for (Plot p : plots) { int[] idx = b.getIndicesOfPlot(p); if (idx != null) list.add(new int[]{idx[0], idx[1]}); }
+            for (Plot p : plots) { int[] idx = p.getIndices(); if (idx != null) list.add(new int[]{idx[0], idx[1]}); }
             reachCache.put(key, list);
             return list;
         };
@@ -294,7 +294,7 @@ public class SmartBot implements Bot {
             List<Plot> hostile = b.getAttackableEnemyPlots(r,c, PieceAlignment.P2);
             if (hostile == null || hostile.isEmpty()) continue;
             for (Plot dst : hostile) {
-                int[] d = b.getIndicesOfPlot(dst); if (d == null) continue;
+                int[] d = dst.getIndices(); if (d == null) continue;
                 GamePiece defender = b.getGamePieceAtPos(d[0], d[1]);
                 int base = 70;
                 boolean lethal = false;
@@ -357,12 +357,12 @@ public class SmartBot implements Bot {
             if (hasRogue && reach != null && !reach.isEmpty()) {
                 Plot lethalDest = null; int[] lethalIdx = null; int bestForwardBias = -9999;
                 for (Plot p : reach) {
-                    int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                    int[] idx = p.getIndices(); if (idx == null) continue;
                     java.util.List<Plot> atkFromDest = b.getAttackableEnemyPlots(idx[0], idx[1], PieceAlignment.P2);
                     if (atkFromDest == null || atkFromDest.isEmpty()) continue;
                     boolean lethalExists = false;
                     for (Plot tp : atkFromDest) {
-                        int[] di = b.getIndicesOfPlot(tp); if (di == null) continue;
+                        int[] di = tp.getIndices(); if (di == null) continue;
                         GamePiece tgp = b.getGamePieceAtPos(di[0], di[1]);
                         if (tgp instanceof MonsterGamePiece em) {
                             if (me.getEffectiveDamage() >= Math.max(0, em.getStats().getCurrentHealth())) { lethalExists = true; break; }
@@ -384,7 +384,7 @@ public class SmartBot implements Bot {
                 }
             }
             for (Plot p : reach) {
-                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int[] idx = p.getIndices(); if (idx == null) continue;
                 int d = nearestManhattan(idx[0], idx[1], enemies);
                 boolean threatened = threats.isThreatened(idx[0], idx[1]);
                 boolean allowRogueThreat = false;
@@ -397,13 +397,13 @@ public class SmartBot implements Bot {
             }
             if (best == null) {
                 for (Plot p : reach) {
-                    int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                    int[] idx = p.getIndices(); if (idx == null) continue;
                     // allow if it enables immediate lethal (incl. Rogue free-strike) even if threatened
                     if (wouldEnableLethal(me, b, idx[0], idx[1])) { best = p; bestDist = nearestManhattan(idx[0], idx[1], enemies); break; }
                 }
             }
             if (best != null) {
-                final int sr=r, sc=c; final Plot dest=best; final GamePiece ref=gp; int[] bi = b.getIndicesOfPlot(best);
+                final int sr=r, sc=c; final Plot dest=best; final GamePiece ref=gp; int[] bi = best.getIndices();
                 int gain = Math.max(0, currentDist - bestDist);
                 int score = 50 + Math.min(10, gain);
                 // Directional bias: prefer moving forward (toward row 0) over backward
@@ -427,7 +427,7 @@ public class SmartBot implements Bot {
                             int dmg = me2.getEffectiveDamage();
                             boolean lethalExists = false;
                             for (Plot p2 : atkFromDest) {
-                                int[] di = b.getIndicesOfPlot(p2); if (di == null) continue;
+                                int[] di = p2.getIndices(); if (di == null) continue;
                                 GamePiece tgp = b.getGamePieceAtPos(di[0], di[1]);
                                 if (tgp instanceof MonsterGamePiece em) {
                                     if (dmg >= Math.max(0, em.getStats().getCurrentHealth())) { lethalExists = true; break; }
@@ -496,7 +496,7 @@ public class SmartBot implements Bot {
             WinPathResult myTTWNow = estimateTurnsToRow0(b, me, r, c, threats, actionsRem);
 
             for (Plot p : candidates) {
-                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int[] idx = p.getIndices(); if (idx == null) continue;
                 int dr = idx[0], dc = idx[1];
                 // Discard one-shot lethal
                 if (isLethalThreatNextTurn(b, me, dr, dc)) continue;
@@ -720,7 +720,7 @@ public class SmartBot implements Bot {
             int speed = me.getStats().getSpeed();
             List<Plot> reach = b.getReachablePlots(r,c,speed);
             for (Plot p : reach) {
-                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int[] idx = p.getIndices(); if (idx == null) continue;
                 if (idx[0] == targetRow) {
                     // Move there; Board will handle spending 1 action
                     Renderable srcR = b.getPlotAtPos(r,c);
@@ -750,7 +750,7 @@ public class SmartBot implements Bot {
             Renderable srcR = b.getPlotAtPos(r,c);
             if (!(srcR instanceof Plot srcPlot)) continue;
             Plot dst = hostile.get(0);
-            int[] d = b.getIndicesOfPlot(dst); if (d == null) continue;
+            int[] d = dst.getIndices(); if (d == null) continue;
             GamePiece defenderBefore = b.getGamePieceAtPos(d[0], d[1]);
             // Track our actions before triggering to verify that an action was actually spent
             int actionsBefore = getRemainingActions(me);
@@ -791,7 +791,7 @@ public class SmartBot implements Bot {
             int currentDist = nearestManhattan(r,c,enemies);
             Plot best = null; int bestDist = currentDist;
             for (Plot p : reach) {
-                int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                int[] idx = p.getIndices(); if (idx == null) continue;
                 int d = nearestManhattan(idx[0], idx[1], enemies);
                 if (d < bestDist && !threats.isThreatened(idx[0], idx[1])) {
                     bestDist = d; best = p;
@@ -800,7 +800,7 @@ public class SmartBot implements Bot {
             // If no safe tile reduces distance, consider first-strike adjacent engage
             if (best == null) {
                 for (Plot p : reach) {
-                    int[] idx = b.getIndicesOfPlot(p); if (idx == null) continue;
+                    int[] idx = p.getIndices(); if (idx == null) continue;
                     // If this move would place us adjacent to an enemy we can kill immediately this turn, allow it
                     // but avoid stepping into a tile that is lethal next turn for us
                     if (wouldEnableLethal(me, b, idx[0], idx[1]) && !isLethalThreatNextTurn(b, me, idx[0], idx[1])) { best = p; break; }
@@ -809,7 +809,7 @@ public class SmartBot implements Bot {
             if (best != null) {
                 Renderable srcR = b.getPlotAtPos(r,c);
                 if (srcR instanceof Plot srcPlot) {
-                    int[] bestIdx = b.getIndicesOfPlot(best); if (bestIdx == null) continue;
+                    int[] bestIdx = best.getIndices(); if (bestIdx == null) continue;
                     GamePiece before = b.getGamePieceAtPos(r,c);
                     HashMap<Integer, CustomBox> entities = new HashMap<>();
                     entities.put(0, srcPlot); entities.put(1, best);

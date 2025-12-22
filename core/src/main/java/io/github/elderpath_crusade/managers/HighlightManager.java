@@ -213,10 +213,10 @@ public class HighlightManager implements Renderable {
     private static void updateMovementAndAttackHighlights(Plot sourcePlot) {
         Board board = sourcePlot.getBoard(); // Assuming Plot has getBoard() or similar.
         // Wait, Plot in the provided code has boardRef and setBoard(Board). I should check if it has getBoard().
-        // Actually, Board.getIndicesOfPlot(sourcePlot) is used in the old code.
+        // Actually, sourcePlot.getIndices() is used now.
 
         // I'll use the logic from Board.updateCandidateMoveSpots
-        int[] sIdx = board.getIndicesOfPlot(sourcePlot);
+        int[] sIdx = sourcePlot.getIndices();
         if (sIdx == null) return;
         int sr = sIdx[0], sc = sIdx[1];
         GamePiece gp = board.getGamePieceAtPos(sr, sc);

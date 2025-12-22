@@ -58,7 +58,7 @@ public class BaseMoveAbility implements BasicAbility {
         if (board == null) return false;
 
         // Get plot's position
-        int[] plotIndices = board.getIndicesOfPlot(plot);
+        int[] plotIndices = plot.getIndices();
         if (plotIndices == null) return false;
         int plotRow = plotIndices[0];
         int plotCol = plotIndices[1];
@@ -95,7 +95,7 @@ public class BaseMoveAbility implements BasicAbility {
         // Filter to only empty plots
         return reachable.stream()
                 .filter(plot -> {
-                    int[] indices = board.getIndicesOfPlot(plot);
+                    int[] indices = plot.getIndices();
                     if (indices == null) return false;
                     return !board.isOccupied(indices[0], indices[1]);
                 })
@@ -123,7 +123,7 @@ public class BaseMoveAbility implements BasicAbility {
         int ownerCol = ownerPos.getCol();
 
         // Get destination plot's position
-        int[] destIndices = board.getIndicesOfPlot(destinationPlot);
+        int[] destIndices = destinationPlot.getIndices();
         if (destIndices == null) return;
         int destRow = destIndices[0];
         int destCol = destIndices[1];

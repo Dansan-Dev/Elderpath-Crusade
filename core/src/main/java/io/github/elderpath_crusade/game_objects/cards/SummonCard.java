@@ -100,7 +100,7 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         if (!(secondClicked instanceof Plot plot)) {
             return null;
         }
-        return board.getIndicesOfPlot(plot); // may be null if plot isn't on this board
+        return plot.getIndices(); // may be null if plot isn't on this board
     }
 
     private void initializeClickableEffect() {

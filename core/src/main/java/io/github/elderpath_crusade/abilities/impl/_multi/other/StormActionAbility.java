@@ -74,7 +74,7 @@ public class StormActionAbility implements ActionableAbility, TriggeredAbility, 
         if (board == null) return false;
 
         // Get plot's position
-        int[] plotIndices = board.getIndicesOfPlot(plot);
+        int[] plotIndices = plot.getIndices();
         if (plotIndices == null) return false;
         int plotRow = plotIndices[0];
         int plotCol = plotIndices[1];
@@ -141,7 +141,7 @@ public class StormActionAbility implements ActionableAbility, TriggeredAbility, 
         if (board == null) return;
 
         // Get center plot's position
-        int[] centerIndices = board.getIndicesOfPlot(centerPlot);
+        int[] centerIndices = centerPlot.getIndices();
         if (centerIndices == null) return;
         int centerRow = centerIndices[0];
         int centerCol = centerIndices[1];
