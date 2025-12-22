@@ -249,6 +249,19 @@ public class Board extends HigherOrderTexture implements Updatable {
         ZIndexRegistry.notifyZChanged(this);
     }
 
+    public Plot getPlotAtScreen(int mouseX, int mouseY) {
+        int[] pos = calculatePos();
+        int localX = mouseX - pos[0];
+        int localY = mouseY - pos[1];
+        int col = localX / PLOT_WIDTH;
+        int row = localY / PLOT_HEIGHT;
+        if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+            Renderable r = board[row][col];
+            if (r instanceof Plot p) return p;
+        }
+        return null;
+    }
+
     public void initializePlots() {
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
@@ -256,6 +269,7 @@ public class Board extends HigherOrderTexture implements Updatable {
                 if (row == 0) plot.withPlotColor(ColorSettings.PLOT_PLAYER_1_ROW.getColor());
                 if (row == ROWS - 1) plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
                 plot.setBoard(this);
+                plot.setGridPos(row, col);
                 plot.setClickableEffect(
                     this::handlePlotMove,
                     ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
@@ -362,14 +376,7 @@ public class Board extends HigherOrderTexture implements Updatable {
      */
     public GamePiece getGamePieceAtPlot(Plot plot) {
         if (plot == null) return null;
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                if (board[row][col] == plot) {
-                    return gamePieces[row][col];
-                }
-            }
-        }
-        return null;
+        return gamePieces[plot.getRow()][plot.getCol()];
     }
 
     /**
@@ -408,14 +415,7 @@ public class Board extends HigherOrderTexture implements Updatable {
      */
     public int[] getIndicesOfPlot(Plot plot) {
         if (plot == null) return null;
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                if (board[row][col] == plot) {
-                    return new int[]{row, col};
-                }
-            }
-        }
-        return null;
+        return new int[]{plot.getRow(), plot.getCol()};
     }
 
     public void removePlotAtPos(int row, int col) {
@@ -767,12 +767,14 @@ public class Board extends HigherOrderTexture implements Updatable {
                 if (plot != null && plot.getBounds() != null) {
                     plot.getBounds().setX(col * PLOT_WIDTH);
                     plot.getBounds().setY(row * PLOT_HEIGHT);
+                    if (plot instanceof Plot p) p.setGridPos(row, col);
                 }
 
                 Renderable swapPlot = board[swapRow][col];
                 if (swapPlot != null && swapPlot.getBounds() != null) {
                     swapPlot.getBounds().setX(col * PLOT_WIDTH);
                     swapPlot.getBounds().setY(swapRow * PLOT_HEIGHT);
+                    if (swapPlot instanceof Plot p) p.setGridPos(swapRow, col);
                 }
             }
         }

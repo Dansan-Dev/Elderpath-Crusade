@@ -12,6 +12,7 @@ import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
+import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
@@ -139,25 +140,23 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
     }
 
     private MonsterGamePiece findHoveredMonster() {
-        List<Renderable> renderables = GraphicsManager.getRenderables();
-        for (Renderable r : renderables) {
-            if (r instanceof Board b) {
-                int rows = b.getROWS();
-                int cols = b.getCOLS();
-                int baseX = b.getBounds().getX();
-                int baseY = b.getBounds().getY();
-                int cellW = b.getPLOT_WIDTH();
-                int cellH = b.getPLOT_HEIGHT();
-                // No need for visual flip logic - board is physically flipped now
-                for (int row = 0; row < rows; row++) {
-                    for (int col = 0; col < cols; col++) {
-                        int absX = baseX + col * cellW;
-                        int absY = baseY + row * cellH;
-                        if (HoverUtils.isHovered(absX, absY, cellW, cellH)) {
-                            GamePiece gp = b.getGamePieceAtPos(row, col);
-                            if (gp instanceof MonsterGamePiece mgp) {
-                                return mgp;
-                            }
+        Board b = BoardManager.getBoard();
+        if (b != null) {
+            int rows = b.getROWS();
+            int cols = b.getCOLS();
+            int baseX = b.getBounds().getX();
+            int baseY = b.getBounds().getY();
+            int cellW = b.getPLOT_WIDTH();
+            int cellH = b.getPLOT_HEIGHT();
+            // No need for visual flip logic - board is physically flipped now
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < cols; col++) {
+                    int absX = baseX + col * cellW;
+                    int absY = baseY + row * cellH;
+                    if (HoverUtils.isHovered(absX, absY, cellW, cellH)) {
+                        GamePiece gp = b.getGamePieceAtPos(row, col);
+                        if (gp instanceof MonsterGamePiece mgp) {
+                            return mgp;
                         }
                     }
                 }

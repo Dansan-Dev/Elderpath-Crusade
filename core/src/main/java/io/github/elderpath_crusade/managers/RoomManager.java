@@ -17,6 +17,7 @@ public class RoomManager {
         GraphicsManager.clearRenderables();
         GraphicsManager.clearUIRenderables();
         InteractionManager.clearClickables();
+        BoardManager.clear();
     }
 
     /**

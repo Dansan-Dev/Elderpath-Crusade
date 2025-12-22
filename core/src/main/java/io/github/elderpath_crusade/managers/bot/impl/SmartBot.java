@@ -57,7 +57,7 @@ public class SmartBot implements Bot {
         if (!turnActive || ended) return;
         if (GraphicsManager.isPaused() || TurnManager.getCurrentPlayer() != PieceAlignment.P2) return;
         if (stepsDone >= MAX_STEPS) { Logger.log("[SmartBot]", "Reached step cap"); endTurn(); return; }
-        Board board = getActiveBoard();
+        Board board = BoardManager.getBoard();
         if (board == null) { endTurn(); return; }
         Logger.log("[SmartBot]", "Step tracker: " + stepsDone);
         // If there is nothing left to do, end the turn promptly
@@ -80,11 +80,6 @@ public class SmartBot implements Bot {
         ended = true;
         turnActive = false;
         Timer.schedule(new Timer.Task() { @Override public void run() { if (!GraphicsManager.isPaused()) TurnManager.endTurn(); } }, END_DELAY);
-    }
-
-    private Board getActiveBoard() {
-        for (Renderable r : GraphicsManager.getRenderables()) if (r instanceof Board b) return b;
-        return null;
     }
 
     // --- Intent engine ---

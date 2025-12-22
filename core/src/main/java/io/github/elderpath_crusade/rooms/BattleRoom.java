@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
+import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.*;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
@@ -55,6 +56,7 @@ public abstract class BattleRoom extends Room {
         // 2. Board
         board = new Board(0, 0, plot_width, plot_height, board_rows, board_cols);
         board.initializePlots();
+        BoardManager.setBoard(board);
         addContent(board);
 
         // Common terrain setup

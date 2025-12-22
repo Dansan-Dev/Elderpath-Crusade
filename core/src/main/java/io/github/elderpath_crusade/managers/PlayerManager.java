@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
+import io.github.elderpath_crusade.managers.BoardManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,10 +112,9 @@ public class PlayerManager {
     }
 
     private static void resetActionsFor(PieceAlignment id) {
-        for (Renderable r : GraphicsManager.getRenderables()) {
-            if (r instanceof Board b) {
-                b.resetActionsForOwner(id);
-            }
+        Board b = BoardManager.getBoard();
+        if (b != null) {
+            b.resetActionsForOwner(id);
         }
     }
 

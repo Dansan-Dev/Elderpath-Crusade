@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.rooms.VictoryRoom;
+import io.github.elderpath_crusade.managers.BoardManager;
 import com.badlogic.gdx.utils.Timer;
 
 import java.util.List;
@@ -70,7 +71,7 @@ public final class WinConditionManager {
         if (rows == null)
             return;
 
-        Board activeBoard = getActiveBoard();
+        Board activeBoard = BoardManager.getBoard();
         if (activeBoard == null)
             return;
 
@@ -123,18 +124,8 @@ public final class WinConditionManager {
     }
 
     private static Integer getActiveBoardRows() {
-        Board board = getActiveBoard();
+        Board board = BoardManager.getBoard();
         return (board != null) ? board.getROWS() : null;
-    }
-
-    private static Board getActiveBoard() {
-        List<Renderable> renderables = GraphicsManager.getRenderables();
-        for (Renderable r : renderables) {
-            if (r instanceof Board b) {
-                return b;
-            }
-        }
-        return null;
     }
 
     private static void triggerWin(PieceAlignment winner) {

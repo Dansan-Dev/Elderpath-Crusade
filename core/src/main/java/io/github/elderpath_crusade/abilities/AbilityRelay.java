@@ -4,10 +4,10 @@ import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
-import io.github.elderpath_crusade.managers.GraphicsManager;
 
 import java.util.function.Consumer;
 
@@ -41,9 +41,9 @@ public final class AbilityRelay {
     }
 
     private static void onGameEvent(GameEvent event) {
-        // Iterate all active Boards and deliver to TriggeredAbility on pieces
-        for (Renderable r : GraphicsManager.getRenderables()) {
-            if (!(r instanceof Board board)) continue;
+        // Resolve the active Board and deliver to TriggeredAbility on pieces
+        Board board = BoardManager.getBoard();
+        if (board != null) {
             for (int row = 0; row < board.getROWS(); row++) {
                 for (int col = 0; col < board.getCOLS(); col++) {
                     GamePiece gp = board.getGamePieceAtPos(row, col);

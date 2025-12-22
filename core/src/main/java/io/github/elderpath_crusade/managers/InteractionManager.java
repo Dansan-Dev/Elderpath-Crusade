@@ -11,6 +11,7 @@ import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.*;
+import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.ui_objects.AbilityBubble;
@@ -37,33 +38,36 @@ public class InteractionManager {
         Consumer<HashMap<Integer, CustomBox>> onPicked
     ) {
         if (data == null || onPicked == null) return false;
-        // Create a lightweight source implementing Clickable and TargetFilter so existing logic works.
-        class EphemeralSource implements Clickable, TargetFilter {
-            private final ClickableEffectData effectData;
-            private final Consumer<HashMap<Integer, CustomBox>> callback;
-            private final TargetFilter tf;
-
-            EphemeralSource(ClickableEffectData d, TargetFilter f, java.util.function.Consumer<HashMap<Integer, CustomBox>> cb) {
-                this.effectData = d; this.tf = f; this.callback = cb;
-            }
-            @Override public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) { /* not used */ }
-            @Override public ClickableEffectData getClickableEffectData() { return effectData; }
-            @Override public void triggerClickEffect(HashMap<Integer, CustomBox> entities) { callback.accept(entities); }
-            @Override public int getX() { return 0; }
-            @Override public int getY() { return 0; }
-            @Override public int getWidth() { return 0; }
-            @Override public int getHeight() { return 0; }
-            @Override public boolean isPauseUIElement() { return false; }
-            @Override public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                if (tf == null) return true; return tf.isValidTargetForEffect(box, targetIndex);
-            }
-            @Override public List<Plot> getEligibleTargets(int targetIndex) {
-                if (tf == null) return null; return tf.getEligibleTargets(targetIndex);
-            }
-        }
         return startProgrammaticInteraction(
             new EphemeralSource(data, filter, onPicked)
         );
+    }
+
+    /**
+     * Lightweight source implementing Clickable and TargetFilter for programmatic selections.
+     */
+    private static class EphemeralSource implements Clickable, TargetFilter {
+        private final ClickableEffectData effectData;
+        private final Consumer<HashMap<Integer, CustomBox>> callback;
+        private final TargetFilter tf;
+
+        EphemeralSource(ClickableEffectData d, TargetFilter f, Consumer<HashMap<Integer, CustomBox>> cb) {
+            this.effectData = d; this.tf = f; this.callback = cb;
+        }
+        @Override public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) { /* not used */ }
+        @Override public ClickableEffectData getClickableEffectData() { return effectData; }
+        @Override public void triggerClickEffect(HashMap<Integer, CustomBox> entities) { callback.accept(entities); }
+        @Override public int getX() { return 0; }
+        @Override public int getY() { return 0; }
+        @Override public int getWidth() { return 0; }
+        @Override public int getHeight() { return 0; }
+        @Override public boolean isPauseUIElement() { return false; }
+        @Override public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+            if (tf == null) return true; return tf.isValidTargetForEffect(box, targetIndex);
+        }
+        @Override public List<Plot> getEligibleTargets(int targetIndex) {
+            if (tf == null) return null; return tf.getEligibleTargets(targetIndex);
+        }
     }
 
     /**
@@ -97,29 +101,8 @@ public class InteractionManager {
         // If the game just became paused while interaction selection was in progress, clear it.
         if (paused && selectedCount != 0) cleanInteraction();
 
-        // Two-pass click resolution: prioritize UI clickables (buttons, text) over world elements (plots)
-        // Use a snapshot to avoid concurrent modification issues if cards are removed during iteration
-        List<Clickable> clickablesSnapshot = new ArrayList<>(clickables);
-        // Pass 1: UI clickables
-        Clickable hit = null;
-        for (Clickable clickable : clickablesSnapshot) {
-            if (!(clickable instanceof UIRenderable)) continue;
-            // When paused, only allow UI elements explicitly marked for pause; generic UI is blocked
-            if (paused && !clickable.isPauseUIElement()) continue;
-            // Skip if this clickable is no longer in the active list (removed during interaction)
-            if (!clickables.contains(clickable)) continue;
-            if (clickable.inRange(mouseX, mouseY)) { hit = clickable; break; }
-        }
-        // Pass 2: Non-UI clickables (board, plots, sprites) if no UI element was hit
-        if (hit == null) {
-            for (Clickable clickable : clickablesSnapshot) {
-                if (clickable instanceof UIRenderable) continue;
-                if (paused) continue; // never allow non-UI while paused
-                // Skip if this clickable is no longer in the active list (removed during interaction)
-                if (!clickables.contains(clickable)) continue;
-                if (clickable.inRange(mouseX, mouseY)) { hit = clickable; break; }
-            }
-        }
+        Clickable hit = findHit(mouseX, mouseY, paused);
+
         if (hit != null) {
             if (selectedCount == 0) {
                 addInitialInteraction(hit);
@@ -127,6 +110,41 @@ public class InteractionManager {
                 addExtraTarget(hit);
             }
         }
+    }
+
+    private static Clickable findHit(int mouseX, int mouseY, boolean paused) {
+        // Two-pass click resolution: prioritize UI clickables (buttons, text) over world elements (plots)
+        // Use a snapshot to avoid concurrent modification issues if cards are removed during iteration
+        List<Clickable> snapshot = new ArrayList<>(clickables);
+
+        // Pass 1: UI clickables
+        for (Clickable clickable : snapshot) {
+            if (!(clickable instanceof UIRenderable)) continue;
+            // When paused, only allow UI elements explicitly marked for pause; generic UI is blocked
+            if (paused && !clickable.isPauseUIElement()) continue;
+            // Skip if this clickable is no longer in the active list (removed during interaction)
+            if (!clickables.contains(clickable)) continue;
+            if (clickable.inRange(mouseX, mouseY)) return clickable;
+        }
+
+        // Pass 2: Non-UI clickables (board, plots, sprites) if no UI element was hit
+        // Check Board and its plots first via BoardManager for O(1) lookup
+        Board activeBoard = BoardManager.getBoard();
+        if (activeBoard != null && !paused && activeBoard.inRange(mouseX, mouseY)) {
+            Plot plot = activeBoard.getPlotAtScreen(mouseX, mouseY);
+            if (plot != null) return plot;
+        }
+
+        // Check remaining non-UI clickables (sprites, etc.)
+        for (Clickable clickable : snapshot) {
+            if (clickable instanceof UIRenderable) continue;
+            if (clickable instanceof Plot) continue; // Already handled via BoardManager
+            if (paused) continue; // never allow non-UI while paused
+            if (!clickables.contains(clickable)) continue;
+            if (clickable.inRange(mouseX, mouseY)) return clickable;
+        }
+
+        return null;
     }
 
     public static void addClickable(Clickable clickable) {
@@ -335,30 +353,17 @@ public class InteractionManager {
     private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
         if (box == null || data == null) return false;
         ClickableTargetType targetType = data.getTargetType();
-        boolean typeOk;
-        // Special-case: allow clicking a GamePiece when the effect expects a PLOT; downstream will resolve to the plot.
-        if (targetType == ClickableTargetType.PLOT && box instanceof GamePiece) {
-            typeOk = true;
-        } else {
-            typeOk = (targetType == null) || targetType.matches(box);
-        }
+
+        // Type check: special-case allow clicking GamePiece for PLOT effects
+        boolean typeOk = (targetType == null)
+            || targetType.matches(box)
+            || (targetType == ClickableTargetType.PLOT && box instanceof GamePiece);
+
         if (!typeOk) return false;
 
-        // Check TargetFilter: if currentEffect is AbilityBubble, use the ability's filter
-        TargetFilter filter = null;
-        if (currentEffect instanceof AbilityBubble bubble) {
-            var ability = bubble.getAbility();
-            if (ability instanceof TargetFilter tf) {
-                filter = tf;
-            }
-        } else if (currentEffect instanceof TargetFilter tf) {
-            filter = tf;
-        }
-
-        if (filter != null) {
-            return filter.isValidTargetForEffect(box, selectedCount);
-        }
-        return true;
+        // Semantic check via TargetFilter
+        TargetFilter filter = (currentEffect instanceof TargetFilter tf) ? tf : null;
+        return filter == null || filter.isValidTargetForEffect(box, selectedCount);
     }
 
     private static HashMap<Integer, CustomBox> getSelectedEntities() {

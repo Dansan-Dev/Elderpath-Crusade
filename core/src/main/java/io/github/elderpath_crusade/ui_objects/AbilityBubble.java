@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
+import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
@@ -24,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * or a small numeric label fallback. Keeps Button class lean by moving bubble-specific
  * behavior here. Rendered as a circle smaller than a plot.
  */
-public class AbilityBubble extends LowestOrderTexture implements Renderable, UIRenderable, Clickable {
+public class AbilityBubble extends LowestOrderTexture implements Renderable, UIRenderable, Clickable, TargetFilter {
     private final int z;
     private Texture iconTexture; // optional
     private final int size; // square bubble size in pixels
@@ -39,7 +40,7 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
     // Clickable plumbing
     private ClickableEffectData effectData;
     private OnClick onClick;
-    
+
     // Ability reference for TargetFilter access
     private ActionableAbility ability;
 
@@ -158,6 +159,18 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
     @Override
     public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
         if (onClick != null) onClick.run(interactionEntities);
+    }
+
+    @Override
+    public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+        if (ability instanceof TargetFilter tf) return tf.isValidTargetForEffect(box, targetIndex);
+        return true;
+    }
+
+    @Override
+    public List<Plot> getEligibleTargets(int targetIndex) {
+        if (ability instanceof TargetFilter tf) return tf.getEligibleTargets(targetIndex);
+        return null;
     }
 
     private static Texture getCircleTexture(int w, int h, Color fill, Color border, int borderThickness, boolean withShadow) {

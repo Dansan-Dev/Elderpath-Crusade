@@ -40,11 +40,21 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
+    @Getter
+    private int row;
+    @Getter
+    private int col;
+
     // Board back-reference for movement logic
     @Getter
     private Board boardRef = null;
 
     public Board getBoard() { return boardRef; }
+
+    public void setGridPos(int row, int col) {
+        this.row = row;
+        this.col = col;
+    }
 
     public Plot(int x, int y, int width, int height) {
         plot = new TextureObject(ColorSettings.PLOT_GREEN.getColor(), 0, 0, width, height);

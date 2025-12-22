@@ -20,7 +20,6 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.ui_objects.AbilityBubble;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.utils.GraphicUtils;
 
@@ -270,18 +269,7 @@ public class HighlightManager implements Renderable {
     }
 
     private static void updateAbilityEligibleTargetHighlights(CustomBox source) {
-        TargetFilter filter = null;
-
-        if (source instanceof AbilityBubble bubble) {
-            var ability = bubble.getAbility();
-            if (ability instanceof TargetFilter tf) {
-                filter = tf;
-            }
-        } else if (source instanceof TargetFilter tf) {
-            filter = tf;
-        }
-
-        if (filter == null) return;
+        if (!(source instanceof TargetFilter filter)) return;
 
         int selectedCount = InteractionManager.getSelectedCount();
         List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
