@@ -7,12 +7,14 @@ import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
+import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 import io.github.elderpath_crusade.utils.ClickableRegistryUtil;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 // When you update higher order textures, you need to update the ZIndexRegistry as well
@@ -46,6 +48,22 @@ public class GraphicsManager {
         renderUI(batch);
     }
 
+    public static void update(float delta) {
+        if (isPaused) return;
+        List<Renderable> renderableSnapshot = new ArrayList<>(renderables);
+        for (Renderable r : renderableSnapshot) {
+            if (r instanceof Updatable u) {
+                u.update(delta);
+            }
+        }
+        List<UIRenderable> uiSnapshot = new ArrayList<>(uiRenderables);
+        for (UIRenderable r : uiSnapshot) {
+            if (r instanceof Updatable u) {
+                u.update(delta);
+            }
+        }
+    }
+
     public static void renderUI(SpriteBatch batch) {
         // Iterate over a snapshot to avoid ConcurrentModificationException if UI mutates during render
         List<UIRenderable> snapshot = new ArrayList<>(uiRenderables);
@@ -59,7 +77,7 @@ public class GraphicsManager {
 
     private static void renderGameGraphics(SpriteBatch batch) {
         for (Integer z : ZIndexRegistry.getZLevels()) {
-            List<Renderable> bucket = ZIndexRegistry.getBucket(z);
+            Collection<Renderable> bucket = ZIndexRegistry.getBucket(z);
             if (bucket == null) continue;
             for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture hot) {

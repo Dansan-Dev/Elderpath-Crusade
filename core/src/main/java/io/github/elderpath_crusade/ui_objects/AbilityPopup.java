@@ -212,7 +212,7 @@ public class AbilityPopup extends HigherOrderUI {
         if (mgp == null) return false;
         if (mgp.getAlignment() != current) return false;
         if (mgp.isStunned()) return false;
-        if (getRemainingActions(mgp) <= 0) return false;
+        if (AbilityUtils.getRemainingActions(mgp) <= 0) return false;
         return !getActionableAbilities(mgp).isEmpty();
     }
 
@@ -271,10 +271,6 @@ public class AbilityPopup extends HigherOrderUI {
             x += bubbleSize + SPACING;
             index++;
         }
-    }
-
-    private static int getRemainingActions(MonsterGamePiece mgp) {
-        return mgp.getStats().getRemainingActions();
     }
 
     private Board getBoard() {

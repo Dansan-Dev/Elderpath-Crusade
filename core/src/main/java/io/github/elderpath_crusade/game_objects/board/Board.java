@@ -11,6 +11,8 @@ import io.github.elderpath_crusade.abilities.impl._base_override.OncePerTurnAtta
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
+import io.github.elderpath_crusade.managers.TextureManager;
+import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
@@ -33,7 +35,7 @@ import lombok.Setter;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public class Board extends HigherOrderTexture {
+public class Board extends HigherOrderTexture implements Updatable {
     @Getter private final int ROWS;
     @Getter private final int COLS;
     @Getter private final int PLOT_WIDTH;
@@ -44,6 +46,12 @@ public class Board extends HigherOrderTexture {
     private final BoardIdentifierSymbol[] colIdentifierSymbols;
     // Track physical flip state (true = board is flipped for P2's perspective)
     private boolean physicallyFlipped = false;
+
+    @Override
+    public void update(float delta) {
+        updateCandidateMoveSpots();
+        updatePlotHighlights();
+    }
 
     /** Notify all monster pieces on this board that a turn has started for the given player. */
     public void notifyTurnStartedForPieces(PieceAlignment player) {
@@ -72,9 +80,9 @@ public class Board extends HigherOrderTexture {
     // Cached UI elements for compact health overlays on damaged pieces
     private final Map<UUID, Text> hpTexts = new HashMap<>();
     private final Map<UUID, Integer> hpCache = new HashMap<>();
+    private List<Integer> cachedZs = new ArrayList<>();
+    private boolean zsDirty = true;
 
-    // Stun symbol texture cache
-    private static Texture stunTexture = null;
     // Semi-transparent dark background for HP label to avoid being obscured by later draws
     private static final Color HP_BG_COLOR = new Color(1f, 1f, 1f, 0.6f).mul(Color.RED);
     private static final int HP_PADDING_X = 2; // offset from plot corner
@@ -155,15 +163,8 @@ public class Board extends HigherOrderTexture {
      * The symbol is centered on the plot and sized appropriately.
      */
     private void renderStunSymbol(SpriteBatch batch, int zLevel, int absX, int absY) {
-        // Load stun texture if not already loaded
-        if (stunTexture == null) {
-            try {
-                stunTexture = new Texture(Gdx.files.internal(ImagePathSpritesAndAnimations.STUN.getPath()));
-            } catch (Exception e) {
-                // If texture loading fails, just skip rendering the symbol
-                return;
-            }
-        }
+        Texture stunTexture = TextureManager.getTexture(ImagePathSpritesAndAnimations.STUN.getPath());
+        if (stunTexture == null) return;
 
         // Render stun symbol centered on the plot, sized to ~60% of plot size
         int symbolSize = Math.min(PLOT_WIDTH, PLOT_HEIGHT) * 3 / 5; // 60% of smaller dimension
@@ -246,6 +247,11 @@ public class Board extends HigherOrderTexture {
         }
     }
 
+    private void markDirtyAndNotify() {
+        zsDirty = true;
+        ZIndexRegistry.notifyZChanged(this);
+    }
+
     public void initializePlots() {
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
@@ -261,7 +267,7 @@ public class Board extends HigherOrderTexture {
             }
         }
         // Ensure Board is re-indexed for z-bucket rendering after plots are initialized
-        ZIndexRegistry.notifyZChanged(this);
+        markDirtyAndNotify();
     }
 
     public int[] getPixelSize() {
@@ -297,7 +303,7 @@ public class Board extends HigherOrderTexture {
                 true
             ));
         // Board now contains label Texts at z=0; ensure z-buckets reindex
-        ZIndexRegistry.notifyZChanged(this);
+        markDirtyAndNotify();
     }
 
     // Update plot highlighting by comparing this board's plots with the InteractionManager's active targets.
@@ -526,7 +532,7 @@ public class Board extends HigherOrderTexture {
         checkBoardPosition(row, col);
         gamePieces[row][col] = gamePiece;
         // A piece sprite affects z coverage; re-index Board
-        ZIndexRegistry.notifyZChanged(this);
+        markDirtyAndNotify();
     }
 
     public void moveGamePiece(int currentRow, int currentCol, int newRow, int newCol) {
@@ -581,7 +587,7 @@ public class Board extends HigherOrderTexture {
             );
         }
         // Board's z coverage may have changed; re-index in z-buckets
-        ZIndexRegistry.notifyZChanged(this);
+        markDirtyAndNotify();
     }
 
     // Helpers for movement reachability and occupancy
@@ -801,6 +807,44 @@ public class Board extends HigherOrderTexture {
      * Row 0 swaps with row (ROWS-1), row 1 swaps with row (ROWS-2), etc.
      * Updates all plot bounds and GamePiece POSITION data to reflect new positions.
      */
+
+    @Override
+    public List<Integer> getZs() {
+        if (zsDirty) {
+            Set<Integer> zSet = new HashSet<>();
+            // Renderables (including plots, highlights, dots, etc.)
+            for (Renderable r : getRenderables()) {
+                zSet.addAll(r.getZs());
+            }
+            // Pieces and their HP overlays
+            for (int r = 0; r < ROWS; r++) {
+                for (int c = 0; c < COLS; c++) {
+                    GamePiece gp = gamePieces[r][c];
+                    if (gp != null && gp.getSprite() != null) {
+                        List<Integer> pZs = gp.getSprite().getZs();
+                        zSet.addAll(pZs);
+                        // HP overlays are rendered at pieceZ + 3
+                        for (Integer pz : pZs) {
+                            zSet.add(pz + 3);
+                        }
+                    }
+                }
+            }
+            // Identifier symbols (row/col labels)
+            for (BoardIdentifierSymbol s : rowIdentifierSymbols) {
+                if (s != null) zSet.addAll(s.getZs());
+            }
+            for (BoardIdentifierSymbol s : colIdentifierSymbols) {
+                if (s != null) zSet.addAll(s.getZs());
+            }
+
+            cachedZs = new ArrayList<>(zSet);
+            Collections.sort(cachedZs);
+            zsDirty = false;
+        }
+        return cachedZs;
+    }
+
     public void flipRows() {
         // Swap plots and game pieces in the arrays
         for (int row = 0; row < ROWS / 2; row++) {
@@ -847,14 +891,11 @@ public class Board extends HigherOrderTexture {
         physicallyFlipped = !physicallyFlipped;
 
         // Notify z-index registry that board structure changed
-        ZIndexRegistry.notifyZChanged(this);
+        markDirtyAndNotify();
     }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        // Update candidate move spots and selected-target highlights
-        updateCandidateMoveSpots();
-        updatePlotHighlights();
         Set<UUID> seen = new HashSet<>();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {
@@ -878,9 +919,6 @@ public class Board extends HigherOrderTexture {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-        // Update candidate move spots and selected-target highlights
-        updateCandidateMoveSpots();
-        updatePlotHighlights();
         Set<UUID> seen = new HashSet<>();
         for(int row = 0; row < ROWS; row++) {
             for(int col = 0; col < COLS; col++) {

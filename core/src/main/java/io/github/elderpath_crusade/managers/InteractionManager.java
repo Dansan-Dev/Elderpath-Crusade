@@ -23,16 +23,12 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class InteractionManager {
-    // Request a pick without providing a concrete Clickable source.
-    // This creates an ephemeral source internally that participates in the normal selection flow.
     @Getter
     private static final List<Clickable> clickables = new ArrayList<>();
     private static Clickable currentEffect;
     private static final HashMap<Integer, CustomBox> selected = new HashMap<>();
     @Getter
     private static int selectedCount = 0;
-    // If an ability tries to start a programmatic interaction while another selection is active,
-    // we queue it here and auto-start it right after the current interaction is cleaned up.
     private static Clickable pendingProgrammaticSource = null;
 
     public static boolean requestPick(
@@ -212,10 +208,10 @@ public class InteractionManager {
         // Reset confirmation state on the effect being cleaned up (if any)
         ClickableEffectData data = (currentEffect != null) ? currentEffect.getClickableEffectData() : null;
         if (data != null) data.setConfirmed(false);
-        
+
         // Note: currentEffect might have been removed from clickables during triggerClickEffect
         // (e.g., when a card is consumed and removed from hand), so we don't need to remove it here
-        
+
         currentEffect = null;
         selected.clear();
         selectedCount = 0;
@@ -349,7 +345,7 @@ public class InteractionManager {
             typeOk = (targetType == null) || targetType.matches(box);
         }
         if (!typeOk) return false;
-        
+
         // Check TargetFilter: if currentEffect is AbilityBubble, use the ability's filter
         TargetFilter filter = null;
         if (currentEffect instanceof AbilityBubble bubble) {
@@ -360,7 +356,7 @@ public class InteractionManager {
         } else if (currentEffect instanceof TargetFilter tf) {
             filter = tf;
         }
-        
+
         if (filter != null) {
             return filter.isValidTargetForEffect(box, selectedCount);
         }
@@ -390,9 +386,9 @@ public class InteractionManager {
      */
     public static void renderEligibleTargets() {
         if (!hasActiveSelection() || currentEffect == null) return;
-        
+
         TargetFilter filter = null;
-        
+
         // Handle AbilityBubble: get filter from the ability
         if (currentEffect instanceof AbilityBubble bubble) {
             var ability = bubble.getAbility();
@@ -404,29 +400,29 @@ public class InteractionManager {
         else if (currentEffect instanceof TargetFilter tf) {
             filter = tf;
         }
-        
+
         if (filter == null) return;
-        
+
         // Get eligible targets for the current target index (selectedCount)
         List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
         if (eligiblePlots == null || eligiblePlots.isEmpty()) return;
-        
+
         // Get current player alignment for friendly/hostile determination
         var currentPlayer = TurnManager.getCurrentPlayer();
         if (currentPlayer == null) return;
-        
+
         // Clear all existing candidate highlights first (only for ability interactions)
         // Note: Board's updateCandidateMoveSpots() should skip when source is AbilityBubble
         clearAllCandidateHighlights();
-        
+
         // Highlight each eligible plot
         for (Plot plot : eligiblePlots) {
             if (plot == null) continue;
-            
+
             // Determine if plot contains a piece and its alignment
             Board board = getBoardForPlot(plot);
             if (board == null) continue;
-            
+
             GamePiece piece = board.getGamePieceAtPlot(plot);
             if (piece instanceof MonsterGamePiece mgp) {
                 // Plot contains a piece: show red for hostile, green for friendly
@@ -443,7 +439,7 @@ public class InteractionManager {
             // Empty plots: don't show border (could be extended later if needed)
         }
     }
-    
+
     /**
      * Helper to find the Board containing a given Plot.
      */
@@ -462,7 +458,7 @@ public class InteractionManager {
         }
         return null;
     }
-    
+
     /**
      * Clear all candidate highlights from all plots on all boards.
      * Clears white dots (candidate), red borders (attack candidate), and green borders (friendly candidate).

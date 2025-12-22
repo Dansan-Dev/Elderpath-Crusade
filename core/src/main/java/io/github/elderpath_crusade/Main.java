@@ -52,12 +52,16 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void render() {
+        float delta = com.badlogic.gdx.Gdx.graphics.getDeltaTime();
         // Input (disabled when interactions are locked)
         if (!GameManager.isInteractionsLocked()) {
             InputManager.checkInput();
             handleInput();
             InteractionManager.checkClick();
         }
+
+        // UPDATE
+        GraphicsManager.update(delta);
 
         // RENDER
         if (GraphicsManager.isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
@@ -71,6 +75,7 @@ public class Main extends ApplicationAdapter {
     @Override
     public void dispose() {
         GraphicsManager.getBatch().dispose();
+        TextureManager.dispose();
         GraphicUtils.dispose();
     }
 }

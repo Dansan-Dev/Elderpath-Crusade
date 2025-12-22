@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.utils;
 
-import com.badlogic.gdx.Gdx;
+import io.github.elderpath_crusade.managers.TextureManager;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 
@@ -20,7 +20,8 @@ public class SpriteCreator {
      * @return
      */
     public static Sprite makeSprite(String path, int sheetX, int sheetY, int width, int height, int newWidth, int newHeight) {
-        Texture texture = new Texture(Gdx.files.internal(path));
+        Texture texture = TextureManager.getTexture(path);
+        if (texture == null) return null;
         Sprite sprite = new Sprite(texture, sheetX, sheetY, width, height);
         sprite.setSize(newWidth, newHeight);
         return sprite;

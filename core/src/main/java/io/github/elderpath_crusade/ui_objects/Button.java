@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.managers.TextureManager;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import io.github.elderpath_crusade.enums.FontType;
@@ -89,7 +90,7 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         int z
     ) {
         Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
-        b.backgroundTexture = new Texture(Gdx.files.internal(imagePath));
+        b.backgroundTexture = TextureManager.getTexture(imagePath);
         return b;
     }
 
