@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.game_objects.cards;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -18,6 +19,10 @@ import io.github.elderpath_crusade.utils.GraphicUtils;
 import io.github.elderpath_crusade.utils.SpriteCreator;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.utils.HoverUtils;
+import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.interfaces.CustomBox;
+import io.github.elderpath_crusade.interfaces.OnClick;
+import java.util.HashMap;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -149,8 +154,13 @@ public class Card extends HigherOrderTexture implements Clickable {
         this.faceUp = !this.faceUp;
     }
 
-    public void showFront() { this.faceUp = true; }
-    public void showBack() { this.faceUp = false; }
+    public void showFront() {
+        this.faceUp = true;
+    }
+
+    public void showBack() {
+        this.faceUp = false;
+    }
 
     // ---- Title API ----
     public void setTitle(String text, FontType fontType) {
@@ -175,10 +185,10 @@ public class Card extends HigherOrderTexture implements Clickable {
         int h = getBounds().getHeight();
         int w = getBounds().getWidth();
         // Add margin on sides (e.g., 10% on each side = 20% total margin)
-        int maxTitleWidth = Math.max(1, (int)(w * 0.8f));
+        int maxTitleWidth = Math.max(1, (int) (w * 0.8f));
 
         // Desired font size based on height
-        float desiredSize = Math.max(12, (int)(h * 0.15f));
+        float desiredSize = Math.max(12, (int) (h * 0.15f));
 
         // Maximum font size based on card height (e.g., 12% of card height)
         float maxFontSize = h * 0.07f;
@@ -221,7 +231,9 @@ public class Card extends HigherOrderTexture implements Clickable {
         title.update();
     }
 
-    public void setTitleColor(Color color) { this.titleColor = (color == null ? Color.WHITE : color); }
+    public void setTitleColor(Color color) {
+        this.titleColor = (color == null ? Color.WHITE : color);
+    }
 
     /**
      * Consume this card: triggers the configured onConsumed hook.
@@ -236,7 +248,9 @@ public class Card extends HigherOrderTexture implements Clickable {
     }
 
     // Allow subclasses to query the card's z-layer for overlay construction
-    protected int getZLayer() { return zLayer; }
+    protected int getZLayer() {
+        return zLayer;
+    }
 
     @Override
     public List<Integer> getZs() {
@@ -311,6 +325,27 @@ public class Card extends HigherOrderTexture implements Clickable {
             batch.draw(GraphicUtils.getPixelTexture(color), x, y, thickness, height);
             // Right
             batch.draw(GraphicUtils.getPixelTexture(color), x + width - thickness, y, thickness, height);
+        }
+    }
+
+    // --- InteractionSource implementation ---
+    private ClickableEffectData effectData;
+    private OnClick onClick;
+
+    public void setClickableEffect(OnClick onClick, ClickableEffectData data) {
+        this.onClick = onClick;
+        this.effectData = data;
+    }
+
+    @Override
+    public ClickableEffectData getClickableEffectData() {
+        return effectData;
+    }
+
+    @Override
+    public void triggerClickEffect(HashMap<Integer, CustomBox> entities) {
+        if (onClick != null) {
+            onClick.run(entities);
         }
     }
 }

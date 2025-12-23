@@ -27,11 +27,11 @@ import java.util.function.Consumer;
 public class InteractionManager {
     @Getter
     private static final List<Clickable> clickables = new ArrayList<>();
-    private static Clickable currentEffect;
+    private static InteractionSource currentEffect;
     private static final List<CustomBox> selected = new ArrayList<>();
     @Getter
     private static int selectedCount = 0;
-    private static Clickable pendingProgrammaticSource = null;
+    private static InteractionSource pendingProgrammaticSource = null;
 
     public static boolean requestPick(
         ClickableEffectData data,
@@ -45,38 +45,48 @@ public class InteractionManager {
     }
 
     /**
-     * Lightweight source implementing Clickable and TargetFilter for programmatic selections.
+     * Lightweight source implementing InteractionSource for programmatic selections.
      */
-    private static class EphemeralSource implements Clickable, TargetFilter {
+    private static class EphemeralSource implements InteractionSource {
         private final ClickableEffectData effectData;
         private final Consumer<HashMap<Integer, CustomBox>> callback;
         private final TargetFilter tf;
 
         EphemeralSource(ClickableEffectData d, TargetFilter f, Consumer<HashMap<Integer, CustomBox>> cb) {
-            this.effectData = d; this.tf = f; this.callback = cb;
+            this.effectData = d;
+            this.tf = f;
+            this.callback = cb;
         }
-        @Override public void setClickableEffect(OnClick onClick, ClickableEffectData effectData) { /* not used */ }
-        @Override public ClickableEffectData getClickableEffectData() { return effectData; }
-        @Override public void triggerClickEffect(HashMap<Integer, CustomBox> entities) { callback.accept(entities); }
-        @Override public int getX() { return 0; }
-        @Override public int getY() { return 0; }
-        @Override public int getWidth() { return 0; }
-        @Override public int getHeight() { return 0; }
-        @Override public boolean isPauseUIElement() { return false; }
-        @Override public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-            if (tf == null) return true; return tf.isValidTargetForEffect(box, targetIndex);
+
+        @Override
+        public ClickableEffectData getClickableEffectData() {
+            return effectData;
         }
-        @Override public List<Plot> getEligibleTargets(int targetIndex) {
-            if (tf == null) return null; return tf.getEligibleTargets(targetIndex);
+
+        @Override
+        public void triggerClickEffect(HashMap<Integer, CustomBox> entities) {
+            callback.accept(entities);
+        }
+
+        @Override
+        public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+            if (tf == null) return true;
+            return tf.isValidTargetForEffect(box, targetIndex);
+        }
+
+        @Override
+        public List<Plot> getEligibleTargets(int targetIndex) {
+            if (tf == null) return null;
+            return tf.getEligibleTargets(targetIndex);
         }
     }
 
     /**
-     * Begin a selection programmatically using the provided source clickable.
+     * Begin a selection programmatically using the provided interaction source.
      * Returns true if the interaction was started. Does nothing if a selection is already active
      * or if the source has no effect data.
      */
-    public static boolean startProgrammaticInteraction(Clickable source) {
+    public static boolean startProgrammaticInteraction(InteractionSource source) {
         if (source == null) return false;
         // If an interaction is already active, queue this source and auto-start it after cleanup.
         if (hasActiveSelection()) {
@@ -85,7 +95,10 @@ public class InteractionManager {
         }
         currentEffect = source;
         ClickableEffectData data = currentEffect.getClickableEffectData();
-        if (data == null) { currentEffect = null; return false; }
+        if (data == null) {
+            currentEffect = null;
+            return false;
+        }
         data.setConfirmed(false);
         selected.clear();
         selectedCount = 1; // mirror initial click state
@@ -146,15 +159,21 @@ public class InteractionManager {
         clickables.remove(clickable);
     }
 
-    public static void clearClickables() { clickables.clear(); }
+    public static void clearClickables() {
+        clickables.clear();
+    }
 
     private static void addInitialInteraction(Clickable clickableEffect) {
         if (selectedCount != 0) return;
         currentEffect = clickableEffect;
         ClickableEffectData data = currentEffect.getClickableEffectData();
         // If no effect is defined for this click, ignore it (do not start selection)
-        if (data == null) { currentEffect = null; return; }
-        // Reset confirmation state at the start of a new interaction to avoid carryover between runs
+        if (data == null) {
+            currentEffect = null;
+            return;
+        }
+        // Reset confirmation state at the start of a new interaction to avoid carryover
+        // between runs
         data.setConfirmed(false);
         if (data.getType().equals(ClickableEffectType.IMMEDIATE)) {
             triggerFullInteraction();
@@ -184,7 +203,10 @@ public class InteractionManager {
             return;
         }
         // Enforce cap for limited-choice interactions (up to N targets)
-        if (data.getType() == ClickableEffectType.MULTI_CHOICE_LIMITED_INTERACTION && selected.size() >= data.getExtraTargets()) {
+        if (
+            data.getType() == ClickableEffectType.MULTI_CHOICE_LIMITED_INTERACTION
+            && selected.size() >= data.getExtraTargets()
+        ) {
             Logger.log("InteractionManager", "Ignored click: selection limit reached (" + data.getExtraTargets() + ")");
             return;
         }
@@ -197,7 +219,12 @@ public class InteractionManager {
                 else selectedCount++;
             }
             case MULTI_CHOICE_LIMITED_INTERACTION -> {
-                if (selectedCount <= data.getExtraTargets() && data.isConfirmed()) triggerFullInteraction();
+                if (
+                    selectedCount <= data.getExtraTargets()
+                    && data.isConfirmed()
+                ) {
+                    triggerFullInteraction();
+                }
                 else selectedCount++;
             }
             case MULTI_CHOICE_UNLIMITED_INTERACTION -> {
@@ -227,7 +254,7 @@ public class InteractionManager {
         // If a programmatic interaction was queued during the previous interaction (e.g., triggered by an ability
         // inside currentEffect.triggerClickEffect), start it now.
         if (pendingProgrammaticSource != null) {
-            Clickable queued = pendingProgrammaticSource;
+            InteractionSource queued = pendingProgrammaticSource;
             pendingProgrammaticSource = null;
             startProgrammaticInteraction(queued);
         }
@@ -244,14 +271,19 @@ public class InteractionManager {
 
     // --- Active selection query API (read-only copies) ---
     /** Returns the initiating clickable (source) of the current interaction, or null if none. */
-    public static CustomBox getActiveSource() { return currentEffect; }
+    public static CustomBox getActiveSource() {
+        return currentEffect;
+    }
+
     /** Returns an ordered copy of currently selected targets (indices 1..n). */
     public static List<CustomBox> getActiveTargets() {
         return new ArrayList<>(selected);
     }
 
     // Selection state helpers for confirmation/cancellation flows
-    public static boolean hasActiveSelection() { return selectedCount > 0; }
+    public static boolean hasActiveSelection() {
+        return selectedCount > 0;
+    }
 
     public static void cancelSelection() {
         if (hasActiveSelection()) {
@@ -262,12 +294,17 @@ public class InteractionManager {
     public static void confirmSelection() {
         if (!hasActiveSelection() || currentEffect == null) return;
         ClickableEffectData data = currentEffect.getClickableEffectData();
-        if (data == null) { cleanInteraction(); return; }
+        if (data == null) {
+            cleanInteraction();
+            return;
+        }
         data.setConfirmed(true);
         // For choice-based interactions, confirmation should immediately evaluate the interaction.
         switch (data.getType()) {
             case MULTI_CHOICE_LIMITED_INTERACTION, MULTI_CHOICE_UNLIMITED_INTERACTION -> triggerFullInteraction();
-            case MULTI_INTERACTION, IMMEDIATE -> { /* No-op: these are auto-handled elsewhere */ }
+            case MULTI_INTERACTION, IMMEDIATE -> {
+                /* No-op: these are auto-handled elsewhere */
+            }
         }
     }
 
@@ -303,8 +340,8 @@ public class InteractionManager {
      * Unified target validation:
      * 1) Coarse type check via ClickableTargetType.matches (NONE or null → allow all types)
      * 2) Optional fine-grained rules via the source's TargetFilter (if implemented)
-     *    - If currentEffect is an AbilityBubble, check the ability's TargetFilter
-     *    - Otherwise, check if currentEffect itself implements TargetFilter
+     * - If currentEffect is an AbilityBubble, check the ability's TargetFilter
+     * - Otherwise, check if currentEffect itself implements TargetFilter
      */
     private static boolean isValidTarget(CustomBox box, ClickableEffectData data) {
         if (box == null || data == null) return false;
@@ -316,9 +353,8 @@ public class InteractionManager {
 
         if (!typeOk) return false;
 
-        // Semantic check via TargetFilter
-        TargetFilter filter = (currentEffect instanceof TargetFilter tf) ? tf : null;
-        return filter == null || filter.isValidTargetForEffect(box, selectedCount);
+        // Semantic check via currentEffect (which is an InteractionSource -> TargetFilter)
+        return currentEffect == null || currentEffect.isValidTargetForEffect(box, selectedCount);
     }
 
     private static HashMap<Integer, CustomBox> getSelectedEntities() {

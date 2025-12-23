@@ -4,7 +4,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 
 import java.util.HashMap;
 
-public interface Clickable extends CustomBox {
+public interface Clickable extends CustomBox, InteractionSource {
     default void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {
         // Add fields:
         //   private OnClick onClick
@@ -13,14 +13,6 @@ public interface Clickable extends CustomBox {
         //   this.onClick = onClick
         //   this.ClickableEffectData = effectData
     }
-    default ClickableEffectData getClickableEffectData() {
-
-        return null; // clickableEffectData
-    };
-    default void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
-        // if (this.onClick == null) return;
-        // onClick.run(interactionEntities);
-    };
 
     /**
      * Indicates whether this clickable should be processed while the game is paused.
