@@ -30,6 +30,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class LocalMatchRoom extends BattleRoom {
@@ -64,8 +65,8 @@ public class LocalMatchRoom extends BattleRoom {
         int screenH = SettingsManager.screenSize.getScreenHeight();
 
         if (DeckManager.hasDraftedDeck(alignment)) {
-            List<java.util.function.Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck(alignment);
-            for (java.util.function.Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
+            List<Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck(alignment);
+            for (Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
                 DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                     board, alignment, 0, 0, 125, 200, 0
                 );

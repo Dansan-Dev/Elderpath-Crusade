@@ -46,7 +46,7 @@ public final class DeckManager {
      */
     public static List<Function<CardCreationParams, SummonCard>> getDraftedDeck(PieceAlignment player) {
         List<Function<CardCreationParams, SummonCard>> deck = draftedDecks.get(player);
-        return deck == null ? null : new ArrayList<>(deck);
+        return deck == null ? new ArrayList<>() : new ArrayList<>(deck);
     }
 
     /**
