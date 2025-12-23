@@ -1,33 +1,23 @@
 package io.github.elderpath_crusade.game_objects.board;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.elderpath_crusade.abilities.Ability;
-import io.github.elderpath_crusade.abilities.BasicAbility;
-import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
-import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
-import io.github.elderpath_crusade.abilities.impl._base_override.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.enums.*;
-import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.managers.TextureManager;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
-import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.ui_objects.BoardIdentifierSymbol;
-import io.github.elderpath_crusade.utils.GraphicUtils;
-import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.Gdx;
+import io.github.elderpath_crusade.game_objects.board.components.BoardInteractionResolver;
+import io.github.elderpath_crusade.game_objects.board.components.BoardNavigator;
+import io.github.elderpath_crusade.game_objects.board.components.BoardOverlayRenderer;
+import io.github.elderpath_crusade.game_objects.board.components.BoardPerspectiveManager;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -39,53 +29,56 @@ public class Board extends HigherOrderTexture implements Updatable {
     @Getter private final int COLS;
     @Getter private final int PLOT_WIDTH;
     @Getter private final int PLOT_HEIGHT;
-    private final Renderable[][] board;
-    @Getter private final GamePiece [][] gamePieces;
+    @Getter private final Renderable[][] layout;
+    @Getter private final GamePiece[][] gamePieces;
     private final BoardIdentifierSymbol[] rowIdentifierSymbols;
     private final BoardIdentifierSymbol[] colIdentifierSymbols;
-    // Track physical flip state (true = board is flipped for P2's perspective)
-    private boolean physicallyFlipped = false;
+
+    private final BoardPerspectiveManager perspectiveManager;
+    private final BoardNavigator navigator;
+    private final BoardInteractionResolver interactionResolver;
+    private final BoardOverlayRenderer overlayRenderer;
 
     @Override
     public void update(float delta) {
     }
 
-    /** Notify all monster pieces on this board that a turn has started for the given player. */
+    /**
+     * Notify all monster pieces on this board that a turn has started for the given
+     * player.
+     */
     public void notifyTurnStartedForPieces(PieceAlignment player) {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
-                if (gp instanceof MonsterGamePiece mgp) {
-                    try { mgp.notifyTurnStarted(player); } catch (Exception ignored) {}
-                }
+                if (!(gp instanceof MonsterGamePiece mgp)) continue;
+                try {
+                    mgp.notifyTurnStarted(player);
+                } catch (Exception ignored) {}
             }
         }
     }
 
-    /** Notify all monster pieces on this board that a turn has ended for the given player. */
+    /**
+     * Notify all monster pieces on this board that a turn has ended for the given
+     * player.
+     */
     public void notifyTurnEndedForPieces(PieceAlignment player) {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
                 if (gp instanceof MonsterGamePiece mgp) {
-                    try { mgp.notifyTurnEnded(player); } catch (Exception ignored) {}
+                    try {
+                        mgp.notifyTurnEnded(player);
+                    } catch (Exception ignored) {
+                    }
                 }
             }
         }
     }
 
-    // Cached UI elements for compact health overlays on damaged pieces
-    private final Map<UUID, Text> hpTexts = new HashMap<>();
-    private final Map<UUID, Integer> hpCache = new HashMap<>();
     private List<Integer> cachedZs = new ArrayList<>();
     private boolean zsDirty = true;
-
-    // Semi-transparent dark background for HP label to avoid being obscured by later draws
-    private static final Color HP_BG_COLOR = new Color(1f, 1f, 1f, 0.6f).mul(Color.RED);
-    private static final int HP_PADDING_X = 2; // offset from plot corner
-    private static final int HP_PADDING_Y = 1; // offset from plot corner
-    private static final int HP_BG_PAD_X = 2;  // padding around text inside bg box
-    private static final int HP_BG_PAD_Y = 1;  // padding around text inside bg box
 
     public Board(int x, int y, int plot_width, int plot_height, int rows, int cols) {
         ROWS = rows;
@@ -94,138 +87,34 @@ public class Board extends HigherOrderTexture implements Updatable {
         PLOT_HEIGHT = plot_height;
         rowIdentifierSymbols = new BoardIdentifierSymbol[ROWS];
         colIdentifierSymbols = new BoardIdentifierSymbol[COLS];
-        board = new Renderable[ROWS][COLS];
+        layout = new Renderable[ROWS][COLS];
         gamePieces = new GamePiece[ROWS][COLS];
-        setBounds(new Box(x, y, PLOT_WIDTH*COLS, PLOT_HEIGHT*ROWS));
+        perspectiveManager = new BoardPerspectiveManager(this);
+        navigator = new BoardNavigator(this);
+        interactionResolver = new BoardInteractionResolver(this);
+        overlayRenderer = new BoardOverlayRenderer(this);
+        setBounds(new Box(x, y, PLOT_WIDTH * COLS, PLOT_HEIGHT * ROWS));
 
         Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
-        for(int row = 0; row < ROWS; row++) {
-            for(int col = 0; col < COLS; col++) {
-                Renderable renderable = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
-                board[row][col] = renderable;
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                Renderable renderable = EmptyTexture.get(PLOT_WIDTH * col, PLOT_HEIGHT * row, PLOT_WIDTH, PLOT_HEIGHT);
+                layout[row][col] = renderable;
             }
         }
         setBoardIdentifierSymbols();
     }
 
-    // --- Status effect visual rendering ---
-    /**
-     * Render a piece sprite with status effect tinting (stun or exhaustion).
-     * Priority: Stun (purple/pink/blue tint) > Exhaustion (darkening).
-     * Exhaustion is only shown for the current player's pieces.
-     */
     private void renderPieceWithStatusEffects(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp) {
-        if (!(gp instanceof MonsterGamePiece mgp)) {
-            // Non-monster pieces render normally without effects
-            gp.getSprite().render(batch, zLevel, false, absX, absY);
-            return;
-        }
-
-        // Save current batch color
-        Color originalColor = batch.getColor().cpy();
-
-        // Determine status effect and apply appropriate tint
-        if (mgp.isStunned()) {
-            // Stun: more purple/pink tint (apply color tint to sprite)
-            // More purple/pink: higher red and blue, lower green
-            Color stunTint = new Color(1f, 0.22f, 0.71f, 1f);
-            batch.setColor(stunTint);
-            gp.getSprite().render(batch, zLevel, false, absX, absY);
-            batch.setColor(originalColor);
-
-            // Render stun symbol overlay on top of the piece
-            renderStunSymbol(batch, zLevel, absX, absY);
-        } else if (mgp.isExhausted()) {
-            // Exhaustion: darkening effect (only show for current player's pieces)
-            PieceAlignment currentPlayer = TurnManager.getCurrentPlayer();
-            if (mgp.getAlignment() == currentPlayer) {
-                // Multiply RGB by 0.6 to darken, keep alpha at 1.0
-                Color darkenTint = new Color(0.6f, 0.6f, 0.6f, 1.0f);
-                batch.setColor(darkenTint);
-                gp.getSprite().render(batch, zLevel, false, absX, absY);
-                batch.setColor(originalColor);
-            } else {
-                // Not current player's piece: render normally
-                gp.getSprite().render(batch, zLevel, false, absX, absY);
-            }
-        } else {
-            // No status effect: render normally
-            gp.getSprite().render(batch, zLevel, false, absX, absY);
-        }
+        overlayRenderer.renderPieceWithStatusEffects(batch, zLevel, absX, absY, gp);
     }
 
-    // --- Stun symbol overlay rendering ---
-    /**
-     * Render the stun symbol overlay on top of a stunned piece.
-     * The symbol is centered on the plot and sized appropriately.
-     */
-    private void renderStunSymbol(SpriteBatch batch, int zLevel, int absX, int absY) {
-        Texture stunTexture = TextureManager.getTexture(ImagePathSpritesAndAnimations.STUN.getPath());
-        if (stunTexture == null) return;
-
-        // Render stun symbol centered on the plot, sized to ~60% of plot size
-        int symbolSize = Math.min(PLOT_WIDTH, PLOT_HEIGHT) * 3 / 5; // 60% of smaller dimension
-        int symbolX = absX + (PLOT_WIDTH - symbolSize) / 2;
-        int symbolY = absY + (PLOT_HEIGHT - symbolSize) / 2;
-
-        // Render the stun symbol at the same z-level as the piece (will appear on top due to draw order)
-        batch.draw(stunTexture, symbolX, symbolY, symbolSize, symbolSize);
-    }
-
-    // --- Compact health overlay helpers ---
     private void renderHpOverlay(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp, Set<UUID> seen) {
-        if (!(gp instanceof MonsterGamePiece mgp)) return;
-        GamePieceStats st = mgp.getStats();
-        int cur = st.getCurrentHealth();
-        int max = mgp.getEffectiveMaxHealth(); // Use effective max health (includes modifiers)
-        if (cur >= max) return; // full health -> no overlay
-        UUID id = mgp.getId();
-        seen.add(id);
-        Text healthIndicatorText = hpTexts.get(id);
-        String label = cur + "/" + max;
-        int fontPx = Math.max(7, (int)(PLOT_HEIGHT * 0.16f));
-        if (healthIndicatorText == null) {
-            healthIndicatorText = new Text(label, FontType.WINDOW, 0, 0, zLevel+3, Color.WHITE);
-            healthIndicatorText.withFontSize(fontPx);
-            hpTexts.put(id, healthIndicatorText);
-            hpCache.put(id, cur);
-        } else {
-            Integer last = hpCache.get(id);
-            if (last == null || last != cur) {
-                healthIndicatorText.setText(label);
-                healthIndicatorText.withFontSize(fontPx);
-                hpCache.put(id, cur);
-            }
-        }
-        // Only render overlay elements during the text's own z-layer pass to avoid overdraw ordering issues
-        if (!healthIndicatorText.getZs().contains(zLevel)) {
-            return;
-        }
-        // Position at bottom-left of plot with padding
-        int tx = absX + HP_PADDING_X;
-        int ty = absY + HP_PADDING_Y;
-        // Background behind text to improve readability and visual cohesion
-        int textW = Math.max(1, healthIndicatorText.getWidth());
-        int textH = Math.max(1, healthIndicatorText.getHeight());
-        int bgX = tx - HP_BG_PAD_X;
-        int bgY = ty - HP_BG_PAD_Y;
-        int bgW = textW + HP_BG_PAD_X * 2;
-        int bgH = textH + HP_BG_PAD_Y * 2;
-        batch.draw(GraphicUtils.getPixelTexture(HP_BG_COLOR), bgX, bgY, bgW, bgH);
-        // Render text on top
-        healthIndicatorText.render(batch, zLevel, false, tx, ty);
+        overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
     }
 
     private void cleanupStaleHpTexts(Set<UUID> seen) {
-        if (hpTexts.isEmpty()) return;
-        Iterator<Map.Entry<UUID, Text>> it = hpTexts.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<UUID, Text> e = it.next();
-            if (!seen.contains(e.getKey())) {
-                it.remove();
-                hpCache.remove(e.getKey());
-            }
-        }
+        overlayRenderer.cleanupStaleHpTexts(seen);
     }
 
     public static class Position {
@@ -244,7 +133,7 @@ public class Board extends HigherOrderTexture implements Updatable {
         }
     }
 
-    private void markDirtyAndNotify() {
+    public void markDirtyAndNotify() {
         zsDirty = true;
         ZIndexRegistry.notifyZChanged(this);
     }
@@ -256,164 +145,107 @@ public class Board extends HigherOrderTexture implements Updatable {
         int col = localX / PLOT_WIDTH;
         int row = localY / PLOT_HEIGHT;
         if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
-            Renderable r = board[row][col];
-            if (r instanceof Plot p) return p;
+            Renderable r = layout[row][col];
+            if (r instanceof Plot p)
+                return p;
         }
         return null;
     }
 
     public void initializePlots() {
-        for(int row = 0; row < ROWS; row++) {
-            for(int col = 0; col < COLS; col++) {
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
                 Plot plot = new Plot(0, 0, PLOT_WIDTH, PLOT_HEIGHT);
-                if (row == 0) plot.withPlotColor(ColorSettings.PLOT_PLAYER_1_ROW.getColor());
-                if (row == ROWS - 1) plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
+                if (row == 0)
+                    plot.withPlotColor(ColorSettings.PLOT_PLAYER_1_ROW.getColor());
+                if (row == ROWS - 1)
+                    plot.withPlotColor(ColorSettings.PLOT_PLAYER_2_ROW.getColor());
                 plot.setBoard(this);
                 plot.setGridPos(row, col);
                 plot.setClickableEffect(
-                    this::handlePlotMove,
-                    ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
-                );
+                        this::handlePlotMove,
+                        ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
                 replacePlotAtPos(row, col, plot);
             }
         }
-        // Ensure Board is re-indexed for z-bucket rendering after plots are initialized
         markDirtyAndNotify();
     }
 
     public int[] getPixelSize() {
-        return new int[]{PLOT_WIDTH*COLS, PLOT_HEIGHT*ROWS};
+        return new int[] { PLOT_WIDTH * COLS, PLOT_HEIGHT * ROWS };
     }
 
     private char toLetter(int n) {
-        if (n < 0 || n > 25) throw new IllegalArgumentException("n must be in range [0, 25]");
+        if (n < 0 || n > 25)
+            throw new IllegalArgumentException("n must be in range [0, 25]");
         return (char) ('A' + n);
     }
 
     private void checkBoardPosition(int row, int col) {
         if (row < 0 || row >= ROWS || col < 0 || col >= COLS) {
-            throw new IllegalArgumentException("row must be in [0, " + (ROWS - 1) + "] and col must be in [0, " + (COLS - 1) + "]");
+            throw new IllegalArgumentException(
+                    "row must be in [0, " + (ROWS - 1) + "] and col must be in [0, " + (COLS - 1) + "]");
         }
     }
 
     public void setBoardIdentifierSymbols() {
         IntStream.iterate(0, i -> i + 1).limit(ROWS)
-            .forEach(i -> rowIdentifierSymbols[i] = new BoardIdentifierSymbol(
-                String.valueOf(toLetter(i)),
-                -PLOT_WIDTH/4,
-                PLOT_HEIGHT/2+PLOT_HEIGHT*i,
-                GridDirection.ROW,
-                true
-            ));
+                .forEach(i -> rowIdentifierSymbols[i] = new BoardIdentifierSymbol(
+                        String.valueOf(toLetter(i)),
+                        -PLOT_WIDTH / 4,
+                        PLOT_HEIGHT / 2 + PLOT_HEIGHT * i,
+                        GridDirection.ROW,
+                        true));
         IntStream.iterate(0, i -> i + 1).limit(COLS)
-            .forEach(i -> colIdentifierSymbols[i] = new BoardIdentifierSymbol(
-                String.valueOf(i+1),
-                (PLOT_WIDTH)/2+PLOT_WIDTH*i,
-                -PLOT_HEIGHT/4,
-                GridDirection.COLUMN,
-                true
-            ));
-        // Board now contains label Texts at z=0; ensure z-buckets reindex
+                .forEach(i -> colIdentifierSymbols[i] = new BoardIdentifierSymbol(
+                        String.valueOf(i + 1),
+                        (PLOT_WIDTH) / 2 + PLOT_WIDTH * i,
+                        -PLOT_HEIGHT / 4,
+                        GridDirection.COLUMN,
+                        true));
         markDirtyAndNotify();
     }
 
-
-    // Return enemy plots attackable from (row,col) for a given alignment, using cardinal lines with blockers and range.
     public List<Plot> getAttackableEnemyPlots(int row, int col, PieceAlignment friendlyAlignment) {
-        List<Plot> out = new ArrayList<>();
-        GamePiece src = getGamePieceAtPos(row, col);
-        if (!(src instanceof MonsterGamePiece attacker)) return out;
-        int effRange = attacker.getEffectiveRange();
-        if (effRange < 0) return out; // Cannot attack if range is negative
-        effRange = Math.max(1, effRange);
-        int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
-        boolean ignoreTerrain = attacker.ignoresTerrainAsBlockers();
-        boolean ignoreFriendly = attacker.ignoresFriendlyUnitsAsBlockers();
-        boolean ignoreHostile = attacker.ignoresHostileUnitsAsBlockers();
-        for (int[] d : dirs) {
-            for (int dist = 1; dist <= effRange; dist++) {
-                int nr = row + d[0] * dist;
-                int nc = col + d[1] * dist;
-                if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) break;
-                GamePiece gp = getGamePieceAtPos(nr, nc);
-                if (gp != null) {
-                    boolean isTerrain = gp.getType() == GamePieceType.TERRAIN;
-                    boolean isUnit = gp instanceof MonsterGamePiece;
-                    boolean hostile = isUnit && ((MonsterGamePiece) gp).getAlignment() != friendlyAlignment;
-                    boolean friendly = isUnit && ((MonsterGamePiece) gp).getAlignment() == friendlyAlignment;
-                    boolean blockedByTerrain = isTerrain && !ignoreTerrain;
-                    boolean blockedByFriendly = friendly && !ignoreFriendly;
-                    boolean blockedByHostile = hostile && !ignoreHostile;
-                    // If hostile is in line, it is a valid target (even if we will continue scanning when ignoreHostile=true)
-                    if (hostile) {
-                        Renderable r = board[nr][nc];
-                        if (r instanceof Plot p) out.add(p);
-                    }
-                    // Stop scanning if blocked by this entity; otherwise continue past it
-                    if (blockedByTerrain || blockedByFriendly || blockedByHostile || (!isTerrain && !isUnit)) {
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-                // Empty tile: continue scanning
-            }
-        }
-        return out;
+        return navigator.getAttackableEnemyPlots(row, col, friendlyAlignment);
     }
 
-
     public Renderable getPlotAtPos(int row, int col) {
-        return board[row][col];
+        return layout[row][col];
     }
 
     public GamePiece getGamePieceAtPos(int row, int col) {
         return gamePieces[row][col];
     }
 
-    /**
-     * Resolve the GamePiece currently occupying the given Plot instance, or null if none.
-     */
     public GamePiece getGamePieceAtPlot(Plot plot) {
-        if (plot == null) return null;
+        if (plot == null)
+            return null;
         return gamePieces[plot.getRow()][plot.getCol()];
     }
 
-    /**
-     * Generalized summon target validation: a plot is valid if it is empty and lies on the
-     * appropriate summon row for the given alignment.
-     * Accounts for board flip state in LOCAL_MATCH mode:
-     * - When not flipped (P1's turn): P1 → row 0, P2 → row ROWS-1
-     * - When flipped (P2's turn): P1 → row ROWS-1, P2 → row 0
-     */
-    public boolean isValidSummonTarget(Plot plot, io.github.elderpath_crusade.enums.PieceAlignment alignment) {
-        if (plot == null || alignment == null) return false;
+    public boolean isValidSummonTarget(Plot plot, PieceAlignment alignment) {
+        if (plot == null || alignment == null)
+            return false;
         int[] idx = plot.getIndices();
-        if (idx == null) return false;
-        // must be empty
-        if (getGamePieceAtPos(idx[0], idx[1]) != null) return false;
+        if (idx == null)
+            return false;
+        if (getGamePieceAtPos(idx[0], idx[1]) != null)
+            return false;
 
-        // Check if board is currently flipped (for P2's turn in LOCAL_MATCH)
         boolean flipped = isFlipped();
 
-        // row policy: account for board flip state
-        switch (alignment) {
-            case P1:
-                // When flipped, P1's home row is at ROWS-1; when not flipped, it's at 0
-                return flipped ? (idx[0] == ROWS - 1) : (idx[0] == 0);
-            case P2:
-                // When flipped, P2's home row is at 0; when not flipped, it's at ROWS-1
-                return flipped ? (idx[0] == 0) : (idx[0] == ROWS - 1);
-            default:
-                return false;
-        }
+        return switch (alignment) {
+            case P1 -> flipped ? (idx[0] == ROWS - 1) : (idx[0] == 0);
+            case P2 -> flipped ? (idx[0] == 0) : (idx[0] == ROWS - 1);
+            default -> false;
+        };
     }
 
-
     public void removePlotAtPos(int row, int col) {
-        Renderable renderable = board[row][col];
+        Renderable renderable = layout[row][col];
         getRenderables().remove(renderable);
-        board[row][col] = EmptyTexture.get(PLOT_WIDTH*col, PLOT_HEIGHT*row, PLOT_WIDTH, PLOT_HEIGHT);
+        layout[row][col] = EmptyTexture.get(PLOT_WIDTH * col, PLOT_HEIGHT * row, PLOT_WIDTH, PLOT_HEIGHT);
     }
 
     public void removeGamePieceAtPos(int row, int col) {
@@ -423,7 +255,6 @@ public class Board extends HigherOrderTexture implements Updatable {
     public void setGamePiecePos(int row, int col, GamePiece gamePiece) {
         checkBoardPosition(row, col);
         gamePieces[row][col] = gamePiece;
-        // A piece sprite affects z coverage; re-index Board
         markDirtyAndNotify();
     }
 
@@ -436,126 +267,54 @@ public class Board extends HigherOrderTexture implements Updatable {
     public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
         setGamePiecePos(row, col, gamePiece);
         gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
-        // Apply summoning sickness: pieces start with 0 remaining actions unless an ability overrides
         if (gamePiece instanceof MonsterGamePiece mgp) {
             mgp.getStats().setRemainingActions(0);
-            // Notify abilities on spawn (abilities can override summoning sickness by setting remainingActions)
             mgp.notifySpawned(row, col);
         }
-        // Emit PIECE_SPAWNED when a piece is added to the board
         EventBus.emit(
                 GameEventType.PIECE_SPAWNED,
                 Map.of(
                         "pieceId", gamePiece.getId().toString(),
                         "owner", gamePiece.getAlignment().name(),
                         "row", row,
-                        "col", col
-                )
-        );
+                        "col", col));
     }
 
     private void replacePlotAtPos(int row, int col, Renderable newRenderable) {
         if (newRenderable.getBounds().getWidth() != PLOT_WIDTH
-            || newRenderable.getBounds().getHeight() != PLOT_HEIGHT) throw new IllegalArgumentException("Renderable must be in PLOT size");
+                || newRenderable.getBounds().getHeight() != PLOT_HEIGHT)
+            throw new IllegalArgumentException("Renderable must be in PLOT size");
 
-        Renderable renderable = board[row][col];
+        Renderable renderable = layout[row][col];
         getRenderables().remove(renderable);
 
-        // Set the child's relative position within the board grid for correct hit-testing
         if (newRenderable.getBounds() != null) {
             newRenderable.getBounds().setX(col * PLOT_WIDTH);
             newRenderable.getBounds().setY(row * PLOT_HEIGHT);
         }
         newRenderable.setParent(getBounds());
-        board[row][col] = newRenderable;
+        layout[row][col] = newRenderable;
         getRenderables().add(newRenderable);
 
-        // If this is a Plot, wire it for movement multi-interaction
         if (newRenderable instanceof Plot plot) {
             plot.setBoard(this);
             plot.setClickableEffect(
-                this::handlePlotMove,
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
-            );
+                    this::handlePlotMove,
+                    ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
         }
-        // Board's z coverage may have changed; re-index in z-buckets
         markDirtyAndNotify();
     }
 
-    // Helpers for movement reachability and occupancy
     public boolean isOccupied(int row, int col) {
         return getGamePieceAtPos(row, col) != null;
     }
 
-    /**
-     * Compute reachable plots from (row,col) within a maximum path length (speed),
-     * moving 4-directionally (N/E/S/W). Cannot pass through or end on occupied cells.
-     * The origin cell is excluded from the results.
-     */
     public List<Plot> getReachablePlots(int row, int col, int speed) {
-        List<Plot> out = new ArrayList<>();
-        if (speed <= 0) return out;
-        boolean[][] visited = new boolean[ROWS][COLS];
-        int[][] dist = new int[ROWS][COLS];
-        for (int r = 0; r < ROWS; r++) Arrays.fill(dist[r], -1);
-        ArrayDeque<int[]> q = new ArrayDeque<>();
-        q.add(new int[]{row, col});
-        visited[row][col] = true;
-        dist[row][col] = 0;
-        int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
-        while (!q.isEmpty()) {
-            int[] cur = q.removeFirst();
-            int cr = cur[0], cc = cur[1];
-            int cd = dist[cr][cc];
-            if (cd >= speed) continue; // cannot step further
-            for (int[] d : dirs) {
-                int nr = cr + d[0];
-                int nc = cc + d[1];
-                if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-                if (visited[nr][nc]) continue;
-                // Block stepping into occupied cells
-                if (isOccupied(nr, nc)) continue;
-                visited[nr][nc] = true;
-                dist[nr][nc] = cd + 1;
-                q.addLast(new int[]{nr, nc});
-                // Exclude origin (handled by cd>=0 and origin has dist 0)
-                if (!(nr == row && nc == col)) {
-                    Renderable r = board[nr][nc];
-                    if (r instanceof Plot p) out.add(p);
-                }
-            }
-        }
-        return out;
+        return navigator.getReachablePlots(row, col, speed);
     }
 
-    /** Return adjacent hostile plots (cardinal) around (row,col). */
     public List<Plot> getAdjacentHostilePlots(int row, int col, PieceAlignment friendlyAlignment) {
-        List<Plot> out = new ArrayList<>();
-        int[][] dirs = new int[][]{{1,0},{-1,0},{0,1},{0,-1}};
-        for (int[] d : dirs) {
-            int nr = row + d[0];
-            int nc = col + d[1];
-            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-            GamePiece gp = getGamePieceAtPos(nr, nc);
-            if (gp instanceof MonsterGamePiece mgp) {
-                        if (mgp.getAlignment() != friendlyAlignment) {
-                    Renderable r = board[nr][nc];
-                    if (r instanceof Plot p) out.add(p);
-                }
-                // Future: handle opposite case if playing as P2, etc.
-            }
-        }
-        return out;
-    }
-
-    /**
-     * Computes the effective attack damage for an attacker at a given source cell.
-     * Hook for future ability/buff modifiers; currently returns base stats damage.
-     */
-    private int getAttackDamage(MonsterGamePiece attacker, int srcRow, int srcCol) {
-        if (attacker == null) return 0;
-        // Use effective damage (base + passive modifiers)
-        return attacker.getEffectiveDamage();
+        return navigator.getAdjacentHostilePlots(row, col, friendlyAlignment);
     }
 
     public void resetActionsForOwner(PieceAlignment owner) {
@@ -563,171 +322,51 @@ public class Board extends HigherOrderTexture implements Updatable {
             for (int c = 0; c < COLS; c++) {
                 GamePiece gp = gamePieces[r][c];
                 if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == owner) {
-                    // Reset actions normally (stun doesn't affect remainingActions, it only blocks execution)
                     mgp.getStats().setRemainingActions(mgp.getEffectiveActions());
                 }
             }
         }
     }
 
-    private int getRemainingActions(MonsterGamePiece mgp) {
-        return mgp.getStats().getRemainingActions();
+    public void handlePlotMove(HashMap<Integer, CustomBox> entities) {
+        interactionResolver.handlePlotMove(entities);
     }
 
-    private void spendAction(MonsterGamePiece mgp) {
-        int left = Math.max(0, getRemainingActions(mgp) - 1);
-        mgp.getStats().setRemainingActions(left);
-        // Emit ACTION_SPENT with remaining actions
-        EventBus.emit(
-                GameEventType.ACTION_SPENT,
-                Map.of(
-                        "pieceId", mgp.getId().toString(),
-                        "owner", mgp.getAlignment().name(),
-                        "remaining", left
-                )
-        );
+    public PieceAlignment getCurrentPlayer() {
+        return TurnManager.getCurrentPlayer();
     }
 
-    private void handlePlotMove(HashMap<Integer, CustomBox> entities) {
-        Object s = entities.get(0);
-        Object t = entities.get(1);
-        // Resolve source and destination to Plots (accept GamePiece as well)
-        Plot src = null; Plot dst = null;
-        if (s instanceof Plot sp) src = sp;
-        else if (s instanceof GamePiece sgp) {
-            Object posObj = sgp.getData(GamePieceData.POSITION);
-            if (posObj instanceof Position pos && pos.getBoard() == this) {
-                Renderable r = getPlotAtPos(pos.getRow(), pos.getCol());
-                if (r instanceof Plot p) src = p;
-            }
-        }
-        if (t instanceof Plot tp) dst = tp;
-        else if (t instanceof GamePiece tgp) {
-            Object posObj = tgp.getData(GamePieceData.POSITION);
-            if (posObj instanceof Position pos && pos.getBoard() == this) {
-                Renderable r = getPlotAtPos(pos.getRow(), pos.getCol());
-                if (r instanceof Plot p) dst = p;
-            }
-        }
-        if (src == null || dst == null) return;
-        int[] sIdx = src.getIndices();
-        int[] dIdx = dst.getIndices();
-        if (sIdx == null || dIdx == null) return;
-        int sr = sIdx[0], sc = sIdx[1];
-        int dr = dIdx[0], dc = dIdx[1];
-        GamePiece gp = getGamePieceAtPos(sr, sc);
-        if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
-        // Stunned pieces cannot act (even if they have remaining actions)
-        if (mgp.isStunned()) return;
-        // Must have actions remaining
-        if (getRemainingActions(mgp) <= 0) return;
-
-        // Build entities map for ability execution (0=source, 1=target)
-        HashMap<Integer, CustomBox> abilityEntities = new HashMap<>();
-        abilityEntities.put(0, src);
-        abilityEntities.put(1, dst);
-
-        // Check if there's an enemy at destination -> try attack ability
-        GamePiece targetPiece = getGamePieceAtPos(dr, dc);
-        if (targetPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
-            // Find BasicAbility that is an attack ability (prioritize OncePerTurnAttackAbility)
-            OncePerTurnAttackAbility oncePerTurnAttackAbility = null;
-            BaseAttackAbility baseAttackAbility = null;
-            for (Ability ability : mgp.getAbilities()) {
-                if (ability instanceof OncePerTurnAttackAbility) {
-                    oncePerTurnAttackAbility = (OncePerTurnAttackAbility) ability;
-                } else if (ability instanceof BaseAttackAbility) {
-                    baseAttackAbility = (BaseAttackAbility) ability;
-                }
-            }
-            // Try OncePerTurnAttackAbility first if available
-            if (oncePerTurnAttackAbility != null) {
-                if (oncePerTurnAttackAbility.isValidTargetForEffect(dst, 1)) {
-                    oncePerTurnAttackAbility.execute(abilityEntities);
-                    return;
-                }
-            }
-            // Otherwise try BaseAttackAbility
-            if (baseAttackAbility != null) {
-                if (baseAttackAbility.isValidTargetForEffect(dst, 1)) {
-                    baseAttackAbility.execute(abilityEntities);
-                    return;
-                }
-            }
-            return; // No valid attack ability found
-        }
-
-        // Otherwise, try move ability
-        // Prioritize JumpMoveAbility over BaseMoveAbility if both exist
-        JumpMoveAbility jumpMoveAbility = null;
-        BaseMoveAbility baseMoveAbility = null;
-        for (Ability ability : mgp.getAbilities()) {
-            if (ability instanceof JumpMoveAbility) {
-                jumpMoveAbility = (JumpMoveAbility) ability;
-            } else if (ability instanceof BaseMoveAbility) {
-                baseMoveAbility = (BaseMoveAbility) ability;
-            }
-        }
-        // Try JumpMoveAbility first if available
-        if (jumpMoveAbility != null) {
-            if (jumpMoveAbility.isValidTargetForEffect(dst, 1)) {
-                jumpMoveAbility.execute(abilityEntities);
-                return;
-            }
-        }
-        // Otherwise try BaseMoveAbility
-        if (baseMoveAbility != null) {
-            if (baseMoveAbility.isValidTargetForEffect(dst, 1)) {
-                baseMoveAbility.execute(abilityEntities);
-                return;
-            }
-        }
-        // No valid move ability found
-    }
-
-    /**
-     * Check if board is currently flipped (row mirroring) for P2's perspective in LOCAL_MATCH mode.
-     * Uses the tracked physical flip state.
-     */
     public boolean isFlipped() {
-        return physicallyFlipped;
+        return perspectiveManager.isPhysicallyFlipped();
     }
-
-    /**
-     * Physically flip the board by swapping rows in the board and gamePieces arrays.
-     * Row 0 swaps with row (ROWS-1), row 1 swaps with row (ROWS-2), etc.
-     * Updates all plot bounds and GamePiece POSITION data to reflect new positions.
-     */
 
     @Override
     public List<Integer> getZs() {
         if (zsDirty) {
             Set<Integer> zSet = new HashSet<>();
-            // Renderables (including plots, highlights, dots, etc.)
             for (Renderable r : getRenderables()) {
                 zSet.addAll(r.getZs());
             }
-            // Pieces and their HP overlays
             for (int r = 0; r < ROWS; r++) {
                 for (int c = 0; c < COLS; c++) {
                     GamePiece gp = gamePieces[r][c];
                     if (gp != null && gp.getSprite() != null) {
                         List<Integer> pZs = gp.getSprite().getZs();
                         zSet.addAll(pZs);
-                        // HP overlays are rendered at pieceZ + 3
+                        // HP overlays are rendered on top
                         for (Integer pz : pZs) {
                             zSet.add(pz + 3);
                         }
                     }
                 }
             }
-            // Identifier symbols (row/col labels)
             for (BoardIdentifierSymbol s : rowIdentifierSymbols) {
-                if (s != null) zSet.addAll(s.getZs());
+                if (s != null)
+                    zSet.addAll(s.getZs());
             }
             for (BoardIdentifierSymbol s : colIdentifierSymbols) {
-                if (s != null) zSet.addAll(s.getZs());
+                if (s != null)
+                    zSet.addAll(s.getZs());
             }
 
             cachedZs = new ArrayList<>(zSet);
@@ -738,67 +377,18 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public void flipRows() {
-        // Swap plots and game pieces in the arrays
-        for (int row = 0; row < ROWS / 2; row++) {
-            int swapRow = ROWS - 1 - row;
-
-            // Swap plots in board array
-            Renderable[] tempRow = board[row];
-            board[row] = board[swapRow];
-            board[swapRow] = tempRow;
-
-            // Swap game pieces in gamePieces array
-            GamePiece[] tempPieces = gamePieces[row];
-            gamePieces[row] = gamePieces[swapRow];
-            gamePieces[swapRow] = tempPieces;
-
-            // Update bounds for swapped plots in both rows
-            for (int col = 0; col < COLS; col++) {
-                // Update plot bounds to match new row positions
-                Renderable plot = board[row][col];
-                if (plot != null && plot.getBounds() != null) {
-                    plot.getBounds().setX(col * PLOT_WIDTH);
-                    plot.getBounds().setY(row * PLOT_HEIGHT);
-                    if (plot instanceof Plot p) p.setGridPos(row, col);
-                }
-
-                Renderable swapPlot = board[swapRow][col];
-                if (swapPlot != null && swapPlot.getBounds() != null) {
-                    swapPlot.getBounds().setX(col * PLOT_WIDTH);
-                    swapPlot.getBounds().setY(swapRow * PLOT_HEIGHT);
-                    if (swapPlot instanceof Plot p) p.setGridPos(swapRow, col);
-                }
-            }
-        }
-
-        // Update all game pieces' POSITION data to reflect new row positions
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                GamePiece gp = gamePieces[row][col];
-                if (gp != null) {
-                    gp.updateData(GamePieceData.POSITION, new Position(this, row, col));
-                }
-            }
-        }
-
-        // Toggle the tracked flip state
-        physicallyFlipped = !physicallyFlipped;
-
-        // Notify z-index registry that board structure changed
-        markDirtyAndNotify();
+        perspectiveManager.flipRows();
     }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
         Set<UUID> seen = new HashSet<>();
-        for(int row = 0; row < ROWS; row++) {
-            for(int col = 0; col < COLS; col++) {
-                Renderable renderable = board[row][col];
-                renderable.render(batch, zLevel, isPaused, col*PLOT_WIDTH, row*PLOT_HEIGHT);
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                Renderable renderable = layout[row][col];
+                renderable.render(batch, zLevel, isPaused, col * PLOT_WIDTH, row * PLOT_HEIGHT);
                 GamePiece gp = gamePieces[row][col];
                 if (gp != null) {
-                    // When using the non-offset render, sprites may be drawn elsewhere depending on pipeline,
-                    // but we still render the HP overlay here aligned to the plot.
                     renderHpOverlay(batch, zLevel, col * PLOT_WIDTH, row * PLOT_HEIGHT, gp, seen);
                 }
             }
@@ -807,22 +397,20 @@ public class Board extends HigherOrderTexture implements Updatable {
             s.render(batch, zLevel, isPaused);
         });
         Arrays.stream(colIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
-        // Remove overlays for pieces not seen this frame (e.g., died or moved off-board)
         cleanupStaleHpTexts(seen);
     }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
         Set<UUID> seen = new HashSet<>();
-        for(int row = 0; row < ROWS; row++) {
-            for(int col = 0; col < COLS; col++) {
-                Renderable renderable = board[row][col];
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                Renderable renderable = layout[row][col];
                 int absX = x + col * (PLOT_WIDTH);
                 int absY = y + row * (PLOT_HEIGHT);
                 renderable.render(batch, zLevel, isPaused, absX, absY);
                 GamePiece gp = gamePieces[row][col];
                 if (gp != null) {
-                    // Render piece sprite with status effect tinting
                     renderPieceWithStatusEffects(batch, zLevel, absX, absY, gp);
                     renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
                 }
