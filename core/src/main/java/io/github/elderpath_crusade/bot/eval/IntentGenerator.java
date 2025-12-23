@@ -1,8 +1,8 @@
-package io.github.elderpath_crusade.managers.bot.eval;
+package io.github.elderpath_crusade.bot.eval;
 
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.Intent;
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.TacticalState;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
 
 import java.util.List;
 

@@ -1,9 +1,8 @@
-package io.github.elderpath_crusade.managers.bot.impl;
+package io.github.elderpath_crusade.bot.impl;
 
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.cards.WolfCard;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
@@ -11,7 +10,7 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.managers.*;
-import io.github.elderpath_crusade.managers.bot.Bot;
+import io.github.elderpath_crusade.bot.Bot;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;

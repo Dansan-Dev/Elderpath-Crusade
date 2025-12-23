@@ -1,10 +1,10 @@
-package io.github.elderpath_crusade.managers.bot.eval;
+package io.github.elderpath_crusade.bot.eval;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.bot.search.ThreatMap;
+import io.github.elderpath_crusade.bot.search.ThreatMap;
 
 import java.util.ArrayDeque;
 import java.util.Queue;

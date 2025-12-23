@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers.bot.eval;
+package io.github.elderpath_crusade.bot.eval;
 
 /**
  * Centralized configuration for bot scoring and heuristic constants.

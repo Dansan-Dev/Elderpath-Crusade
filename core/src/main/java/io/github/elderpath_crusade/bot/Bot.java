@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers.bot;
+package io.github.elderpath_crusade.bot;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 

@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers.bot.eval;
+package io.github.elderpath_crusade.bot.eval;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -10,7 +10,7 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.managers.PlayerManager;
 
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.PieceEntry;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 
 import java.util.HashMap;
 import java.util.List;

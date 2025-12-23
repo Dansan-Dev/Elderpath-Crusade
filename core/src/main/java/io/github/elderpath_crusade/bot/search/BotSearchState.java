@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers.bot.search;
+package io.github.elderpath_crusade.bot.search;
 
 public class BotSearchState {
     public final Coord pos;

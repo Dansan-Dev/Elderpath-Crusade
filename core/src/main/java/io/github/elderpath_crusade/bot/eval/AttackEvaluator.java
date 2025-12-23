@@ -1,16 +1,16 @@
-package io.github.elderpath_crusade.managers.bot.eval;
+package io.github.elderpath_crusade.bot.eval;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.Intent;
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.IntentType;
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.PieceEntry;
-import io.github.elderpath_crusade.managers.bot.eval.BotActionContext.TacticalState;
-import io.github.elderpath_crusade.managers.bot.search.Coord;
-import io.github.elderpath_crusade.managers.bot.search.ThreatMap;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
+import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
+import io.github.elderpath_crusade.bot.search.Coord;
+import io.github.elderpath_crusade.bot.search.ThreatMap;
 
 import java.util.List;
 
