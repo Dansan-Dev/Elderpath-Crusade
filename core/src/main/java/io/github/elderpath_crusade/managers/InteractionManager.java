@@ -19,6 +19,7 @@ import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -27,7 +28,7 @@ public class InteractionManager {
     @Getter
     private static final List<Clickable> clickables = new ArrayList<>();
     private static Clickable currentEffect;
-    private static final HashMap<Integer, CustomBox> selected = new HashMap<>();
+    private static final List<CustomBox> selected = new ArrayList<>();
     @Getter
     private static int selectedCount = 0;
     private static Clickable pendingProgrammaticSource = null;
@@ -107,11 +108,10 @@ public class InteractionManager {
     }
 
     private static Clickable findHit(int mouseX, int mouseY, boolean paused) {
-        // Two-pass click resolution: prioritize UI clickables (buttons, text) over world elements (plots)
-        // Pass 1: UI clickables
-        for (Clickable clickable : clickables) {
+        List<Clickable> reversedClickables = new ArrayList<>(clickables);
+        Collections.reverse(reversedClickables);
+        for (Clickable clickable : reversedClickables) {
             if (!(clickable instanceof UIRenderable)) continue;
-            // When paused, only allow UI elements explicitly marked for pause; generic UI is blocked
             if (paused && !clickable.isPauseUIElement()) continue;
             if (clickable.inRange(mouseX, mouseY)) return clickable;
         }
@@ -127,9 +127,9 @@ public class InteractionManager {
         }
 
         // Check remaining non-UI clickables (sprites, etc.)
-        for (Clickable clickable : clickables) {
+        for (int i = clickables.size() - 1; i >= 0; i--) {
+            Clickable clickable = clickables.get(i);
             if (clickable instanceof UIRenderable) continue;
-            if (clickable instanceof Plot) continue; // Already handled via BoardManager
             if (clickable.inRange(mouseX, mouseY)) return clickable;
         }
 
@@ -137,6 +137,8 @@ public class InteractionManager {
     }
 
     public static void addClickable(Clickable clickable) {
+        // Plots are handled via BoardManager for O(1) hit resolution; they don't need to be in clickables list
+        if (clickable instanceof Plot) return;
         clickables.add(clickable);
     }
 
@@ -176,7 +178,7 @@ public class InteractionManager {
             return;
         }
         // Prevent selecting the same target multiple times
-        if (selected.containsValue(box)) {
+        if (selected.contains(box)) {
             // Toggle behavior: clicking an already-selected target will deselect it
             deselectTarget(box);
             return;
@@ -187,7 +189,7 @@ public class InteractionManager {
             return;
         }
         // Accept the target
-        selected.put(selectedCount, box);
+        selected.add(box);
         switch (data.getType()) {
             case IMMEDIATE -> Logger.error("InteractionManager", "Shouldn't add extra target when immediate");
             case MULTI_INTERACTION -> {
@@ -231,25 +233,13 @@ public class InteractionManager {
         }
     }
 
-    // Helper: deselect an already-selected target and compact indices
+    // Helper: deselect an already-selected target
     private static void deselectTarget(CustomBox box) {
         if (box == null || selected.isEmpty()) return;
-        // Find the index of this box
-        int idx = -1;
-        for (int i = 1; i <= selected.size(); i++) {
-            if (selected.get(i) == box) { idx = i; break; }
+        if (selected.remove(box)) {
+            // Decrement selectedCount but never below 1 (which represents the source click)
+            if (selectedCount > 1) selectedCount--;
         }
-        if (idx == -1) return; // not found
-        // Shift elements down to keep indices contiguous: idx..size-1 move one step down
-        int size = selected.size();
-        for (int i = idx; i < size; i++) {
-            selected.put(i, selected.get(i + 1));
-        }
-        // Remove the last duplicate entry
-        selected.remove(size);
-        // Decrement selectedCount but never below 1 (which represents the source click)
-        if (selectedCount > 1) selectedCount--;
-        // Note: We intentionally do not auto-trigger here; user must reconfirm or reselect as needed.
     }
 
     // --- Active selection query API (read-only copies) ---
@@ -257,16 +247,7 @@ public class InteractionManager {
     public static CustomBox getActiveSource() { return currentEffect; }
     /** Returns an ordered copy of currently selected targets (indices 1..n). */
     public static List<CustomBox> getActiveTargets() {
-        List<CustomBox> out = new ArrayList<>();
-        for (int i = 1; i <= selected.size(); i++) {
-            CustomBox b = selected.get(i);
-            if (b != null) out.add(b);
-        }
-        return out;
-    }
-    /** Returns a copy of the entities map following the indexing contract (0=source, 1..n=targets). */
-    public static HashMap<Integer, CustomBox> getActiveEntities() {
-        return getSelectedEntities();
+        return new ArrayList<>(selected);
     }
 
     // Selection state helpers for confirmation/cancellation flows
@@ -313,23 +294,9 @@ public class InteractionManager {
         ClickableEffectData data = currentEffect.getClickableEffectData();
         if (data == null) return "";
         int selectedTargets = Math.max(selectedCount - 1, 0);
-        switch (data.getType()) {
-            case MULTI_INTERACTION -> {
-                int required = data.getExtraTargets();
-                return "Select " + required + " target" + (required == 1 ? "" : "s") + " (" + selectedTargets + "/" + required + ") — Right-click to cancel, ESC to pause";
-            }
-            case MULTI_CHOICE_LIMITED_INTERACTION -> {
-                int limit = data.getExtraTargets();
-                return "Select up to " + limit + " target" + (limit == 1 ? "" : "s") + " (" + selectedTargets + ") — Enter to confirm, Right-click to cancel, ESC to pause";
-            }
-            case MULTI_CHOICE_UNLIMITED_INTERACTION -> {
-                return "Select any number (" + selectedTargets + ") — Enter to confirm, Right-click to cancel, ESC to pause";
-            }
-            case IMMEDIATE -> {
-                return "";
-            }
-        }
-        return "";
+        String instruction = data.getType().getInstructionText(data.getExtraTargets(), selectedTargets);
+        if (instruction.isEmpty()) return "";
+        return instruction + " — " + data.getType().getConfirmationHint();
     }
 
     /**
@@ -362,8 +329,10 @@ public class InteractionManager {
         } else {
             Logger.error("InteractionManager", "currentEffect is null when compiling selected entities");
         }
-        // Subsequent indices are the selected target entities.
-        entities.putAll(selected);
+        // Subsequent indices are the selected target entities (1..n)
+        for (int i = 0; i < selected.size(); i++) {
+            entities.put(i + 1, selected.get(i));
+        }
         return entities;
     }
 

@@ -17,8 +17,7 @@ public class ClickableEffectData {
     }
 
     public static ClickableEffectData getImmediate() {
-        ClickableEffectData data = new ClickableEffectData(ClickableEffectType.IMMEDIATE, ClickableTargetType.NONE, 0);
-        return data;
+        return new ClickableEffectData(ClickableEffectType.IMMEDIATE, ClickableTargetType.NONE, 0);
     }
 
     public static ClickableEffectData getMulti(ClickableTargetType targetType, int extraTargets) {
