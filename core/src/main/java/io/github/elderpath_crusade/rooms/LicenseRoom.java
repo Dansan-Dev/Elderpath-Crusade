@@ -24,7 +24,7 @@ public class LicenseRoom extends Room {
         private Button upButton;
         private Button downButton;
         private int scrollOffset = 0;
-        private final int SCROLL_STEP = 100;
+        private final int SCROLL_STEP = 200;
 
         private LicenseRoom() {
                 super();
