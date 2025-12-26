@@ -77,5 +77,7 @@ High-level structure:
 - lwjgl3/src/main/java/io/github/elderpath_crusade/lwjgl3/
   - Lwjgl3Launcher (desktop entry point)
 
-### License
-- [INSERT LICENSE NAME OR LINK] (TBD)
+### Legal
+- Core Game: [INSERT LICENSE NAME OR LINK] (TBD)
+- Assets:
+  - Silkscreen Font: Licensed under the SIL Open Font License 1.1 ([External License Reference](https://scripts.sil.org/OFL)).

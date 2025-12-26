@@ -56,4 +56,16 @@ public class InfoDataManager {
         }
         return Collections.emptyMap();
     }
+
+    public static String getRawFileContent(String fileName) {
+        try {
+            FileHandle file = Gdx.files.internal(fileName);
+            if (file.exists()) {
+                return file.readString();
+            }
+        } catch (Exception e) {
+            Gdx.app.error("InfoDataManager", "Error reading raw file " + fileName, e);
+        }
+        return "[ERROR LOADING CONTENT]";
+    }
 }

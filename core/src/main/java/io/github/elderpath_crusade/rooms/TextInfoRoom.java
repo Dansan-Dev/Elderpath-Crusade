@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.managers.InfoDataManager;
@@ -12,14 +13,19 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
+import io.github.elderpath_crusade.interfaces.UIRenderable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class TextInfoRoom extends Room {
     private Text header;
-    private List<Text> entryTexts = new ArrayList<>();
+    private List<UIRenderable> infoComponents = new ArrayList<>();
     private Button backButton;
+    private Button upButton;
+    private Button downButton;
+    private int scrollOffset = 0;
+    private final int SCROLL_STEP = 100;
 
     private TextInfoRoom(String category) {
         super();
@@ -34,13 +40,13 @@ public class TextInfoRoom extends Room {
             String name = entry.get("name");
             String role = entry.get("role");
 
-            int maxWrapWidth = (int) (SettingsManager.screenSize.getScreenWidth() * 0.8f);
+            int maxWrapWidth = (int) (SettingsManager.screenSize.getScreenWidth() * 0.7f);
 
             if (name != null && !name.isEmpty()) {
                 Text nameText = new Text(name, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.BUTTON_PRIMARY.getColor())
                         .withFontSize(FontSize.BODY_MEDIUM)
                         .withWrapWidth(maxWrapWidth);
-                entryTexts.add(nameText);
+                infoComponents.add(nameText);
                 addContent(nameText);
             }
 
@@ -48,14 +54,27 @@ public class TextInfoRoom extends Room {
                 Text roleText = new Text(role, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                         .withFontSize(FontSize.BODY_MEDIUM)
                         .withWrapWidth(maxWrapWidth);
-                entryTexts.add(roleText);
+                infoComponents.add(roleText);
                 addContent(roleText);
+
+                if (name != null && name.equals("Silkscreen Font")) {
+                    Button licenseButton = Button
+                            .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "View Full License",
+                                    FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 180, 40, 0)
+                            .withOnClick((e) -> RoomManager.gotoRoom(LicenseRoom::get),
+                                    ClickableEffectData.getImmediate())
+                            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+                            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+                            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+                    infoComponents.add(licenseButton);
+                    addContent(licenseButton);
+                }
             }
         }
 
         backButton = Button
                 .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN,
-                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
+                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 50, 0)
                 .withOnClick((e) -> RoomManager.gotoRoom(InformationSelectionRoom::get),
                         ClickableEffectData.getImmediate())
                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
@@ -63,35 +82,103 @@ public class TextInfoRoom extends Room {
                 .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
         addContent(backButton);
 
+        upButton = Button
+                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "^", FontType.SILKSCREEN,
+                        FontSize.TITLE_MEDIUM.getSize(), 0, 0, 50, 50, 0)
+                .withOnClick((e) -> {
+                    scrollOffset = Math.max(0, scrollOffset - SCROLL_STEP);
+                    layoutContents();
+                }, ClickableEffectData.getImmediate())
+                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor());
+        addContent(upButton);
+
+        downButton = Button
+                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "v", FontType.SILKSCREEN,
+                        FontSize.TITLE_MEDIUM.getSize(), 0, 0, 50, 50, 0)
+                .withOnClick((e) -> {
+                    scrollOffset += SCROLL_STEP;
+                    layoutContents();
+                }, ClickableEffectData.getImmediate())
+                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor());
+        addContent(downButton);
+
         layoutContents();
     }
 
     private void layoutContents() {
         int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
         int screenCenterX = screenCenter[0];
+        int screenWidth = SettingsManager.screenSize.getScreenWidth();
         int screenHeight = SettingsManager.screenSize.getScreenHeight();
 
         MenuLayout.centerHeader(header, 100);
 
-        int currentY = screenHeight - 200;
-        // We iterate through entryTexts. Since they were added in pairs (name, then
-        // role)
-        // we can group them or just apply a consistent spacing logic.
-        for (int i = 0; i < entryTexts.size(); i++) {
-            Text text = entryTexts.get(i);
-            text.getBounds().setX(screenCenterX - text.getBounds().getWidth() / 2);
-            text.getBounds().setY(currentY - text.getBounds().getHeight()); // Y is bottom-left, adjust for top-down
+        backButton.getBounds().setX(20);
+        backButton.getBounds().setY(screenHeight - 70);
 
-            // Calculate next Y based on current text height and spacing
-            if (i % 2 == 0) {
-                currentY -= (text.getBounds().getHeight() + 15); // Gap between Name and Role
+        upButton.getBounds().setX(screenWidth - 80);
+        upButton.getBounds().setY(screenHeight - 150);
+
+        downButton.getBounds().setX(screenWidth - 80);
+        downButton.getBounds().setY(100);
+
+        // First pass: calculate total height to determine max scroll
+        int totalHeight = 0;
+        for (int i = 0; i < infoComponents.size(); i++) {
+            UIRenderable comp = infoComponents.get(i);
+            int compHeight = comp.getBounds().getHeight();
+            totalHeight += compHeight;
+            if (comp instanceof Button) {
+                totalHeight += 50;
+            } else if (i + 1 < infoComponents.size() && infoComponents.get(i + 1) instanceof Button) {
+                totalHeight += 15;
             } else {
-                currentY -= (text.getBounds().getHeight() + 45); // Gap between full entries
+                totalHeight += 35;
             }
         }
 
-        backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
-        backButton.getBounds().setY(80);
+        // maxScroll is how much we can move UP.
+        // Bottom limit is around y=100.
+        int availableSpace = (screenHeight - 200) - 100;
+        int maxScroll = Math.max(0, totalHeight - availableSpace);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
+
+        // Update button visual clues
+        Color primary = ColorSettings.BUTTON_PRIMARY.getColor().cpy();
+        Color dimmed = primary.cpy().mul(1, 1, 1, 0.3f);
+
+        upButton.setDisabled(scrollOffset <= 0);
+        upButton.setBackgroundColor(upButton.isDisabled() ? dimmed : primary);
+
+        downButton.setDisabled(scrollOffset >= maxScroll);
+        downButton.setBackgroundColor(downButton.isDisabled() ? dimmed : primary);
+
+        int clipTop = screenHeight - 160;
+        int clipBottom = 110;
+
+        int currentY = screenHeight - 200 + scrollOffset;
+        for (int i = 0; i < infoComponents.size(); i++) {
+            UIRenderable comp = infoComponents.get(i);
+            comp.getBounds().setX(screenCenterX - comp.getBounds().getWidth() / 2);
+
+            int compHeight = comp.getBounds().getHeight();
+            int compY = currentY - compHeight;
+            comp.getBounds().setY(compY);
+
+            // Strict visibility clipping: hide IF ANY PART crosses a boundary
+            // This prevents "peeking" into the header or footer space.
+            if (compY + compHeight > clipTop || compY < clipBottom) {
+                comp.getBounds().setX(-2000);
+            }
+
+            if (comp instanceof Button) {
+                currentY -= (compHeight + 50);
+            } else if (i + 1 < infoComponents.size() && infoComponents.get(i + 1) instanceof Button) {
+                currentY -= (compHeight + 15);
+            } else {
+                currentY -= (compHeight + 35);
+            }
+        }
     }
 
     @Override

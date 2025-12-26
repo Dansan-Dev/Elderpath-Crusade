@@ -82,20 +82,20 @@ public class SpriteObject extends LowestOrderTexture implements Renderable, UIRe
 
     private int[] calculateMargin() {
         int[] vector = switch (spriteBoxPos) {
-            case TOP_LEFT -> new int[]{0, 2};
-            case TOP -> new int[]{1, 2};
-            case TOP_RIGHT -> new int[]{2, 2};
-            case BOTTOM_LEFT -> new int[]{0, 0};
-            case BOTTOM -> new int[]{1, 0};
-            case BOTTOM_RIGHT -> new int[]{2, 0};
-            case LEFT -> new int[]{0, 1};
-            case CENTER -> new int[]{1, 1};
-            case RIGHT -> new int[]{2, 1};
+            case TOP_LEFT -> new int[] { 0, 2 };
+            case TOP -> new int[] { 1, 2 };
+            case TOP_RIGHT -> new int[] { 2, 2 };
+            case BOTTOM_LEFT -> new int[] { 0, 0 };
+            case BOTTOM -> new int[] { 1, 0 };
+            case BOTTOM_RIGHT -> new int[] { 2, 0 };
+            case LEFT -> new int[] { 0, 1 };
+            case CENTER -> new int[] { 1, 1 };
+            case RIGHT -> new int[] { 2, 1 };
         };
         Box bounds = getBounds();
-        int marginWidthSize = (int)(bounds.getWidth() - getCurrentSprite().getWidth()) / 2;
-        int marginHeightSize = (int)(bounds.getHeight() - getCurrentSprite().getHeight()) / 2;
-        return new int[]{marginWidthSize * vector[0], marginHeightSize * vector[1]};
+        int marginWidthSize = (int) (bounds.getWidth() - getCurrentSprite().getWidth()) / 2;
+        int marginHeightSize = (int) (bounds.getHeight() - getCurrentSprite().getHeight()) / 2;
+        return new int[] { marginWidthSize * vector[0], marginHeightSize * vector[1] };
     }
 
     @Override

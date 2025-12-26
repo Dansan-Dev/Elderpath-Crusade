@@ -21,34 +21,60 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * A simple Button component that renders a rectangular box (image or solid color),
+ * A simple Button component that renders a rectangular box (image or solid
+ * color),
  * centers text inside the box, and triggers an onClick when clicked.
  */
 public class Button extends LowestOrderTexture implements Renderable, Clickable, UIRenderable {
-    @Getter @Setter private String text;
-    @Getter @Setter private FontType fontType;
-    @Getter @Setter private Color textColor = ColorSettings.TEXT_DEFAULT.getColor();
-    @Getter @Setter private int z;
+    @Getter
+    @Setter
+    private String text;
+    @Getter
+    @Setter
+    private FontType fontType;
+    @Getter
+    @Setter
+    private Color textColor = ColorSettings.TEXT_DEFAULT.getColor();
+    @Getter
+    @Setter
+    private int z;
 
     // Background options (only one should be used)
     private Texture backgroundTexture; // full texture; scaled to bounds (optionally preserving aspect)
-    private Color backgroundColor;     // solid color fill
-    private boolean preserveImageAspect = false;  // if true, image is fit-centered with aspect preserved
+    private Color backgroundColor; // solid color fill
+    private boolean preserveImageAspect = false; // if true, image is fit-centered with aspect preserved
 
     // Optional hover / click visual tweaks (background)
-    @Getter @Setter private Color hoverColor = null;      // background hover color
-    @Getter @Setter private Color clickColor = null;      // background click color
+    @Getter
+    @Setter
+    private Color hoverColor = null; // background hover color
+    @Getter
+    @Setter
+    private Color clickColor = null; // background click color
 
     // Optional hover / click visual tweaks (text)
-    @Getter @Setter private Color hoverTextColor = null;
-    @Getter @Setter private Color clickTextColor = null;
+    @Getter
+    @Setter
+    private Color hoverTextColor = null;
+    @Getter
+    @Setter
+    private Color clickTextColor = null;
 
     // Optional border colors
-    @Getter @Setter private Color borderColor = null;
-    @Getter @Setter private Color hoverBorderColor = null;
-    @Getter @Setter private Color clickBorderColor = null;
+    @Getter
+    @Setter
+    private Color borderColor = null;
+    @Getter
+    @Setter
+    private Color hoverBorderColor = null;
+    @Getter
+    @Setter
+    private Color clickBorderColor = null;
 
     protected Text textObj; // Protected so subclasses can access for dynamic text updates
+    @Getter
+    @Setter
+    private boolean disabled = false;
 
     // Clickable integration
     private OnClick onClick = null;
@@ -66,14 +92,13 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
     // Factory: Color background
     public static Button fromColor(
-        Color backgroundColor,
-        String text,
-        FontType fontType,
-        int fontSize,
-        int x, int y,
-        int width, int height,
-        int z
-    ) {
+            Color backgroundColor,
+            String text,
+            FontType fontType,
+            int fontSize,
+            int x, int y,
+            int width, int height,
+            int z) {
         Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
         b.backgroundColor = backgroundColor;
         return b;
@@ -81,14 +106,13 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
     // Factory: Image background (path to image)
     public static Button fromImage(
-        String imagePath,
-        String text,
-        FontType fontType,
-        int fontSize,
-        int x, int y,
-        int width, int height,
-        int z
-    ) {
+            String imagePath,
+            String text,
+            FontType fontType,
+            int fontSize,
+            int x, int y,
+            int width, int height,
+            int z) {
         Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
         b.backgroundTexture = TextureManager.getTexture(imagePath);
         return b;
@@ -100,8 +124,8 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         return this;
     }
 
-    // Protected setter for subclasses to configure background color
-    protected void setBackgroundColor(Color color) {
+    // Public setter for dynamic configuration of background color
+    public void setBackgroundColor(Color color) {
         this.backgroundColor = color;
     }
 
@@ -110,12 +134,12 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         return this;
     }
 
-
     public Button withTextColors(Color normal, Color hover, Color click) {
         this.textColor = normal;
         this.hoverTextColor = hover;
         this.clickTextColor = click;
-        if (textObj != null && textObj.getLabel() != null) textObj.getLabel().setColor(textColor);
+        if (textObj != null && textObj.getLabel() != null)
+            textObj.getLabel().setColor(textColor);
         return this;
     }
 
@@ -127,7 +151,8 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
     private void centerLabelInBounds() {
         Box b = getBounds();
-        if (b == null || textObj == null || textObj.getLabel() == null) return;
+        if (b == null || textObj == null || textObj.getLabel() == null)
+            return;
         // Ensure label has latest pref size
         Label lbl = textObj.getLabel();
         float labelWidth = lbl.getPrefWidth();
@@ -135,11 +160,10 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         int baseX = getX(); // absolute x
         int baseY = getY(); // absolute y
         Box newBounds = new Box(
-            (int) (baseX + (b.getWidth() - labelWidth) / 2f),
-            (int) (baseY + (b.getHeight() - labelHeight) / 2f),
-            (int) labelWidth,
-            (int) labelHeight
-        );
+                (int) (baseX + (b.getWidth() - labelWidth) / 2f),
+                (int) (baseY + (b.getHeight() - labelHeight) / 2f),
+                (int) labelWidth,
+                (int) labelHeight);
         textObj.setBounds(newBounds);
     }
 
@@ -156,8 +180,10 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        if (isPaused) return;
-        if (zLevel != z) return;
+        if (isPaused)
+            return;
+        if (zLevel != z)
+            return;
         drawBackground(batch);
         updateText();
         applyHoverClickTint(0, 0);
@@ -169,8 +195,10 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-        if (isPaused) return;
-        if (zLevel != z) return;
+        if (isPaused)
+            return;
+        if (zLevel != z)
+            return;
         // Temporarily offset bounds for drawing in higher-order containers
         Box original = getBounds();
         Box temp = new Box(x, y, original.getWidth(), original.getHeight());
@@ -196,7 +224,8 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
         if (backgroundTexture != null) {
             if (preserveImageAspect) {
-                // Fit the texture inside bounds while preserving its aspect ratio; center within box
+                // Fit the texture inside bounds while preserving its aspect ratio; center
+                // within box
                 int texW = backgroundTexture.getWidth();
                 int texH = backgroundTexture.getHeight();
                 if (texW > 0 && texH > 0) {
@@ -215,9 +244,11 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         } else if (backgroundColor != null) {
             // Determine background color based on hover/click state (click overrides hover)
             Color bg = backgroundColor;
-            boolean hovered = isHovered(0, 0);
-            if (hovered && hoverColor != null) bg = hoverColor;
-            if (hovered && Gdx.input.isTouched() && clickColor != null) bg = clickColor;
+            boolean hovered = !disabled && isHovered(0, 0);
+            if (hovered && hoverColor != null)
+                bg = hoverColor;
+            if (hovered && Gdx.input.isTouched() && clickColor != null)
+                bg = clickColor;
             Texture pixel = GraphicUtils.getPixelTexture(bg);
             batch.draw(pixel, xAbs, yAbs, width, height);
         }
@@ -226,9 +257,11 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         Color activeBorder = null;
         if (borderColor != null) {
             activeBorder = borderColor;
-            boolean hovered = isHovered(0, 0);
-            if (hovered && hoverBorderColor != null) activeBorder = hoverBorderColor;
-            if (hovered && Gdx.input.isTouched() && clickBorderColor != null) activeBorder = clickBorderColor;
+            boolean hovered = !disabled && isHovered(0, 0);
+            if (hovered && hoverBorderColor != null)
+                activeBorder = hoverBorderColor;
+            if (hovered && Gdx.input.isTouched() && clickBorderColor != null)
+                activeBorder = clickBorderColor;
         }
         if (activeBorder != null) {
             Texture px = GraphicUtils.getPixelTexture(activeBorder);
@@ -250,11 +283,15 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     }
 
     private void applyHoverClickTint(int relX, int relY) {
-        if (!isHovered(relX, relY)) return;
-        if (textObj == null || textObj.getLabel() == null) return;
-        if (hoverTextColor != null) textObj.getLabel().setColor(hoverTextColor);
+        if (disabled || !isHovered(relX, relY))
+            return;
+        if (textObj == null || textObj.getLabel() == null)
+            return;
+        if (hoverTextColor != null)
+            textObj.getLabel().setColor(hoverTextColor);
         // Visual click color change if provided
-        if (clickTextColor != null && Gdx.input.isTouched()) textObj.getLabel().setColor(clickTextColor);
+        if (clickTextColor != null && Gdx.input.isTouched())
+            textObj.getLabel().setColor(clickTextColor);
     }
 
     // Clickable implementation hooks
@@ -271,7 +308,8 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
 
     @Override
     public void triggerClickEffect(HashMap<Integer, CustomBox> interactionEntities) {
-        if (this.onClick == null) return;
+        if (disabled || this.onClick == null)
+            return;
         this.onClick.run(interactionEntities);
     }
 
