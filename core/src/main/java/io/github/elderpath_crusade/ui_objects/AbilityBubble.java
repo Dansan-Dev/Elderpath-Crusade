@@ -6,13 +6,12 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.interfaces.*;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
-import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.ColorSettings;
 
 import java.util.HashMap;

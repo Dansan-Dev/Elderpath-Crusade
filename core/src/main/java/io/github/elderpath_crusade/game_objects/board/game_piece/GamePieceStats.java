@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.game_objects.board;
+package io.github.elderpath_crusade.game_objects.board.game_piece;
 
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import lombok.Getter;

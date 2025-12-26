@@ -4,7 +4,7 @@ import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.multiplayer.EventBus;
 import io.github.elderpath_crusade.multiplayer.GameEventType;

@@ -1,10 +1,8 @@
 package io.github.elderpath_crusade.abilities;
 
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePiece;
 import io.github.elderpath_crusade.enums.GamePieceData;
-import java.util.*;
 
 /**
  * Minimal helper context with common ability utilities. Static-only, no retained state.

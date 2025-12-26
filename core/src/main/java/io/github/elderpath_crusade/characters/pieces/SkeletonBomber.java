@@ -6,8 +6,8 @@ import io.github.elderpath_crusade.abilities.impl.passive.CannotAttackAbility;
 import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePieceStats;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 
 import java.util.UUID;
 import java.util.function.Supplier;

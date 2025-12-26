@@ -1,9 +1,8 @@
 package io.github.elderpath_crusade.abilities.impl.passive;
 
-import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 
 /**
  * Passive ability that prevents the owner from attacking by setting attack range to -1.

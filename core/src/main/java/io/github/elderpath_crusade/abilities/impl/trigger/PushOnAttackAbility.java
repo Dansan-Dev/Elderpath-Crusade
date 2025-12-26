@@ -5,7 +5,7 @@ import io.github.elderpath_crusade.abilities.MovementUtils;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 
 /**
  * Charger ability: ON ATTACK: Push the target 1 square backwards and move 1 square towards the target.

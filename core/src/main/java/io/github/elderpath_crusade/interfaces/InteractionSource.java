@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.interfaces;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +19,7 @@ public interface InteractionSource extends CustomBox, TargetFilter {
 
     /**
      * Invoked when the selection is complete and confirmed.
-     * 
+     *
      * @param entities The selected entities (0=source, 1..n=targets).
      */
     void triggerClickEffect(HashMap<Integer, CustomBox> entities);

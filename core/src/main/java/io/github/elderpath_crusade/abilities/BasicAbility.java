@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.abilities;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 

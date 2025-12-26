@@ -2,7 +2,7 @@ package io.github.elderpath_crusade.bot.eval;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.interfaces.Renderable;

@@ -2,8 +2,8 @@ package io.github.elderpath_crusade.cards;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.characters.pieces.WolfCub;
 import java.util.List;

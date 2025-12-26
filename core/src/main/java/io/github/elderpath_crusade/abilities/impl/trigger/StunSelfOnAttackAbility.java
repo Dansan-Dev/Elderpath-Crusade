@@ -3,7 +3,7 @@ package io.github.elderpath_crusade.abilities.impl.trigger;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 
 /**
  * Sniper ability: ON ATTACK: Get stunned for 2 turns.

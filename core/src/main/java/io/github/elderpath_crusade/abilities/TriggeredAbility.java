@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.abilities;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 
 /**

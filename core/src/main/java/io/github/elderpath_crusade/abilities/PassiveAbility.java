@@ -2,7 +2,7 @@ package io.github.elderpath_crusade.abilities;
 
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 
 /**
  * Passive abilities provide ongoing modifiers or rules that influence gameplay while attached.

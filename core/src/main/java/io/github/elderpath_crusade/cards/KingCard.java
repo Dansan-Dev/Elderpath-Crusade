@@ -4,8 +4,8 @@ import io.github.elderpath_crusade.abilities.impl._multi.aura.KingEnemyAuraAbili
 import io.github.elderpath_crusade.abilities.impl._multi.aura.KingFriendlyAuraAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.characters.pieces.King;
 

@@ -1,20 +1,11 @@
 package io.github.elderpath_crusade.managers;
 
-import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableEffectType;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
-import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.settings.InputFunction;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 import io.github.elderpath_crusade.interfaces.*;
-import io.github.elderpath_crusade.managers.BoardManager;
-import io.github.elderpath_crusade.managers.GraphicsManager;
-import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.ui_objects.AbilityBubble;
 import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
 

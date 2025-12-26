@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.utils;
 
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;

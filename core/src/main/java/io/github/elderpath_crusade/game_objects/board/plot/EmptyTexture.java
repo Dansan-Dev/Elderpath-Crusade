@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.game_objects.board;
+package io.github.elderpath_crusade.game_objects.board.plot;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;

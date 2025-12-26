@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.bot.eval;
 
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 import io.github.elderpath_crusade.bot.search.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 

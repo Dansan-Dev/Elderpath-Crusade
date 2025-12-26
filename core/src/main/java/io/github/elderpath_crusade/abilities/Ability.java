@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.abilities;
 
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 
 /**
  * Base contract for any ability attached to a MonsterGamePiece.

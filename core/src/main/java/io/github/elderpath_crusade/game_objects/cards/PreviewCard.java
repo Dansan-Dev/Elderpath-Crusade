@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
+import io.github.elderpath_crusade.game_objects.board.game_piece.GamePieceStats;
 
 import java.util.List;
 

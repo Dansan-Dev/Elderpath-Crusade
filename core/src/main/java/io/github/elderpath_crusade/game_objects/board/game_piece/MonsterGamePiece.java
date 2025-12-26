@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.game_objects.board;
+package io.github.elderpath_crusade.game_objects.board.game_piece;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
 import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
+import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import lombok.Getter;
 

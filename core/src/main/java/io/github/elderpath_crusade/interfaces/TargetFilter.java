@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.interfaces;
 
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.board.plot.Plot;
 
 import java.util.List;
 

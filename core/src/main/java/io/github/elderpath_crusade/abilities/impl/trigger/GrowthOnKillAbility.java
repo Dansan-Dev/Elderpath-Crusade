@@ -1,9 +1,8 @@
 package io.github.elderpath_crusade.abilities.impl.trigger;
 
-import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiece;
 import io.github.elderpath_crusade.multiplayer.GameEvent;
 import io.github.elderpath_crusade.multiplayer.GameEventType;
 
