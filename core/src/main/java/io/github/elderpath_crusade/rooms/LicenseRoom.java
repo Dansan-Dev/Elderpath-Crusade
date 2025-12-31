@@ -18,23 +18,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LicenseRoom extends Room {
-        private Text header;
-        private List<UIRenderable> infoComponents = new ArrayList<>();
-        private Button backButton;
-        private Button upButton;
-        private Button downButton;
+        private final Text header;
+        private final List<UIRenderable> infoComponents = new ArrayList<>();
+        private final Button backButton;
+        private final Button upButton;
+        private final Button downButton;
         private int scrollOffset = 0;
         private final int SCROLL_STEP = 200;
 
-        private LicenseRoom() {
+        private LicenseRoom(String fileName, String title) {
                 super();
 
-                header = new Text("Full License Text", FontType.SILKSCREEN, 0, 0, 0,
+                header = new Text(title, FontType.SILKSCREEN, 0, 0, 0,
                                 ColorSettings.TEXT_DEFAULT.getColor())
                                 .withFontSize(FontSize.TITLE_MEDIUM);
                 addContent(header);
 
-                String content = InfoDataManager.getRawFileContent("OFL.txt");
+                String content = InfoDataManager.getRawFileContent(fileName);
                 int wrapWidth = (int) (SettingsManager.screenSize.getScreenWidth() * 0.7f);
 
                 // Split by single newlines for maximum clipping granularity
@@ -146,7 +146,7 @@ public class LicenseRoom extends Room {
                 layoutContents();
         }
 
-        public static LicenseRoom get() {
-                return new LicenseRoom();
+        public static LicenseRoom get(String fileName, String title) {
+                return new LicenseRoom(fileName, title);
         }
 }

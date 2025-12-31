@@ -79,5 +79,7 @@ High-level structure:
 
 ### Legal
 - Core Game: [INSERT LICENSE NAME OR LINK] (TBD)
+- Dependencies:
+  - libGDX: Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 - Assets:
-  - Silkscreen Font: Licensed under the SIL Open Font License 1.1 ([External License Reference](https://scripts.sil.org/OFL)).
+  - Silkscreen Font: Licensed under the [SIL Open Font License 1.1](https://scripts.sil.org/OFL). Copyright (c) 1999-2011, Jason Kottke.

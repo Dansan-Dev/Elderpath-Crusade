@@ -37,31 +37,34 @@ public class TextInfoRoom extends Room {
 
         List<Map<String, String>> entries = InfoDataManager.getEntries(category);
         for (Map<String, String> entry : entries) {
-            String name = entry.get("name");
-            String role = entry.get("role");
+            String optionalName = entry.get("name");
+            String optionalRole = entry.get("role");
+            String licenseFile = entry.get("license_file");
 
             int maxWrapWidth = (int) (SettingsManager.screenSize.getScreenWidth() * 0.7f);
 
-            if (name != null && !name.isEmpty()) {
-                Text nameText = new Text(name, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.BUTTON_PRIMARY.getColor())
+            if (optionalName != null && !optionalName.isEmpty()) {
+                Text nameText = new Text(optionalName, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.BUTTON_PRIMARY.getColor())
                         .withFontSize(FontSize.BODY_MEDIUM)
                         .withWrapWidth(maxWrapWidth);
                 infoComponents.add(nameText);
                 addContent(nameText);
             }
 
-            if (role != null && !role.isEmpty()) {
-                Text roleText = new Text(role, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+            if (optionalRole != null && !optionalRole.isEmpty()) {
+                Text roleText = new Text(optionalRole, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                         .withFontSize(FontSize.BODY_MEDIUM)
                         .withWrapWidth(maxWrapWidth);
                 infoComponents.add(roleText);
                 addContent(roleText);
 
-                if (name != null && name.equals("Silkscreen Font")) {
+                if (licenseFile != null && !licenseFile.isEmpty()) {
+                    String name = optionalName != null ? optionalName : "License";
                     Button licenseButton = Button
                             .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "View Full License",
                                     FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 180, 40, 0)
-                            .withOnClick((e) -> RoomManager.gotoRoom(LicenseRoom::get),
+                            .withOnClick(
+                                    (e) -> RoomManager.gotoRoom(() -> LicenseRoom.get(licenseFile, name)),
                                     ClickableEffectData.getImmediate())
                             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
