@@ -1,6 +1,8 @@
-# Elderpath Crusade — macOS Package Guide
+# Elderpath Crusade — MacOS
 
 Welcome! This archive contains the Elderpath Crusade desktop build for macOS. This guide explains how to open the app, handle Gatekeeper prompts, and add it to your Applications folder and Dock.
+
+**By downloading or running this game, you agree to the terms in the LICENSE.txt file included with the game.**
 
 
 ## Contents of this ZIP

@@ -78,7 +78,7 @@ High-level structure:
   - Lwjgl3Launcher (desktop entry point)
 
 ### Legal
-- Core Game: [INSERT LICENSE NAME OR LINK] (TBD)
+- Core Game & EULA: [End User License Agreement](assets/license/LICENSE.txt) (By downloading or running this game, you agree to these terms).
 - Dependencies:
   - libGDX: Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 - Assets:
