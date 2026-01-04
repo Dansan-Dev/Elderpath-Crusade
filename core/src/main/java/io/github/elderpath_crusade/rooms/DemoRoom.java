@@ -1,38 +1,19 @@
 package io.github.elderpath_crusade.rooms;
 
-import com.badlogic.gdx.graphics.Color;
-import io.github.elderpath_crusade.abilities.AbilityRelay;
 import io.github.elderpath_crusade.cards.*;
-import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.managers.DeckManager;
-import io.github.elderpath_crusade.managers.InteractionManager;
-import io.github.elderpath_crusade.managers.PlayerManager;
-import io.github.elderpath_crusade.managers.MusicManager;
-import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
-import io.github.elderpath_crusade.ui_objects.*;
-import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.managers.GameModeManager;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.utils.FontSize;
-import io.github.elderpath_crusade.utils.Logger;
-import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.enums.SpriteBoxPos;
+import io.github.elderpath_crusade.managers.TurnManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public class DemoRoom extends BattleRoom {
 
@@ -57,28 +38,32 @@ public class DemoRoom extends BattleRoom {
         if (alignment == PieceAlignment.P1) {
             // P1 Deck Logic
             if (DeckManager.hasDraftedDeck()) {
-                List<java.util.function.Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck();
-                for (java.util.function.Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
+                List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = DeckManager.getDraftedDeck();
+                for (Function<DeckManager.CardCreationParams, Card> cardCreator : draftedDeck) {
                     DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                        board, PieceAlignment.P1, 0, 0, 125, 200, 0
+                        board, PieceAlignment.P1,
+                        0, 0,
+                        125, 200,
+                        0
                     );
                     cards.add(cardCreator.apply(params));
                 }
             } else {
                 for (int i = 0; i < 24; i++) {
-                    int kind = i % 12;
-                    if (kind == 0) cards.add(new WolfCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 1) cards.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 2) cards.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 3) cards.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 4) cards.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 5) cards.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 6) cards.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 7) cards.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 8) cards.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 9) cards.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else if (kind == 10) cards.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    else cards.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    int kind = i % 11;
+                    switch (kind) {
+                        case 1 -> cards.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 2 -> cards.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 3 -> cards.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 4 -> cards.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 5 -> cards.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 6 -> cards.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 7 -> cards.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 8 -> cards.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 9 -> cards.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        case 10 -> cards.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                        default -> cards.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
+                    }
                 }
             }
             Deck deck = new Deck(cards, 0, 10, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);

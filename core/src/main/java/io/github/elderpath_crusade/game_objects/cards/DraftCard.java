@@ -23,7 +23,7 @@ import java.util.HashMap;
 public class DraftCard extends Card {
     // Get the wrapped card for reference
     @Getter
-    private final SummonCard wrappedCard;
+    private final Card wrappedCard;
     private final OnClick draftOnClick;
 
     // Hover border animation state
@@ -31,7 +31,7 @@ public class DraftCard extends Card {
     private static final float HOVER_BORDER_SPEED = 8f; // Animation speed
     private static final int HOVER_BORDER_THICKNESS = 3; // Border thickness when fully hovered
 
-    public DraftCard(SummonCard wrappedCard, OnClick draftOnClick) {
+    public DraftCard(Card wrappedCard, OnClick draftOnClick) {
         // Create a Card with no effect (we'll override click behavior)
         super(
             wrappedCard.getBounds().getX(), wrappedCard.getBounds().getY(),
@@ -44,7 +44,14 @@ public class DraftCard extends Card {
         this.draftOnClick = draftOnClick;
 
         setFaceUp(wrappedCard.isFaceUp());
-        setTitle(wrappedCard.getCardName(), FontType.SILKSCREEN);
+
+        String name = "";
+        if (wrappedCard instanceof SummonCard sc)
+            name = sc.getCardName();
+        else if (wrappedCard instanceof SpellCard sc)
+            name = sc.getSpellName();
+
+        setTitle(name, FontType.SILKSCREEN);
         setTitleColor(com.badlogic.gdx.graphics.Color.WHITE);
 
         setBounds(wrappedCard.getBounds());
@@ -133,4 +140,3 @@ public class DraftCard extends Card {
         wrappedCard.renderExtraOverlays(batch, zLevel, isPaused, x, y);
     }
 }
-
