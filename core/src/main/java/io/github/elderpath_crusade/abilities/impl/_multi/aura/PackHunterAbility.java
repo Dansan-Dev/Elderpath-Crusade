@@ -7,12 +7,14 @@ import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.characters.pieces.WolfCub;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.GameEvent;
+import io.github.elderpath_crusade.events.PieceDiedEvent;
+import io.github.elderpath_crusade.events.PieceMovedEvent;
+import io.github.elderpath_crusade.events.PieceSpawnedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,10 +30,9 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
     private final StatsModifier mod;
     private MonsterGamePiece owner;
     private final Set<MonsterGamePiece> appliedTo = new HashSet<>();
-    // Event listeners for global re-evaluation
-    private Consumer<GameEvent> moveListener;
-    private Consumer<GameEvent> spawnListener;
-    private Consumer<GameEvent> diedListener;
+    private Consumer<PieceMovedEvent> moveListener;
+    private Consumer<PieceSpawnedEvent> spawnListener;
+    private Consumer<PieceDiedEvent> diedListener;
 
     public PackHunterAbility() {
         this.mod = new StatsModifier();
@@ -54,7 +55,6 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
 
     @Override
     public boolean isConditionMet(MonsterGamePiece owner, Board board) {
-        // Not used by the accumulator-based model; return false to avoid owner-local application.
         return false;
     }
 
@@ -68,7 +68,6 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
     @Override
     public void onDetach() {
         unregisterGlobalListeners();
-        // Remove the modifier from all recipients
         mod.clear();
         appliedTo.clear();
         this.owner = null;
@@ -86,32 +85,25 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
     @Override
     public void onGameEvent(GameEvent event) {
         if (owner == null) return;
-        GameEventType t = event.getType();
-        // Re-evaluate when any piece moves/spawns/dies on same board to keep adjacency correct
-        if (t == GameEventType.ACTIVE_MOVEMENT || t == GameEventType.FORCED_MOVEMENT
-            || t == GameEventType.PIECE_SPAWNED || t == GameEventType.PIECE_DIED) {
-            refreshRecipients();
-        }
+        refreshRecipients();
     }
 
     private void registerGlobalListeners() {
-        moveListener = this::onGameEvent;
-        spawnListener = this::onGameEvent;
-        diedListener = this::onGameEvent;
-        EventBus.register(GameEventType.ACTIVE_MOVEMENT, moveListener);
-        EventBus.register(GameEventType.FORCED_MOVEMENT, moveListener);
-        EventBus.register(GameEventType.PIECE_SPAWNED, spawnListener);
-        EventBus.register(GameEventType.PIECE_DIED, diedListener);
+        moveListener = e -> onGameEvent(e);
+        spawnListener = e -> onGameEvent(e);
+        diedListener = e -> onGameEvent(e);
+        TypedEventBus.get().register(PieceMovedEvent.class, moveListener);
+        TypedEventBus.get().register(PieceSpawnedEvent.class, spawnListener);
+        TypedEventBus.get().register(PieceDiedEvent.class, diedListener);
     }
 
     private void unregisterGlobalListeners() {
-        if (moveListener != null) {
-            EventBus.unregister(GameEventType.ACTIVE_MOVEMENT, moveListener);
-            EventBus.unregister(GameEventType.FORCED_MOVEMENT, moveListener);
-        }
-        if (spawnListener != null) EventBus.unregister(GameEventType.PIECE_SPAWNED, spawnListener);
-        if (diedListener != null) EventBus.unregister(GameEventType.PIECE_DIED, diedListener);
-        moveListener = spawnListener = diedListener = null;
+        if (moveListener != null) TypedEventBus.get().unregister(PieceMovedEvent.class, moveListener);
+        if (spawnListener != null) TypedEventBus.get().unregister(PieceSpawnedEvent.class, spawnListener);
+        if (diedListener != null) TypedEventBus.get().unregister(PieceDiedEvent.class, diedListener);
+        moveListener = null;
+        spawnListener = null;
+        diedListener = null;
     }
 
     private void refreshRecipients() {
@@ -136,14 +128,12 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
                 }
             }
         }
-        // Remove from pieces no longer eligible
         for (MonsterGamePiece prev : new HashSet<>(appliedTo)) {
             if (!now.contains(prev)) {
                 prev.getStatsAccumulator().remove(mod);
                 appliedTo.remove(prev);
             }
         }
-        // Add to new recipients
         for (MonsterGamePiece target : now) {
             if (!appliedTo.contains(target)) {
                 target.getStatsAccumulator().add(mod);

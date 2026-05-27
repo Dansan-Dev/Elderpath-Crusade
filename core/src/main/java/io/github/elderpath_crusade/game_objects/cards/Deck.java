@@ -4,13 +4,10 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
+import io.github.elderpath_crusade.events.CardDrawnEvent;
+import io.github.elderpath_crusade.events.CardShuffledEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
-import io.github.elderpath_crusade.interfaces.Clickable;
-import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.OnClick;
-import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.utils.SpriteCreator;
 import io.github.elderpath_crusade.managers.TurnManager;
@@ -68,14 +65,11 @@ public class Deck extends SpriteObject{
         Card c = cards.remove(0);
         hand.addCard(c);
         // Emit CARD_DRAWN
-        EventBus.emit(
-                GameEventType.CARD_DRAWN,
-                Map.of(
-                        "owner", (owner == null ? "UNKNOWN" : owner.name()),
-                        "card", c.getClass().getSimpleName(),
-                        "handSize", hand.getCards().size()
-                )
-        );
+        TypedEventBus.get().emit(new CardDrawnEvent(
+                owner != null ? owner : PieceAlignment.P1,
+                c.getClass().getSimpleName(),
+                hand.getCards().size()
+        ));
     }
 
     public void shuffle() {
@@ -88,13 +82,10 @@ public class Deck extends SpriteObject{
         if (!cards.isEmpty()) {
             Collections.shuffle(cards, rng);
             // Emit CARD_SHUFFLED
-            EventBus.emit(
-                    GameEventType.CARD_SHUFFLED,
-                    Map.of(
-                            "owner", (owner == null ? "UNKNOWN" : owner.name()),
-                            "deckSize", cards.size()
-                    )
-            );
+            TypedEventBus.get().emit(new CardShuffledEvent(
+                    owner != null ? owner : PieceAlignment.P1,
+                    cards.size()
+            ));
         }
     }
 }

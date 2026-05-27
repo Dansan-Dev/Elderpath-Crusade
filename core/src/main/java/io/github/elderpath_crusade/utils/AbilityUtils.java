@@ -3,16 +3,14 @@ package io.github.elderpath_crusade.utils;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.GamePieceData;
+import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Small static helpers for common ability-side operations.
@@ -67,28 +65,17 @@ public final class AbilityUtils {
         // Deal damage
         defender.getStats().dealDamage(dmg);
 
-        // Build targets list (primary target + additional targets)
-        List<String> allTargets = new ArrayList<>();
-        allTargets.add(defender.getId().toString());
-        if (additionalTargets != null) {
-            allTargets.addAll(additionalTargets);
-        }
-
-        // Emit attack event with ability reference and all targets
-        Map<String, Object> eventData = new HashMap<>();
-        eventData.put("attackerId", attacker.getId().toString());
-        eventData.put("defenderId", defender.getId().toString());
-        eventData.put("attackerRow", attackerRow);
-        eventData.put("attackerCol", attackerCol);
-        eventData.put("defenderRow", defenderRow);
-        eventData.put("defenderCol", defenderCol);
-        eventData.put("damage", dmg);
-        eventData.put("targets", allTargets);
-        if (abilityName != null) {
-            eventData.put("ability", abilityName);
-        }
-
-        EventBus.emit(GameEventType.PIECE_ATTACKED, eventData);
+        // Emit attack event
+        TypedEventBus.get().emit(new PieceAttackedEvent(
+                attacker.getId().toString(),
+                attacker.getAlignment(),
+                attackerRow, attackerCol,
+                defender.getId().toString(),
+                defenderRow, defenderCol,
+                dmg,
+                additionalTargets,
+                abilityName
+        ));
 
         // Handle death
         // IMPORTANT: Get defender's current position (may have changed due to abilities
@@ -109,12 +96,8 @@ public final class AbilityUtils {
             } catch (Exception ignored) {
             }
             board.removeGamePieceAtPos(actualDefenderRow, actualDefenderCol);
-            EventBus.emit(
-                    GameEventType.PIECE_DIED,
-                    Map.of(
-                            "pieceId", defender.getId().toString(),
-                            "row", actualDefenderRow,
-                            "col", actualDefenderCol));
+            TypedEventBus.get().emit(new PieceDiedEvent(
+                    defender.getId().toString(), actualDefenderRow, actualDefenderCol));
         }
 
         return true;
@@ -165,21 +148,8 @@ public final class AbilityUtils {
     }
 
     // --- Event emit helpers ---
-    public static void emit(GameEventType type, Map<String, Object> data) {
-        EventBus.emit(type, data);
-    }
-
-    public static void emit(GameEventType type, Object... kvPairs) {
-        Map<String, Object> m = new HashMap<>();
-        if (kvPairs != null) {
-            for (int i = 0; i + 1 < kvPairs.length; i += 2) {
-                Object k = kvPairs[i];
-                Object v = kvPairs[i + 1];
-                if (k != null)
-                    m.put(String.valueOf(k), v);
-            }
-        }
-        EventBus.emit(type, m);
+    public static void emit(GameEvent event) {
+        TypedEventBus.get().emit(event);
     }
 
     /** Returns remaining actions for the given piece. */
@@ -208,12 +178,8 @@ public final class AbilityUtils {
     public static void spendAction(MonsterGamePiece mgp) {
         int left = Math.max(0, getRemainingActions(mgp) - 1);
         mgp.getStats().setRemainingActions(left);
-        EventBus.emit(
-                GameEventType.ACTION_SPENT,
-                Map.of(
-                        "pieceId", mgp.getId().toString(),
-                        "owner", mgp.getAlignment().name(),
-                        "remaining", left));
+        TypedEventBus.get().emit(new ActionSpentEvent(
+                mgp.getId().toString(), mgp.getAlignment(), left));
     }
 
     /**
@@ -229,9 +195,8 @@ public final class AbilityUtils {
         if (target.getStats().isDead()) {
             target.die();
             if (emitDeathEvent) {
-                emit(
-                        GameEventType.PIECE_DIED,
-                        "pieceId", target.getId().toString());
+                TypedEventBus.get().emit(new PieceDiedEvent(
+                        target.getId().toString(), -1, -1));
             }
             return false;
         }

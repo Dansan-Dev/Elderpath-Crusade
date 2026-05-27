@@ -6,13 +6,10 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.bot.Bot;
 import io.github.elderpath_crusade.bot.impl.BasicBot;
 import io.github.elderpath_crusade.bot.impl.SmartBot;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.utils.Logger;
 import lombok.Setter;
-
-import java.util.function.Consumer;
 
 /**
  * Delegates P2 TURN_STARTED to a configured Bot implementation.
@@ -28,7 +25,6 @@ public final class BotManager {
     public static void initialize() {
         if (initialized) return;
         initialized = true;
-        // Default to SmartBot, fallback to BasicBot if needed
         if (bot == null) {
             try {
                 bot = new SmartBot();
@@ -38,14 +34,10 @@ public final class BotManager {
             }
         }
 
-        Consumer<GameEvent> onTurn = (evt) -> {
-            if (evt.getType() != GameEventType.TURN_STARTED) return;
-            // Never activate bots in LOCAL_MATCH mode (both players are human)
+        TypedEventBus.get().register(TurnStartedEvent.class, evt -> {
             if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
             if (!SettingsManager.debug.enableP2Bot) return;
-            Object p = evt.getData().get("player");
-            if (p == null) return;
-            if (!PieceAlignment.P2.name().equals(p.toString())) return;
+            if (evt.player() != PieceAlignment.P2) return;
             if (GraphicsManager.isPaused()) return;
             if (InteractionManager.hasActiveSelection()) {
                 InteractionManager.cancelSelection();
@@ -65,7 +57,6 @@ public final class BotManager {
                     }
                 }
             }, DELAY_BEFORE_ACT);
-        };
-        EventBus.register(GameEventType.TURN_STARTED, onTurn);
+        });
     }
 }

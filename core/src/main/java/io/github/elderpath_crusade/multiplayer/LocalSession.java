@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.multiplayer;
 
+import io.github.elderpath_crusade.events.GameEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -20,7 +21,6 @@ public class LocalSession implements MultiplayerSession {
 
     @Override
     public void emit(GameEvent event) {
-        // Synchronous, immediate dispatch
         for (Consumer<GameEvent> l : new ArrayList<>(listeners)) {
             l.accept(event);
         }

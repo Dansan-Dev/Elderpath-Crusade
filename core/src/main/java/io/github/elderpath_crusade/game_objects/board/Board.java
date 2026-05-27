@@ -6,8 +6,6 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -271,13 +269,11 @@ public class Board extends HigherOrderTexture implements Updatable {
             mgp.getStats().setRemainingActions(0);
             mgp.notifySpawned(row, col);
         }
-        EventBus.emit(
-                GameEventType.PIECE_SPAWNED,
-                Map.of(
-                        "pieceId", gamePiece.getId().toString(),
-                        "owner", gamePiece.getAlignment().name(),
-                        "row", row,
-                        "col", col));
+        io.github.elderpath_crusade.events.TypedEventBus.get().emit(
+                new io.github.elderpath_crusade.events.PieceSpawnedEvent(
+                        gamePiece.getId().toString(),
+                        gamePiece.getAlignment(),
+                        row, col));
     }
 
     private void replacePlotAtPos(int row, int col, Renderable newRenderable) {

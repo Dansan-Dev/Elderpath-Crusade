@@ -2,18 +2,18 @@ package io.github.elderpath_crusade.managers;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
+import io.github.elderpath_crusade.events.ActionsResetEvent;
+import io.github.elderpath_crusade.events.CardDiscardedEvent;
+import io.github.elderpath_crusade.events.ManaChangedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.Renderable;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
-import io.github.elderpath_crusade.managers.BoardManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Owns PlayerState for P1 and P2 and performs per-turn start/end actions
@@ -68,20 +68,14 @@ public class PlayerManager {
         // +1 mana
         ps.mana += 1;
         // Emit mana changed
-        EventBus.emit(
-            GameEventType.MANA_CHANGED,
-            Map.of("player", id.name(), "mana", ps.mana)
-        );
+        TypedEventBus.get().emit(new ManaChangedEvent(id, ps.mana));
         // Draw 3
         draw(ps, 3);
         // Ensure bot hand visibility rules (flip P2 hand to back during bot's turn)
         applyBotHandVisibilityOnTurnStart(id);
         // Reset actions for that player's pieces on all boards currently rendered
         resetActionsFor(id);
-        EventBus.emit(
-            GameEventType.ACTIONS_RESET,
-            Map.of("player", id.name())
-        );
+        TypedEventBus.get().emit(new ActionsResetEvent(id));
     }
 
     public static void onEndTurn(PieceAlignment id) {
@@ -89,10 +83,7 @@ public class PlayerManager {
         // Discard hand (all cards)
         int discarded = (ps.hand == null ? 0 : ps.hand.getCards().size());
         discardHand(ps);
-        EventBus.emit(
-            GameEventType.CARD_DISCARDED,
-            Map.of("player", id.name(), "count", discarded)
-        );
+        TypedEventBus.get().emit(new CardDiscardedEvent(id, discarded));
     }
 
     private static void draw(PlayerState ps, int n) {

@@ -1,8 +1,8 @@
 package io.github.elderpath_crusade.abilities;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
 
 /**
  * Triggered abilities react to lifecycle or global game events. Implement any hooks you need;

@@ -15,10 +15,9 @@ import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
+import io.github.elderpath_crusade.events.CardPlayedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.utils.Logger;
-import java.util.Map;
 
 import java.util.HashMap;
 
@@ -78,16 +77,9 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         }
         board.addGamePieceToPos(row, col, piece);
 
-        EventBus.emit(
-            GameEventType.CARD_PLAYED,
-            Map.of(
-                "card", getCardName(),
-                "owner", alignment.name(),
-                "row", row,
-                "col", col,
-                "pieceId", piece.getId().toString()
-            )
-        );
+        TypedEventBus.get().emit(new CardPlayedEvent(
+            getCardName(), alignment, row, col, piece.getId().toString()
+        ));
     }
 
     /**

@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.multiplayer;
 
+import io.github.elderpath_crusade.events.GameEvent;
 import java.util.function.Consumer;
 
 public interface MultiplayerSession {

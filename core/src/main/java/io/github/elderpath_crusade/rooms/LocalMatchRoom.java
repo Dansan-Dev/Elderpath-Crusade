@@ -11,9 +11,9 @@ import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
+import io.github.elderpath_crusade.events.TurnEndedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.ui_objects.*;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -39,8 +39,8 @@ public class LocalMatchRoom extends BattleRoom {
         super(GameMode.LOCAL_MATCH);
 
         // LocalMatch-specific event listeners
-        EventBus.register(GameEventType.TURN_STARTED, this::onTurnStarted);
-        EventBus.register(GameEventType.TURN_ENDED, this::onTurnEnded);
+        TypedEventBus.get().register(TurnStartedEvent.class, this::onTurnStarted);
+        TypedEventBus.get().register(TurnEndedEvent.class, this::onTurnEnded);
 
         layoutBoard();
 
@@ -87,14 +87,14 @@ public class LocalMatchRoom extends BattleRoom {
         return deck;
     }
 
-    private void onTurnStarted(GameEvent event) {
-        PieceAlignment player = PieceAlignment.valueOf((String) event.getData().get("player"));
+    private void onTurnStarted(TurnStartedEvent event) {
+        PieceAlignment player = event.player();
         if (passTurn != null) passTurn.updateButtonText();
         swapHandPositionsIfNeeded(player);
         showPlayerHand(player);
     }
 
-    private void onTurnEnded(GameEvent event) {
+    private void onTurnEnded(TurnEndedEvent event) {
         if (passTurn != null) passTurn.updateButtonText();
         hideAllHands();
     }

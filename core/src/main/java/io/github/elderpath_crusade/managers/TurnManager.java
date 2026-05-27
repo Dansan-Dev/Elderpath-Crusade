@@ -2,12 +2,11 @@ package io.github.elderpath_crusade.managers;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
+import io.github.elderpath_crusade.events.TurnEndedEvent;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
 import lombok.Getter;
-
-import java.util.Map;
 
 /**
  * Minimal turn manager: tracks current player and invokes PlayerManager
@@ -32,7 +31,7 @@ public class TurnManager {
         if (!started) return;
         notifyBoardTurnEnded(currentPlayer);
         PlayerManager.onEndTurn(currentPlayer);
-        EventBus.emit(GameEventType.TURN_ENDED, Map.of("player", currentPlayer.name()));
+        TypedEventBus.get().emit(new TurnEndedEvent(currentPlayer));
 
         if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
             currentPlayer = (currentPlayer == PieceAlignment.P1)
@@ -47,9 +46,6 @@ public class TurnManager {
         }
     }
 
-    /**
-     * Start the next player's turn (called manually in LOCAL_MATCH mode).
-     */
     public static void startNextPlayerTurn() {
         if (!waitingForNextPlayer)
             return;
@@ -67,20 +63,14 @@ public class TurnManager {
 
         PlayerManager.onStartTurn(player);
         notifyBoardTurnStarted(player);
-        EventBus.emit(GameEventType.TURN_STARTED, Map.of("player", player.name()));
+        TypedEventBus.get().emit(new TurnStartedEvent(player));
     }
 
-    /**
-     * Flip the board for the given player's perspective in LOCAL_MATCH mode.
-     * P1's turn: unflipped (normal orientation)
-     * P2's turn: flipped (row 0 <-> row 6)
-     */
     private static void flipBoardForPlayer(PieceAlignment player) {
         Board board = BoardManager.getBoard();
         if (board != null) {
             boolean shouldBeFlipped = (player == PieceAlignment.P2);
             boolean currentlyFlipped = board.isFlipped();
-
             if (shouldBeFlipped != currentlyFlipped) {
                 board.flipRows();
             }
@@ -101,10 +91,6 @@ public class TurnManager {
         }
     }
 
-    /**
-     * Reset turn system and player state for a brand new room/session.
-     * P1 will start after calling startIfNeeded() again.
-     */
     public static void reset() {
         started = false;
         currentPlayer = PieceAlignment.P1;

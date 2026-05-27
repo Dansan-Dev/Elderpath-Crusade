@@ -11,9 +11,8 @@ import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.*;
-import io.github.elderpath_crusade.multiplayer.EventBus;
-import io.github.elderpath_crusade.multiplayer.GameEvent;
-import io.github.elderpath_crusade.multiplayer.GameEventType;
+import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.tiles.MountainTile;
 import io.github.elderpath_crusade.ui_objects.*;
@@ -134,12 +133,18 @@ public abstract class BattleRoom extends Room {
 
     private void registerEventsLogger() {
         String logTag = this.getClass().getSimpleName() + "/Event";
-        Consumer<GameEvent> eventLogger = (evt) -> {
-            Logger.log(logTag, evt.getType() + " -> " + evt.getData());
+        java.util.function.Consumer<GameEvent> eventLogger = (evt) -> {
+            Logger.log(logTag, evt.toString());
         };
-        for (GameEventType t : GameEventType.values()) {
-            EventBus.register(t, eventLogger);
-        }
+        TypedEventBus bus = TypedEventBus.get();
+        bus.register(io.github.elderpath_crusade.events.TurnStartedEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.TurnEndedEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.PieceSpawnedEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.PieceMovedEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.PieceAttackedEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.PieceDiedEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.ActionSpentEvent.class, eventLogger::accept);
+        bus.register(io.github.elderpath_crusade.events.CardPlayedEvent.class, eventLogger::accept);
         LOGGER_REGISTERED = true;
     }
 
