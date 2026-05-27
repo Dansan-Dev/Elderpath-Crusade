@@ -2,6 +2,7 @@ package io.github.elderpath_crusade;
 
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.state.GameStateMachine;
 import lombok.Getter;
 
 /**
@@ -12,10 +13,12 @@ public class GameContext {
     private static GameContext instance;
 
     @Getter private final TypedEventBus eventBus;
+    @Getter private final GameStateMachine stateMachine;
     @Getter private Board activeBoard;
 
     private GameContext() {
         this.eventBus = TypedEventBus.get();
+        this.stateMachine = new GameStateMachine(this);
     }
 
     public static GameContext create() {

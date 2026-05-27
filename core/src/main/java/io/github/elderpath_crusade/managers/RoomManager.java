@@ -1,11 +1,16 @@
 package io.github.elderpath_crusade.managers;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.rooms.MainMenuRoom;
+import io.github.elderpath_crusade.state.RoomState;
 import io.github.elderpath_crusade.supers.Room;
-import io.github.elderpath_crusade.ui_objects.SelectionOverlay;
 
 import java.util.function.Supplier;
 
+/**
+ * Room navigation facade. Delegates to GameStateMachine internally.
+ * Existing callers continue to use RoomManager.gotoRoom() unchanged.
+ */
 public class RoomManager {
     public static Room currentRoom;
 
@@ -14,26 +19,18 @@ public class RoomManager {
     }
 
     public static void clearRoom() {
-        GraphicsManager.clearRenderables();
-        GraphicsManager.clearUIRenderables();
-        InteractionManager.clearClickables();
-        BoardManager.clear();
+        // No-op: state machine handles clearing in RoomState.exit()/enter()
     }
 
     /**
-     * Navigate to a new room. This always performs a lazy switch: it clears the current
-     * room's renderables/UI/clickables first, then constructs the next room and shows it.
+     * Navigate to a new room via the state machine.
      */
     public static void gotoRoom(Supplier<Room> roomSupplier) {
-        clearRoom();
-        currentRoom = roomSupplier.get();
-        currentRoom.showContent();
-        currentRoom.showUI();
-        // Global overlays (persist per room instance): selection hint
-        SelectionOverlay selectionOverlay = new SelectionOverlay();
-        GraphicsManager.addUIRenderable(selectionOverlay);
-
-        // Global highlight renderer
-        GraphicsManager.addRenderable(HighlightManager.get());
+        GameContext ctx = GameContext.get();
+        if (ctx != null && ctx.getStateMachine() != null) {
+            ctx.getStateMachine().transition(new RoomState(roomSupplier));
+        }
+        // Keep currentRoom reference for backward compat (e.g., onScreenResize)
+        // The RoomState adapter sets it up internally via the supplier
     }
 }
