@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.model.board.BoardModel;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -36,6 +37,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     private final BoardNavigator navigator;
     private final BoardInteractionResolver interactionResolver;
     private final BoardOverlayRenderer overlayRenderer;
+    @Getter private final BoardModel model;
 
     @Override
     public void update(float delta) {
@@ -87,6 +89,7 @@ public class Board extends HigherOrderTexture implements Updatable {
         colIdentifierSymbols = new BoardIdentifierSymbol[COLS];
         layout = new Renderable[ROWS][COLS];
         gamePieces = new GamePiece[ROWS][COLS];
+        model = new BoardModel(rows, cols);
         perspectiveManager = new BoardPerspectiveManager(this);
         navigator = new BoardNavigator(this);
         interactionResolver = new BoardInteractionResolver(this);
@@ -253,6 +256,13 @@ public class Board extends HigherOrderTexture implements Updatable {
     public void setGamePiecePos(int row, int col, GamePiece gamePiece) {
         checkBoardPosition(row, col);
         gamePieces[row][col] = gamePiece;
+        // Keep BoardModel in sync
+        if (gamePiece != null) {
+            if (model.isOccupied(row, col)) model.removePiece(row, col);
+            model.placePiece(row, col, gamePiece.getId().toString());
+        } else {
+            if (model.isOccupied(row, col)) model.removePiece(row, col);
+        }
         markDirtyAndNotify();
     }
 
