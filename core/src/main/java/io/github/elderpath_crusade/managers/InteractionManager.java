@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 public class InteractionManager {
     @Getter
     private static final List<Clickable> clickables = new ArrayList<>();
+    private static final io.github.elderpath_crusade.interaction.HitTestService hitTestService = new io.github.elderpath_crusade.interaction.HitTestService(clickables);
     private static InteractionSource currentEffect;
     private static final List<CustomBox> selected = new ArrayList<>();
     @Getter
@@ -121,32 +122,7 @@ public class InteractionManager {
     }
 
     private static Clickable findHit(int mouseX, int mouseY, boolean paused) {
-        List<Clickable> reversedClickables = new ArrayList<>(clickables);
-        Collections.reverse(reversedClickables);
-        for (Clickable clickable : reversedClickables) {
-            if (!(clickable instanceof UIRenderable)) continue;
-            if (paused && !clickable.isPauseUIElement()) continue;
-            if (clickable.inRange(mouseX, mouseY)) return clickable;
-        }
-
-        if (paused) return null; // never allow non-UI while paused
-
-        // Pass 2: Non-UI clickables (board, plots, sprites) if no UI element was hit
-        // Check Board and its plots first via BoardManager for O(1) lookup
-        Board activeBoard = BoardManager.getBoard();
-        if (activeBoard != null && activeBoard.inRange(mouseX, mouseY)) {
-            Plot plot = activeBoard.getPlotAtScreen(mouseX, mouseY);
-            if (plot != null) return plot;
-        }
-
-        // Check remaining non-UI clickables (sprites, etc.)
-        for (int i = clickables.size() - 1; i >= 0; i--) {
-            Clickable clickable = clickables.get(i);
-            if (clickable instanceof UIRenderable) continue;
-            if (clickable.inRange(mouseX, mouseY)) return clickable;
-        }
-
-        return null;
+        return hitTestService.findHit(mouseX, mouseY, paused);
     }
 
     public static void addClickable(Clickable clickable) {
