@@ -172,6 +172,18 @@ public abstract class BattleRoom extends Room {
 
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
+        int centerX = SettingsManager.screenSize.getScreenCenter()[0];
+
+        // Reposition hands
+        if (handP1 != null) {
+            handP1.setCenterX(centerX);
+            handP1.updateBounds();
+        }
+        if (handP2 != null) {
+            handP2.setBottomY(screenH - handP2.getHeight());
+            handP2.setCenterX(centerX);
+            handP2.updateBounds();
+        }
 
         if (passTurn != null) {
             passTurn.getBounds().setX(screenW - 150);

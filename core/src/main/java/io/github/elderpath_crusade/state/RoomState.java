@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.HighlightManager;
+import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.SelectionOverlay;
 
@@ -30,6 +31,7 @@ public class RoomState implements GameState {
         BoardManager.clear();
 
         room = roomSupplier.get();
+        RoomManager.currentRoom = room;
         room.showContent();
         room.showUI();
 
