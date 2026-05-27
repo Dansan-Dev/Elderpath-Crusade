@@ -9,6 +9,8 @@ import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.interfaces.Renderable;
+import io.github.elderpath_crusade.model.piece.PieceModel;
+import io.github.elderpath_crusade.model.piece.PieceStats;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -27,10 +29,16 @@ public class MonsterGamePiece extends GamePiece {
     // Accumulator of all modifiers affecting this piece (local + auras from others)
     @Getter
     private final StatsAccumulator statsAccumulator = new StatsAccumulator();
+    // Pure model mirror for testability and future migration
+    @Getter
+    private final PieceModel pieceModel;
 
     public MonsterGamePiece(GamePieceStats stats, GamePieceType type, PieceAlignment alignment, UUID id, Renderable sprite) {
         super(stats, type, alignment, id, sprite);
         if (type.equals(GamePieceType.TERRAIN)) throw new IllegalArgumentException("Cannot create a monster as terrain");
+        this.pieceModel = new PieceModel(
+                id.toString(), type.name(), alignment,
+                new PieceStats(stats.getCost(), stats.getMaxHealth(), stats.getDamage(), stats.getSpeed(), stats.getActions()));
         // Add default base abilities
         this.addAbility(new BaseMoveAbility(this));
         this.addAbility(new BaseAttackAbility(this));
