@@ -1,29 +1,27 @@
 package io.github.elderpath_crusade.managers;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.game_objects.board.Board;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * Centralized manager for tracking and providing access to active Boards.
- * Avoids inefficient O(N) scans through GraphicsManager.renderables.
+ * Centralized manager for tracking the active Board.
+ * Delegates to GameContext. Static API preserved for backward compatibility.
  */
 public final class BoardManager {
-    private static Board activeBoard;
-
     private BoardManager() {}
 
     public static void setBoard(Board board) {
-        activeBoard = board;
+        GameContext ctx = GameContext.get();
+        if (ctx != null) ctx.setActiveBoard(board);
     }
 
     public static Board getBoard() {
-        return activeBoard;
+        GameContext ctx = GameContext.get();
+        return ctx != null ? ctx.getActiveBoard() : null;
     }
 
     public static void clear() {
-        activeBoard = null;
+        GameContext ctx = GameContext.get();
+        if (ctx != null) ctx.clearBoard();
     }
 }

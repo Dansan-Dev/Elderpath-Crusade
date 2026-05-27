@@ -24,6 +24,7 @@ public class Main extends ApplicationAdapter {
                 System.out.println("> " + userResponseDto.getUsername());
             });
         }
+        GameContext.create();
         GameManager.initialize();
 
         SettingsManager.sound.setMusicVolume(3);
