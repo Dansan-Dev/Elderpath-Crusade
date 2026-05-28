@@ -24,6 +24,10 @@ import java.util.*;
 public class BoardOverlayRenderer {
     private final Board board;
 
+    // OPT-002: reusable to avoid per-frame allocation
+    private static final Color STUN_TINT = new Color(1f, 0.22f, 0.71f, 1f);
+    private static final Color DARKEN_TINT = new Color(0.6f, 0.6f, 0.6f, 1.0f);
+
     // Cached UI elements for compact health overlays on damaged pieces
     private final Map<UUID, Text> hpTexts = new HashMap<>();
     private final Map<UUID, Integer> hpCache = new HashMap<>();
@@ -51,16 +55,14 @@ public class BoardOverlayRenderer {
         Color originalColor = batch.getColor().cpy();
 
         if (mgp.isStunned()) {
-            Color stunTint = new Color(1f, 0.22f, 0.71f, 1f);
-            batch.setColor(stunTint);
+            batch.setColor(STUN_TINT);
             gp.getSprite().render(batch, zLevel, false, absX, absY);
             batch.setColor(originalColor);
             renderStunSymbol(batch, zLevel, absX, absY);
         } else if (mgp.isExhausted()) {
             PieceAlignment currentPlayer = TurnManager.getCurrentPlayer();
             if (mgp.getAlignment() == currentPlayer) {
-                Color darkenTint = new Color(0.6f, 0.6f, 0.6f, 1.0f);
-                batch.setColor(darkenTint);
+                batch.setColor(DARKEN_TINT);
                 gp.getSprite().render(batch, zLevel, false, absX, absY);
                 batch.setColor(originalColor);
             } else {

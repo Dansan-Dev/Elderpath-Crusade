@@ -2,6 +2,7 @@ package io.github.elderpath_crusade;
 
 import com.badlogic.ashley.core.Engine;
 import io.github.elderpath_crusade.assets.AssetService;
+import io.github.elderpath_crusade.ecs.systems.PieceSyncSystem;
 import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -26,6 +27,7 @@ public class GameContext {
         this.stateMachine = new GameStateMachine(this);
         this.ecsEngine = new Engine();
         this.ecsEngine.addSystem(new TurnSystem());
+        this.ecsEngine.addSystem(new PieceSyncSystem());
         this.assets = new AssetService();
     }
 

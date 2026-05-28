@@ -16,6 +16,8 @@ import java.util.Map;
  * platforms.
  */
 public class Main extends ApplicationAdapter {
+    // OPT-002: reusable to avoid per-frame allocation
+    private final Map<InputHandlerData, Object> inputHandlerData = new HashMap<>();
 
     @Override
     public void create() {
@@ -49,11 +51,11 @@ public class Main extends ApplicationAdapter {
     }
 
     private Map<InputHandlerData, Object> getInputHandlerData() {
-        Map<InputHandlerData, Object> data = new HashMap<>();
-        data.put(InputHandlerData.IS_PAUSED, GameManager.isPaused());
-        data.put(InputHandlerData.MOUSE_X, com.badlogic.gdx.Gdx.input.getX());
-        data.put(InputHandlerData.MOUSE_Y, SettingsManager.screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
-        return data;
+        inputHandlerData.clear();
+        inputHandlerData.put(InputHandlerData.IS_PAUSED, GameManager.isPaused());
+        inputHandlerData.put(InputHandlerData.MOUSE_X, com.badlogic.gdx.Gdx.input.getX());
+        inputHandlerData.put(InputHandlerData.MOUSE_Y, SettingsManager.screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
+        return inputHandlerData;
     }
 
     @Override

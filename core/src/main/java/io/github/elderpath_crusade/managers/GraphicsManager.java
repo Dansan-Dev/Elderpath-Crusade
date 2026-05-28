@@ -23,6 +23,11 @@ public class GraphicsManager {
     @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
+    // OPT-002: reusable to avoid per-frame allocation
+    private static final List<Renderable> updateSnapshot = new ArrayList<>();
+    private static final List<UIRenderable> uiUpdateSnapshot = new ArrayList<>();
+    private static final List<UIRenderable> uiRenderSnapshot = new ArrayList<>();
+
     /**
      * Pause all sprite animations. Called by GameManager when the game pauses.
      * Pause state is owned by GameManager — use GameManager.isPaused() to check.
@@ -53,14 +58,16 @@ public class GraphicsManager {
 
     public static void update(float delta) {
         if (GameManager.isPaused()) return;
-        List<Renderable> renderableSnapshot = new ArrayList<>(renderables);
-        for (Renderable r : renderableSnapshot) {
+        updateSnapshot.clear();
+        updateSnapshot.addAll(renderables);
+        for (Renderable r : updateSnapshot) {
             if (r instanceof Updatable u) {
                 u.update(delta);
             }
         }
-        List<UIRenderable> uiSnapshot = new ArrayList<>(uiRenderables);
-        for (UIRenderable r : uiSnapshot) {
+        uiUpdateSnapshot.clear();
+        uiUpdateSnapshot.addAll(uiRenderables);
+        for (UIRenderable r : uiUpdateSnapshot) {
             if (r instanceof Updatable u) {
                 u.update(delta);
             }
@@ -68,8 +75,9 @@ public class GraphicsManager {
     }
 
     public static void renderUI(SpriteBatch batch) {
-        List<UIRenderable> snapshot = new ArrayList<>(uiRenderables);
-        snapshot.forEach(r -> r.renderUI(batch, GameManager.isPaused()));
+        uiRenderSnapshot.clear();
+        uiRenderSnapshot.addAll(uiRenderables);
+        uiRenderSnapshot.forEach(r -> r.renderUI(batch, GameManager.isPaused()));
     }
 
     public static void renderPauseUI(SpriteBatch batch) {
