@@ -6,6 +6,8 @@ import io.github.elderpath_crusade.ecs.systems.PieceSyncSystem;
 import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.managers.PlayerManager;
+import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.state.GameStateMachine;
 import lombok.Getter;
 
@@ -20,6 +22,8 @@ public class GameContext {
     @Getter private final GameStateMachine stateMachine;
     @Getter private final Engine ecsEngine;
     @Getter private final AssetService assets;
+    @Getter private final TurnManager turnManager;
+    @Getter private final PlayerManager playerManager;
     @Getter private Board activeBoard;
 
     private GameContext() {
@@ -29,6 +33,8 @@ public class GameContext {
         this.ecsEngine.addSystem(new TurnSystem());
         this.ecsEngine.addSystem(new PieceSyncSystem());
         this.assets = new AssetService();
+        this.turnManager = new TurnManager();
+        this.playerManager = new PlayerManager();
     }
 
     public static GameContext create() {

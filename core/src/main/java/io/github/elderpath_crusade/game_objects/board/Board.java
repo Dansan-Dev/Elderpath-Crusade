@@ -2,6 +2,9 @@ package io.github.elderpath_crusade.game_objects.board;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.enums.*;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
+import io.github.elderpath_crusade.events.TurnEndedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.EmptyTexture;
@@ -10,6 +13,7 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.model.board.BoardModel;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -108,6 +112,21 @@ public class Board extends HigherOrderTexture implements Updatable {
             }
         }
         setBoardIdentifierSymbols();
+
+        TypedEventBus.get().register(TurnStartedEvent.class, this::onTurnStarted);
+        TypedEventBus.get().register(TurnEndedEvent.class, this::onTurnEnded);
+    }
+
+    private void onTurnStarted(TurnStartedEvent event) {
+        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
+            boolean shouldBeFlipped = (event.player() == PieceAlignment.P2);
+            if (shouldBeFlipped != isFlipped()) { flipRows(); }
+        }
+        notifyTurnStartedForPieces(event.player());
+    }
+
+    private void onTurnEnded(TurnEndedEvent event) {
+        notifyTurnEndedForPieces(event.player());
     }
 
     private void renderPieceWithStatusEffects(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp) {
