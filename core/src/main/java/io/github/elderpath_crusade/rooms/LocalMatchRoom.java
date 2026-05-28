@@ -1,37 +1,21 @@
 package io.github.elderpath_crusade.rooms;
 
-import com.badlogic.gdx.graphics.Color;
-import io.github.elderpath_crusade.abilities.AbilityRelay;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.managers.DeckManager;
-import io.github.elderpath_crusade.managers.PlayerManager;
-import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.ui_objects.*;
-import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.managers.GameModeManager;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.utils.FontSize;
-import io.github.elderpath_crusade.utils.Logger;
-import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class LocalMatchRoom extends BattleRoom {
 
@@ -65,8 +49,8 @@ public class LocalMatchRoom extends BattleRoom {
         int screenH = SettingsManager.screenSize.getScreenHeight();
 
         if (DeckManager.hasDraftedDeck(alignment)) {
-            List<Function<DeckManager.CardCreationParams, SummonCard>> draftedDeck = DeckManager.getDraftedDeck(alignment);
-            for (Function<DeckManager.CardCreationParams, SummonCard> cardCreator : draftedDeck) {
+            List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = DeckManager.getDraftedDeck(alignment);
+            for (Function<DeckManager.CardCreationParams, Card> cardCreator : draftedDeck) {
                 DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                     board, alignment, 0, 0, 125, 200, 0
                 );
@@ -139,4 +123,3 @@ public class LocalMatchRoom extends BattleRoom {
         return new LocalMatchRoom();
     }
 }
-

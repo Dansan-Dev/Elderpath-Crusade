@@ -14,6 +14,7 @@ import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.rooms.DraftRoom;
+import io.github.elderpath_crusade.rooms.InformationSelectionRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 import io.github.elderpath_crusade.utils.SpriteCreator;
@@ -21,21 +22,22 @@ import io.github.elderpath_crusade.utils.SpriteCreator;
 import java.util.List;
 
 public class MainMenuNavbar extends HigherOrderUI {
-    private static final int[] NAVBAR_IMAGE_SIZE = {551, 831};
+    private static final int[] NAVBAR_IMAGE_SIZE = { 551, 831 };
 
     private SpriteObject navbarBg;
     private ButtonList buttonList;
     private Button playButton;
     private Button localMultiplayerButton;
     private Button settingsButton;
+//    private Button infoButton;
     private Button exitButton;
 
     public MainMenuNavbar() {
         super();
         // Build background sprite
         // Use divisor of 2.7 instead of 3 to match the larger size in MainMenuRoom
-        int bgW = (int)(NAVBAR_IMAGE_SIZE[0] / 2.7f);
-        int bgH = (int)(NAVBAR_IMAGE_SIZE[1] / 2.7f);
+        int bgW = (int) (NAVBAR_IMAGE_SIZE[0] / 2.7f);
+        int bgH = (int) (NAVBAR_IMAGE_SIZE[1] / 2.7f);
         navbarBg = new SpriteObject(0, 0, bgW, bgH, -1, SpriteBoxPos.BOTTOM);
         navbarBg.addAnimation(
             "general",
@@ -67,6 +69,15 @@ public class MainMenuNavbar extends HigherOrderUI {
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+//
+//        infoButton = Button
+//                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Info", FontType.SILKSCREEN,
+//                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+//                .withOnClick((e) -> RoomManager.gotoRoom(InformationSelectionRoom::get),
+//                        ClickableEffectData.getImmediate())
+//                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+//                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+//                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
@@ -79,6 +90,7 @@ public class MainMenuNavbar extends HigherOrderUI {
         buttonList.addButton(playButton);
         buttonList.addButton(localMultiplayerButton);
         buttonList.addButton(settingsButton);
+//        buttonList.addButton(infoButton);
         buttonList.addButton(exitButton);
 
         // Add children to container (background + individual buttons)

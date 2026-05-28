@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
+import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.model.piece.PieceModel;
 import io.github.elderpath_crusade.model.piece.PieceStats;

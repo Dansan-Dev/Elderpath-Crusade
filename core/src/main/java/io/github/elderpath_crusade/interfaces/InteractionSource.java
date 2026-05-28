@@ -19,7 +19,7 @@ public interface InteractionSource extends CustomBox, TargetFilter {
 
     /**
      * Invoked when the selection is complete and confirmed.
-     * 
+     *
      * @param entities The selected entities (0=source, 1..n=targets).
      */
     void triggerClickEffect(HashMap<Integer, CustomBox> entities);

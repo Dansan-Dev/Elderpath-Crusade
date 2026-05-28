@@ -38,7 +38,7 @@ public final class BotManager {
             if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
             if (!SettingsManager.debug.enableP2Bot) return;
             if (evt.player() != PieceAlignment.P2) return;
-            if (GraphicsManager.isPaused()) return;
+            if (GameManager.isPaused()) return;
             if (InteractionManager.hasActiveSelection()) {
                 InteractionManager.cancelSelection();
             }

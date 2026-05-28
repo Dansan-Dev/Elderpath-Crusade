@@ -12,7 +12,6 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.interfaces.*;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
-import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.ColorSettings;
 
 import java.util.HashMap;

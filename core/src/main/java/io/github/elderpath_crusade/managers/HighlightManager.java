@@ -11,7 +11,6 @@ import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
 import io.github.elderpath_crusade.abilities.impl._base_override.OncePerTurnAttackAbility;
 import io.github.elderpath_crusade.data_objects.Box;
-import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -20,7 +19,6 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.utils.GraphicUtils;
 
 import java.util.*;

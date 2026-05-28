@@ -1,6 +1,8 @@
-# Elderpath Crusade — Windows Package Guide
+# Elderpath Crusade — Windows
 
 Welcome! This archive contains the Elderpath Crusade desktop build for Windows (x64). This document explains how to run the game and how to pin it to Start and the taskbar.
+
+**By downloading or running this game, you agree to the terms in the LICENSE.txt file included with the game.**
 
 
 ## Contents of this ZIP

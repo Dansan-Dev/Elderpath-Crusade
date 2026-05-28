@@ -6,7 +6,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.game_objects.cards.DraftCard;
 import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
@@ -51,22 +50,23 @@ public class DraftRoom extends Room {
             createCardType("Storm Mage", StormMageCard.class),
             createCardType("Rifleman", RiflemanCard.class),
             createCardType("Crow", CrowCard.class),
-            createCardType("Shockling", ShocklingCard.class));
+            createCardType("Shockling", ShocklingCard.class),
+            createCardType("Fireball", Fireball.class));
 
     private static class CardType {
         final String name;
-        final Function<DeckManager.CardCreationParams, SummonCard> creator;
+        final Function<DeckManager.CardCreationParams, Card> creator;
 
-        CardType(String name, Function<DeckManager.CardCreationParams, SummonCard> creator) {
+        CardType(String name, Function<DeckManager.CardCreationParams, Card> creator) {
             this.name = name;
             this.creator = creator;
         }
     }
 
-    private static CardType createCardType(String name, Class<? extends SummonCard> summonClass) {
+    private static CardType createCardType(String name, Class<? extends Card> cardClass) {
         return new CardType(name, (params) -> {
             try {
-                return summonClass
+                return cardClass
                         .getConstructor(
                             Board.class,
                             PieceAlignment.class,
@@ -146,7 +146,10 @@ public class DraftRoom extends Room {
         String progressionPrefix = isLocalMultiplayer
             ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
             : "";
-        progressionText = new Text(progressionPrefix + "0/4", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+        progressionText = new Text(progressionPrefix + "0/4",
+            FontType.SILKSCREEN,
+            0, 0, 0,
+            ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(progressionText);
 
@@ -230,7 +233,7 @@ public class DraftRoom extends Room {
             DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                 dummyBoard, PieceAlignment.P1, 0, 0, 187, 300, 0  // 1.5x larger for better visibility during drafting
             );
-            SummonCard realCard = cardType.creator.apply(params);
+            Card realCard = cardType.creator.apply(params);
             realCard.showFront(); // Make sure card is face up
 
             // Wrap in DraftCard to bypass mana checks
@@ -324,7 +327,7 @@ public class DraftRoom extends Room {
 
     private void transitionToDemoRoom() {
         // Convert CardType list to Function list for DeckManager
-        List<Function<DeckManager.CardCreationParams, SummonCard>> cardCreators = new ArrayList<>();
+        List<Function<DeckManager.CardCreationParams, Card>> cardCreators = new ArrayList<>();
         for (CardType cardType : draftedDeck) {
             cardCreators.add(cardType.creator);
         }

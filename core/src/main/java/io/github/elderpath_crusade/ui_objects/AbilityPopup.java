@@ -12,7 +12,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.SettingsManager;

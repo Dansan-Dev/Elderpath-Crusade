@@ -1,7 +1,5 @@
 package io.github.elderpath_crusade.game_objects.board;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
@@ -11,6 +9,9 @@ import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.GamePieceData;
+import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.game_objects.board.GamePiece;
+import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.sprites.TextureObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -18,8 +19,6 @@ import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.utils.ColorSettings;
-import io.github.elderpath_crusade.utils.GraphicUtils;
-import io.github.elderpath_crusade.managers.HighlightManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import lombok.Getter;
 

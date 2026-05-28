@@ -11,7 +11,10 @@ import io.github.elderpath_crusade.utils.GraphicUtils;
 import java.util.HashMap;
 import java.util.Map;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
+/**
+ * {@link com.badlogic.gdx.ApplicationListener} implementation shared by all
+ * platforms.
+ */
 public class Main extends ApplicationAdapter {
 
     @Override
@@ -47,7 +50,7 @@ public class Main extends ApplicationAdapter {
 
     private Map<InputHandlerData, Object> getInputHandlerData() {
         Map<InputHandlerData, Object> data = new HashMap<>();
-        data.put(InputHandlerData.IS_PAUSED, GraphicsManager.isPaused());
+        data.put(InputHandlerData.IS_PAUSED, GameManager.isPaused());
         data.put(InputHandlerData.MOUSE_X, com.badlogic.gdx.Gdx.input.getX());
         data.put(InputHandlerData.MOUSE_Y, SettingsManager.screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
         return data;
@@ -67,7 +70,7 @@ public class Main extends ApplicationAdapter {
         GraphicsManager.update(delta);
 
         // RENDER
-        if (GraphicsManager.isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
+        if (GameManager.isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
         else GraphicsManager.draw(GraphicsManager.getBatch());
         GraphicsManager.drawPauseUI(GraphicsManager.getBatch());
 

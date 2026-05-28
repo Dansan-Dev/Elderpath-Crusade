@@ -2,6 +2,10 @@ package io.github.elderpath_crusade.game_objects.board;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.enums.*;
+import io.github.elderpath_crusade.game_objects.board.GamePiece;
+import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
+import io.github.elderpath_crusade.game_objects.board.EmptyTexture;
+import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;

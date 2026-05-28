@@ -1,6 +1,8 @@
-# Elderpath Crusade — Linux Package Guide
+# Elderpath Crusade — Linux
 
 Welcome! This archive contains the Elderpath Crusade desktop build for Linux (x86_64) with a per‑user installer and uninstaller. This document explains how to install, uninstall, and run the game, plus a few useful tips.
+
+**By downloading or running this game, you agree to the terms in the LICENSE.txt file included with the game.**
 
 
 ## Contents of this ZIP

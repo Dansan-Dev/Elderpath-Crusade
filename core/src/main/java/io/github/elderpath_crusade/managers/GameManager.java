@@ -20,13 +20,13 @@ public class GameManager {
 
     public static void pause() {
         isPaused = true;
-        pauseGraphics();
+        GraphicsManager.pauseAnimations();
         pauseInputHandlers();
     }
 
     public static void unpause() {
         isPaused = false;
-        unpauseGraphics();
+        GraphicsManager.unpauseAnimations();
         unpauseInputHandlers();
         PauseScreen.setCurrentPage(PauseScreenPage.NONE);
     }
@@ -34,21 +34,12 @@ public class GameManager {
     // Interaction lock: blocks all input processing without showing pause UI
     public static void lockInteractions() {
         interactionsLocked = true;
-        // Also pause input handlers to be safe; rendering continues
         InputManager.setPaused(true);
     }
 
     public static void unlockInteractions() {
         interactionsLocked = false;
         InputManager.setPaused(false);
-    }
-
-    private static void pauseGraphics() {
-        GraphicsManager.pause();
-    }
-
-    private static void unpauseGraphics() {
-        GraphicsManager.unpause();
     }
 
     private static void pauseInputHandlers() {

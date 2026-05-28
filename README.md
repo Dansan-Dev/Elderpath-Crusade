@@ -77,5 +77,10 @@ High-level structure:
 - lwjgl3/src/main/java/io/github/elderpath_crusade/lwjgl3/
   - Lwjgl3Launcher (desktop entry point)
 
-### License
-- [INSERT LICENSE NAME OR LINK] (TBD)
+### Legal
+- Core Game & EULA: [End User License Agreement](assets/license/LICENSE.txt) (By downloading or running this game, you agree to these terms).
+- Dependencies:
+  - libGDX: Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+- Assets:
+  - Silkscreen Font: Licensed under the [SIL Open Font License 1.1](https://scripts.sil.org/OFL). Copyright (c) 1999-2011, Jason Kottke.
+  - Evening Harmony Music Track: licensed under Custom License.
