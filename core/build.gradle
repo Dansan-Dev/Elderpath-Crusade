@@ -10,9 +10,14 @@ dependencies {
   implementation 'org.yaml:snakeyaml:2.2'
   implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
 
-
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+  testImplementation 'org.mockito:mockito-core:5.11.0'
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+}
+
+test {
+  useJUnitPlatform()
 }
