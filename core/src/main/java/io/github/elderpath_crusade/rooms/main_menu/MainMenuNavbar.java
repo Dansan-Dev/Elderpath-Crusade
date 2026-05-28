@@ -29,7 +29,7 @@ public class MainMenuNavbar extends HigherOrderUI {
     private Button playButton;
     private Button localMultiplayerButton;
     private Button settingsButton;
-    private Button infoButton;
+//    private Button infoButton;
     private Button exitButton;
 
     public MainMenuNavbar() {
@@ -69,15 +69,15 @@ public class MainMenuNavbar extends HigherOrderUI {
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-
-        infoButton = Button
-                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Info", FontType.SILKSCREEN,
-                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-                .withOnClick((e) -> RoomManager.gotoRoom(InformationSelectionRoom::get),
-                        ClickableEffectData.getImmediate())
-                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+//
+//        infoButton = Button
+//                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Info", FontType.SILKSCREEN,
+//                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+//                .withOnClick((e) -> RoomManager.gotoRoom(InformationSelectionRoom::get),
+//                        ClickableEffectData.getImmediate())
+//                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+//                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+//                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
@@ -90,7 +90,7 @@ public class MainMenuNavbar extends HigherOrderUI {
         buttonList.addButton(playButton);
         buttonList.addButton(localMultiplayerButton);
         buttonList.addButton(settingsButton);
-        buttonList.addButton(infoButton);
+//        buttonList.addButton(infoButton);
         buttonList.addButton(exitButton);
 
         // Add children to container (background + individual buttons)

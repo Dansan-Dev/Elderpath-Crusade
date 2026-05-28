@@ -95,8 +95,7 @@ public class DraftRoom extends Room {
         createCardType("Wolf", WolfCard.class),
         createCardType("Wolf", WolfCard.class),
         createCardType("Wolf Cub", WolfCubCard.class),
-        createCardType("Wolf Cub", WolfCubCard.class),
-        createCardType("Fireball", Fireball.class)
+        createCardType("Wolf Cub", WolfCubCard.class)
     );
 
     // Draft state
