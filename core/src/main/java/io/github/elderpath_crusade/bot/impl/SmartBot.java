@@ -70,7 +70,7 @@ public class SmartBot implements Bot {
     private void step(int stepsDone) {
         if (!turnActive || ended)
             return;
-        if (GraphicsManager.isPaused())
+        if (GameManager.isPaused())
             return;
         if (TurnManager.getCurrentPlayer() != PieceAlignment.P2)
             return;
@@ -120,7 +120,7 @@ public class SmartBot implements Bot {
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-                if (!GraphicsManager.isPaused())
+                if (!GameManager.isPaused())
                     TurnManager.endTurn();
             }
         }, END_DELAY);

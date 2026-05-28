@@ -36,7 +36,7 @@ public class BasicBot implements Bot {
     }
 
     private void chainNextAction(int actionsDone) {
-        if (GraphicsManager.isPaused() || TurnManager.getCurrentPlayer() != PieceAlignment.P2) return;
+        if (GameManager.isPaused() || TurnManager.getCurrentPlayer() != PieceAlignment.P2) return;
         if (actionsDone >= MAX_ACTIONS_PER_TURN) { Logger.log("BasicBot", "Max actions cap; ending turn"); scheduleEndTurn(); return; }
 
         Board board = BoardManager.getBoard();
@@ -56,7 +56,7 @@ public class BasicBot implements Bot {
 
     private void scheduleEndTurn() {
         Timer.schedule(new Timer.Task() {
-            @Override public void run() { if (!GraphicsManager.isPaused()) TurnManager.endTurn(); }
+            @Override public void run() { if (!GameManager.isPaused()) TurnManager.endTurn(); }
         }, DELAY_BEFORE_END);
     }
 

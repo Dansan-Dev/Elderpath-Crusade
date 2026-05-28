@@ -12,7 +12,7 @@ import io.github.elderpath_crusade.game_objects.board.game_piece.MonsterGamePiec
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.managers.BoardManager;
-import io.github.elderpath_crusade.managers.GraphicsManager;
+import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.HoverUtils;
@@ -37,7 +37,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
-        if (isPaused || GraphicsManager.isPaused()) {
+        if (isPaused || GameManager.isPaused()) {
             clearPreview();
             return;
         }

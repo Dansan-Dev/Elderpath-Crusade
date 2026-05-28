@@ -1,7 +1,6 @@
 package io.github.elderpath_crusade.managers;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
@@ -22,11 +21,13 @@ import java.util.List;
 public class GraphicsManager {
     @Getter private static final List<Renderable> renderables = new ArrayList<>();;
     @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
-    @Getter private static boolean isPaused = false;
     @Getter private static SpriteBatch batch = new SpriteBatch();
 
-    public static void pause() {
-        isPaused = true;
+    /**
+     * Pause all sprite animations. Called by GameManager when the game pauses.
+     * Pause state is owned by GameManager — use GameManager.isPaused() to check.
+     */
+    static void pauseAnimations() {
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
             .forEach(
@@ -34,8 +35,10 @@ public class GraphicsManager {
             );
     }
 
-    public static void unpause() {
-        isPaused = false;
+    /**
+     * Unpause all sprite animations. Called by GameManager when the game unpauses.
+     */
+    static void unpauseAnimations() {
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
             .forEach(
@@ -49,7 +52,7 @@ public class GraphicsManager {
     }
 
     public static void update(float delta) {
-        if (isPaused) return;
+        if (GameManager.isPaused()) return;
         List<Renderable> renderableSnapshot = new ArrayList<>(renderables);
         for (Renderable r : renderableSnapshot) {
             if (r instanceof Updatable u) {
@@ -65,25 +68,25 @@ public class GraphicsManager {
     }
 
     public static void renderUI(SpriteBatch batch) {
-        // Iterate over a snapshot to avoid ConcurrentModificationException if UI mutates during render
         List<UIRenderable> snapshot = new ArrayList<>(uiRenderables);
-        snapshot.forEach(r -> r.renderUI(batch, isPaused));
+        snapshot.forEach(r -> r.renderUI(batch, GameManager.isPaused()));
     }
 
     public static void renderPauseUI(SpriteBatch batch) {
-        if (!isPaused) return;
+        if (!GameManager.isPaused()) return;
         PauseScreen.get().renderUI(batch, false);
     }
 
     private static void renderGameGraphics(SpriteBatch batch) {
+        boolean paused = GameManager.isPaused();
         for (Integer z : ZIndexRegistry.getZLevels()) {
             Collection<Renderable> bucket = ZIndexRegistry.getBucket(z);
             if (bucket == null) continue;
             for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture hot) {
-                    r.render(batch, z, isPaused, hot.getX(), hot.getY());
+                    r.render(batch, z, paused, hot.getX(), hot.getY());
                 } else {
-                    r.render(batch, z, isPaused);
+                    r.render(batch, z, paused);
                 }
             }
         }

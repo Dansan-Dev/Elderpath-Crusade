@@ -46,7 +46,7 @@ public final class BotManager {
             Object p = evt.getData().get("player");
             if (p == null) return;
             if (!PieceAlignment.P2.name().equals(p.toString())) return;
-            if (GraphicsManager.isPaused()) return;
+            if (GameManager.isPaused()) return;
             if (InteractionManager.hasActiveSelection()) {
                 InteractionManager.cancelSelection();
             }
