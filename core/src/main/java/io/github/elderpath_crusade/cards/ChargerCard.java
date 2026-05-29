@@ -19,9 +19,6 @@ public class ChargerCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(2, 3, 1, 1, 1); }
-
-    @Override
     protected String getCardName() { return "Charger"; }
 
     @Override

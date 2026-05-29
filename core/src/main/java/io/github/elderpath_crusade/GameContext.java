@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.session.GameSession;
 import io.github.elderpath_crusade.state.GameStateMachine;
 import lombok.Getter;
 
@@ -25,6 +26,7 @@ public class GameContext {
     @Getter private final TurnManager turnManager;
     @Getter private final PlayerManager playerManager;
     @Getter private Board activeBoard;
+    @Getter private GameSession activeSession;
 
     private GameContext() {
         this.eventBus = TypedEventBus.get();
@@ -56,5 +58,13 @@ public class GameContext {
 
     public void clearBoard() {
         this.activeBoard = null;
+    }
+
+    public void setActiveSession(GameSession session) {
+        this.activeSession = session;
+    }
+
+    public void clearSession() {
+        this.activeSession = null;
     }
 }

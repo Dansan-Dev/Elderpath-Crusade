@@ -19,9 +19,6 @@ public class CommanderCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(1, 1, 0, 1, 2); }
-
-    @Override
     protected String getCardName() { return "Commander"; }
 
     @Override

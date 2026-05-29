@@ -20,9 +20,6 @@ public class KingCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(3, 2, 0, 1, 1); }
-
-    @Override
     protected String getCardName() { return "King"; }
 
     @Override

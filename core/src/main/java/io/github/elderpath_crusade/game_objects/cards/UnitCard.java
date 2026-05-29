@@ -3,6 +3,8 @@ package io.github.elderpath_crusade.game_objects.cards;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
@@ -65,7 +67,12 @@ public abstract class UnitCard extends Card {
     }
 
     // Subclass hooks
-    protected abstract GamePieceStats buildStats();
+    protected GamePieceStats buildStats() {
+        String key = PieceRegistry.toRegistryKey(getCardName());
+        PieceDefinition def = PieceRegistry.get(key);
+        if (def == null) throw new IllegalArgumentException("No piece definition for: " + key);
+        return GamePieceStats.getMonsterStats(def.cost(), def.health(), def.damage(), def.speed(), def.actions());
+    }
     protected abstract String getCardName();
     protected abstract List<String> getAbilityDescriptionsForCard();
 

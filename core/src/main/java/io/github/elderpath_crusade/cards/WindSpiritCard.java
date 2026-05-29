@@ -19,9 +19,6 @@ public class WindSpiritCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(1, 2, 0, 1, 1); }
-
-    @Override
     protected String getCardName() { return "Wind Spirit"; }
 
     @Override

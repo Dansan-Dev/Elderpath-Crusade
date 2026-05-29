@@ -19,11 +19,6 @@ public class CrowCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() {
-        return GamePieceStats.getMonsterStats(3, 1, 1, 1, 3);
-    }
-
-    @Override
     protected String getCardName() { return "Crow"; }
 
     @Override

@@ -19,9 +19,6 @@ public class BigToadCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(1, 2, 1, 2, 1); }
-
-    @Override
     protected String getCardName() { return "Big Toad"; }
 
     @Override

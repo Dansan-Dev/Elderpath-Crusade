@@ -20,9 +20,6 @@ public class StormMageCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(3, 1, 1, 1, 1); }
-
-    @Override
     protected String getCardName() { return "Storm Mage"; }
 
     @Override

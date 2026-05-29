@@ -34,6 +34,10 @@ public final class PieceRegistry {
         }
     }
 
+    public static String toRegistryKey(String displayName) {
+        return displayName.replace(" ", "");
+    }
+
     public static PieceDefinition get(String name) {
         return PIECES.get(name);
     }

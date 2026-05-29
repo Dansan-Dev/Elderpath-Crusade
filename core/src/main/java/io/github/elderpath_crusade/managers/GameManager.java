@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.managers;
 
 import io.github.elderpath_crusade.enums.settings.PauseScreenPage;
+import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
 import lombok.Getter;
 
@@ -16,6 +17,8 @@ public class GameManager {
         BotManager.initialize();
         // Initialize win condition watcher (idempotent)
         WinConditionManager.initialize();
+        CardFactory.initialize();
+        VictoryHandler.initialize();
     }
 
     public static void pause() {

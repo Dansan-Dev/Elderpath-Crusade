@@ -23,18 +23,6 @@ public class WolfCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() {
-        // Define the card's stats (cost, hp, dmg, speed, actions), delivered to the piece upon summon
-        return GamePieceStats.getMonsterStats(
-            1, // cost
-            1, // maxHealth
-            1, // damage
-            1, // speed
-            1  // actions
-        );
-    }
-
-    @Override
     protected String getCardName() { return "Wolf"; }
 
     @Override

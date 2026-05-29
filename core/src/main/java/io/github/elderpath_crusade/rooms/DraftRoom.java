@@ -1,10 +1,10 @@
 package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.utils.Timer;
-import io.github.elderpath_crusade.cards.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
+import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.cards.DraftCard;
 import io.github.elderpath_crusade.managers.DeckManager;
@@ -32,74 +32,8 @@ public class DraftRoom extends Room {
     private static final int CARDS_PER_PICK = 3;
     private static final float PICK_DELAY = 0.15f; // 150ms
 
-    // All card types that can be drafted (excluding Wolf and WolfCub from starting deck)
-    private static final List<CardType> DRAFTABLE_CARDS = Arrays.asList(
-            createCardType("Rogue", RogueCard.class),
-            createCardType("Fairy", FairyCard.class),
-            createCardType("Wind Spirit", WindSpiritCard.class),
-            createCardType("Big Toad", BigToadCard.class),
-            createCardType("Sniper", SniperCard.class),
-            createCardType("Barbarian", BarbarianCard.class),
-            createCardType("King", KingCard.class),
-            createCardType("Charger", ChargerCard.class),
-            createCardType("Crossbowman", CrossbowmanCard.class),
-            createCardType("Skeleton Bomber", SkeletonBomberCard.class),
-            createCardType("Warp Mage", WarpMageCard.class),
-            createCardType("Commander", CommanderCard.class),
-            createCardType("Hero", HeroCard.class),
-            createCardType("Storm Mage", StormMageCard.class),
-            createCardType("Rifleman", RiflemanCard.class),
-            createCardType("Crow", CrowCard.class),
-            createCardType("Shockling", ShocklingCard.class),
-            createCardType("Fireball", Fireball.class));
-
-    private static class CardType {
-        final String name;
-        final Function<DeckManager.CardCreationParams, Card> creator;
-
-        CardType(String name, Function<DeckManager.CardCreationParams, Card> creator) {
-            this.name = name;
-            this.creator = creator;
-        }
-    }
-
-    private static CardType createCardType(String name, Class<? extends Card> cardClass) {
-        return new CardType(name, (params) -> {
-            try {
-                return cardClass
-                        .getConstructor(
-                            Board.class,
-                            PieceAlignment.class,
-                            int.class,
-                            int.class,
-                            int.class,
-                            int.class,
-                            int.class)
-                        .newInstance(
-                            params.board(),
-                            params.alignment(),
-                            params.x(),
-                            params.y(),
-                            params.width(),
-                            params.height(),
-                            params.z()
-                        );
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to instantiate card: " + name, e);
-            }
-        });
-    }
-
-    // Starting deck cards
-    private static final List<CardType> STARTING_DECK = Arrays.asList(
-        createCardType("Wolf", WolfCard.class),
-        createCardType("Wolf", WolfCard.class),
-        createCardType("Wolf Cub", WolfCubCard.class),
-        createCardType("Wolf Cub", WolfCubCard.class)
-    );
-
     // Draft state
-    private List<CardType> draftedDeck;
+    private List<String> draftedDeck;
     private int currentPick;
     private List<Card> currentOptions;
     private Hand draftOptionsHand;
@@ -137,7 +71,7 @@ public class DraftRoom extends Room {
         // Ensure it's NOT added to room content
 
         // Initialize starting deck
-        draftedDeck = new ArrayList<>(STARTING_DECK);
+        draftedDeck = new ArrayList<>(List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub"));
         currentPick = 0;
         currentOptions = new ArrayList<>();
         rng = new Random();
@@ -219,8 +153,8 @@ public class DraftRoom extends Room {
         progressionText.update();
 
         // Generate 3 unique random cards
-        List<CardType> availableCards = new ArrayList<>(DRAFTABLE_CARDS);
-        Collections.shuffle(availableCards, rng);
+        List<String> available = new ArrayList<>(CardFactory.getDraftableNames());
+        Collections.shuffle(available, rng);
 
         currentOptions.clear();
         draftOptionsHand.getCards().forEach(card -> {
@@ -228,21 +162,20 @@ public class DraftRoom extends Room {
             InteractionManager.removeClickable(card);
         });
 
-        for (int i = 0; i < CARDS_PER_PICK && i < availableCards.size(); i++) {
-            CardType cardType = availableCards.get(i);
+        for (int i = 0; i < CARDS_PER_PICK && i < available.size(); i++) {
+            String cardName = available.get(i);
             DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                 dummyBoard, PieceAlignment.P1, 0, 0, 187, 300, 0  // 1.5x larger for better visibility during drafting
             );
-            Card realCard = cardType.creator.apply(params);
+            Card realCard = CardFactory.create(cardName, params);
             realCard.showFront(); // Make sure card is face up
 
             // Wrap in DraftCard to bypass mana checks
-            // Use array reference to allow referencing card in lambda before it's fully initialized
-            final CardType finalCardType = cardType;
+            final String finalCardName = cardName;
             final DraftCard[] cardRef = new DraftCard[1];
             DraftCard card = new DraftCard(realCard, (e) -> {
                 if (!isProcessingPick && cardRef[0] != null) {
-                    onCardSelected(cardRef[0], finalCardType);
+                    onCardSelected(cardRef[0], finalCardName);
                 }
             });
             cardRef[0] = card; // Assign after creation
@@ -255,12 +188,12 @@ public class DraftRoom extends Room {
         isProcessingPick = false;
     }
 
-    private void onCardSelected(Card selectedCard, CardType cardType) {
+    private void onCardSelected(Card selectedCard, String cardName) {
         if (isProcessingPick) return;
         isProcessingPick = true;
 
         // Add selected card to drafted deck
-        draftedDeck.add(cardType);
+        draftedDeck.add(cardName);
 
         // Update deck preview immediately
         updateDeckPreview();
@@ -271,9 +204,6 @@ public class DraftRoom extends Room {
             InteractionManager.removeClickable(card);
         });
         currentOptions.clear();
-
-        // Note: currentPick will be incremented in showNextDraftPick()
-        // Don't increment here to avoid double increment
 
         // Delay before showing next pick
         Timer.schedule(new Timer.Task() {
@@ -288,10 +218,7 @@ public class DraftRoom extends Room {
     private void updateDeckPreview() {
         // Count cards by name
         Map<String, Long> cardCounts = draftedDeck.stream()
-            .collect(Collectors.groupingBy(
-                cardType -> cardType.name,
-                Collectors.counting()
-            ));
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
         // Format as "Nx card_name" or "card_name" for singles
         List<String> formattedCards = cardCounts.entrySet().stream()
@@ -326,11 +253,10 @@ public class DraftRoom extends Room {
     }
 
     private void transitionToDemoRoom() {
-        // Convert CardType list to Function list for DeckManager
-        List<Function<DeckManager.CardCreationParams, Card>> cardCreators = new ArrayList<>();
-        for (CardType cardType : draftedDeck) {
-            cardCreators.add(cardType.creator);
-        }
+        // Convert card names to creators for DeckManager
+        List<Function<DeckManager.CardCreationParams, Card>> cardCreators = draftedDeck.stream()
+            .map(CardFactory::getCreator)
+            .collect(Collectors.toList());
 
         if (isLocalMultiplayer) {
             // Store drafted deck in DeckManager for current drafting player

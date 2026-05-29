@@ -21,9 +21,6 @@ public class WarpMageCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(0, 1, 0, 1, 2); }
-
-    @Override
     protected String getCardName() { return "Warp Mage"; }
 
     @Override

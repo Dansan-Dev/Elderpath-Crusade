@@ -20,18 +20,6 @@ public class ShocklingCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() {
-        // Shockling baseline
-        return GamePieceStats.getMonsterStats(
-            1, // cost
-            1, // hp
-            0, // dmg
-            1, // speed
-            1  // actions
-        );
-    }
-
-    @Override
     protected String getCardName() { return "Shockling"; }
 
     @Override

@@ -18,18 +18,6 @@ public class WolfCubCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() {
-        // WolfCub baseline: cost 0, hp 1, dmg 0, speed 1, actions 1
-        return GamePieceStats.getMonsterStats(
-            0,
-            1,
-            0,
-            1,
-            1
-        );
-    }
-
-    @Override
     protected String getCardName() { return "Wolf Cub"; }
 
     @Override

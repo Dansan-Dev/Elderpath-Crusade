@@ -20,9 +20,6 @@ public class SkeletonBomberCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(2, 3, 2, 1, 1); }
-
-    @Override
     protected String getCardName() { return "Skeleton Bomber"; }
 
     @Override

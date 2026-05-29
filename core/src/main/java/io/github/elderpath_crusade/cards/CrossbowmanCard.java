@@ -20,9 +20,6 @@ public class CrossbowmanCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() { return GamePieceStats.getMonsterStats(3, 1, 2, 1, 2); }
-
-    @Override
     protected String getCardName() { return "Crossbowman"; }
 
     @Override

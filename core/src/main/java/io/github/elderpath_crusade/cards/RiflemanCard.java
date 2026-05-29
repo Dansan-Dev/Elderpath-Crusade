@@ -19,11 +19,6 @@ public class RiflemanCard extends SummonCard {
     }
 
     @Override
-    protected GamePieceStats buildStats() {
-        return GamePieceStats.getMonsterStats(2, 1, 1, 1, 1);
-    }
-
-    @Override
     protected String getCardName() { return "Rifleman"; }
 
     @Override

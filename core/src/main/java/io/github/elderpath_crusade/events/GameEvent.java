@@ -16,5 +16,6 @@ public sealed interface GameEvent permits
         PieceDiedEvent,
         ManaChangedEvent,
         ActionsResetEvent,
-        ActionSpentEvent {
+        ActionSpentEvent,
+        GameWonEvent {
 }
