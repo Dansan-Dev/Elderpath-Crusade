@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.utils.Timer;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
@@ -260,7 +261,7 @@ public class DraftRoom extends Room {
 
         if (isLocalMultiplayer) {
             // Store drafted deck in DeckManager for current drafting player
-            DeckManager.setDraftedDeck(draftingPlayer, cardCreators);
+            GameContext.get().getDeckManager().setDraftedDeck(draftingPlayer, cardCreators);
 
             // If P1 just finished, transition to P2 draft
             if (draftingPlayer == PieceAlignment.P1) {
@@ -271,7 +272,7 @@ public class DraftRoom extends Room {
             }
         } else {
             // Store drafted deck in DeckManager (legacy method for P1)
-            DeckManager.setDraftedDeck(cardCreators);
+            GameContext.get().getDeckManager().setDraftedDeck(cardCreators);
 
             // Transition to DemoRoom
             RoomManager.gotoRoom(DemoRoom::get);

@@ -14,7 +14,6 @@ import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.model.board.BoardModel;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -119,7 +118,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     private void onTurnStarted(TurnStartedEvent event) {
-        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
             boolean shouldBeFlipped = (event.player() == PieceAlignment.P2);
             if (shouldBeFlipped != isFlipped()) { flipRows(); }
         }

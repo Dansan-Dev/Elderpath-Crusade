@@ -14,7 +14,6 @@ import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
@@ -149,7 +148,7 @@ public abstract class SpellCard extends Card implements TargetFilter {
     public ClickableEffectData getClickableEffectData() {
         if (alignment == PieceAlignment.P2
                 && SettingsManager.debug.enableP2Bot
-                && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH) {
+                && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH) {
             return null;
         }
 

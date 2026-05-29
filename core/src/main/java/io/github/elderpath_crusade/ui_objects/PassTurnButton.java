@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.enums.GameMode;
 
@@ -48,7 +47,7 @@ public class PassTurnButton extends Button {
      */
     public void updateButtonText() {
         String newText;
-        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH && GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH && GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
             newText = "Start Turn";
         } else {
             newText = "Pass Turn";
@@ -77,7 +76,7 @@ public class PassTurnButton extends Button {
         // In LOCAL_MATCH mode, button is clickable if:
         // - Waiting for next player (shows "Start Turn")
         // - Current player's turn (shows "Pass Turn")
-        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
             if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
                 return super.getClickableEffectData(); // Always clickable when waiting
             }

@@ -11,7 +11,7 @@ import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.BoardManager;
+import io.github.elderpath_crusade.GameContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +32,7 @@ class EcsMigrationTest {
         board = mock(Board.class);
         when(board.getROWS()).thenReturn(5);
         when(board.getCOLS()).thenReturn(5);
-        BoardManager.setBoard(board);
+        GameContext.get().setActiveBoard(board);
         engine = GameContext.get().getEcsEngine();
     }
 

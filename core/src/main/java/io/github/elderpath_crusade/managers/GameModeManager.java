@@ -1,6 +1,5 @@
 package io.github.elderpath_crusade.managers;
 
-import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.GameMode;
 
 /**
@@ -12,8 +11,6 @@ public final class GameModeManager {
 
     public GameModeManager() {}
 
-    // Static facade
-    private static GameModeManager instance() { return GameContext.get().getGameModeManager(); }
-    public static GameMode getCurrent() { return instance().current; }
-    public static void setCurrent(GameMode mode) { instance().current = mode; }
+    public GameMode getCurrent() { return current; }
+    public void setCurrent(GameMode mode) { current = mode; }
 }

@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.managers;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
@@ -30,7 +31,7 @@ public class GraphicsManager {
 
     /**
      * Pause all sprite animations. Called by GameManager when the game pauses.
-     * Pause state is owned by GameManager — use GameManager.isPaused() to check.
+     * Pause state is owned by GameManager — use GameContext.get().getGameManager().isPaused() to check.
      */
     static void pauseAnimations() {
         renderables.stream()
@@ -57,7 +58,7 @@ public class GraphicsManager {
     }
 
     public static void update(float delta) {
-        if (GameManager.isPaused()) return;
+        if (GameContext.get().getGameManager().isPaused()) return;
         updateSnapshot.clear();
         updateSnapshot.addAll(renderables);
         for (Renderable r : updateSnapshot) {
@@ -77,16 +78,16 @@ public class GraphicsManager {
     public static void renderUI(SpriteBatch batch) {
         uiRenderSnapshot.clear();
         uiRenderSnapshot.addAll(uiRenderables);
-        uiRenderSnapshot.forEach(r -> r.renderUI(batch, GameManager.isPaused()));
+        uiRenderSnapshot.forEach(r -> r.renderUI(batch, GameContext.get().getGameManager().isPaused()));
     }
 
     public static void renderPauseUI(SpriteBatch batch) {
-        if (!GameManager.isPaused()) return;
+        if (!GameContext.get().getGameManager().isPaused()) return;
         PauseScreen.get().renderUI(batch, false);
     }
 
     private static void renderGameGraphics(SpriteBatch batch) {
-        boolean paused = GameManager.isPaused();
+        boolean paused = GameContext.get().getGameManager().isPaused();
         for (Integer z : ZIndexRegistry.getZLevels()) {
             Collection<Renderable> bucket = ZIndexRegistry.getBucket(z);
             if (bucket == null) continue;

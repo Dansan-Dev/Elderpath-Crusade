@@ -37,10 +37,10 @@ public class BasicBot implements Bot {
     }
 
     private void chainNextAction(int actionsDone) {
-        if (GameManager.isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2) return;
+        if (GameContext.get().getGameManager().isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2) return;
         if (actionsDone >= MAX_ACTIONS_PER_TURN) { Logger.log("BasicBot", "Max actions cap; ending turn"); scheduleEndTurn(); return; }
 
-        Board board = BoardManager.getBoard();
+        Board board = GameContext.get().getActiveBoard();
         if (board == null) { Logger.log("BasicBot", "No board; end turn"); scheduleEndTurn(); return; }
 
         if (tryOneAdjacentAttack(board)) { Logger.log("BasicBot", "ATTACK"); scheduleNextAction(actionsDone+1); return; }
@@ -57,7 +57,7 @@ public class BasicBot implements Bot {
 
     private void scheduleEndTurn() {
         Timer.schedule(new Timer.Task() {
-            @Override public void run() { if (!GameManager.isPaused()) GameContext.get().getTurnManager().endTurn(); }
+            @Override public void run() { if (!GameContext.get().getGameManager().isPaused()) GameContext.get().getTurnManager().endTurn(); }
         }, DELAY_BEFORE_END);
     }
 

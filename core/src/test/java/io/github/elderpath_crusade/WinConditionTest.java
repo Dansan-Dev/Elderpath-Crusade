@@ -5,8 +5,7 @@ import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.managers.BoardManager;
-import io.github.elderpath_crusade.managers.WinConditionManager;
+import io.github.elderpath_crusade.GameContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,18 +23,18 @@ class WinConditionTest {
         Gdx.app = mock(Application.class);
         TypedEventBus.get().clear();
         GameContext.create();
-        WinConditionManager.initialize();
+        GameContext.get().getWinConditionManager().initialize();
     }
 
     @BeforeEach
     void setUp() {
-        WinConditionManager.reset();
+        GameContext.get().getWinConditionManager().reset();
         capturedEvent = null;
         TypedEventBus.get().register(GameWonEvent.class, e -> capturedEvent = e);
         board = mock(Board.class);
         when(board.getROWS()).thenReturn(5);
         when(board.isFlipped()).thenReturn(false);
-        BoardManager.setBoard(board);
+        GameContext.get().setActiveBoard(board);
     }
 
     @Test

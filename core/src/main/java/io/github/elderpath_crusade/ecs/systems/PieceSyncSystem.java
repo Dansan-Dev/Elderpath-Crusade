@@ -12,7 +12,7 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.BoardManager;
+import io.github.elderpath_crusade.GameContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class PieceSyncSystem extends EntitySystem {
     }
 
     private void onSpawn(PieceSpawnedEvent event) {
-        Board board = BoardManager.getBoard();
+        Board board = GameContext.get().getActiveBoard();
         if (board == null) return;
 
         GamePiece gp = board.getGamePieceAtPos(event.row(), event.col());

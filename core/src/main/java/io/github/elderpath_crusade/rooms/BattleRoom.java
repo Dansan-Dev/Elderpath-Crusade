@@ -10,7 +10,6 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.*;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.events.GameEvent;
@@ -51,12 +50,12 @@ public abstract class BattleRoom extends Room {
         // 1. Core State & Mode
         MusicManager.playLoopingMusic("Daniel_Game.mp3");
         GameContext.get().getTurnManager().reset();
-        GameModeManager.setCurrent(mode);
+        GameContext.get().getGameModeManager().setCurrent(mode);
 
         // 2. Board
         board = new Board(0, 0, plot_width, plot_height, board_rows, board_cols);
         board.initializePlots();
-        BoardManager.setBoard(board);
+        GameContext.get().setActiveBoard(board);
         addContent(board);
 
         // Common terrain setup

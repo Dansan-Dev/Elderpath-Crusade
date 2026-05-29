@@ -71,7 +71,7 @@ public class SmartBot implements Bot {
     private void step(int stepsDone) {
         if (!turnActive || ended)
             return;
-        if (GameManager.isPaused())
+        if (GameContext.get().getGameManager().isPaused())
             return;
         if (GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2)
             return;
@@ -80,7 +80,7 @@ public class SmartBot implements Bot {
             endTurn();
             return;
         }
-        Board board = BoardManager.getBoard();
+        Board board = GameContext.get().getActiveBoard();
         if (board == null) {
             endTurn();
             return;
@@ -121,7 +121,7 @@ public class SmartBot implements Bot {
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-                if (!GameManager.isPaused())
+                if (!GameContext.get().getGameManager().isPaused())
                     GameContext.get().getTurnManager().endTurn();
             }
         }, END_DELAY);

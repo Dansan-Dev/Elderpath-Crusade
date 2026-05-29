@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.state;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
-import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.HighlightManager;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.supers.Room;
@@ -28,7 +27,7 @@ public class RoomState implements GameState {
         GraphicsManager.clearRenderables();
         GraphicsManager.clearUIRenderables();
         InteractionManager.clearClickables();
-        BoardManager.clear();
+        GameContext.get().clearBoard();
 
         room = roomSupplier.get();
         RoomManager.currentRoom = room;
@@ -50,7 +49,7 @@ public class RoomState implements GameState {
         GraphicsManager.clearRenderables();
         GraphicsManager.clearUIRenderables();
         InteractionManager.clearClickables();
-        BoardManager.clear();
+        GameContext.get().clearBoard();
         room = null;
     }
 

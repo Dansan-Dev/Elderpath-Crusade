@@ -9,7 +9,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
@@ -54,7 +53,7 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         int paddingY = 50;
         
         // Swap positions in LOCAL_MATCH mode when P2's turn
-        boolean swapPositions = GameModeManager.getCurrent() == GameMode.LOCAL_MATCH && 
+        boolean swapPositions = GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH && 
                                 GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P2;
         
         int p1x = paddingX;

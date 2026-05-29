@@ -20,9 +20,9 @@ public final class WinConditionManager {
 
     public WinConditionManager() {}
 
-    private void instanceReset() { gameWon = false; }
+    public void reset() { gameWon = false; }
 
-    private void instanceInitialize() {
+    public void initialize() {
         if (initialized) return;
         initialized = true;
 
@@ -34,7 +34,7 @@ public final class WinConditionManager {
         if (gameWon) return;
         if (alignment == null || alignment == PieceAlignment.NEUTRAL) return;
 
-        Board activeBoard = BoardManager.getBoard();
+        Board activeBoard = GameContext.get().getActiveBoard();
         if (activeBoard == null) return;
 
         int rows = activeBoard.getROWS();
@@ -55,9 +55,4 @@ public final class WinConditionManager {
         Logger.log("Win", "VICTORY: " + winner.name());
         TypedEventBus.get().emit(new GameWonEvent(winner));
     }
-
-    // Static facade
-    private static WinConditionManager instance() { return GameContext.get().getWinConditionManager(); }
-    public static void reset() { instance().instanceReset(); }
-    public static void initialize() { instance().instanceInitialize(); }
 }

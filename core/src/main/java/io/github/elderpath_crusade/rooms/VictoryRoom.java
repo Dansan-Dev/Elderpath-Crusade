@@ -10,9 +10,7 @@ import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.rooms.DraftRoom;
-import io.github.elderpath_crusade.managers.WinConditionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -30,12 +28,12 @@ public class VictoryRoom extends Room {
 
     private VictoryRoom(PieceAlignment winner) {
         // Entering the VictoryRoom should reset win/loss guard state for the next match
-        WinConditionManager.reset();
+        GameContext.get().getWinConditionManager().reset();
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
 
         // Title depends on game mode
-        GameMode mode = GameModeManager.getCurrent();
+        GameMode mode = GameContext.get().getGameModeManager().getCurrent();
         String titleText = switch (mode) {
             case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
             case DEMO, ROUGELIKE_RUN -> (winner == GameContext.get().getPlayerManager().getLocalPlayer()) ? "Victory!" : "Game Over!";

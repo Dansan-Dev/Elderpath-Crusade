@@ -7,9 +7,12 @@ import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.managers.BotManager;
+import io.github.elderpath_crusade.managers.DeckManager;
+import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.managers.VictoryHandler;
 import io.github.elderpath_crusade.managers.WinConditionManager;
 import io.github.elderpath_crusade.session.GameSession;
 import io.github.elderpath_crusade.state.GameStateMachine;
@@ -30,7 +33,10 @@ public class GameContext {
     @Getter private final PlayerManager playerManager;
     @Getter private final BotManager botManager;
     @Getter private final WinConditionManager winConditionManager;
+    @Getter private final GameManager gameManager;
     @Getter private final GameModeManager gameModeManager;
+    @Getter private final DeckManager deckManager;
+    @Getter private final VictoryHandler victoryHandler;
     @Getter private Board activeBoard;
     @Getter private GameSession activeSession;
 
@@ -45,7 +51,10 @@ public class GameContext {
         this.playerManager = new PlayerManager();
         this.botManager = new BotManager();
         this.winConditionManager = new WinConditionManager();
+        this.gameManager = new GameManager();
         this.gameModeManager = new GameModeManager();
+        this.deckManager = new DeckManager();
+        this.victoryHandler = new VictoryHandler();
     }
 
     public static GameContext create() {

@@ -14,7 +14,6 @@ import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
@@ -141,7 +140,7 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         if (
             alignment == PieceAlignment.P2
             && SettingsManager.debug.enableP2Bot
-            && GameModeManager.getCurrent() != GameMode.LOCAL_MATCH
+            && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH
         ) {
             return null;
         }

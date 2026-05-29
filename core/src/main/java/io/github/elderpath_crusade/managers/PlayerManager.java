@@ -99,14 +99,14 @@ public class PlayerManager {
     }
 
     private void resetActionsFor(PieceAlignment id) {
-        Board b = BoardManager.getBoard();
+        Board b = GameContext.get().getActiveBoard();
         if (b != null) {
             b.resetActionsForOwner(id);
         }
     }
 
     private void applyBotHandVisibilityOnTurnStart(PieceAlignment current) {
-        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) return;
         if (!SettingsManager.debug.enableP2Bot) return;
         PlayerState bot = get(PieceAlignment.P2);
         if (bot.hand == null) return;

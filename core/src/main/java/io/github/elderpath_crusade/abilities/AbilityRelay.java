@@ -5,7 +5,7 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.BoardManager;
+import io.github.elderpath_crusade.GameContext;
 
 import java.util.function.Consumer;
 
@@ -48,7 +48,7 @@ public final class AbilityRelay {
     }
 
     private static void onGameEvent(GameEvent event) {
-        Board board = BoardManager.getBoard();
+        Board board = GameContext.get().getActiveBoard();
         if (board != null) {
             for (int row = 0; row < board.getROWS(); row++) {
                 for (int col = 0; col < board.getCOLS(); col++) {

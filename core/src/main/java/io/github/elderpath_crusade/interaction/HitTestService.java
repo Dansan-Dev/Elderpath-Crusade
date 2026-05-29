@@ -4,7 +4,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.managers.BoardManager;
+import io.github.elderpath_crusade.GameContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,7 +38,7 @@ public class HitTestService {
         if (paused) return null;
 
         // Pass 2: Board plots via O(1) grid lookup
-        Board activeBoard = BoardManager.getBoard();
+        Board activeBoard = GameContext.get().getActiveBoard();
         if (activeBoard != null && activeBoard.inRange(mouseX, mouseY)) {
             Plot plot = activeBoard.getPlotAtScreen(mouseX, mouseY);
             if (plot != null) return plot;

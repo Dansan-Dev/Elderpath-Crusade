@@ -15,7 +15,7 @@ public final class ClickableRegistryUtil {
     public static void sendClickables(HigherOrderTexture texture) {
         texture.getRenderables().forEach(r -> {
             if (r instanceof Clickable clickable) {
-                // Skip Plots as they are managed via BoardManager O(1) lookups in InteractionManager
+                // Skip Plots as they are managed via GameContext O(1) lookups in InteractionManager
                 if (!(r instanceof Plot)) {
                     InteractionManager.addClickable(clickable);
                 }

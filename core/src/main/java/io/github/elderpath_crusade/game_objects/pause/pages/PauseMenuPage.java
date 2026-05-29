@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.game_objects.pause.pages;
 
 import com.badlogic.gdx.Gdx;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -42,7 +43,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withFontSize(io.github.elderpath_crusade.utils.FontSize.BODY_MEDIUM)
                 .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
-                .withOnClick((e) -> GameManager.unpause(), ClickableEffectData.getImmediate())
+                .withOnClick((e) -> GameContext.get().getGameManager().unpause(), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );
 
@@ -63,7 +64,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withOnClick(
                     (e) -> {
                         RoomManager.gotoRoom(MainMenuRoom::get);
-                        GameManager.unpause();
+                        GameContext.get().getGameManager().unpause();
                     },
                     ClickableEffectData.getImmediate()
                 )

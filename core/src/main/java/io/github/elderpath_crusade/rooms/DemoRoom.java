@@ -38,8 +38,8 @@ public class DemoRoom extends BattleRoom {
 
         if (alignment == PieceAlignment.P1) {
             // P1 Deck Logic
-            if (DeckManager.hasDraftedDeck()) {
-                List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = DeckManager.getDraftedDeck();
+            if (GameContext.get().getDeckManager().hasDraftedDeck()) {
+                List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = GameContext.get().getDeckManager().getDraftedDeck();
                 for (Function<DeckManager.CardCreationParams, Card> cardCreator : draftedDeck) {
                     DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                         board, PieceAlignment.P1,

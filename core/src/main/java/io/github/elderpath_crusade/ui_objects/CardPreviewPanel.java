@@ -11,7 +11,7 @@ import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.managers.BoardManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
@@ -37,7 +37,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
-        if (isPaused || GameManager.isPaused()) {
+        if (isPaused || GameContext.get().getGameManager().isPaused()) {
             clearPreview();
             return;
         }
@@ -139,7 +139,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
     }
 
     private MonsterGamePiece findHoveredMonster() {
-        Board b = BoardManager.getBoard();
+        Board b = GameContext.get().getActiveBoard();
         if (b != null) {
             int rows = b.getROWS();
             int cols = b.getCOLS();

@@ -22,7 +22,7 @@ public final class BotManager {
 
     public BotManager() {}
 
-    private void instanceInitialize() {
+    public void initialize() {
         if (initialized) return;
         initialized = true;
         if (bot == null) {
@@ -35,10 +35,10 @@ public final class BotManager {
         }
 
         TypedEventBus.get().register(TurnStartedEvent.class, evt -> {
-            if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
+            if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) return;
             if (!SettingsManager.debug.enableP2Bot) return;
             if (evt.player() != PieceAlignment.P2) return;
-            if (GameManager.isPaused()) return;
+            if (GameContext.get().getGameManager().isPaused()) return;
             if (InteractionManager.hasActiveSelection()) {
                 InteractionManager.cancelSelection();
             }
@@ -60,8 +60,5 @@ public final class BotManager {
         });
     }
 
-    // Static facade
-    private static BotManager instance() { return GameContext.get().getBotManager(); }
-    public static void initialize() { instance().instanceInitialize(); }
-    public static void setBot(Bot bot) { instance().bot = bot; }
+    public void setBot(Bot bot) { this.bot = bot; }
 }

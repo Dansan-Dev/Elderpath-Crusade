@@ -7,7 +7,6 @@ import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +30,7 @@ class TurnFlowTest {
         GameContext.create();
         GameContext.get().getTurnManager().reset();
         board = mock(Board.class);
-        BoardManager.setBoard(board);
+        GameContext.get().setActiveBoard(board);
         GameContext.get().getPlayerManager().setHand(PieceAlignment.P1, null);
         GameContext.get().getPlayerManager().setDeck(PieceAlignment.P1, null);
         GameContext.get().getPlayerManager().setHand(PieceAlignment.P2, null);

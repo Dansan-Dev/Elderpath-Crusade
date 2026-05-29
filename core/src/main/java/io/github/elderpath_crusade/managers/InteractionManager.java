@@ -117,7 +117,7 @@ public class InteractionManager {
     }
 
     public static void addClickable(Clickable clickable) {
-        // Plots are handled via BoardManager for O(1) hit resolution; they don't need to be in clickables list
+        // Plots are handled via GameContext for O(1) hit resolution; they don't need to be in clickables list
         if (clickable instanceof Plot) return;
         clickables.add(clickable);
     }

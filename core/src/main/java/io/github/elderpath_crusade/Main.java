@@ -30,7 +30,7 @@ public class Main extends ApplicationAdapter {
             });
         }
         GameContext.create();
-        GameManager.initialize();
+        GameContext.get().getGameManager().initialize();
 
         SettingsManager.sound.setMusicVolume(3);
         SettingsManager.sound.setMasterVolume(7);
@@ -52,7 +52,7 @@ public class Main extends ApplicationAdapter {
 
     private Map<InputHandlerData, Object> getInputHandlerData() {
         inputHandlerData.clear();
-        inputHandlerData.put(InputHandlerData.IS_PAUSED, GameManager.isPaused());
+        inputHandlerData.put(InputHandlerData.IS_PAUSED, GameContext.get().getGameManager().isPaused());
         inputHandlerData.put(InputHandlerData.MOUSE_X, com.badlogic.gdx.Gdx.input.getX());
         inputHandlerData.put(InputHandlerData.MOUSE_Y, SettingsManager.screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
         return inputHandlerData;
@@ -62,7 +62,7 @@ public class Main extends ApplicationAdapter {
     public void render() {
         float delta = com.badlogic.gdx.Gdx.graphics.getDeltaTime();
         // Input (disabled when interactions are locked)
-        if (!GameManager.isInteractionsLocked()) {
+        if (!GameContext.get().getGameManager().isInteractionsLocked()) {
             InputManager.checkInput();
             handleInput();
         }
@@ -72,7 +72,7 @@ public class Main extends ApplicationAdapter {
         GraphicsManager.update(delta);
 
         // RENDER
-        if (GameManager.isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
+        if (GameContext.get().getGameManager().isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
         else GraphicsManager.draw(GraphicsManager.getBatch());
         GraphicsManager.drawPauseUI(GraphicsManager.getBatch());
 

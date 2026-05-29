@@ -47,7 +47,7 @@ public class TurnManager {
             ? PieceAlignment.P2
             : PieceAlignment.P1;
 
-        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
             waitingForNextPlayer = true;
         } else {
             startTurn(currentPlayer);

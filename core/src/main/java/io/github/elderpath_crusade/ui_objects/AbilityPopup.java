@@ -13,7 +13,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.TurnManager;
@@ -275,7 +274,7 @@ public class AbilityPopup extends HigherOrderUI {
     }
 
     private Board getBoard() {
-        return BoardManager.getBoard();
+        return GameContext.get().getActiveBoard();
     }
 
     private List<ActionableAbility> getActionableAbilities(MonsterGamePiece piece) {

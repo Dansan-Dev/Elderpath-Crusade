@@ -49,8 +49,8 @@ public class LocalMatchRoom extends BattleRoom {
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
 
-        if (DeckManager.hasDraftedDeck(alignment)) {
-            List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = DeckManager.getDraftedDeck(alignment);
+        if (GameContext.get().getDeckManager().hasDraftedDeck(alignment)) {
+            List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = GameContext.get().getDeckManager().getDraftedDeck(alignment);
             for (Function<DeckManager.CardCreationParams, Card> cardCreator : draftedDeck) {
                 DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                     board, alignment, 0, 0, 125, 200, 0

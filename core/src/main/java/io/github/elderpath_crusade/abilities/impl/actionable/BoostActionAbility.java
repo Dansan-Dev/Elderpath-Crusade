@@ -15,7 +15,6 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.managers.BoardManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 
 import java.util.ArrayList;
@@ -170,7 +169,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     private MonsterGamePiece resolveToMonsterGamePiece(CustomBox box) {
         if (box instanceof MonsterGamePiece mgp) return mgp;
         if (box instanceof Plot plot) {
-            Board board = BoardManager.getBoard();
+            Board board = GameContext.get().getActiveBoard();
             if (board != null) {
                 int[] indices = plot.getIndices();
                 if (indices != null) {
