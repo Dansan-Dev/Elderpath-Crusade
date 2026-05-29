@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl.actionable;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.MovementUtils;
@@ -67,7 +68,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
     public void execute(HashMap<Integer, CustomBox> entities) {
         // Basic turn and actions gating
         if (owner == null) return;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return;
         if (!AbilityUtils.canAct(owner)) return;
 
         // Extract selections: index 1 = target piece, index 2 = destination plot

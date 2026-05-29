@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -47,7 +48,7 @@ public class PassTurnButton extends Button {
      */
     public void updateButtonText() {
         String newText;
-        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH && TurnManager.isWaitingForNextPlayer()) {
+        if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH && GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
             newText = "Start Turn";
         } else {
             newText = "Pass Turn";
@@ -77,16 +78,16 @@ public class PassTurnButton extends Button {
         // - Waiting for next player (shows "Start Turn")
         // - Current player's turn (shows "Pass Turn")
         if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
-            if (TurnManager.isWaitingForNextPlayer()) {
+            if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
                 return super.getClickableEffectData(); // Always clickable when waiting
             }
             // During active turn, only clickable for current player
-            return (TurnManager.getCurrentPlayer() == PieceAlignment.P1 ||
-                    TurnManager.getCurrentPlayer() == PieceAlignment.P2)
+            return (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1 ||
+                    GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P2)
                     ? super.getClickableEffectData() : null;
         }
         // In other modes, only P1 can click (existing behavior)
-        return (TurnManager.getCurrentPlayer() == PieceAlignment.P1) ? super.getClickableEffectData() : null;
+        return (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1) ? super.getClickableEffectData() : null;
     }
 
 }

@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.game_objects.board;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
@@ -362,7 +363,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public PieceAlignment getCurrentPlayer() {
-        return TurnManager.getCurrentPlayer();
+        return GameContext.get().getTurnManager().getCurrentPlayer();
     }
 
     public boolean isFlipped() {

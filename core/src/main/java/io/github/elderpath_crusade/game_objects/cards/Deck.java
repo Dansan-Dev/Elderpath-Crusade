@@ -10,7 +10,6 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.utils.SpriteCreator;
-import io.github.elderpath_crusade.managers.TurnManager;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
@@ -119,7 +120,7 @@ public abstract class SpellCard extends Card implements TargetFilter {
     }
 
     protected boolean trySpendMana() {
-        PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
         int cost = getManaCost();
         if (playerState == null || playerState.mana < cost) {
             Logger.log(
@@ -152,10 +153,10 @@ public abstract class SpellCard extends Card implements TargetFilter {
             return null;
         }
 
-        if (alignment != TurnManager.getCurrentPlayer())
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer())
             return null;
 
-        PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
         int cost = getManaCost();
         if (playerState == null || playerState.mana < cost)
             return null;

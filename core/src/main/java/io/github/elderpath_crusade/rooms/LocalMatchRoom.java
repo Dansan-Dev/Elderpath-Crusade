@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
@@ -30,15 +31,15 @@ public class LocalMatchRoom extends BattleRoom {
 
         // Initially show current player's hand
         hideAllHands();
-        showPlayerHand(TurnManager.getCurrentPlayer());
+        showPlayerHand(GameContext.get().getTurnManager().getCurrentPlayer());
     }
 
     @Override
     protected void onPassTurnClicked() {
-        if (TurnManager.isWaitingForNextPlayer()) {
-            TurnManager.startNextPlayerTurn();
+        if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
+            GameContext.get().getTurnManager().startNextPlayerTurn();
         } else {
-            TurnManager.endTurn();
+            GameContext.get().getTurnManager().endTurn();
         }
     }
 
@@ -116,7 +117,7 @@ public class LocalMatchRoom extends BattleRoom {
     @Override
     public void onScreenResize() {
         super.onScreenResize();
-        swapHandPositionsIfNeeded(TurnManager.getCurrentPlayer());
+        swapHandPositionsIfNeeded(GameContext.get().getTurnManager().getCurrentPlayer());
     }
 
     public static LocalMatchRoom get() {

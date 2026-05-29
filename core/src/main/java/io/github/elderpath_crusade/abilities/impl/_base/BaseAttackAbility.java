@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl._base;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -49,7 +50,7 @@ public class BaseAttackAbility implements BasicAbility {
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null)
             return false;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment())
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment())
             return false;
         if (!AbilityUtils.canAct(owner))
             return false;
@@ -85,7 +86,7 @@ public class BaseAttackAbility implements BasicAbility {
     public List<Plot> getEligibleTargets(int targetIndex) {
         if (owner == null)
             return List.of();
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment())
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment())
             return List.of();
         if (AbilityUtils.getRemainingActions(owner) <= 0)
             return List.of();
@@ -107,7 +108,7 @@ public class BaseAttackAbility implements BasicAbility {
     public void execute(HashMap<Integer, CustomBox> entities) {
         if (owner == null)
             return;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment())
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment())
             return;
         if (AbilityUtils.getRemainingActions(owner) <= 0)
             return;

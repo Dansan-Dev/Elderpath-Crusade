@@ -6,8 +6,11 @@ import io.github.elderpath_crusade.ecs.systems.PieceSyncSystem;
 import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.managers.BotManager;
+import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
 import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.managers.WinConditionManager;
 import io.github.elderpath_crusade.session.GameSession;
 import io.github.elderpath_crusade.state.GameStateMachine;
 import lombok.Getter;
@@ -25,6 +28,9 @@ public class GameContext {
     @Getter private final AssetService assets;
     @Getter private final TurnManager turnManager;
     @Getter private final PlayerManager playerManager;
+    @Getter private final BotManager botManager;
+    @Getter private final WinConditionManager winConditionManager;
+    @Getter private final GameModeManager gameModeManager;
     @Getter private Board activeBoard;
     @Getter private GameSession activeSession;
 
@@ -37,6 +43,9 @@ public class GameContext {
         this.assets = new AssetService();
         this.turnManager = new TurnManager();
         this.playerManager = new PlayerManager();
+        this.botManager = new BotManager();
+        this.winConditionManager = new WinConditionManager();
+        this.gameModeManager = new GameModeManager();
     }
 
     public static GameContext create() {

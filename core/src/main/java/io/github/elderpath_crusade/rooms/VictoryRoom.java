@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -37,7 +38,7 @@ public class VictoryRoom extends Room {
         GameMode mode = GameModeManager.getCurrent();
         String titleText = switch (mode) {
             case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
-            case DEMO, ROUGELIKE_RUN -> (winner == PlayerManager.getLocalPlayer()) ? "Victory!" : "Game Over!";
+            case DEMO, ROUGELIKE_RUN -> (winner == GameContext.get().getPlayerManager().getLocalPlayer()) ? "Victory!" : "Game Over!";
         };
         title = new Text(titleText, FontType.SILKSCREEN, 0, 0, 5, Color.WHITE)
             .withFontSize(FontSize.TITLE_LARGE);

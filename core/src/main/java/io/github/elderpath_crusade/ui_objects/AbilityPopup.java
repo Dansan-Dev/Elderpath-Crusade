@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -101,7 +102,7 @@ public class AbilityPopup extends HigherOrderUI {
     }
 
     private MonsterGamePiece resolveFocusedPiece() {
-        PieceAlignment current = TurnManager.getCurrentPlayer();
+        PieceAlignment current = GameContext.get().getTurnManager().getCurrentPlayer();
         int mouseX = Gdx.input.getX();
         int mouseY = SettingsManager.screenSize.getScreenHeight() - Gdx.input.getY();
 

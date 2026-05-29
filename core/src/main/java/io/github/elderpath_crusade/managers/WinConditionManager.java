@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.managers;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.GameWonEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
@@ -14,35 +15,29 @@ import io.github.elderpath_crusade.utils.Logger;
  * P2 wins when a P2 piece reaches row 0.
  */
 public final class WinConditionManager {
-    private static boolean initialized = false;
-    private static boolean gameWon = false;
+    private boolean initialized = false;
+    private boolean gameWon = false;
 
-    public static void reset() { gameWon = false; }
+    public WinConditionManager() {}
 
-    private WinConditionManager() {}
+    private void instanceReset() { gameWon = false; }
 
-    public static void initialize() {
+    private void instanceInitialize() {
         if (initialized) return;
         initialized = true;
 
-        TypedEventBus.get().register(PieceMovedEvent.class, evt -> {
-            checkWin(evt.owner(), evt.toRow());
-        });
-        TypedEventBus.get().register(PieceSpawnedEvent.class, evt -> {
-            checkWin(evt.owner(), evt.row());
-        });
+        TypedEventBus.get().register(PieceMovedEvent.class, evt -> checkWin(evt.owner(), evt.toRow()));
+        TypedEventBus.get().register(PieceSpawnedEvent.class, evt -> checkWin(evt.owner(), evt.row()));
     }
 
-    private static void checkWin(PieceAlignment alignment, int destRow) {
+    private void checkWin(PieceAlignment alignment, int destRow) {
         if (gameWon) return;
         if (alignment == null || alignment == PieceAlignment.NEUTRAL) return;
-
-        Integer rows = getActiveBoardRows();
-        if (rows == null) return;
 
         Board activeBoard = BoardManager.getBoard();
         if (activeBoard == null) return;
 
+        int rows = activeBoard.getROWS();
         boolean flipped = activeBoard.isFlipped();
         boolean won = false;
         if (alignment == PieceAlignment.P1) {
@@ -54,15 +49,15 @@ public final class WinConditionManager {
         if (won) triggerWin(alignment);
     }
 
-    private static Integer getActiveBoardRows() {
-        Board board = BoardManager.getBoard();
-        return (board != null) ? board.getROWS() : null;
-    }
-
-    private static void triggerWin(PieceAlignment winner) {
+    private void triggerWin(PieceAlignment winner) {
         if (gameWon) return;
         gameWon = true;
         Logger.log("Win", "VICTORY: " + winner.name());
         TypedEventBus.get().emit(new GameWonEvent(winner));
     }
+
+    // Static facade
+    private static WinConditionManager instance() { return GameContext.get().getWinConditionManager(); }
+    public static void reset() { instance().instanceReset(); }
+    public static void initialize() { instance().instanceInitialize(); }
 }

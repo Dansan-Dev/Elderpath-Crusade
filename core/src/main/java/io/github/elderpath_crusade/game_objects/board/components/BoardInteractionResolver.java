@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.game_objects.board.components;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
@@ -38,7 +39,7 @@ public class BoardInteractionResolver {
             GamePiece gp = board.getGamePieceAtPos(src.getRow(), src.getCol());
             if (gp instanceof MonsterGamePiece mgp) {
                 // Ensure it's the current player's piece
-                if (mgp.getAlignment() != TurnManager.getCurrentPlayer())
+                if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer())
                     return;
 
                 // Stunned or exhausted pieces cannot act

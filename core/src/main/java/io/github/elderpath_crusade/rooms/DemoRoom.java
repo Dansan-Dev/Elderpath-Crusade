@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.cards.*;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
@@ -26,7 +27,7 @@ public class DemoRoom extends BattleRoom {
 
     @Override
     protected void onPassTurnClicked() {
-        TurnManager.endTurn();
+        GameContext.get().getTurnManager().endTurn();
     }
 
     @Override

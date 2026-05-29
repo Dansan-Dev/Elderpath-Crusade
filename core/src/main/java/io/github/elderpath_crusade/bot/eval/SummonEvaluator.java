@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
@@ -27,7 +28,7 @@ public class SummonEvaluator extends BotEvaluatorBase {
 
     @Override
     public void build(Board board, TacticalState tactical, List<Intent> output) {
-        var player = PlayerManager.get(PieceAlignment.P2);
+        var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (player == null || player.hand == null) {
             return;
         }

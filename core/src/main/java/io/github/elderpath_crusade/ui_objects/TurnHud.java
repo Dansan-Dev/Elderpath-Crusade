@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -35,7 +36,7 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
         int screenH = SettingsManager.screenSize.getScreenHeight();
-        String turnStr = "Current: " + TurnManager.getCurrentPlayer();
+        String turnStr = "Current: " + GameContext.get().getTurnManager().getCurrentPlayer();
         if (!turnStr.equals(turnText.getText())) { turnText.setText(turnStr); turnText.update(); }
         int padding = 16;
         int curX = padding;
@@ -46,7 +47,7 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
             int bgY = curY - PAD_Y;
             int bgW = turnText.getWidth() + PAD_X * 2;
             int bgH = turnText.getHeight() + PAD_Y * 2;
-            Color bg = (TurnManager.getCurrentPlayer() == PieceAlignment.P1) ? P1_BG : P2_BG;
+            Color bg = (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1) ? P1_BG : P2_BG;
             batch.draw(GraphicUtils.getPixelTexture(bg), bgX, bgY, bgW, bgH);
         }
         // Text on top

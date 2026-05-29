@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl._base_override;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.MovementUtils;
@@ -120,7 +121,7 @@ public class JumpMoveAbility implements BasicAbility {
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null) return false;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return false;
         if (!AbilityUtils.canAct(owner)) return false;
 
         // Resolve to Plot
@@ -161,7 +162,7 @@ public class JumpMoveAbility implements BasicAbility {
     @Override
     public List<Plot> getEligibleTargets(int targetIndex) {
         if (owner == null) return List.of();
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return List.of();
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return List.of();
         if (!AbilityUtils.canAct(owner)) return List.of();
 
         Object ownerPosObj = owner.getData(GamePieceData.POSITION);
@@ -197,7 +198,7 @@ public class JumpMoveAbility implements BasicAbility {
     @Override
     public void execute(HashMap<Integer, CustomBox> entities) {
         if (owner == null) return;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return;
         if (!AbilityUtils.canAct(owner)) return;
 
         // Get destination plot

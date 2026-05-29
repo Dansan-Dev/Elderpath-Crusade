@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.abilities.AbilityRelay;
 import io.github.elderpath_crusade.enums.FontType;
@@ -49,7 +50,7 @@ public abstract class BattleRoom extends Room {
 
         // 1. Core State & Mode
         MusicManager.playLoopingMusic("Daniel_Game.mp3");
-        TurnManager.reset();
+        GameContext.get().getTurnManager().reset();
         GameModeManager.setCurrent(mode);
 
         // 2. Board
@@ -104,12 +105,12 @@ public abstract class BattleRoom extends Room {
         addContent(deckP2);
 
         // 7. Wiring & Startup
-        PlayerManager.setHand(PieceAlignment.P1, handP1);
-        PlayerManager.setDeck(PieceAlignment.P1, deckP1);
-        PlayerManager.setHand(PieceAlignment.P2, handP2);
-        PlayerManager.setDeck(PieceAlignment.P2, deckP2);
+        GameContext.get().getPlayerManager().setHand(PieceAlignment.P1, handP1);
+        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P1, deckP1);
+        GameContext.get().getPlayerManager().setHand(PieceAlignment.P2, handP2);
+        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P2, deckP2);
 
-        TurnManager.startIfNeeded();
+        GameContext.get().getTurnManager().startIfNeeded();
         AbilityRelay.startIfNeeded();
 
         // 8. HUDs

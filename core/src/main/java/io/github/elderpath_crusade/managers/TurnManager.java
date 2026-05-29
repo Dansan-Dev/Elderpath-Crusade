@@ -13,7 +13,7 @@ import io.github.elderpath_crusade.events.TypedEventBus;
  * Supports waiting state for LOCAL_MATCH mode where players manually start
  * turns.
  *
- * Instance held by GameContext; static facade preserved for backward compatibility.
+ * Instance held by GameContext; access via GameContext.get().getTurnManager().
  */
 public class TurnManager {
     private boolean started = false;
@@ -22,27 +22,25 @@ public class TurnManager {
 
     public TurnManager() {}
 
-    // --- Instance methods ---
-
-    public PieceAlignment getInstanceCurrentPlayer() {
+    public PieceAlignment getCurrentPlayer() {
         return currentPlayer;
     }
 
-    public boolean isInstanceWaitingForNextPlayer() {
+    public boolean isWaitingForNextPlayer() {
         return waitingForNextPlayer;
     }
 
-    public void instanceStartIfNeeded() {
+    public void startIfNeeded() {
         if (!started) {
             started = true;
             currentPlayer = PieceAlignment.P1;
-            instanceStartTurn(currentPlayer);
+            startTurn(currentPlayer);
         }
     }
 
-    public void instanceEndTurn() {
+    public void endTurn() {
         if (!started) return;
-        PlayerManager.onEndTurn(currentPlayer);
+        GameContext.get().getPlayerManager().onEndTurn(currentPlayer);
         TypedEventBus.get().emit(new TurnEndedEvent(currentPlayer));
 
         currentPlayer = (currentPlayer == PieceAlignment.P1)
@@ -52,61 +50,27 @@ public class TurnManager {
         if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) {
             waitingForNextPlayer = true;
         } else {
-            instanceStartTurn(currentPlayer);
+            startTurn(currentPlayer);
         }
     }
 
-    public void instanceStartNextPlayerTurn() {
+    public void startNextPlayerTurn() {
         if (!waitingForNextPlayer) return;
         waitingForNextPlayer = false;
-        PlayerManager.initializeIfNeeded();
-        instanceStartTurn(currentPlayer);
+        GameContext.get().getPlayerManager().initializeIfNeeded();
+        startTurn(currentPlayer);
     }
 
-    public void instanceStartTurn(PieceAlignment player) {
-        PlayerManager.initializeIfNeeded();
-        PlayerManager.onStartTurn(player);
+    public void startTurn(PieceAlignment player) {
+        GameContext.get().getPlayerManager().initializeIfNeeded();
+        GameContext.get().getPlayerManager().onStartTurn(player);
         TypedEventBus.get().emit(new TurnStartedEvent(player));
     }
 
-    public void instanceReset() {
+    public void reset() {
         started = false;
         currentPlayer = PieceAlignment.P1;
         waitingForNextPlayer = false;
-        PlayerManager.resetForNewGame();
-    }
-
-    // --- Static facade (delegates to instance on GameContext) ---
-
-    private static TurnManager instance() {
-        return GameContext.get().getTurnManager();
-    }
-
-    public static PieceAlignment getCurrentPlayer() {
-        return instance().currentPlayer;
-    }
-
-    public static boolean isWaitingForNextPlayer() {
-        return instance().waitingForNextPlayer;
-    }
-
-    public static void startIfNeeded() {
-        instance().instanceStartIfNeeded();
-    }
-
-    public static void endTurn() {
-        instance().instanceEndTurn();
-    }
-
-    public static void startNextPlayerTurn() {
-        instance().instanceStartNextPlayerTurn();
-    }
-
-    public static void startTurn(PieceAlignment player) {
-        instance().instanceStartTurn(player);
-    }
-
-    public static void reset() {
-        instance().instanceReset();
+        GameContext.get().getPlayerManager().resetForNewGame();
     }
 }

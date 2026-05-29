@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.managers;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -219,7 +220,7 @@ public class HighlightManager implements Renderable {
         int sr = sIdx[0], sc = sIdx[1];
         GamePiece gp = board.getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != TurnManager.getCurrentPlayer()) return;
+        if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer()) return;
         if (mgp.isStunned()) return;
 
         List<Plot> reachable = List.of();
@@ -273,7 +274,7 @@ public class HighlightManager implements Renderable {
         List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
         if (eligiblePlots == null || eligiblePlots.isEmpty()) return;
 
-        PieceAlignment currentPlayer = TurnManager.getCurrentPlayer();
+        PieceAlignment currentPlayer = GameContext.get().getTurnManager().getCurrentPlayer();
         if (currentPlayer == null) return;
 
         for (Plot plot : eligiblePlots) {

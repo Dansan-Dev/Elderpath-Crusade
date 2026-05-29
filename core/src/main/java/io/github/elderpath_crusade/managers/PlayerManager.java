@@ -19,7 +19,7 @@ import java.util.List;
  * Owns PlayerState for P1 and P2 and performs per-turn start/end actions
  * when invoked by TurnManager. Kept minimal and self-contained.
  *
- * Instance held by GameContext; static facade preserved for backward compatibility.
+ * Instance held by GameContext; access via GameContext.get().getPlayerManager().
  */
 public class PlayerManager {
     public static class PlayerState {
@@ -39,13 +39,11 @@ public class PlayerManager {
         this.p2 = new PlayerState(PieceAlignment.P2);
     }
 
-    // --- Instance methods ---
-
-    public void instanceInitializeIfNeeded() {
+    public void initializeIfNeeded() {
         if (!initialized) initialized = true;
     }
 
-    public void instanceResetForNewGame() {
+    public void resetForNewGame() {
         p1.mana = 0;
         p2.mana = 0;
         p1.hand = null;
@@ -54,23 +52,23 @@ public class PlayerManager {
         p2.deck = null;
     }
 
-    public PlayerState instanceGet(PieceAlignment id) {
+    public PlayerState get(PieceAlignment id) {
         return id == PieceAlignment.P1 ? p1 : p2;
     }
 
-    public PlayerState instanceGetCurrent() {
-        return instanceGet(TurnManager.getCurrentPlayer());
+    public PlayerState getCurrent() {
+        return get(GameContext.get().getTurnManager().getCurrentPlayer());
     }
 
-    public PieceAlignment instanceGetLocalPlayer() {
+    public PieceAlignment getLocalPlayer() {
         return PieceAlignment.P1;
     }
 
-    public void instanceSetHand(PieceAlignment id, Hand hand) { instanceGet(id).hand = hand; }
-    public void instanceSetDeck(PieceAlignment id, Deck deck) { instanceGet(id).deck = deck; }
+    public void setHand(PieceAlignment id, Hand hand) { get(id).hand = hand; }
+    public void setDeck(PieceAlignment id, Deck deck) { get(id).deck = deck; }
 
-    public void instanceOnStartTurn(PieceAlignment id) {
-        PlayerState ps = instanceGet(id);
+    public void onStartTurn(PieceAlignment id) {
+        PlayerState ps = get(id);
         ps.mana += 1;
         TypedEventBus.get().emit(new ManaChangedEvent(id, ps.mana));
         draw(ps, 3);
@@ -79,8 +77,8 @@ public class PlayerManager {
         TypedEventBus.get().emit(new ActionsResetEvent(id));
     }
 
-    public void instanceOnEndTurn(PieceAlignment id) {
-        PlayerState ps = instanceGet(id);
+    public void onEndTurn(PieceAlignment id) {
+        PlayerState ps = get(id);
         int discarded = (ps.hand == null ? 0 : ps.hand.getCards().size());
         discardHand(ps);
         TypedEventBus.get().emit(new CardDiscardedEvent(id, discarded));
@@ -110,7 +108,7 @@ public class PlayerManager {
     private void applyBotHandVisibilityOnTurnStart(PieceAlignment current) {
         if (GameModeManager.getCurrent() == GameMode.LOCAL_MATCH) return;
         if (!SettingsManager.debug.enableP2Bot) return;
-        PlayerState bot = instanceGet(PieceAlignment.P2);
+        PlayerState bot = get(PieceAlignment.P2);
         if (bot.hand == null) return;
         if (current == PieceAlignment.P2) {
             for (Card c : bot.hand.getCards()) {
@@ -122,20 +120,4 @@ public class PlayerManager {
             }
         }
     }
-
-    // --- Static facade (delegates to instance on GameContext) ---
-
-    private static PlayerManager instance() {
-        return GameContext.get().getPlayerManager();
-    }
-
-    public static void initializeIfNeeded() { instance().instanceInitializeIfNeeded(); }
-    public static void resetForNewGame() { instance().instanceResetForNewGame(); }
-    public static PlayerState get(PieceAlignment id) { return instance().instanceGet(id); }
-    public static PlayerState getCurrent() { return instance().instanceGetCurrent(); }
-    public static PieceAlignment getLocalPlayer() { return instance().instanceGetLocalPlayer(); }
-    public static void setHand(PieceAlignment id, Hand hand) { instance().instanceSetHand(id, hand); }
-    public static void setDeck(PieceAlignment id, Deck deck) { instance().instanceSetDeck(id, deck); }
-    public static void onStartTurn(PieceAlignment id) { instance().instanceOnStartTurn(id); }
-    public static void onEndTurn(PieceAlignment id) { instance().instanceOnEndTurn(id); }
 }

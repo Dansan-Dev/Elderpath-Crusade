@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl._multi.other;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.utils.AbilityUtils;
@@ -60,7 +61,7 @@ public class StormActionAbility implements ActionableAbility, TriggeredAbility, 
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null) return false;
         if (usedThisTurn) return false;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return false;
         if (!AbilityUtils.canAct(owner)) return false;
 
         // Resolve to Plot
@@ -92,7 +93,7 @@ public class StormActionAbility implements ActionableAbility, TriggeredAbility, 
     public List<Plot> getEligibleTargets(int targetIndex) {
         if (owner == null) return List.of();
         if (usedThisTurn) return List.of();
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return List.of();
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return List.of();
         if (!AbilityUtils.canAct(owner)) return List.of();
 
         Object ownerPosObj = owner.getData(GamePieceData.POSITION);
@@ -126,7 +127,7 @@ public class StormActionAbility implements ActionableAbility, TriggeredAbility, 
     public void execute(HashMap<Integer, CustomBox> entities) {
         if (owner == null) return;
         if (usedThisTurn) return;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return;
         if (!AbilityUtils.canAct(owner)) return;
 
         // Get center plot

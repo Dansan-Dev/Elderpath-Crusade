@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl.actionable;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.utils.AbilityUtils;
@@ -58,7 +59,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (owner == null) return false;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return false;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return false;
         if (!AbilityUtils.canAct(owner)) return false;
 
         // Resolve to MonsterGamePiece
@@ -90,7 +91,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     @Override
     public List<Plot> getEligibleTargets(int targetIndex) {
         if (owner == null) return List.of();
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return List.of();
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return List.of();
         if (!AbilityUtils.canAct(owner)) return List.of();
 
         Object ownerPosObj = owner.getData(GamePieceData.POSITION);
@@ -127,7 +128,7 @@ public class BoostActionAbility implements ActionableAbility, TargetFilter {
     @Override
     public void execute(HashMap<Integer, CustomBox> entities) {
         if (owner == null) return;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return;
         if (!AbilityUtils.canAct(owner)) return;
 
         // Get target

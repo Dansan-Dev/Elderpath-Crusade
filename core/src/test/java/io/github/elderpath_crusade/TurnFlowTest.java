@@ -29,13 +29,13 @@ class TurnFlowTest {
     void setUp() {
         TypedEventBus.get().clear();
         GameContext.create();
-        TurnManager.reset();
+        GameContext.get().getTurnManager().reset();
         board = mock(Board.class);
         BoardManager.setBoard(board);
-        PlayerManager.setHand(PieceAlignment.P1, null);
-        PlayerManager.setDeck(PieceAlignment.P1, null);
-        PlayerManager.setHand(PieceAlignment.P2, null);
-        PlayerManager.setDeck(PieceAlignment.P2, null);
+        GameContext.get().getPlayerManager().setHand(PieceAlignment.P1, null);
+        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P1, null);
+        GameContext.get().getPlayerManager().setHand(PieceAlignment.P2, null);
+        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P2, null);
     }
 
     @Test
@@ -45,9 +45,9 @@ class TurnFlowTest {
         TypedEventBus.get().register(TurnStartedEvent.class, listener);
 
         try {
-            TurnManager.startIfNeeded();
+            GameContext.get().getTurnManager().startIfNeeded();
 
-            assertEquals(PieceAlignment.P1, TurnManager.getCurrentPlayer());
+            assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());
             assertEquals(1, captured.size());
             assertEquals(PieceAlignment.P1, captured.get(0).player());
         } finally {
@@ -57,23 +57,23 @@ class TurnFlowTest {
 
     @Test
     void endTurnAlternatesPlayer() {
-        TurnManager.startIfNeeded();
-        assertEquals(PieceAlignment.P1, TurnManager.getCurrentPlayer());
+        GameContext.get().getTurnManager().startIfNeeded();
+        assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());
 
-        TurnManager.endTurn();
-        assertEquals(PieceAlignment.P2, TurnManager.getCurrentPlayer());
+        GameContext.get().getTurnManager().endTurn();
+        assertEquals(PieceAlignment.P2, GameContext.get().getTurnManager().getCurrentPlayer());
     }
 
     @Test
     void endTurnEmitsTurnEndedEvent() {
-        TurnManager.startIfNeeded();
+        GameContext.get().getTurnManager().startIfNeeded();
 
         List<TurnEndedEvent> captured = new ArrayList<>();
         Consumer<TurnEndedEvent> listener = captured::add;
         TypedEventBus.get().register(TurnEndedEvent.class, listener);
 
         try {
-            TurnManager.endTurn();
+            GameContext.get().getTurnManager().endTurn();
 
             assertEquals(1, captured.size());
             assertEquals(PieceAlignment.P1, captured.get(0).player());
@@ -98,7 +98,7 @@ class TurnFlowTest {
             return null;
         }).when(board).resetActionsForOwner(any());
 
-        TurnManager.startIfNeeded();
+        GameContext.get().getTurnManager().startIfNeeded();
 
         assertEquals(2, p1Piece.getStats().getRemainingActions());
     }
@@ -110,7 +110,7 @@ class TurnFlowTest {
         TypedEventBus.get().register(ActionsResetEvent.class, listener);
 
         try {
-            TurnManager.startIfNeeded();
+            GameContext.get().getTurnManager().startIfNeeded();
 
             assertEquals(1, captured.size());
             assertEquals(PieceAlignment.P1, captured.get(0).player());
@@ -126,7 +126,7 @@ class TurnFlowTest {
         TypedEventBus.get().register(ManaChangedEvent.class, listener);
 
         try {
-            TurnManager.startIfNeeded();
+            GameContext.get().getTurnManager().startIfNeeded();
 
             assertEquals(1, captured.size());
             assertEquals(PieceAlignment.P1, captured.get(0).player());
@@ -138,23 +138,23 @@ class TurnFlowTest {
 
     @Test
     void fullTurnCycleP1ToP2ToP1() {
-        TurnManager.startIfNeeded();
-        assertEquals(PieceAlignment.P1, TurnManager.getCurrentPlayer());
+        GameContext.get().getTurnManager().startIfNeeded();
+        assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());
 
-        TurnManager.endTurn();
-        assertEquals(PieceAlignment.P2, TurnManager.getCurrentPlayer());
+        GameContext.get().getTurnManager().endTurn();
+        assertEquals(PieceAlignment.P2, GameContext.get().getTurnManager().getCurrentPlayer());
 
-        TurnManager.endTurn();
-        assertEquals(PieceAlignment.P1, TurnManager.getCurrentPlayer());
+        GameContext.get().getTurnManager().endTurn();
+        assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());
     }
 
     @Test
     void resetClearsStateForNewGame() {
-        TurnManager.startIfNeeded();
-        TurnManager.endTurn(); // now P2
+        GameContext.get().getTurnManager().startIfNeeded();
+        GameContext.get().getTurnManager().endTurn(); // now P2
 
-        TurnManager.reset();
-        assertEquals(PieceAlignment.P1, TurnManager.getCurrentPlayer());
-        assertFalse(TurnManager.isWaitingForNextPlayer());
+        GameContext.get().getTurnManager().reset();
+        assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());
+        assertFalse(GameContext.get().getTurnManager().isWaitingForNextPlayer());
     }
 }

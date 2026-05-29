@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.managers;
 
 import com.badlogic.gdx.utils.Timer;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.bot.Bot;
@@ -9,20 +10,19 @@ import io.github.elderpath_crusade.bot.impl.SmartBot;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.utils.Logger;
-import lombok.Setter;
 
 /**
  * Delegates P2 TURN_STARTED to a configured Bot implementation.
  * The chosen bot drives its own pacing and ends the turn when finished.
  */
 public final class BotManager {
-    private static boolean initialized = false;
+    private boolean initialized = false;
     private static final float DELAY_BEFORE_ACT = 0.4f;
-    @Setter private static Bot bot = null;
+    private Bot bot = null;
 
-    private BotManager() {}
+    public BotManager() {}
 
-    public static void initialize() {
+    private void instanceInitialize() {
         if (initialized) return;
         initialized = true;
         if (bot == null) {
@@ -59,4 +59,9 @@ public final class BotManager {
             }, DELAY_BEFORE_ACT);
         });
     }
+
+    // Static facade
+    private static BotManager instance() { return GameContext.get().getBotManager(); }
+    public static void initialize() { instance().instanceInitialize(); }
+    public static void setBot(Bot bot) { instance().bot = bot; }
 }

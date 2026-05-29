@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.game_objects.board.components;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Texture;
@@ -60,7 +61,7 @@ public class BoardOverlayRenderer {
             batch.setColor(originalColor);
             renderStunSymbol(batch, zLevel, absX, absY);
         } else if (mgp.isExhausted()) {
-            PieceAlignment currentPlayer = TurnManager.getCurrentPlayer();
+            PieceAlignment currentPlayer = GameContext.get().getTurnManager().getCurrentPlayer();
             if (mgp.getAlignment() == currentPlayer) {
                 batch.setColor(DARKEN_TINT);
                 gp.getSprite().render(batch, zLevel, false, absX, absY);

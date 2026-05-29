@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.bot.impl;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.cards.WolfCard;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -36,7 +37,7 @@ public class BasicBot implements Bot {
     }
 
     private void chainNextAction(int actionsDone) {
-        if (GameManager.isPaused() || TurnManager.getCurrentPlayer() != PieceAlignment.P2) return;
+        if (GameManager.isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2) return;
         if (actionsDone >= MAX_ACTIONS_PER_TURN) { Logger.log("BasicBot", "Max actions cap; ending turn"); scheduleEndTurn(); return; }
 
         Board board = BoardManager.getBoard();
@@ -56,12 +57,12 @@ public class BasicBot implements Bot {
 
     private void scheduleEndTurn() {
         Timer.schedule(new Timer.Task() {
-            @Override public void run() { if (!GameManager.isPaused()) TurnManager.endTurn(); }
+            @Override public void run() { if (!GameManager.isPaused()) GameContext.get().getTurnManager().endTurn(); }
         }, DELAY_BEFORE_END);
     }
 
     private boolean tryPlayOneWolfCard(Board b) {
-        var ps = PlayerManager.get(PieceAlignment.P2);
+        var ps = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (ps == null || ps.hand == null) return false;
         WolfCard targetCard = null;
         for (var c : ps.hand.getCards()) { if (c instanceof WolfCard wc) { targetCard = wc; break; } }

@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -40,8 +41,8 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         int screenW = SettingsManager.screenSize.getScreenWidth();
         int screenH = SettingsManager.screenSize.getScreenHeight();
 
-        PlayerManager.PlayerState p1 = PlayerManager.get(PieceAlignment.P1);
-        PlayerManager.PlayerState p2 = PlayerManager.get(PieceAlignment.P2);
+        PlayerManager.PlayerState p1 = GameContext.get().getPlayerManager().get(PieceAlignment.P1);
+        PlayerManager.PlayerState p2 = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
 
         String p1Str = "P1 Mana: " + (p1 == null ? 0 : p1.mana);
         String p2Str = "P2 Mana: " + (p2 == null ? 0 : p2.mana);
@@ -54,7 +55,7 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         
         // Swap positions in LOCAL_MATCH mode when P2's turn
         boolean swapPositions = GameModeManager.getCurrent() == GameMode.LOCAL_MATCH && 
-                                TurnManager.getCurrentPlayer() == PieceAlignment.P2;
+                                GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P2;
         
         int p1x = paddingX;
         int p2x = paddingX;

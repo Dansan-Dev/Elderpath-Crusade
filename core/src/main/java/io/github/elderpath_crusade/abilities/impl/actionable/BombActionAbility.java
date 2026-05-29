@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl.actionable;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
@@ -54,7 +55,7 @@ public class BombActionAbility implements ActionableAbility, TriggeredAbility {
     public void execute(HashMap<Integer, CustomBox> entities) {
         if (owner == null) return;
         if (usedThisTurn) return;
-        if (TurnManager.getCurrentPlayer() != owner.getAlignment()) return;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != owner.getAlignment()) return;
         if (!AbilityUtils.canAct(owner)) return;
 
         // Get owner's position and board (bomb always centered on owner)

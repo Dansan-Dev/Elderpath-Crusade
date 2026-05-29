@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -156,7 +157,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
     }
 
     protected boolean summonAndVerify(Board board, SummonCard card, Plot plot) {
-        var player = PlayerManager.get(PieceAlignment.P2);
+        var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (player == null || player.hand == null)
             return false;
         int beforeSize = player.hand.getCards().size();

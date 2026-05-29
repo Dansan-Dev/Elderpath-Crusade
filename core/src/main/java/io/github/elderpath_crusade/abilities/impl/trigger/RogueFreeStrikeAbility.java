@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.abilities.impl.trigger;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -80,7 +81,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility {
         // Bot path vs Human path delegated to sub-methods for clarity
         boolean botControlled = owner.getAlignment() == PieceAlignment.P2
                 && SettingsManager.debug.enableP2Bot
-                && TurnManager.getCurrentPlayer() == owner.getAlignment();
+                && GameContext.get().getTurnManager().getCurrentPlayer() == owner.getAlignment();
         if (botControlled) {
             handleBotFreeStrike(board, toRow, toCol, attackables);
             return;

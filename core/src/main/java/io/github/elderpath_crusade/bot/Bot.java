@@ -6,7 +6,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
  * Bot interface: a bot drives its own pacing for an entire turn.
  * BotManager will notify the bot when a turn starts for a given player.
  * The bot is responsible for scheduling its own actions and ending the turn
- * (e.g., by calling TurnManager.endTurn()) when it is done.
+ * (e.g., by calling GameContext.get().getTurnManager().endTurn()) when it is done.
  */
 public interface Bot {
     /**

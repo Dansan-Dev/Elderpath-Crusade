@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -52,7 +53,7 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
      * Returns true if the player had enough mana and the cost was deducted.
      */
     protected boolean trySpendMana() {
-        PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
         int cost = getStats().getCost();
         if (playerState == null || playerState.mana < cost) {
             Logger.log(
@@ -145,9 +146,9 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
             return null;
         }
 
-        if (alignment != TurnManager.getCurrentPlayer()) return null;
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
 
-        PlayerManager.PlayerState playerState = PlayerManager.get(alignment);
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
         int cost = getStats().getCost();
         if (playerState == null || playerState.mana < cost) return null;
 

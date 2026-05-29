@@ -33,6 +33,8 @@ public final class CardFactory {
         register("Crow", p -> new CrowCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
         register("Shockling", p -> new ShocklingCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
         register("Fireball", p -> new Fireball(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
+        register("Healing Light", p -> new HealingLight(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
+        register("Frostbolt", p -> new Frostbolt(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
     }
 
     public static void register(String name, Function<DeckManager.CardCreationParams, Card> creator) {

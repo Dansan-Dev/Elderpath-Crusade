@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.bot.impl;
 
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -72,7 +73,7 @@ public class SmartBot implements Bot {
             return;
         if (GameManager.isPaused())
             return;
-        if (TurnManager.getCurrentPlayer() != PieceAlignment.P2)
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2)
             return;
         if (stepsDone >= MAX_STEPS) {
             Logger.log("[SmartBot]", "Reached step cap");
@@ -121,7 +122,7 @@ public class SmartBot implements Bot {
             @Override
             public void run() {
                 if (!GameManager.isPaused())
-                    TurnManager.endTurn();
+                    GameContext.get().getTurnManager().endTurn();
             }
         }, END_DELAY);
     }
@@ -181,7 +182,7 @@ public class SmartBot implements Bot {
     }
 
     private boolean shouldEndNow(Board board) {
-        PlayerManager.PlayerState player = PlayerManager.get(PieceAlignment.P2);
+        PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (player == null)
             return true;
 
