@@ -56,7 +56,7 @@ public class PieceSyncSystem extends EntitySystem {
 
         AbilityComponent ac = new AbilityComponent();
         for (Ability a : piece.getAbilities()) {
-            ac.add(a.getName());
+            ac.addAbility(a);
         }
         entity.add(ac);
 

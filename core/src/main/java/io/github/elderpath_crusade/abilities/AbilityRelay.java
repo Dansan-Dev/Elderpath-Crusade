@@ -1,27 +1,31 @@
 package io.github.elderpath_crusade.abilities;
 
+import com.badlogic.ashley.core.Engine;
+import com.badlogic.ashley.core.Entity;
+import com.badlogic.ashley.core.Family;
+import com.badlogic.ashley.utils.ImmutableArray;
+import io.github.elderpath_crusade.ecs.components.AbilityComponent;
 import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.GameContext;
 
 import java.util.function.Consumer;
 
 /**
  * Central relay that forwards TypedEventBus events to TriggeredAbility instances
- * on all living pieces across active Boards.
+ * on all living entities with AbilityComponent via ECS Family queries.
  */
 public final class AbilityRelay {
     private static boolean started = false;
     private static Consumer<GameEvent> relayAll;
+    private static Family abilityFamily;
 
     private AbilityRelay() {}
 
     public static void startIfNeeded() {
         if (started) return;
         started = true;
+        abilityFamily = Family.all(AbilityComponent.class).get();
         relayAll = AbilityRelay::onGameEvent;
         // Register for all concrete event types
         TypedEventBus bus = TypedEventBus.get();
@@ -42,24 +46,18 @@ public final class AbilityRelay {
 
     public static void stop() {
         if (!started) return;
-        // Clear all listeners (simple approach; in production you'd track and unregister each)
         started = false;
         relayAll = null;
     }
 
     private static void onGameEvent(GameEvent event) {
-        Board board = GameContext.get().getActiveBoard();
-        if (board != null) {
-            for (int row = 0; row < board.getROWS(); row++) {
-                for (int col = 0; col < board.getCOLS(); col++) {
-                    GamePiece gp = board.getGamePieceAtPos(row, col);
-                    if (gp instanceof MonsterGamePiece mgp) {
-                        for (Ability a : mgp.getAbilities()) {
-                            if (a instanceof TriggeredAbility trig) {
-                                try { trig.onGameEvent(event); } catch (Exception ignored) {}
-                            }
-                        }
-                    }
+        Engine engine = GameContext.get().getEcsEngine();
+        ImmutableArray<Entity> entities = engine.getEntitiesFor(abilityFamily);
+        for (int i = 0; i < entities.size(); i++) {
+            AbilityComponent ac = entities.get(i).getComponent(AbilityComponent.class);
+            for (Ability a : ac.getAbilities()) {
+                if (a instanceof TriggeredAbility trig) {
+                    try { trig.onGameEvent(event); } catch (Exception ignored) {}
                 }
             }
         }

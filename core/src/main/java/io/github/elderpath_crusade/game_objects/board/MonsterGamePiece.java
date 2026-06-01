@@ -69,12 +69,22 @@ public class MonsterGamePiece extends GamePiece {
     public void addAbility(Ability ability) {
         if (ability == null) return;
         abilities.add(ability);
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
+                entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
+            if (ac != null) ac.addAbility(ability);
+        }
         ability.onAttach(this);
     }
 
     public void removeAbility(Ability ability) {
         if (ability == null) return;
         if (abilities.remove(ability)) {
+            if (entity != null) {
+                io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
+                    entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
+                if (ac != null) ac.removeAbility(ability);
+            }
             try { ability.onDetach(); } catch (Exception ignored) {}
         }
     }
