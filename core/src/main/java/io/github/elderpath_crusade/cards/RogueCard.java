@@ -19,6 +19,9 @@ public class RogueCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Rogue"; }
+
+    @Override
     protected String getCardName() { return "Rogue"; }
 
     @Override

@@ -14,8 +14,8 @@ public class GameManager {
     public GameManager() {}
 
     public void initialize() {
-        SettingsManager.initialize();
-        ShaderManager.initialize();
+        GameContext.get().getSettingsManager().initialize();
+        GameContext.get().getShaderManager().initialize();
         GameContext.get().getInputManager().initialize();
         GameContext.get().getBotManager().initialize();
         GameContext.get().getWinConditionManager().initialize();

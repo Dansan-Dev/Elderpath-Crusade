@@ -78,7 +78,7 @@ public class BoardOverlayRenderer {
      * Render the stun symbol overlay on top of a stunned piece.
      */
     private void renderStunSymbol(SpriteBatch batch, int zLevel, int absX, int absY) {
-        Texture stunTexture = TextureManager.getTexture(ImagePathSpritesAndAnimations.STUN.getPath());
+        Texture stunTexture = GameContext.get().getTextureManager().getTexture(ImagePathSpritesAndAnimations.STUN.getPath());
         if (stunTexture == null)
             return;
 

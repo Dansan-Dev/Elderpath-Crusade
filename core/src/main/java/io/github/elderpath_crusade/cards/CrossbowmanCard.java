@@ -20,6 +20,9 @@ public class CrossbowmanCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Crossbowman"; }
+
+    @Override
     protected String getCardName() { return "Crossbowman"; }
 
     @Override

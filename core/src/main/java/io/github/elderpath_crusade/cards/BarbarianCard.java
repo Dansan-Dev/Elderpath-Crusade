@@ -19,6 +19,9 @@ public class BarbarianCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Barbarian"; }
+
+    @Override
     protected String getCardName() { return "Barbarian"; }
 
     @Override

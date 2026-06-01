@@ -5,7 +5,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 import io.github.elderpath_crusade.Main;
-import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.data_objects.settings.ScreenSize;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
@@ -31,8 +31,9 @@ public class Lwjgl3Launcher {
         //// useful for testing performance, but can also be very stressful to some hardware.
         //// You may also need to configure GPU drivers to fully disable Vsync; this can cause screen tearing.
 
-        int width = SettingsManager.screenSize.getScreenConfiguredWidth();
-        int height = SettingsManager.screenSize.getScreenConfiguredHeight();
+        ScreenSize screenSize = new ScreenSize();
+        int width = screenSize.getScreenConfiguredWidth();
+        int height = screenSize.getScreenConfiguredHeight();
         configuration.setResizable(false);  // This prevents window resizing
         configuration.setWindowSizeLimits(width, height, width, height);
         configuration.setWindowedMode(width, height);

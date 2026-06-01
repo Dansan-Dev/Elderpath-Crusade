@@ -107,7 +107,7 @@ public class PlayerManager {
 
     private void applyBotHandVisibilityOnTurnStart(PieceAlignment current) {
         if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) return;
-        if (!SettingsManager.debug.enableP2Bot) return;
+        if (!GameContext.get().getSettingsManager().debug.enableP2Bot) return;
         PlayerState bot = get(PieceAlignment.P2);
         if (bot.hand == null) return;
         if (current == PieceAlignment.P2) {

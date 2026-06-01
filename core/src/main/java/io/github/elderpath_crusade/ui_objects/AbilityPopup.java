@@ -103,7 +103,7 @@ public class AbilityPopup extends HigherOrderUI {
     private MonsterGamePiece resolveFocusedPiece() {
         PieceAlignment current = GameContext.get().getTurnManager().getCurrentPlayer();
         int mouseX = Gdx.input.getX();
-        int mouseY = SettingsManager.screenSize.getScreenHeight() - Gdx.input.getY();
+        int mouseY = GameContext.get().getSettingsManager().screenSize.getScreenHeight() - Gdx.input.getY();
 
         if (stickyActive && focusedPieceId != null) {
             MonsterGamePiece focused = findPieceById(focusedPieceId);

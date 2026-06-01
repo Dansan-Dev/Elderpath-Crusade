@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.rooms;
 
 import com.badlogic.gdx.graphics.Color;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -29,12 +30,12 @@ public class MainMenuRoom extends Room {
         super();
 
         // Play menu music
-        MusicManager.playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
 
         // Create objects
 
-        int screen_width = SettingsManager.screenSize.getScreenWidth();
-        int screen_height = SettingsManager.screenSize.getScreenHeight();
+        int screen_width = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screen_height = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         background = new SpriteObject(0, 0, screen_width, screen_height, -2, SpriteBoxPos.BOTTOM_LEFT);
         background.addAnimation(
@@ -63,9 +64,9 @@ public class MainMenuRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
-        int screen_width = SettingsManager.screenSize.getScreenWidth();
-        int screen_height = SettingsManager.screenSize.getScreenHeight();
+        int[] screen_center = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
+        int screen_width = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screen_height = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         // Background covers full screen
         background.setBounds(new Box(0, 0, screen_width, screen_height));

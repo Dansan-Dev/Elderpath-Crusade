@@ -19,6 +19,9 @@ public class FairyCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Fairy"; }
+
+    @Override
     protected String getCardName() { return "Fairy"; }
 
     @Override

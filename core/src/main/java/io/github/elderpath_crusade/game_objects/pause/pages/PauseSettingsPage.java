@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.game_objects.pause.pages;
+import io.github.elderpath_crusade.GameContext;
 
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -16,7 +17,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
         "SETTINGS",
         FontType.SILKSCREEN,
         0,
-        SettingsManager.screenSize.getScreenHeight() - 200,
+        GameContext.get().getSettingsManager().screenSize.getScreenHeight() - 200,
         0,
         ColorSettings.TEXT_DEFAULT.getColor()
     ).withFontSize(io.github.elderpath_crusade.utils.FontSize.TITLE_LARGE).asPauseUI();
@@ -34,7 +35,7 @@ public class PauseSettingsPage extends HigherOrderTexture {
                 .withFontSize(io.github.elderpath_crusade.utils.FontSize.BODY_MEDIUM)
                 .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
-                .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
+                .withOnClick((e) -> GameContext.get().getSettingsManager().screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
                 .asPauseUI()
         );
 

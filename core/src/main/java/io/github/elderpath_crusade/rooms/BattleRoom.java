@@ -35,7 +35,7 @@ public abstract class BattleRoom extends Room {
     protected final Deck deckP2;
     protected final PassTurnButton passTurn;
     protected final UIRenderable pauseMenuHint;
-    protected final Supplier<int[]> pauseMenuPos = () -> new int[]{20, SettingsManager.screenSize.getScreenHeight() - 40};
+    protected final Supplier<int[]> pauseMenuPos = () -> new int[]{20, GameContext.get().getSettingsManager().screenSize.getScreenHeight() - 40};
 
     protected final int plot_width = 40;
     protected final int plot_height = 40;
@@ -48,7 +48,7 @@ public abstract class BattleRoom extends Room {
         super();
 
         // 1. Core State & Mode
-        MusicManager.playLoopingMusic("Daniel_Game.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic("Daniel_Game.mp3");
         GameContext.get().getTurnManager().reset();
         GameContext.get().getGameModeManager().setCurrent(mode);
 
@@ -71,8 +71,8 @@ public abstract class BattleRoom extends Room {
         addUI(pauseMenuHint);
 
         // 4. UI: Pass Turn Button
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         passTurn = PassTurnButton.fromColor(
             Color.WHITE.cpy().mul(0.2f, 0.2f, 0.2f, 1f),
             "Pass Turn",
@@ -87,7 +87,7 @@ public abstract class BattleRoom extends Room {
         addUI(passTurn);
 
         // 5. Hands
-        int centerX = SettingsManager.screenSize.getScreenCenter()[0];
+        int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
         handP1 = new Hand(centerX, -80, 125, 200, 0);
         handP1.setOwner(PieceAlignment.P1);
         addContent(handP1);
@@ -119,7 +119,7 @@ public abstract class BattleRoom extends Room {
         addUI(new CardPreviewPanel());
 
         // 9. Logger
-        if (SettingsManager.debug.eventsLoggerInDemo && !LOGGER_REGISTERED) {
+        if (GameContext.get().getSettingsManager().debug.eventsLoggerInDemo && !LOGGER_REGISTERED) {
             registerEventsLogger();
         }
 
@@ -149,7 +149,7 @@ public abstract class BattleRoom extends Room {
     }
 
     protected void layoutBoard() {
-        int[] screen_center = SettingsManager.screenSize.getScreenCenter();
+        int[] screen_center = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int[] board_size = board.getPixelSize();
         int boardCenteredX = screen_center[0] - board_size[0] / 2;
         int boardCenteredY = screen_center[1] - board_size[1] / 2;
@@ -170,9 +170,9 @@ public abstract class BattleRoom extends Room {
         pauseMenuHint.getBounds().setX(pmPos[0]);
         pauseMenuHint.getBounds().setY(pmPos[1]);
 
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
-        int centerX = SettingsManager.screenSize.getScreenCenter()[0];
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
 
         // Reposition hands
         if (handP1 != null) {

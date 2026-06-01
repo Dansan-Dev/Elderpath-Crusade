@@ -19,6 +19,9 @@ public class RiflemanCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Rifleman"; }
+
+    @Override
     protected String getCardName() { return "Rifleman"; }
 
     @Override

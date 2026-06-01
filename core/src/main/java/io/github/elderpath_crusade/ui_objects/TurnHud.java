@@ -26,8 +26,8 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
     private static final int PAD_Y = 4;
 
     public TurnHud() {
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         turnText = new Text("", FontType.SILKSCREEN, 16, screenH / 2, 0, Color.WHITE)
             .withFontSize(FontSize.BODY_MEDIUM);
         setBounds(new Box(0, 0, screenW, screenH));
@@ -35,7 +35,7 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         String turnStr = "Current: " + GameContext.get().getTurnManager().getCurrentPlayer();
         if (!turnStr.equals(turnText.getText())) { turnText.setText(turnStr); turnText.update(); }
         int padding = 16;

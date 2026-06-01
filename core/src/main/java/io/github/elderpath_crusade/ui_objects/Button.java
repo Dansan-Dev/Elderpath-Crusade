@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.ui_objects;
 
 import com.badlogic.gdx.Gdx;
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -114,7 +115,7 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
             int width, int height,
             int z) {
         Button b = new Button(text, fontType, fontSize, x, y, width, height, z);
-        b.backgroundTexture = TextureManager.getTexture(imagePath);
+        b.backgroundTexture = GameContext.get().getTextureManager().getTexture(imagePath);
         return b;
     }
 

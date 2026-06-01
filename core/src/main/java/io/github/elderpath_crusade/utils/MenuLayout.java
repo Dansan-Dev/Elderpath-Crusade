@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.utils;
+import io.github.elderpath_crusade.GameContext;
 
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.ui_objects.TextList;
@@ -21,9 +22,9 @@ public final class MenuLayout {
      * @param headerTopOffset   Distance from screen top to place the header baseline in pixels
      */
     public static void layoutHeaderAndOptions(Text header, TextList options, int spacing, int headerTopOffset) {
-        int centerX = SettingsManager.screenSize.getScreenCenter()[0];
-        int centerY = SettingsManager.screenSize.getScreenCenter()[1];
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
+        int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
+        int centerY = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[1];
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         // Update header to ensure label dimensions are current before centering
         header.update();
@@ -39,8 +40,8 @@ public final class MenuLayout {
      * Useful when a screen has a single header without an options list.
      */
     public static void centerHeader(Text header, int headerTopOffset) {
-        int centerX = SettingsManager.screenSize.getScreenCenter()[0];
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
+        int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         header.update();
         header.getBounds().setX((int) (centerX - (header.getLabel().getWidth() / 2)));
         header.getBounds().setY(screenHeight - headerTopOffset);

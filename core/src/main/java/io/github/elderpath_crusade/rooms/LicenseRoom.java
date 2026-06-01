@@ -34,8 +34,8 @@ public class LicenseRoom extends Room {
                                 .withFontSize(FontSize.TITLE_MEDIUM);
                 addContent(header);
 
-                String content = InfoDataManager.getRawFileContent(fileName);
-                int wrapWidth = (int) (SettingsManager.screenSize.getScreenWidth() * 0.7f);
+                String content = GameContext.get().getInfoDataManager().getRawFileContent(fileName);
+                int wrapWidth = (int) (GameContext.get().getSettingsManager().screenSize.getScreenWidth() * 0.7f);
 
                 // Split by single newlines for maximum clipping granularity
                 String[] lines = content.split("\n");
@@ -85,10 +85,10 @@ public class LicenseRoom extends Room {
         }
 
         private void layoutContents() {
-                int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
+                int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
                 int screenCenterX = screenCenter[0];
-                int screenWidth = SettingsManager.screenSize.getScreenWidth();
-                int screenHeight = SettingsManager.screenSize.getScreenHeight();
+                int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+                int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
                 MenuLayout.centerHeader(header, 60);
 

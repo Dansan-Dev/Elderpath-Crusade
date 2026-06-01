@@ -8,17 +8,26 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.managers.BotManager;
 import io.github.elderpath_crusade.managers.DeckManager;
+import io.github.elderpath_crusade.managers.FontManager;
 import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.GameModeManager;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.HighlightManager;
+import io.github.elderpath_crusade.managers.InfoDataManager;
 import io.github.elderpath_crusade.managers.InputManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
+import io.github.elderpath_crusade.managers.RenderPipeline;
 import io.github.elderpath_crusade.managers.RoomManager;
+import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.managers.ShaderManager;
+import io.github.elderpath_crusade.managers.SoundManager;
+import io.github.elderpath_crusade.managers.TextureManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.managers.VictoryHandler;
 import io.github.elderpath_crusade.managers.WinConditionManager;
+import io.github.elderpath_crusade.managers.ZIndexRegistry;
 import io.github.elderpath_crusade.session.GameSession;
 import io.github.elderpath_crusade.state.GameStateMachine;
 import lombok.Getter;
@@ -47,6 +56,15 @@ public class GameContext {
     @Getter private final DeckManager deckManager;
     @Getter private final VictoryHandler victoryHandler;
     @Getter private final RoomManager roomManager;
+    @Getter private final SettingsManager settingsManager;
+    @Getter private final MusicManager musicManager;
+    @Getter private final SoundManager soundManager;
+    @Getter private final ShaderManager shaderManager;
+    @Getter private final RenderPipeline renderPipeline;
+    @Getter private final ZIndexRegistry zIndexRegistry;
+    @Getter private final TextureManager textureManager;
+    @Getter private final FontManager fontManager;
+    @Getter private final InfoDataManager infoDataManager;
     @Getter private Board activeBoard;
     @Getter private GameSession activeSession;
 
@@ -70,6 +88,15 @@ public class GameContext {
         this.deckManager = new DeckManager();
         this.victoryHandler = new VictoryHandler();
         this.roomManager = new RoomManager();
+        this.settingsManager = new SettingsManager();
+        this.musicManager = new MusicManager();
+        this.soundManager = new SoundManager();
+        this.shaderManager = new ShaderManager();
+        this.renderPipeline = new RenderPipeline();
+        this.zIndexRegistry = new ZIndexRegistry();
+        this.textureManager = new TextureManager();
+        this.fontManager = new FontManager();
+        this.infoDataManager = new InfoDataManager();
     }
 
     public static GameContext create() {

@@ -159,7 +159,7 @@ public class Board extends HigherOrderTexture implements Updatable {
 
     public void markDirtyAndNotify() {
         zsDirty = true;
-        ZIndexRegistry.notifyZChanged(this);
+        GameContext.get().getZIndexRegistry().notifyZChanged(this);
     }
 
     public Plot getPlotAtScreen(int mouseX, int mouseY) {

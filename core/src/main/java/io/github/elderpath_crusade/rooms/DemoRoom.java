@@ -33,8 +33,8 @@ public class DemoRoom extends BattleRoom {
     @Override
     protected Deck createDeck(PieceAlignment alignment, Hand hand) {
         List<Card> cards = new ArrayList<>();
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         if (alignment == PieceAlignment.P1) {
             // P1 Deck Logic

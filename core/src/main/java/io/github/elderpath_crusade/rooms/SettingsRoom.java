@@ -21,14 +21,14 @@ public class SettingsRoom extends Room {
         super();
 
         // Play menu music
-        MusicManager.playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
 
         header = new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
         toggleFullscreen = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Toggle Fullscreen", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 200, 60, 0)
-            .withOnClick((e) -> SettingsManager.screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getSettingsManager().screenSize.toggleFullscreen(), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
@@ -45,10 +45,10 @@ public class SettingsRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
+        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int screenCenterX = screenCenter[0];
         int screenCenterY = screenCenter[1];
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         // Header centered at top via shared helper
         MenuLayout.centerHeader(header, 100);

@@ -28,8 +28,8 @@ public class VictoryRoom extends Room {
     private VictoryRoom(PieceAlignment winner) {
         // Entering the VictoryRoom should reset win/loss guard state for the next match
         GameContext.get().getWinConditionManager().reset();
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         // Title depends on game mode
         GameMode mode = GameContext.get().getGameModeManager().getCurrent();
@@ -81,8 +81,8 @@ public class VictoryRoom extends Room {
     }
 
     private void layout() {
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         // Center title near top
         title.setBounds(new Box(
             (screenW - title.getWidth())/2,
@@ -96,8 +96,8 @@ public class VictoryRoom extends Room {
     @Override
     public void onScreenResize() {
         layout();
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         if (playAgain != null) {
             playAgain.getBounds().setX(screenW/2 - playAgain.getWidth()/2);
             playAgain.getBounds().setY(screenH/2 - 40);

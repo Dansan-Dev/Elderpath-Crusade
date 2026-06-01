@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.managers;
+import io.github.elderpath_crusade.GameContext;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -8,11 +9,13 @@ import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
 
 public class ShaderManager {
-    @Getter private static ShaderProgram blurShader;
-    @Getter private static FrameBuffer fboA;
-    @Getter private static FrameBuffer fboB;
+    @Getter private ShaderProgram blurShader;
+    @Getter private FrameBuffer fboA;
+    @Getter private FrameBuffer fboB;
 
-    public static void initialize() {
+    public ShaderManager() {}
+
+    public void initialize() {
         if (blurShader == null) {
             blurShader = new ShaderProgram(
                 Gdx.files.internal("shaders/blur-vertex.glsl"),
@@ -25,25 +28,25 @@ public class ShaderManager {
         createFbos();
     }
 
-    public static void createFbos() {
+    public void createFbos() {
         if (fboA != null) fboA.dispose();
         if (fboB != null) fboB.dispose();
 
         fboA = new FrameBuffer(
             Pixmap.Format.RGBA8888,
-            SettingsManager.screenSize.getScreenWidth(),
-            SettingsManager.screenSize.getScreenHeight(),
+            GameContext.get().getSettingsManager().screenSize.getScreenWidth(),
+            GameContext.get().getSettingsManager().screenSize.getScreenHeight(),
             false
         );
         fboB = new FrameBuffer(
             Pixmap.Format.RGBA8888,
-            SettingsManager.screenSize.getScreenWidth(),
-            SettingsManager.screenSize.getScreenHeight(),
+            GameContext.get().getSettingsManager().screenSize.getScreenWidth(),
+            GameContext.get().getSettingsManager().screenSize.getScreenHeight(),
             false
         );
     }
 
-    public static void dispose() {
+    public void dispose() {
         if (blurShader != null) blurShader.dispose();
         if (fboA != null) fboA.dispose();
         if (fboB != null) fboB.dispose();

@@ -46,8 +46,8 @@ public class LocalMatchRoom extends BattleRoom {
     @Override
     protected Deck createDeck(PieceAlignment alignment, Hand hand) {
         List<Card> cards = new ArrayList<>();
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         if (GameContext.get().getDeckManager().hasDraftedDeck(alignment)) {
             List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = GameContext.get().getDeckManager().getDraftedDeck(alignment);
@@ -85,8 +85,8 @@ public class LocalMatchRoom extends BattleRoom {
     }
 
     private void swapHandPositionsIfNeeded(PieceAlignment currentPlayer) {
-        int screenH = SettingsManager.screenSize.getScreenHeight();
-        int screenCenterX = SettingsManager.screenSize.getScreenCenter()[0];
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int screenCenterX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
         int p1HandBottomY = -80; // from BattleRoom init
 
         if (currentPlayer == PieceAlignment.P2) {

@@ -19,6 +19,9 @@ public class HeroCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Hero"; }
+
+    @Override
     protected String getCardName() { return "Hero"; }
 
     @Override

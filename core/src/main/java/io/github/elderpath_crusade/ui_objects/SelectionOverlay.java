@@ -19,8 +19,8 @@ public class SelectionOverlay extends LowestOrderTexture implements UIRenderable
     private final Text text;
 
     public SelectionOverlay() {
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         int padding = 16;
         // Initial placement near the top-center; will update each frame to center text width.
         this.text = new Text("", FontType.SILKSCREEN,
@@ -45,8 +45,8 @@ public class SelectionOverlay extends LowestOrderTexture implements UIRenderable
         }
 
         // Center horizontally at top using current text width
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         int padding = 16;
         int x = (screenW - text.getWidth()) / 2;
         int y = screenH - padding - text.getHeight();

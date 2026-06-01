@@ -32,9 +32,9 @@ public class Main extends ApplicationAdapter {
         GameContext.create();
         GameContext.get().getGameManager().initialize();
 
-        SettingsManager.sound.setMusicVolume(3);
-        SettingsManager.sound.setMasterVolume(7);
-        MusicManager.playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getSettingsManager().sound.setMusicVolume(3);
+        GameContext.get().getSettingsManager().sound.setMasterVolume(7);
+        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
 
         GameContext.get().getRoomManager().initialize();
     }
@@ -55,7 +55,7 @@ public class Main extends ApplicationAdapter {
         inputHandlerData.clear();
         inputHandlerData.put(InputHandlerData.IS_PAUSED, GameContext.get().getGameManager().isPaused());
         inputHandlerData.put(InputHandlerData.MOUSE_X, com.badlogic.gdx.Gdx.input.getX());
-        inputHandlerData.put(InputHandlerData.MOUSE_Y, SettingsManager.screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
+        inputHandlerData.put(InputHandlerData.MOUSE_Y, GameContext.get().getSettingsManager().screenSize.getScreenHeight() - com.badlogic.gdx.Gdx.input.getY());
         return inputHandlerData;
     }
 
@@ -78,13 +78,13 @@ public class Main extends ApplicationAdapter {
         GameContext.get().getGraphicsManager().drawPauseUI(GameContext.get().getGraphicsManager().getBatch());
 
         // SOUND
-        MusicManager.update();
+        GameContext.get().getMusicManager().update();
     }
 
     @Override
     public void dispose() {
         GameContext.get().getGraphicsManager().getBatch().dispose();
-        TextureManager.dispose();
+        GameContext.get().getTextureManager().dispose();
         GraphicUtils.dispose();
     }
 }

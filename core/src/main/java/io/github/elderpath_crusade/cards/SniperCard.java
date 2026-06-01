@@ -20,6 +20,9 @@ public class SniperCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Sniper"; }
+
+    @Override
     protected String getCardName() { return "Sniper"; }
 
     @Override

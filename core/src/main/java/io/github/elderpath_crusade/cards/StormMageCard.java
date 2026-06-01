@@ -20,6 +20,9 @@ public class StormMageCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "StormMage"; }
+
+    @Override
     protected String getCardName() { return "Storm Mage"; }
 
     @Override

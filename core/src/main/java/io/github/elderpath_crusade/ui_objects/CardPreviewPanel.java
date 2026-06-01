@@ -59,8 +59,8 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
             ensurePreviewFor(hovered);
             if (previewCard != null) {
                 // Compute size as 40% of screen height, maintain 125:200 (w:h) aspect
-                int screenW = SettingsManager.screenSize.getScreenWidth();
-                int screenH = SettingsManager.screenSize.getScreenHeight();
+                int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+                int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
                 int height = Math.round(screenH * 0.40f);
                 int width = Math.round(height * (125f / 200f));
                 int x = screenW - width - SCREEN_MARGIN;

@@ -152,7 +152,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     }
 
     public void update() {
-        style = FontManager.getLabelStyle(fontType);
+        style = GameContext.get().getFontManager().getLabelStyle(fontType);
         label = new Label(text, style);
         label.setAlignment(alignment);
         label.setWrap(wrapEnabled);
@@ -241,11 +241,11 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     }
 
     public void setCenterX() {
-        getBounds().setX((int) (SettingsManager.screenSize.getScreenCenter()[0] - (label.getWidth() / 2)));
+        getBounds().setX((int) (GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0] - (label.getWidth() / 2)));
     }
 
     public void setCenterY() {
-        getBounds().setY((int) (SettingsManager.screenSize.getScreenCenter()[1] - (label.getHeight() / 2)));
+        getBounds().setY((int) (GameContext.get().getSettingsManager().screenSize.getScreenCenter()[1] - (label.getHeight() / 2)));
     }
 
     private boolean isHovered(int relX, int relY) {

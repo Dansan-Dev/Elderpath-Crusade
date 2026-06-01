@@ -19,6 +19,9 @@ public class CrowCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Crow"; }
+
+    @Override
     protected String getCardName() { return "Crow"; }
 
     @Override

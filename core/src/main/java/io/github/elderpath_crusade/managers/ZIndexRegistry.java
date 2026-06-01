@@ -4,24 +4,20 @@ import io.github.elderpath_crusade.interfaces.Renderable;
 
 import java.util.*;
 
-/**
- * Central registry for Z-ordering of game Renderables.
- * Maintains per-Z buckets and a sorted set of active Z levels.
- */
-public final class ZIndexRegistry {
-    private ZIndexRegistry() {}
+public class ZIndexRegistry {
+    private final Map<Integer, Set<Renderable>> zBuckets = new HashMap<>();
+    private final NavigableSet<Integer> zLevels = new TreeSet<>();
 
-    private static final Map<Integer, Set<Renderable>> zBuckets = new HashMap<>();
-    private static final NavigableSet<Integer> zLevels = new TreeSet<>();
+    public ZIndexRegistry() {}
 
-    public static void add(Renderable r) {
+    public void add(Renderable r) {
         for (Integer z : r.getZs()) {
             zBuckets.computeIfAbsent(z, k -> new LinkedHashSet<>()).add(r);
             zLevels.add(z);
         }
     }
 
-    public static void remove(Renderable r) {
+    public void remove(Renderable r) {
         for (Integer z : r.getZs()) {
             Set<Renderable> bucket = zBuckets.get(z);
             if (bucket != null) {
@@ -34,13 +30,12 @@ public final class ZIndexRegistry {
         }
     }
 
-    public static void clear() {
+    public void clear() {
         zBuckets.clear();
         zLevels.clear();
     }
 
-    public static void notifyZChanged(Renderable r) {
-        // Remove from ALL buckets since r.getZs() may already return new values
+    public void notifyZChanged(Renderable r) {
         zBuckets.values().forEach(set -> set.remove(r));
         zBuckets.entrySet().removeIf(entry -> {
             if (entry.getValue().isEmpty()) {
@@ -52,11 +47,11 @@ public final class ZIndexRegistry {
         add(r);
     }
 
-    public static Iterable<Integer> getZLevels() {
+    public Iterable<Integer> getZLevels() {
         return zLevels;
     }
 
-    public static Collection<Renderable> getBucket(int z) {
+    public Collection<Renderable> getBucket(int z) {
         return zBuckets.get(z);
     }
 }

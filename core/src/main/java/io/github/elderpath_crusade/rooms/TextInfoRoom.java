@@ -30,18 +30,18 @@ public class TextInfoRoom extends Room {
     private TextInfoRoom(String category) {
         super();
 
-        String title = InfoDataManager.getTitle(category);
+        String title = GameContext.get().getInfoDataManager().getTitle(category);
         header = new Text(title, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
-        List<Map<String, String>> entries = InfoDataManager.getEntries(category);
+        List<Map<String, String>> entries = GameContext.get().getInfoDataManager().getEntries(category);
         for (Map<String, String> entry : entries) {
             String optionalName = entry.get("name");
             String optionalRole = entry.get("role");
             String licenseFile = entry.get("license_file");
 
-            int maxWrapWidth = (int) (SettingsManager.screenSize.getScreenWidth() * 0.7f);
+            int maxWrapWidth = (int) (GameContext.get().getSettingsManager().screenSize.getScreenWidth() * 0.7f);
 
             if (optionalName != null && !optionalName.isEmpty()) {
                 Text nameText = new Text(optionalName, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.BUTTON_PRIMARY.getColor())
@@ -109,10 +109,10 @@ public class TextInfoRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
+        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int screenCenterX = screenCenter[0];
-        int screenWidth = SettingsManager.screenSize.getScreenWidth();
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
+        int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         MenuLayout.centerHeader(header, 100);
 

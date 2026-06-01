@@ -147,7 +147,7 @@ public abstract class SpellCard extends Card implements TargetFilter {
     @Override
     public ClickableEffectData getClickableEffectData() {
         if (alignment == PieceAlignment.P2
-                && SettingsManager.debug.enableP2Bot
+                && GameContext.get().getSettingsManager().debug.enableP2Bot
                 && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH) {
             return null;
         }

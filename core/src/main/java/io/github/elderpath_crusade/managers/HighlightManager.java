@@ -34,6 +34,7 @@ public class HighlightManager implements Renderable {
     public HighlightManager() {}
 
     private static final float HIGHLIGHT_ANIMATION_SPEED = 10f;
+    private final Color tempColor = new Color();
 
     private final Set<Plot> highlightedPlots = new HashSet<>();
     private final Set<Plot> candidatePlots = new HashSet<>();
@@ -173,9 +174,9 @@ public class HighlightManager implements Renderable {
         int cx = absX + (w - s) / 2;
         int cy = absY + (h - s) / 2;
 
-        Color c = color.cpy();
-        c.a *= progress;
-        batch.draw(GraphicUtils.getPixelTexture(c), cx, cy, s, s);
+        tempColor.set(color);
+        tempColor.a *= progress;
+        batch.draw(GraphicUtils.getPixelTexture(tempColor), cx, cy, s, s);
     }
 
     @Override public Box getParent() { return null; }

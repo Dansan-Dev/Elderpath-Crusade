@@ -20,6 +20,9 @@ public class KingCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "King"; }
+
+    @Override
     protected String getCardName() { return "King"; }
 
     @Override

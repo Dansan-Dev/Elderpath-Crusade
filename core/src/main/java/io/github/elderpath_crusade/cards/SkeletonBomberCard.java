@@ -20,6 +20,9 @@ public class SkeletonBomberCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "SkeletonBomber"; }
+
+    @Override
     protected String getCardName() { return "Skeleton Bomber"; }
 
     @Override

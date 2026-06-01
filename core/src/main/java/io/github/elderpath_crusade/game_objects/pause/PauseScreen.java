@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.game_objects.pause;
+import io.github.elderpath_crusade.GameContext;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -48,7 +49,7 @@ public class PauseScreen extends LowestOrderTexture implements UIRenderable {
         updateCurrentPageLayout();
         // isPaused needs to be false to avoid standardized functionality (should not stop anything within)
         currentPage.getPage().render(batch, 0, false);
-        int[] screenSize = SettingsManager.screenSize.getScreenSize();
+        int[] screenSize = GameContext.get().getSettingsManager().screenSize.getScreenSize();
         background.setBounds(new Box(0, 0, screenSize[0], screenSize[1]));
         background.render(batch, z, false);
     }
@@ -57,7 +58,7 @@ public class PauseScreen extends LowestOrderTexture implements UIRenderable {
     public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
         updateCurrentPageLayout();
         currentPage.getPage().render(batch, 0, false);
-        int[] screenSize = SettingsManager.screenSize.getScreenSize();
+        int[] screenSize = GameContext.get().getSettingsManager().screenSize.getScreenSize();
         background.setBounds(new Box(0, 0, screenSize[0], screenSize[1]));
         background.render(batch, z, false, x, y);
     }

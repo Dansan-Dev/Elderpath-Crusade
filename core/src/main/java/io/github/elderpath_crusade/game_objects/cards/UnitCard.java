@@ -67,8 +67,9 @@ public abstract class UnitCard extends Card {
     }
 
     // Subclass hooks
+    protected String getRegistryKey() { return PieceRegistry.toRegistryKey(getCardName()); }
     protected GamePieceStats buildStats() {
-        String key = PieceRegistry.toRegistryKey(getCardName());
+        String key = getRegistryKey();
         PieceDefinition def = PieceRegistry.get(key);
         if (def == null) throw new IllegalArgumentException("No piece definition for: " + key);
         return GamePieceStats.getMonsterStats(def.cost(), def.health(), def.damage(), def.speed(), def.actions());

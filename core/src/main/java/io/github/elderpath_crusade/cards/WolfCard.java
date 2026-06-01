@@ -23,6 +23,9 @@ public class WolfCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Wolf"; }
+
+    @Override
     protected String getCardName() { return "Wolf"; }
 
     @Override

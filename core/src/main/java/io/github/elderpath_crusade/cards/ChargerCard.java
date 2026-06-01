@@ -19,6 +19,9 @@ public class ChargerCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Charger"; }
+
+    @Override
     protected String getCardName() { return "Charger"; }
 
     @Override

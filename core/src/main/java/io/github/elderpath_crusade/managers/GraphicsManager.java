@@ -84,8 +84,8 @@ public class GraphicsManager {
 
     private void renderGameGraphics(SpriteBatch batch) {
         boolean paused = GameContext.get().getGameManager().isPaused();
-        for (Integer z : ZIndexRegistry.getZLevels()) {
-            Collection<Renderable> bucket = ZIndexRegistry.getBucket(z);
+        for (Integer z : GameContext.get().getZIndexRegistry().getZLevels()) {
+            Collection<Renderable> bucket = GameContext.get().getZIndexRegistry().getBucket(z);
             if (bucket == null) continue;
             for (Renderable r : bucket) {
                 if (r instanceof HigherOrderTexture hot) {
@@ -99,7 +99,7 @@ public class GraphicsManager {
 
     public void addRenderable(Renderable renderable) {
         renderables.add(renderable);
-        ZIndexRegistry.add(renderable);
+        GameContext.get().getZIndexRegistry().add(renderable);
         if (renderable instanceof Clickable clickable) {
             GameContext.get().getInteractionManager().addClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
@@ -122,7 +122,7 @@ public class GraphicsManager {
 
     public void removeRenderable(Renderable renderable) {
         renderables.remove(renderable);
-        ZIndexRegistry.remove(renderable);
+        GameContext.get().getZIndexRegistry().remove(renderable);
         if (renderable instanceof Clickable clickable) {
             GameContext.get().getInteractionManager().removeClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
@@ -156,7 +156,7 @@ public class GraphicsManager {
             }
         });
         renderables.clear();
-        ZIndexRegistry.clear();
+        GameContext.get().getZIndexRegistry().clear();
     }
 
     public void clearUIRenderables() {
@@ -171,14 +171,14 @@ public class GraphicsManager {
     }
 
     public void draw(SpriteBatch batch) {
-        RenderPipeline.draw(batch);
+        GameContext.get().getRenderPipeline().draw(batch);
     }
 
     public void blurredDraw(SpriteBatch batch) {
-        RenderPipeline.blurredDraw(batch);
+        GameContext.get().getRenderPipeline().blurredDraw(batch);
     }
 
     public void drawPauseUI(SpriteBatch batch) {
-        RenderPipeline.drawPauseUI(batch);
+        GameContext.get().getRenderPipeline().drawPauseUI(batch);
     }
 }

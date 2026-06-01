@@ -19,6 +19,9 @@ public class WindSpiritCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "WindSpirit"; }
+
+    @Override
     protected String getCardName() { return "Wind Spirit"; }
 
     @Override

@@ -20,6 +20,9 @@ public class ShocklingCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Shockling"; }
+
+    @Override
     protected String getCardName() { return "Shockling"; }
 
     @Override

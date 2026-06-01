@@ -53,7 +53,7 @@ public class DraftRoom extends Room {
         super();
 
         // Play menu music
-        MusicManager.playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
 
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;
@@ -92,7 +92,7 @@ public class DraftRoom extends Room {
         addContent(deckPreviewText);
 
         // Create hand for draft options
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
+        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int cardWidth = 187; // 1.5x larger for better visibility during drafting
         int cardHeight = 300; // 1.5x larger for better visibility during drafting
         draftOptionsHand = new Hand(screenCenter[0], screenCenter[1], cardWidth, cardHeight, 0);
@@ -111,9 +111,9 @@ public class DraftRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
-        int screenWidth = SettingsManager.screenSize.getScreenWidth();
+        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
 
         // Progression text at top center
         MenuLayout.centerHeader(progressionText, 100);
@@ -234,8 +234,8 @@ public class DraftRoom extends Room {
         deckPreviewText.setText(previewText);
 
         // Calculate fixed top position (always relative to screen height)
-        int screenHeight = SettingsManager.screenSize.getScreenHeight();
-        int screenWidth = SettingsManager.screenSize.getScreenWidth();
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
         int fixedTopY = (screenHeight * 2 / 3) - 100; // Fixed top Y position
         int previewWidth = 300;
         int previewX = screenWidth - previewWidth - 50; // Right side with margin

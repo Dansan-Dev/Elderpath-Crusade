@@ -19,6 +19,9 @@ public class CommanderCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "Commander"; }
+
+    @Override
     protected String getCardName() { return "Commander"; }
 
     @Override

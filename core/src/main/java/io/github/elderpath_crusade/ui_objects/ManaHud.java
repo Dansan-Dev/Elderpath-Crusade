@@ -25,8 +25,8 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
     private final Text p2Text;
 
     public ManaHud() {
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         // Initial positions; will be updated each render to remain anchored
         p1Text = new Text("", FontType.SILKSCREEN, 16, 16, 0, Color.WHITE)
             .withFontSize(FontSize.CAPTION);
@@ -37,8 +37,8 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
 
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
-        int screenW = SettingsManager.screenSize.getScreenWidth();
-        int screenH = SettingsManager.screenSize.getScreenHeight();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         PlayerManager.PlayerState p1 = GameContext.get().getPlayerManager().get(PieceAlignment.P1);
         PlayerManager.PlayerState p2 = GameContext.get().getPlayerManager().get(PieceAlignment.P2);

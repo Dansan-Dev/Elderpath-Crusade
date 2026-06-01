@@ -10,18 +10,16 @@ import java.util.Map;
 
 public class InfoDataManager {
     private static final String INFO_FILE = "info.yml";
-    private static Map<String, Object> data;
+    private Map<String, Object> data;
 
-    static {
-        loadData();
-    }
+    public InfoDataManager() {}
 
-    private static void loadData() {
+    private void ensureLoaded() {
+        if (data != null) return;
         try {
             FileHandle file = Gdx.files.internal(INFO_FILE);
             if (file.exists()) {
-                Yaml yaml = new Yaml();
-                data = yaml.load(file.readString());
+                data = new Yaml().load(file.readString());
             } else {
                 data = Collections.emptyMap();
             }
@@ -31,13 +29,16 @@ public class InfoDataManager {
         }
     }
 
-    public static String getTitle(String category) {
+    public String getTitle(String category) {
+        ensureLoaded();
         Map<String, Object> categoryData = getCategoryData(category);
         Object title = categoryData.get("title");
         return title != null ? title.toString() : category;
     }
 
-    public static List<Map<String, String>> getEntries(String category) {
+    @SuppressWarnings("unchecked")
+    public List<Map<String, String>> getEntries(String category) {
+        ensureLoaded();
         Map<String, Object> categoryData = getCategoryData(category);
         Object entries = categoryData.get("entries");
         if (entries instanceof List) {
@@ -47,7 +48,7 @@ public class InfoDataManager {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> getCategoryData(String category) {
+    private Map<String, Object> getCategoryData(String category) {
         if (data != null && data.containsKey(category)) {
             Object catData = data.get(category);
             if (catData instanceof Map) {
@@ -57,7 +58,7 @@ public class InfoDataManager {
         return Collections.emptyMap();
     }
 
-    public static String getRawFileContent(String fileName) {
+    public String getRawFileContent(String fileName) {
         try {
             FileHandle file = Gdx.files.internal(fileName);
             if (file.exists()) {

@@ -60,7 +60,7 @@ public class InformationSelectionRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screenCenter = SettingsManager.screenSize.getScreenCenter();
+        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int screenCenterX = screenCenter[0];
         int screenCenterY = screenCenter[1];
 

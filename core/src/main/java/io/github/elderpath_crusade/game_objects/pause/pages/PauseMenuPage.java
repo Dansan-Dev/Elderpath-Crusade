@@ -24,7 +24,7 @@ public class PauseMenuPage extends HigherOrderTexture {
         "PAUSED",
         FontType.SILKSCREEN,
         0,
-        SettingsManager.screenSize.getScreenHeight() - 200,
+        GameContext.get().getSettingsManager().screenSize.getScreenHeight() - 200,
         0,
         ColorSettings.TEXT_DEFAULT.getColor()
     ).withFontSize(io.github.elderpath_crusade.utils.FontSize.TITLE_LARGE).asPauseUI();

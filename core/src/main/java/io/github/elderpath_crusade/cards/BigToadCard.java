@@ -19,6 +19,9 @@ public class BigToadCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "BigToad"; }
+
+    @Override
     protected String getCardName() { return "Big Toad"; }
 
     @Override

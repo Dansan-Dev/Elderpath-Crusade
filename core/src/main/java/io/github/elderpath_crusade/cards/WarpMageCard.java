@@ -21,6 +21,9 @@ public class WarpMageCard extends SummonCard {
     }
 
     @Override
+    protected String getRegistryKey() { return "WarpMage"; }
+
+    @Override
     protected String getCardName() { return "Warp Mage"; }
 
     @Override

@@ -80,7 +80,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility {
 
         // Bot path vs Human path delegated to sub-methods for clarity
         boolean botControlled = owner.getAlignment() == PieceAlignment.P2
-                && SettingsManager.debug.enableP2Bot
+                && GameContext.get().getSettingsManager().debug.enableP2Bot
                 && GameContext.get().getTurnManager().getCurrentPlayer() == owner.getAlignment();
         if (botControlled) {
             handleBotFreeStrike(board, toRow, toCol, attackables);
