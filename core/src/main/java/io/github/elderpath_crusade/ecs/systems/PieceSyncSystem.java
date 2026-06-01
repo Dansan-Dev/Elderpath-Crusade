@@ -63,6 +63,11 @@ public class PieceSyncSystem extends EntitySystem {
         getEngine().addEntity(entity);
         entityMap.put(event.pieceId(), entity);
         piece.setEntity(entity);
+        // Link Board.Position to ECS PositionComponent
+        Object posObj = piece.getData(io.github.elderpath_crusade.enums.GamePieceData.POSITION);
+        if (posObj instanceof Board.Position boardPos) {
+            boardPos.linkEntity(entity);
+        }
     }
 
     private void onMove(PieceMovedEvent event) {

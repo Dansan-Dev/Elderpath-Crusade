@@ -1,7 +1,9 @@
 package io.github.elderpath_crusade.game_objects.board;
 
 import io.github.elderpath_crusade.GameContext;
+import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
@@ -143,13 +145,33 @@ public class Board extends HigherOrderTexture implements Updatable {
 
     public static class Position {
         @Getter private final Board board;
-        @Getter @Setter private int row;
-        @Getter @Setter private int col;
+        private int row;
+        private int col;
+        private PositionComponent ecsPosition;
 
         public Position(Board board, int row, int col) {
             this.board = board;
             this.row = row;
             this.col = col;
+        }
+
+        public void linkEntity(Entity entity) {
+            if (entity != null) {
+                this.ecsPosition = entity.getComponent(PositionComponent.class);
+            }
+        }
+
+        public int getRow() { return ecsPosition != null ? ecsPosition.row : row; }
+        public int getCol() { return ecsPosition != null ? ecsPosition.col : col; }
+
+        public void setRow(int row) {
+            if (ecsPosition != null) ecsPosition.row = row;
+            else this.row = row;
+        }
+
+        public void setCol(int col) {
+            if (ecsPosition != null) ecsPosition.col = col;
+            else this.col = col;
         }
 
         public boolean isValid(int row, int col) {

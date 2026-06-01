@@ -56,6 +56,15 @@ public class MonsterGamePiece extends GamePiece {
         }
     }
 
+    /**
+     * O(1) position lookup from the ECS entity's PositionComponent.
+     * Returns null if no entity is linked.
+     */
+    public io.github.elderpath_crusade.ecs.components.PositionComponent getPositionComponent() {
+        if (entity == null) return null;
+        return entity.getComponent(io.github.elderpath_crusade.ecs.components.PositionComponent.class);
+    }
+
     // ---- Abilities API ----
     public void addAbility(Ability ability) {
         if (ability == null) return;
