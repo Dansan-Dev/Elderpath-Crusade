@@ -6,16 +6,25 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.EntitySystem;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
+import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.interfaces.Renderable;
+import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 
 /**
  * ECS system that renders pieces using SpriteComponent + PositionComponent.
- * Board delegates piece rendering to this system.
+ * Applies stun/exhaustion tinting based on piece status.
  */
 public class PieceRenderSystem extends EntitySystem {
+
+    private static final Color STUN_TINT = new Color(1f, 0.22f, 0.71f, 1f);
+    private static final Color DARKEN_TINT = new Color(0.6f, 0.6f, 0.6f, 1.0f);
 
     private final ComponentMapper<SpriteComponent> spriteMapper = ComponentMapper.getFor(SpriteComponent.class);
     private final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
@@ -32,14 +41,7 @@ public class PieceRenderSystem extends EntitySystem {
     }
 
     /**
-     * Render all piece entities at their grid positions.
-     * @param batch the SpriteBatch (must already be between begin/end)
-     * @param zLevel the current z-level being rendered
-     * @param isPaused whether the game is paused
-     * @param boardX the board's absolute X offset in pixels
-     * @param boardY the board's absolute Y offset in pixels
-     * @param plotWidth width of a single plot in pixels
-     * @param plotHeight height of a single plot in pixels
+     * Render all piece entities at their grid positions with status effect tinting.
      */
     public void render(SpriteBatch batch, int zLevel, boolean isPaused,
                        int boardX, int boardY, int plotWidth, int plotHeight) {
@@ -52,13 +54,40 @@ public class PieceRenderSystem extends EntitySystem {
 
             int absX = boardX + pos.col * plotWidth;
             int absY = boardY + pos.row * plotHeight;
-            sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+
+            MonsterGamePiece piece = sprite.piece;
+            if (piece != null && piece.isStunned()) {
+                Color original = batch.getColor().cpy();
+                batch.setColor(STUN_TINT);
+                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+                batch.setColor(original);
+                renderStunSymbol(batch, zLevel, absX, absY, plotWidth, plotHeight);
+            } else if (piece != null && piece.isExhausted()) {
+                PieceAlignment currentPlayer = GameContext.get().getTurnManager().getCurrentPlayer();
+                if (piece.getAlignment() == currentPlayer) {
+                    Color original = batch.getColor().cpy();
+                    batch.setColor(DARKEN_TINT);
+                    sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+                    batch.setColor(original);
+                } else {
+                    sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+                }
+            } else {
+                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+            }
         }
     }
 
-    /**
-     * Get the number of entities this system would render.
-     */
+    private void renderStunSymbol(SpriteBatch batch, int zLevel, int absX, int absY, int plotWidth, int plotHeight) {
+        Texture stunTexture = GameContext.get().getTextureManager().getTexture(ImagePathSpritesAndAnimations.STUN.getPath());
+        if (stunTexture == null) return;
+
+        int symbolSize = Math.min(plotWidth, plotHeight) * 3 / 5;
+        int symbolX = absX + (plotWidth - symbolSize) / 2;
+        int symbolY = absY + (plotHeight - symbolSize) / 2;
+        batch.draw(stunTexture, symbolX, symbolY, symbolSize, symbolSize);
+    }
+
     public int getEntityCount() {
         return entities != null ? entities.size() : 0;
     }

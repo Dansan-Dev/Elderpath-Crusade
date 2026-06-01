@@ -22,7 +22,7 @@ public final class MovementUtils {
         if (board.isOccupied(toRow, toCol)) return false;
 
         board.moveGamePiece(fromRow, fromCol, toRow, toCol);
-        piece.updateData(GamePieceData.POSITION, new Board.Position(board, toRow, toCol));
+        updatePiecePosition(piece, board, toRow, toCol);
         piece.updateData(GamePieceData.MOVE_CAUSE, "MANUAL");
 
         try { piece.notifyMoved(fromRow, fromCol, toRow, toCol); } catch (Exception ignored) {}
@@ -51,7 +51,7 @@ public final class MovementUtils {
         if (board.isOccupied(toRow, toCol)) return false;
 
         board.moveGamePiece(fromRow, fromCol, toRow, toCol);
-        piece.updateData(GamePieceData.POSITION, new Board.Position(board, toRow, toCol));
+        updatePiecePosition(piece, board, toRow, toCol);
         piece.updateData(GamePieceData.MOVE_CAUSE, cause != null ? cause : "ABILITY");
 
         try { piece.notifyMoved(fromRow, fromCol, toRow, toCol); } catch (Exception ignored) {}
@@ -80,8 +80,8 @@ public final class MovementUtils {
         board.setGamePiecePos(piece2Row, piece2Col, piece1);
         board.setGamePiecePos(piece1Row, piece1Col, piece2);
 
-        piece1.updateData(GamePieceData.POSITION, new Board.Position(board, piece2Row, piece2Col));
-        piece2.updateData(GamePieceData.POSITION, new Board.Position(board, piece1Row, piece1Col));
+        updatePiecePosition(piece1, board, piece2Row, piece2Col);
+        updatePiecePosition(piece2, board, piece1Row, piece1Col);
 
         String swapCause = cause != null ? cause : "ABILITY";
         piece1.updateData(GamePieceData.MOVE_CAUSE, swapCause);
@@ -94,12 +94,25 @@ public final class MovementUtils {
                 piece1.getId().toString(), piece1.getAlignment(),
                 piece1Row, piece1Col, piece2Row, piece2Col,
                 PieceMovedEvent.MovementType.FORCED, swapCause, abilityName));
-
         TypedEventBus.get().emit(new PieceMovedEvent(
                 piece2.getId().toString(), piece2.getAlignment(),
                 piece2Row, piece2Col, piece1Row, piece1Col,
                 PieceMovedEvent.MovementType.FORCED, swapCause, abilityName));
 
         return true;
+    }
+
+    /**
+     * Update a piece's Board.Position by reusing the existing object (preserving ECS link)
+     * or creating a new one if none exists.
+     */
+    private static void updatePiecePosition(MonsterGamePiece piece, Board board, int row, int col) {
+        Object posObj = piece.getData(GamePieceData.POSITION);
+        if (posObj instanceof Board.Position pos) {
+            pos.setRow(row);
+            pos.setCol(col);
+        } else {
+            piece.updateData(GamePieceData.POSITION, new Board.Position(board, row, col));
+        }
     }
 }

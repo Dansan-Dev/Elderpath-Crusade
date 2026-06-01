@@ -73,7 +73,13 @@ public class BoardPerspectiveManager {
             for (int col = 0; col < cols; col++) {
                 GamePiece gp = pieces[row][col];
                 if (gp != null) {
-                    gp.updateData(GamePieceData.POSITION, new Board.Position(board, row, col));
+                    Object posObj = gp.getData(GamePieceData.POSITION);
+                    if (posObj instanceof Board.Position pos) {
+                        pos.setRow(row);
+                        pos.setCol(col);
+                    } else {
+                        gp.updateData(GamePieceData.POSITION, new Board.Position(board, row, col));
+                    }
                 }
             }
         }

@@ -90,6 +90,11 @@ public class MonsterGamePiece extends GamePiece {
     }
 
     public List<Ability> getAbilities() {
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
+                entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
+            if (ac != null) return ac.getAbilities();
+        }
         return Collections.unmodifiableList(abilities);
     }
 
@@ -136,6 +141,11 @@ public class MonsterGamePiece extends GamePiece {
             try { a.onDetach(); } catch (Exception ignored) {}
         }
         abilities.clear();
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
+                entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
+            if (ac != null) ac.clear();
+        }
         // Clear any lingering external modifiers targeting this piece
         // External abilities should call StatsModifier.clear(), but as a safety, remove by null source does nothing.
     }
@@ -210,23 +220,6 @@ public class MonsterGamePiece extends GamePiece {
     public boolean ignoresHostileUnitsAsBlockers() {
         for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreHostileUnitsAsBlockers) return true;
         return false;
-    }
-
-    public void attack() {
-        Optional<BoardContext> context = getBoardContext();
-        if (context.isEmpty()) return;
-
-        BoardContext ctx = context.get();
-        Board.Position pos = ctx.position;
-        Board board = ctx.board;
-        int currentRow = ctx.position.getRow();
-        int currentCol = ctx.position.getCol();
-
-        int newRow = currentRow + 1;
-        if (!pos.isValid(newRow, currentCol)) return;
-        if (!(board.getGamePieceAtPos(newRow, currentCol) instanceof MonsterGamePiece mgp)) return;
-        mgp.stats.dealDamage(stats.getDamage());
-        if (mgp.stats.getCurrentHealth()<=0) mgp.die();
     }
 
     /**

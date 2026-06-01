@@ -52,7 +52,7 @@ public class PieceSyncSystem extends EntitySystem {
                 piece.getStats().getSpeed(),
                 piece.getStats().getActions()
         ));
-        entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()));
+        entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()).setPiece(piece));
 
         AbilityComponent ac = new AbilityComponent();
         for (Ability a : piece.getAbilities()) {
@@ -79,6 +79,11 @@ public class PieceSyncSystem extends EntitySystem {
     private void onDeath(PieceDiedEvent event) {
         Entity entity = entityMap.remove(event.pieceId());
         if (entity == null) return;
+        // Clear piece's entity reference to prevent stale delegation
+        SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
+        if (sprite != null && sprite.piece != null) {
+            sprite.piece.setEntity(null);
+        }
         getEngine().removeEntity(entity);
     }
 }
