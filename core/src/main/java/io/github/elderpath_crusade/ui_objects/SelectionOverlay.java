@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.ui_objects;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
@@ -32,9 +33,9 @@ public class SelectionOverlay extends LowestOrderTexture implements UIRenderable
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
         if (isPaused) return; // no overlay while paused
-        if (!InteractionManager.hasActiveSelection()) return;
+        if (!GameContext.get().getInteractionManager().hasActiveSelection()) return;
 
-        String msg = InteractionManager.getOverlayText();
+        String msg = GameContext.get().getInteractionManager().getOverlayText();
         if (msg.isEmpty()) return;
 
         // Update text content if changed

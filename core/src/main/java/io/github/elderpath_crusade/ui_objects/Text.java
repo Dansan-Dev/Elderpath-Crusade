@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.settings.InputFunction;
 import io.github.elderpath_crusade.interfaces.*;
 import io.github.elderpath_crusade.managers.FontManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.InputManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
@@ -254,7 +255,7 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     }
 
     private boolean isClicked() {
-        return InputManager.getFunctionActivation(InputFunction.LEFT_CLICK);
+        return GameContext.get().getInputManager().getFunctionActivation(InputFunction.LEFT_CLICK);
     }
 
     @Override

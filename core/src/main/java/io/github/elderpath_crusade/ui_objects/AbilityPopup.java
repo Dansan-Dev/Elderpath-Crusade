@@ -57,7 +57,7 @@ public class AbilityPopup extends HigherOrderUI {
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
         if (isPaused) return;
-        if (InteractionManager.hasActiveSelection()) {
+        if (GameContext.get().getInteractionManager().hasActiveSelection()) {
             clearAllBubbles();
             focusedPieceId = null;
             stickyActive = false;
@@ -73,7 +73,7 @@ public class AbilityPopup extends HigherOrderUI {
         while (it.hasNext()) {
             Map.Entry<AbilityKey, AbilityBubble> e = it.next();
             if (!desired.contains(e.getKey())) {
-                GraphicsManager.removeUIRenderable(e.getValue());
+                GameContext.get().getGraphicsManager().removeUIRenderable(e.getValue());
                 getRenderableUIs().remove(e.getValue());
                 it.remove();
             }
@@ -84,7 +84,7 @@ public class AbilityPopup extends HigherOrderUI {
 
     private void clearAllBubbles() {
         for (AbilityBubble b : new ArrayList<>(bubbles.values())) {
-            GraphicsManager.removeUIRenderable(b);
+            GameContext.get().getGraphicsManager().removeUIRenderable(b);
             getRenderableUIs().remove(b);
         }
         bubbles.clear();
@@ -257,7 +257,7 @@ public class AbilityPopup extends HigherOrderUI {
                 }
                 bubbles.put(key, bubble);
                 getRenderableUIs().add(bubble);
-                GraphicsManager.addUIRenderable(bubble);
+                GameContext.get().getGraphicsManager().addUIRenderable(bubble);
             }
             bubble.getBounds().setX(x);
             bubble.getBounds().setY(y);

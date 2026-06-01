@@ -36,16 +36,17 @@ public class Main extends ApplicationAdapter {
         SettingsManager.sound.setMasterVolume(7);
         MusicManager.playLoopingMusic("Evening_Harmony.mp3");
 
-        RoomManager.initialize();
+        GameContext.get().getRoomManager().initialize();
     }
 
     private void handleInput() {
-        Map<InputKey, Boolean> inputKeysPressed = InputManager.getInputKeysPressed();
+        InputManager inputManager = GameContext.get().getInputManager();
+        Map<InputKey, Boolean> inputKeysPressed = inputManager.getInputKeysPressed();
         Map<InputHandlerData, Object> data = getInputHandlerData();
         inputKeysPressed.entrySet().stream()
             .filter(Map.Entry::getValue)
             .forEach(e -> {
-                    InputManager.activateInputHandler(e.getKey(), data);
+                    inputManager.activateInputHandler(e.getKey(), data);
                 }
             );
     }
@@ -63,18 +64,18 @@ public class Main extends ApplicationAdapter {
         float delta = com.badlogic.gdx.Gdx.graphics.getDeltaTime();
         // Input (disabled when interactions are locked)
         if (!GameContext.get().getGameManager().isInteractionsLocked()) {
-            InputManager.checkInput();
+            GameContext.get().getInputManager().checkInput();
             handleInput();
         }
 
         // UPDATE
-        HighlightManager.update();
-        GraphicsManager.update(delta);
+        GameContext.get().getHighlightManager().update();
+        GameContext.get().getGraphicsManager().update(delta);
 
         // RENDER
-        if (GameContext.get().getGameManager().isPaused()) GraphicsManager.blurredDraw(GraphicsManager.getBatch());
-        else GraphicsManager.draw(GraphicsManager.getBatch());
-        GraphicsManager.drawPauseUI(GraphicsManager.getBatch());
+        if (GameContext.get().getGameManager().isPaused()) GameContext.get().getGraphicsManager().blurredDraw(GameContext.get().getGraphicsManager().getBatch());
+        else GameContext.get().getGraphicsManager().draw(GameContext.get().getGraphicsManager().getBatch());
+        GameContext.get().getGraphicsManager().drawPauseUI(GameContext.get().getGraphicsManager().getBatch());
 
         // SOUND
         MusicManager.update();
@@ -82,7 +83,7 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void dispose() {
-        GraphicsManager.getBatch().dispose();
+        GameContext.get().getGraphicsManager().getBatch().dispose();
         TextureManager.dispose();
         GraphicUtils.dispose();
     }

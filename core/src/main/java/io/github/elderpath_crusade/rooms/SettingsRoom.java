@@ -6,7 +6,7 @@ import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.managers.RoomManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.supers.Room;
@@ -35,7 +35,7 @@ public class SettingsRoom extends Room {
         addContent(toggleFullscreen);
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
-            .withOnClick((e) -> RoomManager.gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());

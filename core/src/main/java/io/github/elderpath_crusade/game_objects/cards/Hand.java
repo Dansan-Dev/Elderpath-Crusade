@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.interfaces.Clickable;
-import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public class Hand extends HigherOrderTexture {
     public void addCard(Card card) {
         cards.add(card);
         // Register with InteractionManager if the card is clickable
-        InteractionManager.addClickable(card);
+        GameContext.get().getInteractionManager().addClickable(card);
         updateBounds();
     }
 
@@ -76,7 +76,7 @@ public class Hand extends HigherOrderTexture {
     public void removeCard(Card card) {
         if (card == null) return;
         cards.remove(card);
-        InteractionManager.removeClickable(card);
+        GameContext.get().getInteractionManager().removeClickable(card);
         updateBounds();
     }
 

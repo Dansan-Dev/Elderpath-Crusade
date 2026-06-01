@@ -12,7 +12,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.managers.RoomManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.rooms.DraftRoom;
 import io.github.elderpath_crusade.rooms.InformationSelectionRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
@@ -53,19 +53,19 @@ public class MainMenuNavbar extends HigherOrderUI {
         // Build buttons (width increased from 100 to 120 for better appearance)
         int buttonWidth = 140;
         playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> RoomManager.gotoRoom(DraftRoom::get), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         localMultiplayerButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Local", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> RoomManager.gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> RoomManager.gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
@@ -73,7 +73,7 @@ public class MainMenuNavbar extends HigherOrderUI {
 //        infoButton = Button
 //                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Info", FontType.SILKSCREEN,
 //                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-//                .withOnClick((e) -> RoomManager.gotoRoom(InformationSelectionRoom::get),
+//                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(InformationSelectionRoom::get),
 //                        ClickableEffectData.getImmediate())
 //                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
 //                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())

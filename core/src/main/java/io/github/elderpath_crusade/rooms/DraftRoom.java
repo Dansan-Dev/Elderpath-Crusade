@@ -10,7 +10,6 @@ import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.cards.DraftCard;
 import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
-import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.managers.MusicManager;
 import io.github.elderpath_crusade.supers.Room;
@@ -160,7 +159,7 @@ public class DraftRoom extends Room {
         currentOptions.clear();
         draftOptionsHand.getCards().forEach(card -> {
             draftOptionsHand.removeCard(card);
-            InteractionManager.removeClickable(card);
+            GameContext.get().getInteractionManager().removeClickable(card);
         });
 
         for (int i = 0; i < CARDS_PER_PICK && i < available.size(); i++) {
@@ -202,7 +201,7 @@ public class DraftRoom extends Room {
         // Clear current options
         currentOptions.forEach(card -> {
             draftOptionsHand.removeCard(card);
-            InteractionManager.removeClickable(card);
+            GameContext.get().getInteractionManager().removeClickable(card);
         });
         currentOptions.clear();
 
@@ -265,17 +264,17 @@ public class DraftRoom extends Room {
 
             // If P1 just finished, transition to P2 draft
             if (draftingPlayer == PieceAlignment.P1) {
-                RoomManager.gotoRoom(() -> new DraftRoom(PieceAlignment.P2, true));
+                GameContext.get().getRoomManager().gotoRoom(() -> new DraftRoom(PieceAlignment.P2, true));
             } else {
                 // P2 finished, transition to LocalMatchRoom
-                RoomManager.gotoRoom(LocalMatchRoom::get);
+                GameContext.get().getRoomManager().gotoRoom(LocalMatchRoom::get);
             }
         } else {
             // Store drafted deck in DeckManager (legacy method for P1)
             GameContext.get().getDeckManager().setDraftedDeck(cardCreators);
 
             // Transition to DemoRoom
-            RoomManager.gotoRoom(DemoRoom::get);
+            GameContext.get().getRoomManager().gotoRoom(DemoRoom::get);
         }
     }
 

@@ -39,8 +39,8 @@ public final class BotManager {
             if (!SettingsManager.debug.enableP2Bot) return;
             if (evt.player() != PieceAlignment.P2) return;
             if (GameContext.get().getGameManager().isPaused()) return;
-            if (InteractionManager.hasActiveSelection()) {
-                InteractionManager.cancelSelection();
+            if (GameContext.get().getInteractionManager().hasActiveSelection()) {
+                GameContext.get().getInteractionManager().cancelSelection();
             }
             Timer.schedule(new Timer.Task() {
                 @Override

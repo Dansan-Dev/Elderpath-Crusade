@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import com.badlogic.gdx.Gdx;
+import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -306,7 +307,7 @@ public class Card extends HigherOrderTexture implements Clickable {
     }
 
     private void renderBorderAnimation(SpriteBatch batch, int zLevel, int x, int y) {
-        boolean active = InteractionManager.hasActiveSelection() && InteractionManager.getActiveSource() == this;
+        boolean active = GameContext.get().getInteractionManager().hasActiveSelection() && GameContext.get().getInteractionManager().getActiveSource() == this;
         float dt = Gdx.graphics.getDeltaTime();
         if (active) borderProgress = Math.min(1f, borderProgress + borderSpeed * dt);
         else borderProgress = Math.max(0f, borderProgress - borderSpeed * dt);

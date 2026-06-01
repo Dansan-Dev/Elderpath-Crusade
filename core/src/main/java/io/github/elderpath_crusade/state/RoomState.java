@@ -3,8 +3,6 @@ package io.github.elderpath_crusade.state;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.GraphicsManager;
 import io.github.elderpath_crusade.managers.InteractionManager;
-import io.github.elderpath_crusade.managers.HighlightManager;
-import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.SelectionOverlay;
 
@@ -24,19 +22,19 @@ public class RoomState implements GameState {
 
     @Override
     public void enter(GameContext context) {
-        GraphicsManager.clearRenderables();
-        GraphicsManager.clearUIRenderables();
-        InteractionManager.clearClickables();
+        GameContext.get().getGraphicsManager().clearRenderables();
+        GameContext.get().getGraphicsManager().clearUIRenderables();
+        GameContext.get().getInteractionManager().clearClickables();
         GameContext.get().clearBoard();
 
         room = roomSupplier.get();
-        RoomManager.currentRoom = room;
+        GameContext.get().getRoomManager().setCurrentRoom(room);
         room.showContent();
         room.showUI();
 
         // Global overlays
-        GraphicsManager.addUIRenderable(new SelectionOverlay());
-        GraphicsManager.addRenderable(HighlightManager.get());
+        GameContext.get().getGraphicsManager().addUIRenderable(new SelectionOverlay());
+        GameContext.get().getGraphicsManager().addRenderable(GameContext.get().getHighlightManager());
     }
 
     @Override
@@ -46,9 +44,9 @@ public class RoomState implements GameState {
 
     @Override
     public void exit() {
-        GraphicsManager.clearRenderables();
-        GraphicsManager.clearUIRenderables();
-        InteractionManager.clearClickables();
+        GameContext.get().getGraphicsManager().clearRenderables();
+        GameContext.get().getGraphicsManager().clearUIRenderables();
+        GameContext.get().getInteractionManager().clearClickables();
         GameContext.get().clearBoard();
         room = null;
     }

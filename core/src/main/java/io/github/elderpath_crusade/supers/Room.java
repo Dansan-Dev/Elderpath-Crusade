@@ -1,8 +1,8 @@
 package io.github.elderpath_crusade.supers;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.managers.GraphicsManager;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -29,11 +29,11 @@ public abstract class Room {
     }
 
     public void showContent() {
-        GraphicsManager.addRenderables(contents);
+        GameContext.get().getGraphicsManager().addRenderables(contents);
     }
 
     public void showUI() {
-        ui.forEach(GraphicsManager::addUIRenderable);
+        ui.forEach(r -> GameContext.get().getGraphicsManager().addUIRenderable(r));
     }
 
     /**

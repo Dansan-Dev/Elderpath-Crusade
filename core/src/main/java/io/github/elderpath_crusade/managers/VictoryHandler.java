@@ -21,8 +21,8 @@ public final class VictoryHandler {
     private static void onGameWon(GameWonEvent event) {
         PieceAlignment winner = event.winner();
         try {
-            if (InteractionManager.hasActiveSelection()) {
-                InteractionManager.cancelSelection();
+            if (GameContext.get().getInteractionManager().hasActiveSelection()) {
+                GameContext.get().getInteractionManager().cancelSelection();
             }
             GameContext.get().getGameManager().lockInteractions();
         } catch (Exception ignored) {}
@@ -30,7 +30,7 @@ public final class VictoryHandler {
             @Override
             public void run() {
                 try { GameContext.get().getGameManager().unlockInteractions(); } catch (Exception ignored) {}
-                RoomManager.gotoRoom(() -> VictoryRoom.get(winner));
+                GameContext.get().getRoomManager().gotoRoom(() -> VictoryRoom.get(winner));
             }
         }, 0.6f);
     }

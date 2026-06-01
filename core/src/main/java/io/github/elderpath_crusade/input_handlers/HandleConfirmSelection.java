@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.input_handlers;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.settings.InputHandlerData;
 import io.github.elderpath_crusade.interfaces.InputHandler;
 import io.github.elderpath_crusade.managers.GraphicsManager;
@@ -16,6 +17,6 @@ public class HandleConfirmSelection implements InputHandler {
         // Do nothing if paused; interactions are cleared on pause entry.
         boolean isPaused = (boolean) data.get(InputHandlerData.IS_PAUSED);
         if (isPaused) return;
-        InteractionManager.confirmSelection();
+        GameContext.get().getInteractionManager().confirmSelection();
     }
 }

@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.managers;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.enums.settings.PauseScreenPage;
 import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
@@ -15,41 +16,42 @@ public class GameManager {
     public void initialize() {
         SettingsManager.initialize();
         ShaderManager.initialize();
-        InputManager.initialize();
+        GameContext.get().getInputManager().initialize();
         GameContext.get().getBotManager().initialize();
         GameContext.get().getWinConditionManager().initialize();
+        PieceRegistry.load();
         CardFactory.initialize();
         GameContext.get().getVictoryHandler().initialize();
     }
 
     public void pause() {
         isPaused = true;
-        GraphicsManager.pauseAnimations();
+        GameContext.get().getGraphicsManager().pauseAnimations();
         pauseInputHandlers();
     }
 
     public void unpause() {
         isPaused = false;
-        GraphicsManager.unpauseAnimations();
+        GameContext.get().getGraphicsManager().unpauseAnimations();
         unpauseInputHandlers();
         PauseScreen.setCurrentPage(PauseScreenPage.NONE);
     }
 
     public void lockInteractions() {
         interactionsLocked = true;
-        InputManager.setPaused(true);
+        GameContext.get().getInputManager().setPaused(true);
     }
 
     public void unlockInteractions() {
         interactionsLocked = false;
-        InputManager.setPaused(false);
+        GameContext.get().getInputManager().setPaused(false);
     }
 
     private void pauseInputHandlers() {
-        InputManager.setPaused(true);
+        GameContext.get().getInputManager().setPaused(true);
     }
 
     private void unpauseInputHandlers() {
-        InputManager.setPaused(false);
+        GameContext.get().getInputManager().setPaused(false);
     }
 }

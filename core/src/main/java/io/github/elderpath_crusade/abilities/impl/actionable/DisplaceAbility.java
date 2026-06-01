@@ -158,7 +158,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
             return distanceMaxOfBothDimensions <= 2;
         } else if (targetIndex == 2) {
             // Second target: must be a plot that is cardinally adjacent to the first target and empty
-            List<CustomBox> activeTargets = InteractionManager.getActiveTargets();
+            List<CustomBox> activeTargets = GameContext.get().getInteractionManager().getActiveTargets();
             if (activeTargets == null || activeTargets.isEmpty()) return false;
             CustomBox firstTarget = activeTargets.get(0);
             Plot firstPlot = resolveToPlot(board, firstTarget);
@@ -221,7 +221,7 @@ public class DisplaceAbility implements ActionableAbility, TargetFilter {
             }
         } else if (targetIndex == 2) {
             // Return all plots that are cardinally adjacent to the first selected target and empty
-            List<CustomBox> activeTargets = InteractionManager.getActiveTargets();
+            List<CustomBox> activeTargets = GameContext.get().getInteractionManager().getActiveTargets();
             if (activeTargets == null || activeTargets.isEmpty()) return null;
             CustomBox firstTarget = activeTargets.get(0);
             Plot firstPlot = resolveToPlot(board, firstTarget);

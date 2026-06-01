@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.managers.InfoDataManager;
-import io.github.elderpath_crusade.managers.RoomManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -54,7 +54,7 @@ public class LicenseRoom extends Room {
                 backButton = Button
                                 .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN,
                                                 FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 50, 0)
-                                .withOnClick((e) -> RoomManager.gotoRoom(() -> TextInfoRoom.get("legal")),
+                                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> TextInfoRoom.get("legal")),
                                                 ClickableEffectData.getImmediate())
                                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())

@@ -25,17 +25,19 @@ import java.util.Optional;
  */
 public class InputManager {
     // Maps input key to if it is pressed
-    @Getter private static final Map<InputKey, Boolean> inputKeysPressed = new HashMap<>();
+    @Getter private final Map<InputKey, Boolean> inputKeysPressed = new HashMap<>();
 
     // Maps input key to input func
-    @Getter private static final Map<InputKey, InputFunction> inputKeyMappings = new HashMap<>();
+    @Getter private final Map<InputKey, InputFunction> inputKeyMappings = new HashMap<>();
 
     // Maps Input func to function handler
-    @Getter private static final Map<InputFunction, InputHandler> inputHandlers = new HashMap<>();
+    @Getter private final Map<InputFunction, InputHandler> inputHandlers = new HashMap<>();
 
-    @Getter @Setter private static boolean isPaused = false;
+    @Getter @Setter private boolean isPaused = false;
 
-    public static void initialize() {
+    public InputManager() {}
+
+    public void initialize() {
         for (InputKey key : InputKey.values()) {
             setInput(key, InputFunction.UNBOUND);
         }
@@ -51,7 +53,7 @@ public class InputManager {
         initializeInputHandlers();
     }
 
-    public static void initializeInputHandlers() {
+    public void initializeInputHandlers() {
         inputHandlers.put(InputFunction.LEFT_CLICK, new HandleLeftClick());
         inputHandlers.put(InputFunction.RIGHT_CLICK, new HandleRightClick());
         inputHandlers.put(InputFunction.PAUSE_MENU, new HandlePause());
@@ -61,15 +63,15 @@ public class InputManager {
         inputHandlers.put(InputFunction.UNBOUND, new HandleUnbound());
     }
 
-    public static void setInput(InputKey key, InputFunction value) {
+    public void setInput(InputKey key, InputFunction value) {
         inputKeyMappings.put(key, value);
     }
 
-    public static InputFunction getInput(InputKey key) {
+    public InputFunction getInput(InputKey key) {
         return inputKeyMappings.get(key);
     }
 
-    public static void checkInput() {
+    public void checkInput() {
         for (InputKey key : InputKey.values()) {
             boolean isPressed = (key.isKey() ?
                 Gdx.input.isKeyJustPressed(key.getKeyCode()) :
@@ -78,13 +80,13 @@ public class InputManager {
         }
     }
 
-    public static void activateInputHandler(InputKey key, Map<InputHandlerData, Object> data) {
+    public void activateInputHandler(InputKey key, Map<InputHandlerData, Object> data) {
         InputFunction func = inputKeyMappings.get(key);
         InputHandler handler = inputHandlers.get(func);
         handler.handleInput(data);
     }
 
-    public static boolean getFunctionActivation(InputFunction func) {
+    public boolean getFunctionActivation(InputFunction func) {
         Optional<InputKey> optionalKey = inputKeyMappings.entrySet().stream()
             .filter(entry -> entry.getValue() == func)
             .findFirst()
@@ -92,6 +94,5 @@ public class InputManager {
         if(optionalKey.isEmpty()) return false;
         InputKey key = optionalKey.get();
         return inputKeysPressed.get(key);
-
     }
 }

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.ScreenUtils;
+import io.github.elderpath_crusade.GameContext;
 
 /**
  * Rendering orchestration and post-processing passes.
@@ -20,7 +21,7 @@ public final class RenderPipeline {
         batch.begin();
         batch.setShader(null);
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        GraphicsManager.render(batch);
+        GameContext.get().getGraphicsManager().render(batch);
         batch.end();
     }
 
@@ -73,7 +74,7 @@ public final class RenderPipeline {
 
     public static void drawPauseUI(SpriteBatch batch) {
         batch.begin();
-        GraphicsManager.renderPauseUI(batch);
+        GameContext.get().getGraphicsManager().renderPauseUI(batch);
         batch.end();
     }
 }

@@ -2,7 +2,7 @@ package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.managers.RoomManager;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -30,7 +30,7 @@ public class InformationSelectionRoom extends Room {
         creditsButton = Button
                 .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Roles & Contributions", FontType.SILKSCREEN,
                         FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, buttonHeight, 0)
-                .withOnClick((e) -> RoomManager.gotoRoom(() -> TextInfoRoom.get("credits")),
+                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> TextInfoRoom.get("credits")),
                         ClickableEffectData.getImmediate())
                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
@@ -40,7 +40,7 @@ public class InformationSelectionRoom extends Room {
         legalButton = Button
                 .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Legal Information", FontType.SILKSCREEN,
                         FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, buttonHeight, 0)
-                .withOnClick((e) -> RoomManager.gotoRoom(() -> TextInfoRoom.get("legal")),
+                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> TextInfoRoom.get("legal")),
                         ClickableEffectData.getImmediate())
                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
@@ -50,7 +50,7 @@ public class InformationSelectionRoom extends Room {
         backButton = Button
                 .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN,
                         FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, buttonHeight, 0)
-                .withOnClick((e) -> RoomManager.gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
+                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
                 .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());

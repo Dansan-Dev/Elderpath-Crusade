@@ -11,7 +11,6 @@ import io.github.elderpath_crusade.enums.settings.PauseScreenPage;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
 import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.rooms.MainMenuRoom;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.utils.MenuLayout;
@@ -63,7 +62,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick(
                     (e) -> {
-                        RoomManager.gotoRoom(MainMenuRoom::get);
+                        GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get);
                         GameContext.get().getGameManager().unpause();
                     },
                     ClickableEffectData.getImmediate()

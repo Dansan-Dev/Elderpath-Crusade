@@ -1,8 +1,8 @@
 package io.github.elderpath_crusade.utils;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.Clickable;
-import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 
@@ -15,9 +15,8 @@ public final class ClickableRegistryUtil {
     public static void sendClickables(HigherOrderTexture texture) {
         texture.getRenderables().forEach(r -> {
             if (r instanceof Clickable clickable) {
-                // Skip Plots as they are managed via GameContext O(1) lookups in InteractionManager
                 if (!(r instanceof Plot)) {
-                    InteractionManager.addClickable(clickable);
+                    GameContext.get().getInteractionManager().addClickable(clickable);
                 }
             } else if (r instanceof HigherOrderTexture higherOrderTexture) {
                 sendClickables(higherOrderTexture);
@@ -29,7 +28,7 @@ public final class ClickableRegistryUtil {
         texture.getRenderables().forEach(r -> {
             if (r instanceof Clickable clickable) {
                 if (!(r instanceof Plot)) {
-                    InteractionManager.removeClickable(clickable);
+                    GameContext.get().getInteractionManager().removeClickable(clickable);
                 }
             } else if (r instanceof HigherOrderTexture higherOrderTexture) {
                 retractClickables(higherOrderTexture);
@@ -40,7 +39,7 @@ public final class ClickableRegistryUtil {
     public static void sendUIClickables(HigherOrderUI ui) {
         ui.getRenderableUIs().forEach(r -> {
             if (r instanceof Clickable clickable) {
-                InteractionManager.addClickable(clickable);
+                GameContext.get().getInteractionManager().addClickable(clickable);
             } else if (r instanceof HigherOrderUI higherOrderUI) {
                 sendUIClickables(higherOrderUI);
             }
@@ -50,7 +49,7 @@ public final class ClickableRegistryUtil {
     public static void retractUIClickables(HigherOrderUI ui) {
         ui.getRenderableUIs().forEach(r -> {
             if (r instanceof Clickable clickable) {
-                InteractionManager.removeClickable(clickable);
+                GameContext.get().getInteractionManager().removeClickable(clickable);
             } else if (r instanceof HigherOrderUI higherOrderUI) {
                 retractUIClickables(higherOrderUI);
             }

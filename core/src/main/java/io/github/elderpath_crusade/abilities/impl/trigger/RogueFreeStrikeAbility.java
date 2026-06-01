@@ -171,7 +171,7 @@ public class RogueFreeStrikeAbility implements TriggeredAbility {
             // Execute free attack via centralized helper (does not spend an action)
             AbilityUtils.performAttack(board, owner, enemy, toRow, toCol, dr, dc);
         };
-        InteractionManager.requestPick(data, filter, onPicked);
+        GameContext.get().getInteractionManager().requestPick(data, filter, onPicked);
     }
 
     // Helper to resolve either a Plot or a GamePiece into a Plot on the given board

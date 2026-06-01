@@ -31,19 +31,16 @@ import java.util.*;
  */
 public class HighlightManager implements Renderable {
 
-    private static final HighlightManager INSTANCE = new HighlightManager();
-    public static HighlightManager get() { return INSTANCE; }
-
-    private HighlightManager() {}
+    public HighlightManager() {}
 
     private static final float HIGHLIGHT_ANIMATION_SPEED = 10f;
 
-    private static final Set<Plot> highlightedPlots = new HashSet<>();
-    private static final Set<Plot> candidatePlots = new HashSet<>();
-    private static final Set<Plot> attackCandidatePlots = new HashSet<>();
-    private static final Set<Plot> friendlyCandidatePlots = new HashSet<>();
+    private final Set<Plot> highlightedPlots = new HashSet<>();
+    private final Set<Plot> candidatePlots = new HashSet<>();
+    private final Set<Plot> attackCandidatePlots = new HashSet<>();
+    private final Set<Plot> friendlyCandidatePlots = new HashSet<>();
 
-    private static final Map<Plot, HighlightState> states = new HashMap<>();
+    private final Map<Plot, HighlightState> states = new HashMap<>();
 
     private static class HighlightState {
         float selectedProgress = 0f;
@@ -56,7 +53,7 @@ public class HighlightManager implements Renderable {
         }
     }
 
-    public static void update() {
+    public void update() {
         // 1. Clear all existing highlights
         highlightedPlots.clear();
         candidatePlots.clear();
@@ -64,8 +61,8 @@ public class HighlightManager implements Renderable {
         friendlyCandidatePlots.clear();
 
         // 2. Determine what should be highlighted based on InteractionManager state
-        if (InteractionManager.hasActiveSelection()) {
-            CustomBox source = InteractionManager.getActiveSource();
+        if (GameContext.get().getInteractionManager().hasActiveSelection()) {
+            CustomBox source = GameContext.get().getInteractionManager().getActiveSource();
             if (source != null) {
                 // 3. Highlight currently selected targets (blue-white border)
                 updateSelectedTargetHighlights();
@@ -85,7 +82,7 @@ public class HighlightManager implements Renderable {
         updateAnimationStates();
     }
 
-    private static void updateAnimationStates() {
+    private void updateAnimationStates() {
         float dt = Gdx.graphics.getDeltaTime();
 
         // Ensure states exist for all currently highlighted plots
@@ -117,7 +114,7 @@ public class HighlightManager implements Renderable {
         }
     }
 
-    private static float advanceProgress(float current, boolean active, float dt) {
+    private float advanceProgress(float current, boolean active, float dt) {
         if (active) return Math.min(1f, current + HIGHLIGHT_ANIMATION_SPEED * dt);
         else return Math.max(0f, current - HIGHLIGHT_ANIMATION_SPEED * dt);
     }
@@ -186,13 +183,13 @@ public class HighlightManager implements Renderable {
     @Override public Box getBounds() { return null; }
     @Override public void setBounds(Box bounds) {}
 
-    public static boolean isHighlighted(Plot p) { return highlightedPlots.contains(p); }
-    public static boolean isCandidate(Plot p) { return candidatePlots.contains(p); }
-    public static boolean isAttackCandidate(Plot p) { return attackCandidatePlots.contains(p); }
-    public static boolean isFriendlyCandidate(Plot p) { return friendlyCandidatePlots.contains(p); }
+    public boolean isHighlighted(Plot p) { return highlightedPlots.contains(p); }
+    public boolean isCandidate(Plot p) { return candidatePlots.contains(p); }
+    public boolean isAttackCandidate(Plot p) { return attackCandidatePlots.contains(p); }
+    public boolean isFriendlyCandidate(Plot p) { return friendlyCandidatePlots.contains(p); }
 
-    private static void updateSelectedTargetHighlights() {
-        List<CustomBox> targets = InteractionManager.getActiveTargets();
+    private void updateSelectedTargetHighlights() {
+        List<CustomBox> targets = GameContext.get().getInteractionManager().getActiveTargets();
         if (targets.isEmpty()) return;
 
         for (CustomBox target : targets) {
@@ -209,7 +206,7 @@ public class HighlightManager implements Renderable {
         }
     }
 
-    private static void updateMovementAndAttackHighlights(Plot sourcePlot) {
+    private void updateMovementAndAttackHighlights(Plot sourcePlot) {
         Board board = sourcePlot.getBoard(); // Assuming Plot has getBoard() or similar.
         // Wait, Plot in the provided code has boardRef and setBoard(Board). I should check if it has getBoard().
         // Actually, sourcePlot.getIndices() is used now.
@@ -267,10 +264,10 @@ public class HighlightManager implements Renderable {
         }
     }
 
-    private static void updateAbilityEligibleTargetHighlights(CustomBox source) {
+    private void updateAbilityEligibleTargetHighlights(CustomBox source) {
         if (!(source instanceof TargetFilter filter)) return;
 
-        int selectedCount = InteractionManager.getSelectedCount();
+        int selectedCount = GameContext.get().getInteractionManager().getSelectedCount();
         List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
         if (eligiblePlots == null || eligiblePlots.isEmpty()) return;
 

@@ -17,8 +17,8 @@ public class HandlePause implements InputHandler {
         // When interactions are globally locked (e.g., win transition), ignore ESC entirely
         if (GameContext.get().getGameManager().isInteractionsLocked()) return;
         // If a multi-selection is in progress, first cancel it, then proceed to pause toggle
-        if (InteractionManager.hasActiveSelection()) {
-            InteractionManager.cancelSelection();
+        if (GameContext.get().getInteractionManager().hasActiveSelection()) {
+            GameContext.get().getInteractionManager().cancelSelection();
         }
         boolean isPaused = (boolean) data.get(InputHandlerData.IS_PAUSED);
         if (!isPaused) {

@@ -17,47 +17,43 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-// When you update higher order textures, you need to update the ZIndexRegistry as well
-
 public class GraphicsManager {
-    @Getter private static final List<Renderable> renderables = new ArrayList<>();;
-    @Getter private static final List<UIRenderable> uiRenderables = new ArrayList<>();;
-    @Getter private static SpriteBatch batch = new SpriteBatch();
+    @Getter private final List<Renderable> renderables = new ArrayList<>();
+    @Getter private final List<UIRenderable> uiRenderables = new ArrayList<>();
+    private SpriteBatch batch;
 
     // OPT-002: reusable to avoid per-frame allocation
-    private static final List<Renderable> updateSnapshot = new ArrayList<>();
-    private static final List<UIRenderable> uiUpdateSnapshot = new ArrayList<>();
-    private static final List<UIRenderable> uiRenderSnapshot = new ArrayList<>();
+    private final List<Renderable> updateSnapshot = new ArrayList<>();
+    private final List<UIRenderable> uiUpdateSnapshot = new ArrayList<>();
+    private final List<UIRenderable> uiRenderSnapshot = new ArrayList<>();
 
-    /**
-     * Pause all sprite animations. Called by GameManager when the game pauses.
-     * Pause state is owned by GameManager — use GameContext.get().getGameManager().isPaused() to check.
-     */
-    static void pauseAnimations() {
-        renderables.stream()
-            .filter(r -> r instanceof SpriteObject)
-            .forEach(
-                r -> ((SpriteObject) r).pauseAnimation()
-            );
+    public GraphicsManager() {}
+
+    public SpriteBatch getBatch() {
+        if (batch == null) {
+            batch = new SpriteBatch();
+        }
+        return batch;
     }
 
-    /**
-     * Unpause all sprite animations. Called by GameManager when the game unpauses.
-     */
-    static void unpauseAnimations() {
+    void pauseAnimations() {
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
-            .forEach(
-                r -> ((SpriteObject) r).unpauseAnimation()
-            );
+            .forEach(r -> ((SpriteObject) r).pauseAnimation());
     }
 
-    public static void render(SpriteBatch batch) {
+    void unpauseAnimations() {
+        renderables.stream()
+            .filter(r -> r instanceof SpriteObject)
+            .forEach(r -> ((SpriteObject) r).unpauseAnimation());
+    }
+
+    public void render(SpriteBatch batch) {
         renderGameGraphics(batch);
         renderUI(batch);
     }
 
-    public static void update(float delta) {
+    public void update(float delta) {
         if (GameContext.get().getGameManager().isPaused()) return;
         updateSnapshot.clear();
         updateSnapshot.addAll(renderables);
@@ -75,18 +71,18 @@ public class GraphicsManager {
         }
     }
 
-    public static void renderUI(SpriteBatch batch) {
+    public void renderUI(SpriteBatch batch) {
         uiRenderSnapshot.clear();
         uiRenderSnapshot.addAll(uiRenderables);
         uiRenderSnapshot.forEach(r -> r.renderUI(batch, GameContext.get().getGameManager().isPaused()));
     }
 
-    public static void renderPauseUI(SpriteBatch batch) {
+    public void renderPauseUI(SpriteBatch batch) {
         if (!GameContext.get().getGameManager().isPaused()) return;
         PauseScreen.get().renderUI(batch, false);
     }
 
-    private static void renderGameGraphics(SpriteBatch batch) {
+    private void renderGameGraphics(SpriteBatch batch) {
         boolean paused = GameContext.get().getGameManager().isPaused();
         for (Integer z : ZIndexRegistry.getZLevels()) {
             Collection<Renderable> bucket = ZIndexRegistry.getBucket(z);
@@ -101,64 +97,61 @@ public class GraphicsManager {
         }
     }
 
-    public static void addRenderable(Renderable renderable) {
+    public void addRenderable(Renderable renderable) {
         renderables.add(renderable);
         ZIndexRegistry.add(renderable);
         if (renderable instanceof Clickable clickable) {
-            InteractionManager.addClickable(clickable);
+            GameContext.get().getInteractionManager().addClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
             ClickableRegistryUtil.sendClickables(higherOrderTexture);
         }
     }
 
-    public static void addRenderables(List<Renderable> renderables) {
-        renderables.forEach(GraphicsManager::addRenderable);
+    public void addRenderables(List<Renderable> renderablesToAdd) {
+        renderablesToAdd.forEach(this::addRenderable);
     }
 
-    public static void addUIRenderable(UIRenderable renderable) {
+    public void addUIRenderable(UIRenderable renderable) {
         uiRenderables.add(renderable);
         if (renderable instanceof Clickable clickable) {
-            InteractionManager.addClickable(clickable);
+            GameContext.get().getInteractionManager().addClickable(clickable);
         } else if (renderable instanceof HigherOrderUI higherOrderUI) {
             ClickableRegistryUtil.sendUIClickables(higherOrderUI);
         }
     }
 
-    public static void removeRenderable(Renderable renderable) {
+    public void removeRenderable(Renderable renderable) {
         renderables.remove(renderable);
         ZIndexRegistry.remove(renderable);
         if (renderable instanceof Clickable clickable) {
-            InteractionManager.removeClickable(clickable);
+            GameContext.get().getInteractionManager().removeClickable(clickable);
         } else if (renderable instanceof HigherOrderTexture higherOrderTexture) {
-            // Retract nested clickables that were sent on add
             ClickableRegistryUtil.retractClickables(higherOrderTexture);
         }
     }
 
-    public static void removeRenderables(List<Renderable> renderables) {
-        renderables.forEach(GraphicsManager::removeRenderable);
+    public void removeRenderables(List<Renderable> renderablesToRemove) {
+        renderablesToRemove.forEach(this::removeRenderable);
     }
 
-    public static void removeUIRenderable(UIRenderable renderable) {
+    public void removeUIRenderable(UIRenderable renderable) {
         uiRenderables.remove(renderable);
         if (renderable instanceof Clickable clickable) {
-            InteractionManager.removeClickable(clickable);
+            GameContext.get().getInteractionManager().removeClickable(clickable);
         } else if (renderable instanceof HigherOrderUI higherOrderUI) {
-            // Retract nested clickables that were sent on add
             ClickableRegistryUtil.retractUIClickables(higherOrderUI);
         }
     }
 
-    public static void removeUIRenderables(List<UIRenderable> renderables) {
-        renderables.forEach(GraphicsManager::removeUIRenderable);
+    public void removeUIRenderables(List<UIRenderable> renderablesToRemove) {
+        renderablesToRemove.forEach(this::removeUIRenderable);
     }
 
-    public static void clearRenderables() {
+    public void clearRenderables() {
         renderables.forEach(r -> {
             if (r instanceof Clickable clickable) {
-                InteractionManager.removeClickable(clickable);
+                GameContext.get().getInteractionManager().removeClickable(clickable);
             } else if (r instanceof HigherOrderTexture higherOrderTexture) {
-                // Retract nested clickables for containers
                 ClickableRegistryUtil.retractClickables(higherOrderTexture);
             }
         });
@@ -166,27 +159,26 @@ public class GraphicsManager {
         ZIndexRegistry.clear();
     }
 
-    public static void  clearUIRenderables() {
+    public void clearUIRenderables() {
         uiRenderables.forEach(r -> {
             if (r instanceof Clickable clickable) {
-                InteractionManager.removeClickable(clickable);
+                GameContext.get().getInteractionManager().removeClickable(clickable);
             } else if (r instanceof HigherOrderUI higherOrderUI) {
-                // Retract nested clickables for UI containers
                 ClickableRegistryUtil.retractUIClickables(higherOrderUI);
             }
         });
         uiRenderables.clear();
     }
 
-    public static void draw(SpriteBatch batch) {
+    public void draw(SpriteBatch batch) {
         RenderPipeline.draw(batch);
     }
 
-    public static void blurredDraw(SpriteBatch batch) {
+    public void blurredDraw(SpriteBatch batch) {
         RenderPipeline.blurredDraw(batch);
     }
 
-    public static void drawPauseUI(SpriteBatch batch) {
+    public void drawPauseUI(SpriteBatch batch) {
         RenderPipeline.drawPauseUI(batch);
     }
 }

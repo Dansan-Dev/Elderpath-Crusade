@@ -10,7 +10,12 @@ import io.github.elderpath_crusade.managers.BotManager;
 import io.github.elderpath_crusade.managers.DeckManager;
 import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.GameModeManager;
+import io.github.elderpath_crusade.managers.GraphicsManager;
+import io.github.elderpath_crusade.managers.HighlightManager;
+import io.github.elderpath_crusade.managers.InputManager;
+import io.github.elderpath_crusade.managers.InteractionManager;
 import io.github.elderpath_crusade.managers.PlayerManager;
+import io.github.elderpath_crusade.managers.RoomManager;
 import io.github.elderpath_crusade.managers.TurnManager;
 import io.github.elderpath_crusade.managers.VictoryHandler;
 import io.github.elderpath_crusade.managers.WinConditionManager;
@@ -34,9 +39,14 @@ public class GameContext {
     @Getter private final BotManager botManager;
     @Getter private final WinConditionManager winConditionManager;
     @Getter private final GameManager gameManager;
+    @Getter private final GraphicsManager graphicsManager;
+    @Getter private final InputManager inputManager;
+    @Getter private final HighlightManager highlightManager;
+    @Getter private final InteractionManager interactionManager;
     @Getter private final GameModeManager gameModeManager;
     @Getter private final DeckManager deckManager;
     @Getter private final VictoryHandler victoryHandler;
+    @Getter private final RoomManager roomManager;
     @Getter private Board activeBoard;
     @Getter private GameSession activeSession;
 
@@ -52,9 +62,14 @@ public class GameContext {
         this.botManager = new BotManager();
         this.winConditionManager = new WinConditionManager();
         this.gameManager = new GameManager();
+        this.graphicsManager = new GraphicsManager();
+        this.inputManager = new InputManager();
+        this.highlightManager = new HighlightManager();
+        this.interactionManager = new InteractionManager();
         this.gameModeManager = new GameModeManager();
         this.deckManager = new DeckManager();
         this.victoryHandler = new VictoryHandler();
+        this.roomManager = new RoomManager();
     }
 
     public static GameContext create() {
