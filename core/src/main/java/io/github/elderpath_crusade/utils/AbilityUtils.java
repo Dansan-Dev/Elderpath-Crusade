@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.utils;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.GamePieceData;
@@ -62,8 +63,12 @@ public final class AbilityUtils {
         } catch (Exception ignored) {
         }
 
-        // Deal damage
-        defender.getStats().dealDamage(dmg);
+        // Deal damage via ECS CombatSystem when entity available
+        if (defender.getEntity() != null) {
+            GameContext.get().getCombatSystem().applyDamage(defender.getEntity(), dmg);
+        } else {
+            defender.getStats().dealDamage(dmg);
+        }
 
         // Emit attack event
         TypedEventBus.get().emit(new PieceAttackedEvent(
@@ -191,8 +196,17 @@ public final class AbilityUtils {
             boolean emitDeathEvent) {
         if (target == null || amount <= 0)
             return true;
-        target.getStats().dealDamage(amount);
-        if (target.getStats().isDead()) {
+
+        // Route through ECS CombatSystem when entity is available
+        boolean died;
+        if (target.getEntity() != null) {
+            died = GameContext.get().getCombatSystem().applyDamage(target.getEntity(), amount);
+        } else {
+            target.getStats().dealDamage(amount);
+            died = target.getStats().isDead();
+        }
+
+        if (died) {
             target.die();
             if (emitDeathEvent) {
                 TypedEventBus.get().emit(new PieceDiedEvent(
