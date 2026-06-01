@@ -52,7 +52,7 @@ public class PieceSyncSystem extends EntitySystem {
                 piece.getStats().getSpeed(),
                 piece.getStats().getActions()
         ));
-        entity.add(new SpriteComponent().set(piece.getType().name()));
+        entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()));
 
         AbilityComponent ac = new AbilityComponent();
         for (Ability a : piece.getAbilities()) {

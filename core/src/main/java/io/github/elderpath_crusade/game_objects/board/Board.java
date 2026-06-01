@@ -444,6 +444,9 @@ public class Board extends HigherOrderTexture implements Updatable {
                 }
             }
         }
+        // Delegate piece sprite rendering to ECS PieceRenderSystem
+        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, 0, 0, PLOT_WIDTH, PLOT_HEIGHT);
+
         Arrays.stream(rowIdentifierSymbols).forEach(s -> {
             s.render(batch, zLevel, isPaused);
         });
@@ -462,11 +465,13 @@ public class Board extends HigherOrderTexture implements Updatable {
                 renderable.render(batch, zLevel, isPaused, absX, absY);
                 GamePiece gp = gamePieces[row][col];
                 if (gp != null) {
-                    renderPieceWithStatusEffects(batch, zLevel, absX, absY, gp);
                     renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
                 }
             }
         }
+        // Delegate piece sprite rendering to ECS PieceRenderSystem
+        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, x, y, PLOT_WIDTH, PLOT_HEIGHT);
+
         Arrays.stream(rowIdentifierSymbols).forEach(s -> {
             s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY());
         });

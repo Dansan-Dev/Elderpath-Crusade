@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Engine;
 import io.github.elderpath_crusade.assets.AssetService;
 import io.github.elderpath_crusade.ecs.systems.PieceSyncSystem;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
+import io.github.elderpath_crusade.ecs.systems.PieceRenderSystem;
 import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -44,6 +45,7 @@ public class GameContext {
     @Getter private final GameStateMachine stateMachine;
     @Getter private final Engine ecsEngine;
     @Getter private final CombatSystem combatSystem;
+    @Getter private final PieceRenderSystem pieceRenderSystem;
     @Getter private final AssetService assets;
     @Getter private final TurnManager turnManager;
     @Getter private final PlayerManager playerManager;
@@ -75,9 +77,11 @@ public class GameContext {
         this.stateMachine = new GameStateMachine(this);
         this.ecsEngine = new Engine();
         this.combatSystem = new CombatSystem();
+        this.pieceRenderSystem = new PieceRenderSystem();
         this.ecsEngine.addSystem(new TurnSystem());
         this.ecsEngine.addSystem(new PieceSyncSystem());
         this.ecsEngine.addSystem(this.combatSystem);
+        this.ecsEngine.addSystem(this.pieceRenderSystem);
         this.assets = new AssetService();
         this.turnManager = new TurnManager();
         this.playerManager = new PlayerManager();
