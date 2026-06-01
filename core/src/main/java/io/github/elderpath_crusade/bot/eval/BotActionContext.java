@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import io.github.elderpath_crusade.bot.command.BotCommand;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.bot.search.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
@@ -23,7 +24,10 @@ public class BotActionContext {
     public record WinPathResult(int turns, Coord firstMove, int threatExposure, boolean endsTurn0InThreat) {
     }
 
-    public record Intent(int score, Supplier<Boolean> execute, IntentType kind) {
+    public record Intent(int score, Supplier<Boolean> execute, IntentType kind, BotCommand command) {
+        public Intent(int score, Supplier<Boolean> execute, IntentType kind) {
+            this(score, execute, kind, null);
+        }
     }
 
     public record PieceEntry(Coord pos, MonsterGamePiece piece) {

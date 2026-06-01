@@ -24,12 +24,24 @@ import java.util.*;
  */
 public class MovementEvaluator extends BotEvaluatorBase {
 
+    private final Map<String, List<Plot>> reachableCache = new HashMap<>();
+
     public MovementEvaluator(BotConfig config) {
         super(config);
     }
 
+    public void clearCache() {
+        reachableCache.clear();
+    }
+
+    private List<Plot> getReachableCached(Board board, int row, int col, int speed, UUID pieceId) {
+        String key = pieceId.toString() + '_' + row + '_' + col;
+        return reachableCache.computeIfAbsent(key, k -> board.getReachablePlots(row, col, speed));
+    }
+
     @Override
     public void build(Board board, TacticalState tactical, List<Intent> output) {
+        clearCache();
         buildWinPathIntents(board, tactical, output);
         buildAdvanceIntents(board, tactical, output);
         buildManeuverIntents(board, tactical, output);
@@ -87,7 +99,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             }
 
             int speed = piece.getEffectiveSpeed();
-            List<Plot> reachable = board.getReachablePlots(pos.row(), pos.col(), speed);
+            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), speed, piece.getId());
             int currentDist = nearestManhattan(pos.row(), pos.col(), tactical.enemies());
             boolean hasRogue = isRogue(piece);
 
@@ -222,7 +234,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             }
 
             int actionsRemaining = getRemainingActions(piece);
-            List<Plot> reachable = board.getReachablePlots(pos.row(), pos.col(), piece.getEffectiveSpeed());
+            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), piece.getEffectiveSpeed(), piece.getId());
             Plot stayPlot = getPlot(board, pos);
 
             List<Plot> candidates = new ArrayList<>();
@@ -349,7 +361,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             int actions) {
         int speed = piece.getEffectiveSpeed();
         int maxActions = piece.getEffectiveActions();
-        Map<Coord, List<Coord>> reachCache = new HashMap<>();
+        UUID pieceId = piece.getId();
         Deque<BotSearchState> queue = new ArrayDeque<>();
         Set<Integer> visited = new HashSet<>();
 
@@ -377,14 +389,11 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
             // Movement options
             if (state.actionsLeft > 0) {
-                List<Coord> neighbors = reachCache.computeIfAbsent(state.pos, p -> {
-                    List<Coord> list = new ArrayList<>();
-                    for (Plot plot : board.getReachablePlots(p.row(), p.col(), speed)) {
-                        list.add(new Coord(plot.getRow(), plot.getCol()));
-                    }
-                    return list;
-                });
-                for (Coord next : neighbors) {
+                String cacheKey = pieceId.toString() + "_" + state.pos.row() + "_" + state.pos.col();
+                List<Plot> reachablePlots = reachableCache.computeIfAbsent(cacheKey,
+                        k -> board.getReachablePlots(state.pos.row(), state.pos.col(), speed));
+                for (Plot plot : reachablePlots) {
+                    Coord next = new Coord(plot.getRow(), plot.getCol());
                     expansions++;
                     BotSearchState nextStep = state.stepTo(next);
                     if (visited.add(nextStep.pack()))

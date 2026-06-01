@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.bot.command.AttackCommand;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
@@ -45,7 +46,8 @@ public class AttackEvaluator extends BotEvaluatorBase {
                 int score = scoreAdjacentAttack(board, source, target, attacker, defender, tactical.threats());
                 output.add(new Intent(score,
                         () -> attackAndVerify(board, source.row(), source.col(), target.row(), target.col(), attacker),
-                        IntentType.ADJ_ATTACK));
+                        IntentType.ADJ_ATTACK,
+                        new AttackCommand(attacker.getId().toString(), source.row(), source.col(), target.row(), target.col())));
             }
         }
     }
