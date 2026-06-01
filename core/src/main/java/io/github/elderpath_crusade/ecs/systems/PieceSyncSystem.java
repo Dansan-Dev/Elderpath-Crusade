@@ -21,6 +21,10 @@ public class PieceSyncSystem extends EntitySystem {
 
     private final Map<String, Entity> entityMap = new HashMap<>();
 
+    public Entity getEntity(String pieceId) {
+        return entityMap.get(pieceId);
+    }
+
     @Override
     public void addedToEngine(Engine engine) {
         super.addedToEngine(engine);
@@ -58,6 +62,7 @@ public class PieceSyncSystem extends EntitySystem {
 
         getEngine().addEntity(entity);
         entityMap.put(event.pieceId(), entity);
+        piece.setEntity(entity);
     }
 
     private void onMove(PieceMovedEvent event) {

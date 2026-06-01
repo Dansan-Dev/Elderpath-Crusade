@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -30,6 +31,9 @@ public class MonsterGamePiece extends GamePiece {
     // Accumulator of all modifiers affecting this piece (local + auras from others)
     @Getter
     private final StatsAccumulator statsAccumulator = new StatsAccumulator();
+    // ECS entity backing this piece (set after spawn by PieceSyncSystem)
+    @Getter
+    private Entity entity;
     // Pure model mirror for testability and future migration
     @Getter
     private final PieceModel pieceModel;
@@ -43,6 +47,13 @@ public class MonsterGamePiece extends GamePiece {
         // Add default base abilities
         this.addAbility(new BaseMoveAbility(this));
         this.addAbility(new BaseAttackAbility(this));
+    }
+
+    public void setEntity(Entity entity) {
+        this.entity = entity;
+        if (entity != null) {
+            stats.linkEntity(entity);
+        }
     }
 
     // ---- Abilities API ----
