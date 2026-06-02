@@ -30,11 +30,12 @@ public class CharacterSprite extends HigherOrderTexture {
     }
 
     protected void makeAnimationOfSpriteSheetRow(String name, String path, int spriteAmount, int startX, int startY, int spriteSheetCharacterWidth, int spriteSheetCharacterHeight, int updatesPerSecond) {
+        String regionName = path.replaceFirst("^images/", "").replaceFirst("\\.png$", "");
         List<Sprite> sprites = new ArrayList<>();
         Stream.iterate(startX, i -> i + spriteSheetCharacterWidth).limit(spriteAmount).forEach(i -> {
             sprites.add(
-                SpriteCreator.makeSprite(
-                    path,
+                SpriteCreator.makeSpriteFromRegion(
+                    regionName,
                     i, startY,
                     spriteSheetCharacterWidth, spriteSheetCharacterHeight,
                     getWidth(), getHeight()

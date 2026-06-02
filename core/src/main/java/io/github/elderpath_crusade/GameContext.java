@@ -103,6 +103,7 @@ public class GameContext {
         this.renderPipeline = new RenderPipeline();
         this.zIndexRegistry = new ZIndexRegistry();
         this.textureManager = new TextureManager();
+        this.textureManager.loadAtlas("packed/game.atlas");
         this.fontManager = new FontManager();
         this.infoDataManager = new InfoDataManager();
     }

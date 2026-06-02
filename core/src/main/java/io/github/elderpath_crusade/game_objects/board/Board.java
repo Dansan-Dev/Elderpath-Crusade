@@ -27,6 +27,7 @@ import io.github.elderpath_crusade.game_objects.board.components.BoardInteractio
 import io.github.elderpath_crusade.game_objects.board.components.BoardNavigator;
 import io.github.elderpath_crusade.game_objects.board.components.BoardOverlayRenderer;
 import io.github.elderpath_crusade.game_objects.board.components.BoardPerspectiveManager;
+import io.github.elderpath_crusade.game_objects.board.components.BoardRenderer;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,13 +41,14 @@ public class Board extends HigherOrderTexture implements Updatable {
     @Getter private final int PLOT_HEIGHT;
     @Getter private final Renderable[][] layout;
     @Getter private final GamePiece[][] gamePieces;
-    private final BoardIdentifierSymbol[] rowIdentifierSymbols;
-    private final BoardIdentifierSymbol[] colIdentifierSymbols;
+    @Getter private final BoardIdentifierSymbol[] rowIdentifierSymbols;
+    @Getter private final BoardIdentifierSymbol[] colIdentifierSymbols;
 
     private final BoardPerspectiveManager perspectiveManager;
     private final BoardNavigator navigator;
     private final BoardInteractionResolver interactionResolver;
     private final BoardOverlayRenderer overlayRenderer;
+    private final BoardRenderer boardRenderer;
     @Getter private final BoardModel model;
 
     @Override
@@ -104,6 +106,7 @@ public class Board extends HigherOrderTexture implements Updatable {
         navigator = new BoardNavigator(this);
         interactionResolver = new BoardInteractionResolver(this);
         overlayRenderer = new BoardOverlayRenderer(this);
+        boardRenderer = new BoardRenderer(this, overlayRenderer);
         setBounds(new Box(x, y, PLOT_WIDTH * COLS, PLOT_HEIGHT * ROWS));
 
         Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
@@ -131,17 +134,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         notifyTurnEndedForPieces(event.player());
     }
 
-    private void renderPieceWithStatusEffects(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp) {
-        overlayRenderer.renderPieceWithStatusEffects(batch, zLevel, absX, absY, gp);
-    }
-
-    private void renderHpOverlay(SpriteBatch batch, int zLevel, int absX, int absY, GamePiece gp, Set<UUID> seen) {
-        overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
-    }
-
-    private void cleanupStaleHpTexts(Set<UUID> seen) {
-        overlayRenderer.cleanupStaleHpTexts(seen);
-    }
 
     public static class Position {
         @Getter private final Board board;
@@ -433,51 +425,11 @@ public class Board extends HigherOrderTexture implements Updatable {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        Set<UUID> seen = new HashSet<>();
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                Renderable renderable = layout[row][col];
-                renderable.render(batch, zLevel, isPaused, col * PLOT_WIDTH, row * PLOT_HEIGHT);
-                GamePiece gp = gamePieces[row][col];
-                if (gp != null) {
-                    renderHpOverlay(batch, zLevel, col * PLOT_WIDTH, row * PLOT_HEIGHT, gp, seen);
-                }
-            }
-        }
-        // Delegate piece sprite rendering to ECS PieceRenderSystem
-        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, 0, 0, PLOT_WIDTH, PLOT_HEIGHT);
-
-        Arrays.stream(rowIdentifierSymbols).forEach(s -> {
-            s.render(batch, zLevel, isPaused);
-        });
-        Arrays.stream(colIdentifierSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
-        cleanupStaleHpTexts(seen);
+        boardRenderer.render(batch, zLevel, isPaused);
     }
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-        Set<UUID> seen = new HashSet<>();
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                Renderable renderable = layout[row][col];
-                int absX = x + col * (PLOT_WIDTH);
-                int absY = y + row * (PLOT_HEIGHT);
-                renderable.render(batch, zLevel, isPaused, absX, absY);
-                GamePiece gp = gamePieces[row][col];
-                if (gp != null) {
-                    renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
-                }
-            }
-        }
-        // Delegate piece sprite rendering to ECS PieceRenderSystem
-        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, x, y, PLOT_WIDTH, PLOT_HEIGHT);
-
-        Arrays.stream(rowIdentifierSymbols).forEach(s -> {
-            s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY());
-        });
-        Arrays.stream(colIdentifierSymbols).forEach(s -> {
-            s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY());
-        });
-        cleanupStaleHpTexts(seen);
+        boardRenderer.render(batch, zLevel, isPaused, x, y);
     }
 }
