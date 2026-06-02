@@ -3,8 +3,8 @@ package io.github.elderpath_crusade.input_handlers;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.settings.InputHandlerData;
 import io.github.elderpath_crusade.interfaces.InputHandler;
-import io.github.elderpath_crusade.managers.GraphicsManager;
-import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.rendering.GraphicsManager;
+import io.github.elderpath_crusade.input.InteractionManager;
 
 import java.util.Map;
 

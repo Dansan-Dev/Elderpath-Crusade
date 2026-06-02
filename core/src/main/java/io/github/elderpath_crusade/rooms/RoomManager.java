@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.rooms.MainMenuRoom;

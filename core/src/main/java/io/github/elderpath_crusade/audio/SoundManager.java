@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.audio;
 import io.github.elderpath_crusade.GameContext;
 
 import com.badlogic.gdx.Gdx;

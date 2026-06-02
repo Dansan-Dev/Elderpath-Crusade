@@ -5,9 +5,9 @@ import io.github.elderpath_crusade.enums.settings.InputHandlerData;
 import io.github.elderpath_crusade.enums.settings.PauseScreenPage;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
 import io.github.elderpath_crusade.interfaces.InputHandler;
-import io.github.elderpath_crusade.managers.GameManager;
-import io.github.elderpath_crusade.managers.GraphicsManager;
-import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.game.GameManager;
+import io.github.elderpath_crusade.rendering.GraphicsManager;
+import io.github.elderpath_crusade.input.InteractionManager;
 
 import java.util.Map;
 

@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.enums.GameMode;
 
 /**

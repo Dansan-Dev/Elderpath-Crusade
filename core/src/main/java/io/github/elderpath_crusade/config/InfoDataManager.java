@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.config;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;

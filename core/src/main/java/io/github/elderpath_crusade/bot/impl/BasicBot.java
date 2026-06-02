@@ -10,7 +10,6 @@ import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
-import io.github.elderpath_crusade.managers.*;
 import io.github.elderpath_crusade.bot.Bot;
 import io.github.elderpath_crusade.utils.Logger;
 

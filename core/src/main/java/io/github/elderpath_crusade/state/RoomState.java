@@ -1,8 +1,8 @@
 package io.github.elderpath_crusade.state;
 
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.managers.GraphicsManager;
-import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.rendering.GraphicsManager;
+import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.SelectionOverlay;
 

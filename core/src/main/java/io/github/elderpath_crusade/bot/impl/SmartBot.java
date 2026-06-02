@@ -1,4 +1,5 @@
 package io.github.elderpath_crusade.bot.impl;
+import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.utils.Timer;
@@ -8,7 +9,6 @@ import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
-import io.github.elderpath_crusade.managers.*;
 import io.github.elderpath_crusade.bot.Bot;
 import io.github.elderpath_crusade.bot.eval.BotActionContext;
 import io.github.elderpath_crusade.bot.eval.BotConfig;

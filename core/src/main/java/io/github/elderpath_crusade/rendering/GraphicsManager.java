@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.rendering;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
@@ -36,13 +36,13 @@ public class GraphicsManager {
         return batch;
     }
 
-    void pauseAnimations() {
+    public void pauseAnimations() {
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
             .forEach(r -> ((SpriteObject) r).pauseAnimation());
     }
 
-    void unpauseAnimations() {
+    public void unpauseAnimations() {
         renderables.stream()
             .filter(r -> r instanceof SpriteObject)
             .forEach(r -> ((SpriteObject) r).unpauseAnimation());

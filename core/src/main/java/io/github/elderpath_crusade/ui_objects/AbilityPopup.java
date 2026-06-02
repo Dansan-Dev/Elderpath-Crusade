@@ -13,10 +13,10 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.GraphicsManager;
-import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.managers.TurnManager;
-import io.github.elderpath_crusade.managers.InteractionManager;
+import io.github.elderpath_crusade.rendering.GraphicsManager;
+import io.github.elderpath_crusade.config.SettingsManager;
+import io.github.elderpath_crusade.game.TurnManager;
+import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 
 import java.util.*;

@@ -7,8 +7,8 @@ import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.managers.PlayerManager;
-import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.game.PlayerManager;
+import io.github.elderpath_crusade.game.TurnManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

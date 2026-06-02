@@ -20,7 +20,7 @@ import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.utils.ColorSettings;
-import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.game.TurnManager;
 import lombok.Getter;
 
 import java.util.Arrays;

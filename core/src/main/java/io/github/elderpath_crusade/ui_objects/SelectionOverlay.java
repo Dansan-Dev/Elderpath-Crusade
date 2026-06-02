@@ -6,8 +6,8 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.managers.InteractionManager;
-import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.input.InteractionManager;
+import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.FontSize;
 

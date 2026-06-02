@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.input;
 
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.enums.settings.InputFunction;

@@ -1,5 +1,6 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.game;
 
+import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.GameWonEvent;
@@ -7,6 +8,7 @@ import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.rooms.VictoryRoom;
 import io.github.elderpath_crusade.utils.Logger;
 
 /**
@@ -28,6 +30,7 @@ public final class WinConditionManager {
 
         TypedEventBus.get().registerScoped("session", PieceMovedEvent.class, evt -> checkWin(evt.owner(), evt.toRow()));
         TypedEventBus.get().registerScoped("session", PieceSpawnedEvent.class, evt -> checkWin(evt.owner(), evt.row()));
+        TypedEventBus.get().registerScoped("session", GameWonEvent.class, this::onGameWon);
     }
 
     private void checkWin(PieceAlignment alignment, int destRow) {
@@ -54,5 +57,22 @@ public final class WinConditionManager {
         gameWon = true;
         Logger.log("Win", "VICTORY: " + winner.name());
         TypedEventBus.get().emit(new GameWonEvent(winner));
+    }
+
+    private void onGameWon(GameWonEvent event) {
+        PieceAlignment winner = event.winner();
+        try {
+            if (GameContext.get().getInteractionManager().hasActiveSelection()) {
+                GameContext.get().getInteractionManager().cancelSelection();
+            }
+            GameContext.get().getGameManager().lockInteractions();
+        } catch (Exception ignored) {}
+        Timer.schedule(new Timer.Task() {
+            @Override
+            public void run() {
+                try { GameContext.get().getGameManager().unlockInteractions(); } catch (Exception ignored) {}
+                GameContext.get().getRoomManager().gotoRoom(() -> VictoryRoom.get(winner));
+            }
+        }, 0.6f);
     }
 }

@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.cards.*;
-import io.github.elderpath_crusade.managers.DeckManager;
+import io.github.elderpath_crusade.game.DeckManager;
 
 import java.util.*;
 import java.util.function.Function;

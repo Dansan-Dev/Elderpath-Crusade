@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.rendering.highlight;
 
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;

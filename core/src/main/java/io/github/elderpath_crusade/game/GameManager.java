@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data.PieceRegistry;
@@ -21,7 +21,6 @@ public class GameManager {
         GameContext.get().getWinConditionManager().initialize();
         PieceRegistry.load();
         CardFactory.initialize();
-        GameContext.get().getVictoryHandler().initialize();
     }
 
     public void pause() {

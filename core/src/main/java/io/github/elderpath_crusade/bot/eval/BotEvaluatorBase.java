@@ -9,7 +9,7 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
-import io.github.elderpath_crusade.managers.PlayerManager;
+import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 

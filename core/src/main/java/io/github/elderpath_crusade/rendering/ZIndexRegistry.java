@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.rendering;
 
 import io.github.elderpath_crusade.interfaces.Renderable;
 

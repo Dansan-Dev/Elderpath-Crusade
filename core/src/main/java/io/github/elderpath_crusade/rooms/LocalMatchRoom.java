@@ -5,14 +5,14 @@ import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.managers.DeckManager;
-import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.game.DeckManager;
+import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.config.SettingsManager;
 
 import java.util.ArrayList;
 import java.util.List;

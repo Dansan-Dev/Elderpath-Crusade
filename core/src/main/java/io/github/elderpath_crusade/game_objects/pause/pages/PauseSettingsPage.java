@@ -8,7 +8,7 @@ import io.github.elderpath_crusade.ui_objects.TextList;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.settings.PauseScreenPage;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
-import io.github.elderpath_crusade.managers.SettingsManager;
+import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.utils.MenuLayout;
 

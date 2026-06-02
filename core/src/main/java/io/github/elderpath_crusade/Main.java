@@ -5,7 +5,7 @@ import io.github.elderpath_crusade.api.BackendService;
 import io.github.elderpath_crusade.api.dto.UserListResponseDto;
 import io.github.elderpath_crusade.enums.settings.InputHandlerData;
 import io.github.elderpath_crusade.enums.settings.InputKey;
-import io.github.elderpath_crusade.managers.*;
+import io.github.elderpath_crusade.input.InputManager;
 import io.github.elderpath_crusade.utils.GraphicUtils;
 
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.bot;
 
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.GameContext;

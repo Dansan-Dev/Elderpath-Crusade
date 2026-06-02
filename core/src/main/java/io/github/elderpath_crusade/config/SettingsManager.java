@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.managers;
+package io.github.elderpath_crusade.config;
 
 import io.github.elderpath_crusade.data_objects.settings.LanguageSetting;
 import io.github.elderpath_crusade.data_objects.settings.ScreenSize;

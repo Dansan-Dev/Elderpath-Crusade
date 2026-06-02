@@ -13,9 +13,9 @@ import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.managers.InteractionManager;
-import io.github.elderpath_crusade.managers.SettingsManager;
-import io.github.elderpath_crusade.managers.TurnManager;
+import io.github.elderpath_crusade.input.InteractionManager;
+import io.github.elderpath_crusade.config.SettingsManager;
+import io.github.elderpath_crusade.game.TurnManager;
 
 import java.util.HashMap;
 import java.util.List;
