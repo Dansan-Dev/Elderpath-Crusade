@@ -50,6 +50,10 @@ public class AbilityPopup extends HigherOrderUI {
     private UUID focusedPieceId = null;
     private boolean stickyActive = false;
 
+    // Cached piece lookup to avoid full-board scan per frame
+    private MonsterGamePiece cachedFocusedPiece = null;
+    private UUID cachedFocusedPieceId = null;
+
     public AbilityPopup() {
         super();
     }
@@ -88,6 +92,8 @@ public class AbilityPopup extends HigherOrderUI {
             getRenderableUIs().remove(b);
         }
         bubbles.clear();
+        cachedFocusedPiece = null;
+        cachedFocusedPieceId = null;
     }
 
     private int computeBubbleSize() {
@@ -196,16 +202,26 @@ public class AbilityPopup extends HigherOrderUI {
 
     private MonsterGamePiece findPieceById(UUID id) {
         if (id == null) return null;
+        if (id.equals(cachedFocusedPieceId) && cachedFocusedPiece != null) {
+            return cachedFocusedPiece;
+        }
         Board board = getBoard();
         if (board == null) return null;
-        Optional<MonsterGamePiece> piece = Arrays.stream(board.getGamePieces())
-            .flatMap(Arrays::stream)
-            .filter(gp -> gp instanceof MonsterGamePiece)
-            .map(gp -> (MonsterGamePiece) gp)
-            .filter(mgp -> id.equals(mgp.getId()))
-            .findFirst();
-
-        return piece.orElse(null);
+        int rows = board.getROWS();
+        int cols = board.getCOLS();
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                GamePiece gp = board.getGamePieceAtPos(r, c);
+                if (gp instanceof MonsterGamePiece mgp && id.equals(mgp.getId())) {
+                    cachedFocusedPiece = mgp;
+                    cachedFocusedPieceId = id;
+                    return mgp;
+                }
+            }
+        }
+        cachedFocusedPiece = null;
+        cachedFocusedPieceId = null;
+        return null;
     }
 
     private boolean isPieceEligible(MonsterGamePiece mgp, PieceAlignment current) {

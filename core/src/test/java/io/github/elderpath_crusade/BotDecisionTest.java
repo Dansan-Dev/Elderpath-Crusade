@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -44,6 +45,7 @@ class BotDecisionTest {
 
     private MonsterGamePiece mockAlly(int actions, int damage) {
         MonsterGamePiece ally = mock(MonsterGamePiece.class);
+        when(ally.getId()).thenReturn(UUID.randomUUID());
         when(ally.getAlignment()).thenReturn(PieceAlignment.P2);
         when(ally.isStunned()).thenReturn(false);
         GamePieceStats stats = mock(GamePieceStats.class);
@@ -60,6 +62,7 @@ class BotDecisionTest {
 
     private MonsterGamePiece mockEnemy(int health) {
         MonsterGamePiece enemy = mock(MonsterGamePiece.class);
+        when(enemy.getId()).thenReturn(UUID.randomUUID());
         when(enemy.getAlignment()).thenReturn(PieceAlignment.P1);
         GamePieceStats stats = mock(GamePieceStats.class);
         when(stats.getCurrentHealth()).thenReturn(health);

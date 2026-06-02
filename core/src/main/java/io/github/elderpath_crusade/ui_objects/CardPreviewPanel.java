@@ -15,8 +15,6 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.managers.GameManager;
 import io.github.elderpath_crusade.managers.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
-import io.github.elderpath_crusade.utils.HoverUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -140,26 +138,27 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
 
     private MonsterGamePiece findHoveredMonster() {
         Board b = GameContext.get().getActiveBoard();
-        if (b != null) {
-            int rows = b.getROWS();
-            int cols = b.getCOLS();
-            int baseX = b.getBounds().getX();
-            int baseY = b.getBounds().getY();
-            int cellW = b.getPLOT_WIDTH();
-            int cellH = b.getPLOT_HEIGHT();
-            // No need for visual flip logic - board is physically flipped now
-            for (int row = 0; row < rows; row++) {
-                for (int col = 0; col < cols; col++) {
-                    int absX = baseX + col * cellW;
-                    int absY = baseY + row * cellH;
-                    if (HoverUtils.isHovered(absX, absY, cellW, cellH)) {
-                        GamePiece gp = b.getGamePieceAtPos(row, col);
-                        if (gp instanceof MonsterGamePiece mgp) {
-                            return mgp;
-                        }
-                    }
-                }
-            }
+        if (b == null) return null;
+
+        int baseX = b.getBounds().getX();
+        int baseY = b.getBounds().getY();
+        int cellW = b.getPLOT_WIDTH();
+        int cellH = b.getPLOT_HEIGHT();
+        int boardW = cellW * b.getCOLS();
+        int boardH = cellH * b.getROWS();
+
+        int mouseX = Gdx.input.getX();
+        int mouseY = GameContext.get().getSettingsManager().screenSize.getScreenHeight() - Gdx.input.getY();
+
+        if (mouseX < baseX || mouseX >= baseX + boardW) return null;
+        if (mouseY < baseY || mouseY >= baseY + boardH) return null;
+
+        int col = (mouseX - baseX) / cellW;
+        int row = (mouseY - baseY) / cellH;
+
+        GamePiece gp = b.getGamePieceAtPos(row, col);
+        if (gp instanceof MonsterGamePiece mgp) {
+            return mgp;
         }
         return null;
     }
