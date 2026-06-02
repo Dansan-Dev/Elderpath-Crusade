@@ -115,8 +115,8 @@ public class Board extends HigherOrderTexture implements Updatable {
         }
         setBoardIdentifierSymbols();
 
-        TypedEventBus.get().register(TurnStartedEvent.class, this::onTurnStarted);
-        TypedEventBus.get().register(TurnEndedEvent.class, this::onTurnEnded);
+        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, this::onTurnStarted);
+        TypedEventBus.get().registerScoped("session", TurnEndedEvent.class, this::onTurnEnded);
     }
 
     private void onTurnStarted(TurnStartedEvent event) {

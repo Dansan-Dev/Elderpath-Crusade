@@ -23,7 +23,7 @@ public class TurnSystem extends EntitySystem {
         this.engine = engine;
         this.family = Family.all(StatsComponent.class, AlignmentComponent.class).get();
 
-        TypedEventBus.get().register(TurnStartedEvent.class, this::onTurnStarted);
+        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, this::onTurnStarted);
     }
 
     private void onTurnStarted(TurnStartedEvent event) {

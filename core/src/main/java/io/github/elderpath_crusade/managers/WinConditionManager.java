@@ -26,8 +26,8 @@ public final class WinConditionManager {
         if (initialized) return;
         initialized = true;
 
-        TypedEventBus.get().register(PieceMovedEvent.class, evt -> checkWin(evt.owner(), evt.toRow()));
-        TypedEventBus.get().register(PieceSpawnedEvent.class, evt -> checkWin(evt.owner(), evt.row()));
+        TypedEventBus.get().registerScoped("session", PieceMovedEvent.class, evt -> checkWin(evt.owner(), evt.toRow()));
+        TypedEventBus.get().registerScoped("session", PieceSpawnedEvent.class, evt -> checkWin(evt.owner(), evt.row()));
     }
 
     private void checkWin(PieceAlignment alignment, int destRow) {

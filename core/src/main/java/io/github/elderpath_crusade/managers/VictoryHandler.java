@@ -15,7 +15,7 @@ public final class VictoryHandler {
     public void initialize() {
         if (initialized) return;
         initialized = true;
-        TypedEventBus.get().register(GameWonEvent.class, VictoryHandler::onGameWon);
+        TypedEventBus.get().registerScoped("session", GameWonEvent.class, VictoryHandler::onGameWon);
     }
 
     private static void onGameWon(GameWonEvent event) {

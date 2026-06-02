@@ -34,7 +34,7 @@ public final class BotManager {
             }
         }
 
-        TypedEventBus.get().register(TurnStartedEvent.class, evt -> {
+        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, evt -> {
             if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) return;
             if (!GameContext.get().getSettingsManager().debug.enableP2Bot) return;
             if (evt.player() != PieceAlignment.P2) return;
