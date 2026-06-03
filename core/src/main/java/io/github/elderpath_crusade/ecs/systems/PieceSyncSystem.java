@@ -5,6 +5,7 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.EntitySystem;
 import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.ecs.components.*;
+import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
@@ -69,17 +70,31 @@ public class PieceSyncSystem extends EntitySystem {
         if (posObj instanceof Board.Position boardPos) {
             boardPos.linkEntity(entity);
         }
+        // Directly notify GridIndexSystem (avoids event ordering dependency)
+        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
+        if (gridIndex != null) {
+            gridIndex.onEntitySpawned(entity, event.row(), event.col());
+        }
     }
 
     private void onMove(PieceMovedEvent event) {
         Entity entity = entityMap.get(event.pieceId());
         if (entity == null) return;
         entity.getComponent(PositionComponent.class).set(event.toRow(), event.toCol());
+        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
+        if (gridIndex != null) {
+            gridIndex.onEntityMoved(event.fromRow(), event.fromCol(), entity, event.toRow(), event.toCol());
+        }
     }
 
     private void onDeath(PieceDiedEvent event) {
         Entity entity = entityMap.remove(event.pieceId());
         if (entity == null) return;
+        // Notify GridIndexSystem before removal
+        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
+        if (gridIndex != null) {
+            gridIndex.onEntityDied(event.row(), event.col());
+        }
         // Clear piece's entity reference to prevent stale delegation
         SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
         if (sprite != null && sprite.piece != null) {

@@ -38,6 +38,33 @@ public class MovementSystem extends EntitySystem {
         }
     }
 
+    /**
+     * Execute a move synchronously (for abilities/input that need immediate resolution).
+     * Adds intent, processes it, removes it — all in one call.
+     */
+    public boolean executeMove(Entity entity, int toRow, int toCol) {
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null || !isValidMove(board, toRow, toCol)) return false;
+
+        PositionComponent pos = posMapper.get(entity);
+        if (pos == null) return false;
+
+        int fromRow = pos.row;
+        int fromCol = pos.col;
+
+        pos.set(toRow, toCol);
+        board.moveGamePiece(fromRow, fromCol, toRow, toCol);
+
+        AlignmentComponent align = alignMapper.get(entity);
+        IdentityComponent id = idMapper.get(entity);
+        PieceAlignment owner = (align != null) ? align.alignment : PieceAlignment.NEUTRAL;
+        String pieceId = (id != null) ? id.id : "";
+        TypedEventBus.get().emit(new PieceMovedEvent(
+                pieceId, owner, fromRow, fromCol, toRow, toCol,
+                PieceMovedEvent.MovementType.ACTIVE, "MovementSystem"));
+        return true;
+    }
+
     private void processMove(Entity entity) {
         MoveIntentComponent intent = intentMapper.get(entity);
         PositionComponent pos = posMapper.get(entity);

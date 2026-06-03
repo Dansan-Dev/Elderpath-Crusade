@@ -3,10 +3,6 @@ package io.github.elderpath_crusade.ecs.systems;
 import com.badlogic.ashley.core.*;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
-import io.github.elderpath_crusade.events.PieceDiedEvent;
-import io.github.elderpath_crusade.events.PieceMovedEvent;
-import io.github.elderpath_crusade.events.PieceSpawnedEvent;
-import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 
@@ -25,15 +21,34 @@ public class GridIndexSystem extends EntitySystem {
 
     @Override
     public void addedToEngine(Engine engine) {
-        TypedEventBus bus = TypedEventBus.get();
-        bus.register(PieceSpawnedEvent.class, this::onSpawn);
-        bus.register(PieceMovedEvent.class, this::onMove);
-        bus.register(PieceDiedEvent.class, this::onDeath);
+        // No event listeners — PieceSyncSystem notifies directly
     }
 
     @Override
     public void update(float deltaTime) {
         // Event-driven; no per-frame work
+    }
+
+    /**
+     * Called by PieceSyncSystem after entity creation.
+     */
+    public void onEntitySpawned(Entity entity, int row, int col) {
+        grid.put(key(row, col), entity);
+    }
+
+    /**
+     * Called by PieceSyncSystem on piece move.
+     */
+    public void onEntityMoved(int fromRow, int fromCol, Entity entity, int toRow, int toCol) {
+        grid.remove(key(fromRow, fromCol));
+        grid.put(key(toRow, toCol), entity);
+    }
+
+    /**
+     * Called by PieceSyncSystem on piece death.
+     */
+    public void onEntityDied(int row, int col) {
+        grid.remove(key(row, col));
     }
 
     /**
@@ -66,30 +81,6 @@ public class GridIndexSystem extends EntitySystem {
      */
     public void clear() {
         grid.clear();
-    }
-
-    private void onSpawn(PieceSpawnedEvent event) {
-        // PieceSyncSystem creates the entity first (registered before us),
-        // so we can find it via PieceSyncSystem
-        PieceSyncSystem sync = getEngine().getSystem(PieceSyncSystem.class);
-        if (sync == null) return;
-        Entity entity = sync.getEntity(event.pieceId());
-        if (entity == null) return;
-        grid.put(key(event.row(), event.col()), entity);
-    }
-
-    private void onMove(PieceMovedEvent event) {
-        grid.remove(key(event.fromRow(), event.fromCol()));
-        PieceSyncSystem sync = getEngine().getSystem(PieceSyncSystem.class);
-        if (sync == null) return;
-        Entity entity = sync.getEntity(event.pieceId());
-        if (entity != null) {
-            grid.put(key(event.toRow(), event.toCol()), entity);
-        }
-    }
-
-    private void onDeath(PieceDiedEvent event) {
-        grid.remove(key(event.row(), event.col()));
     }
 
     private static long key(int row, int col) {

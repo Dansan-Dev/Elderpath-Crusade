@@ -39,6 +39,46 @@ public class AttackSystem extends EntitySystem {
         }
     }
 
+    /**
+     * Execute an attack synchronously (for abilities/input that need immediate resolution).
+     */
+    public boolean executeAttack(Entity attacker, int targetRow, int targetCol) {
+        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
+        Entity defender = (gridIndex != null) ? gridIndex.getEntityAt(targetRow, targetCol) : null;
+        if (defender == null) return false;
+
+        PositionComponent attackerPos = posMapper.get(attacker);
+        AlignmentComponent attackerAlign = alignMapper.get(attacker);
+        IdentityComponent attackerId = idMapper.get(attacker);
+        IdentityComponent defenderId = idMapper.get(defender);
+        PositionComponent defenderPos = posMapper.get(defender);
+
+        SpriteComponent attackerSprite = attacker.getComponent(SpriteComponent.class);
+        int damage = (attackerSprite != null && attackerSprite.piece != null)
+                ? attackerSprite.piece.getEffectiveDamage()
+                : statsMapper.get(attacker).damage;
+
+        CombatSystem combat = getEngine().getSystem(CombatSystem.class);
+        boolean died = (combat != null) && combat.resolveAttack(attacker, defender, damage);
+
+        String aId = (attackerId != null) ? attackerId.id : "";
+        PieceAlignment aOwner = (attackerAlign != null) ? attackerAlign.alignment : PieceAlignment.NEUTRAL;
+        String dId = (defenderId != null) ? defenderId.id : "";
+        int dRow = (defenderPos != null) ? defenderPos.row : targetRow;
+        int dCol = (defenderPos != null) ? defenderPos.col : targetCol;
+
+        TypedEventBus.get().emit(new PieceAttackedEvent(aId, aOwner,
+                attackerPos != null ? attackerPos.row : 0, attackerPos != null ? attackerPos.col : 0,
+                dId, dRow, dCol, damage));
+
+        if (died) {
+            TypedEventBus.get().emit(new PieceDiedEvent(dId, dRow, dCol));
+            Board board = GameContext.get().getActiveBoard();
+            if (board != null) board.removeGamePieceAtPos(dRow, dCol);
+        }
+        return true;
+    }
+
     private void processAttack(Entity attacker) {
         AttackIntentComponent intent = intentMapper.get(attacker);
         PositionComponent attackerPos = posMapper.get(attacker);
@@ -61,8 +101,11 @@ public class AttackSystem extends EntitySystem {
         IdentityComponent defenderId = idMapper.get(defender);
         PositionComponent defenderPos = posMapper.get(defender);
 
-        // Resolve damage
-        int damage = attackerStats.damage;
+        // Resolve damage — use effective damage (includes modifiers) when piece reference available
+        SpriteComponent attackerSprite = attacker.getComponent(SpriteComponent.class);
+        int damage = (attackerSprite != null && attackerSprite.piece != null)
+                ? attackerSprite.piece.getEffectiveDamage()
+                : attackerStats.damage;
         CombatSystem combat = getEngine().getSystem(CombatSystem.class);
         boolean died = (combat != null) && combat.resolveAttack(attacker, defender, damage);
 
