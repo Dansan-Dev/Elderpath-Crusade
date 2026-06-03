@@ -61,6 +61,7 @@ public class PieceSyncSystem extends EntitySystem {
         }
         entity.add(ac);
         entity.add(new ModifierComponent());
+        entity.add(new ComputedStatsComponent());
 
         getEngine().addEntity(entity);
         entityMap.put(event.pieceId(), entity);

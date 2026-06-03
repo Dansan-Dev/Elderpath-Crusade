@@ -145,7 +145,7 @@ public class MonsterGamePiece extends GamePiece {
         forEachTriggered(a -> a.onTurnEnded(endingPlayer));
     }
 
-    private void detachAllAbilities() {
+    public void detachAllAbilities() {
         for (Ability a : abilities) {
             try { a.onDetach(); } catch (Exception ignored) {}
         }
@@ -172,37 +172,57 @@ public class MonsterGamePiece extends GamePiece {
 
     // ---- Effective stats (base + accumulated modifiers) ----
     public int getEffectiveDamage() {
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.damage;
+        }
         int base = getStats().getDamage();
         int add = 0; float mult = 0f;
-        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addDamage; mult += m.multDamage; }
+        for (StatsModifier m : getStatsAccumulator().getAll()) { add += m.addDamage; mult += m.multDamage; }
         return StatsModifier.applyInt(base, add, mult);
     }
 
     public int getEffectiveSpeed() {
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.speed;
+        }
         int base = getStats().getSpeed();
         int add = 0; float mult = 0f;
-        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addSpeed; mult += m.multSpeed; }
+        for (StatsModifier m : getStatsAccumulator().getAll()) { add += m.addSpeed; mult += m.multSpeed; }
         return StatsModifier.applyInt(base, add, mult);
     }
 
     public int getEffectiveActions() {
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.actions;
+        }
         int base = getStats().getActions();
         int add = 0; float mult = 0f;
-        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addActions; mult += m.multActions; }
+        for (StatsModifier m : getStatsAccumulator().getAll()) { add += m.addActions; mult += m.multActions; }
         return StatsModifier.applyInt(base, add, mult);
     }
 
     public int getEffectiveMaxHealth() {
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.maxHealth;
+        }
         int base = getStats().getMaxHealth();
         int add = 0; float mult = 0f;
-        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addMaxHealth; mult += m.multMaxHealth; }
+        for (StatsModifier m : getStatsAccumulator().getAll()) { add += m.addMaxHealth; mult += m.multMaxHealth; }
         return StatsModifier.applyInt(base, add, mult);
     }
 
     public int getEffectiveCost() {
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.cost;
+        }
         int base = getStats().getCost();
         int add = 0; float mult = 0f;
-        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addCost; mult += m.multCost; }
+        for (StatsModifier m : getStatsAccumulator().getAll()) { add += m.addCost; mult += m.multCost; }
         return StatsModifier.applyInt(base, add, mult);
     }
 
@@ -210,24 +230,40 @@ public class MonsterGamePiece extends GamePiece {
      * Effective attack range in tiles (cardinal lines). Base is 0 and must be modified by abilities.
      */
     public int getEffectiveRange() {
-        int base = 0; // default melee classification
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.range;
+        }
+        int base = 0;
         int add = 0; float mult = 0f;
-        for (StatsModifier m : statsAccumulator.getAll()) { add += m.addRange; mult += m.multRange; }
+        for (StatsModifier m : getStatsAccumulator().getAll()) { add += m.addRange; mult += m.multRange; }
         return StatsModifier.applyInt(base, add, mult);
     }
 
     public boolean ignoresTerrainAsBlockers() {
-        for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreTerrainAsBlockers) return true;
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.ignoreTerrainAsBlockers;
+        }
+        for (StatsModifier m : getStatsAccumulator().getAll()) if (m.ignoreTerrainAsBlockers) return true;
         return false;
     }
 
     public boolean ignoresFriendlyUnitsAsBlockers() {
-        for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreFriendlyUnitsAsBlockers) return true;
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.ignoreFriendlyAsBlockers;
+        }
+        for (StatsModifier m : getStatsAccumulator().getAll()) if (m.ignoreFriendlyUnitsAsBlockers) return true;
         return false;
     }
 
     public boolean ignoresHostileUnitsAsBlockers() {
-        for (StatsModifier m : statsAccumulator.getAll()) if (m.ignoreHostileUnitsAsBlockers) return true;
+        if (entity != null) {
+            io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
+            if (c != null) return c.ignoreHostileAsBlockers;
+        }
+        for (StatsModifier m : getStatsAccumulator().getAll()) if (m.ignoreHostileUnitsAsBlockers) return true;
         return false;
     }
 
