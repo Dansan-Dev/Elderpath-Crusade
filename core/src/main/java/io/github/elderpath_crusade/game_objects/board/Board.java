@@ -2,8 +2,12 @@ package io.github.elderpath_crusade.game_objects.board;
 
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.ashley.core.Entity;
+import com.badlogic.ashley.core.Family;
+import com.badlogic.ashley.utils.ImmutableArray;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
+import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
@@ -41,7 +45,6 @@ public class Board extends HigherOrderTexture implements Updatable {
     @Getter private final int PLOT_WIDTH;
     @Getter private final int PLOT_HEIGHT;
     @Getter private final Renderable[][] layout;
-    @Getter private final GamePiece[][] gamePieces;
     @Getter private final BoardIdentifierSymbol[] rowIdentifierSymbols;
     @Getter private final BoardIdentifierSymbol[] colIdentifierSymbols;
 
@@ -52,6 +55,15 @@ public class Board extends HigherOrderTexture implements Updatable {
     private final BoardRenderer boardRenderer;
     @Getter private final BoardModel model;
 
+    private GridIndexSystem gridIndex;
+
+    private GridIndexSystem getGridIndex() {
+        if (gridIndex == null) {
+            gridIndex = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
+        }
+        return gridIndex;
+    }
+
     @Override
     public void update(float delta) {
     }
@@ -61,13 +73,13 @@ public class Board extends HigherOrderTexture implements Updatable {
      * player.
      */
     public void notifyTurnStartedForPieces(PieceAlignment player) {
-        for (int r = 0; r < ROWS; r++) {
-            for (int c = 0; c < COLS; c++) {
-                GamePiece gp = gamePieces[r][c];
-                if (!(gp instanceof MonsterGamePiece mgp)) continue;
-                try {
-                    mgp.notifyTurnStarted(player);
-                } catch (Exception ignored) {}
+        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
+                .getEntitiesFor(Family.all(SpriteComponent.class, AlignmentComponent.class).get());
+        for (int i = 0; i < entities.size(); i++) {
+            Entity e = entities.get(i);
+            SpriteComponent sc = e.getComponent(SpriteComponent.class);
+            if (sc != null && sc.piece != null) {
+                try { sc.piece.notifyTurnStarted(player); } catch (Exception ignored) {}
             }
         }
     }
@@ -77,15 +89,13 @@ public class Board extends HigherOrderTexture implements Updatable {
      * player.
      */
     public void notifyTurnEndedForPieces(PieceAlignment player) {
-        for (int r = 0; r < ROWS; r++) {
-            for (int c = 0; c < COLS; c++) {
-                GamePiece gp = gamePieces[r][c];
-                if (gp instanceof MonsterGamePiece mgp) {
-                    try {
-                        mgp.notifyTurnEnded(player);
-                    } catch (Exception ignored) {
-                    }
-                }
+        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
+                .getEntitiesFor(Family.all(SpriteComponent.class, AlignmentComponent.class).get());
+        for (int i = 0; i < entities.size(); i++) {
+            Entity e = entities.get(i);
+            SpriteComponent sc = e.getComponent(SpriteComponent.class);
+            if (sc != null && sc.piece != null) {
+                try { sc.piece.notifyTurnEnded(player); } catch (Exception ignored) {}
             }
         }
     }
@@ -101,7 +111,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         rowIdentifierSymbols = new BoardIdentifierSymbol[ROWS];
         colIdentifierSymbols = new BoardIdentifierSymbol[COLS];
         layout = new Renderable[ROWS][COLS];
-        gamePieces = new GamePiece[ROWS][COLS];
         model = new BoardModel(rows, cols);
         perspectiveManager = new BoardPerspectiveManager(this);
         navigator = new BoardNavigator(this);
@@ -110,7 +119,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         boardRenderer = new BoardRenderer(this, overlayRenderer);
         setBounds(new Box(x, y, PLOT_WIDTH * COLS, PLOT_HEIGHT * ROWS));
 
-        Arrays.stream(gamePieces).forEach(a -> Arrays.fill(a, null));
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
                 Renderable renderable = EmptyTexture.get(PLOT_WIDTH * col, PLOT_HEIGHT * row, PLOT_WIDTH, PLOT_HEIGHT);
@@ -254,12 +262,8 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public GamePiece getGamePieceAtPos(int row, int col) {
-        GridIndexSystem gridIndex = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
-        if (gridIndex != null) {
-            GamePiece piece = gridIndex.getPieceAt(row, col);
-            if (piece != null) return piece;
-        }
-        return gamePieces[row][col];
+        GridIndexSystem gi = getGridIndex();
+        return gi != null ? gi.getPieceAt(row, col) : null;
     }
 
     public GamePiece getGamePieceAtPlot(Plot plot) {
@@ -298,21 +302,33 @@ public class Board extends HigherOrderTexture implements Updatable {
 
     public void setGamePiecePos(int row, int col, GamePiece gamePiece) {
         checkBoardPosition(row, col);
-        gamePieces[row][col] = gamePiece;
-        // Keep BoardModel in sync
+        GridIndexSystem gi = getGridIndex();
         if (gamePiece != null) {
+            if (gamePiece instanceof MonsterGamePiece mgp && mgp.getEntity() != null && gi != null) {
+                gi.onEntitySpawned(mgp.getEntity(), row, col);
+            }
             if (model.isOccupied(row, col)) model.removePiece(row, col);
             model.placePiece(row, col, gamePiece.getId().toString());
         } else {
+            if (gi != null) gi.onEntityDied(row, col);
             if (model.isOccupied(row, col)) model.removePiece(row, col);
         }
         markDirtyAndNotify();
     }
 
     public void moveGamePiece(int currentRow, int currentCol, int newRow, int newCol) {
-        GamePiece gamePiece = gamePieces[currentRow][currentCol];
-        setGamePiecePos(currentRow, currentCol, null);
-        setGamePiecePos(newRow, newCol, gamePiece);
+        GamePiece gamePiece = getGamePieceAtPos(currentRow, currentCol);
+        GridIndexSystem gi = getGridIndex();
+        if (gi != null && gamePiece instanceof MonsterGamePiece mgp && mgp.getEntity() != null) {
+            gi.onEntityMoved(currentRow, currentCol, mgp.getEntity(), newRow, newCol);
+        }
+        // Sync BoardModel
+        if (model.isOccupied(currentRow, currentCol)) model.removePiece(currentRow, currentCol);
+        if (gamePiece != null) {
+            if (model.isOccupied(newRow, newCol)) model.removePiece(newRow, newCol);
+            model.placePiece(newRow, newCol, gamePiece.getId().toString());
+        }
+        markDirtyAndNotify();
     }
 
     public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
@@ -367,11 +383,15 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public void resetActionsForOwner(PieceAlignment owner) {
-        for (int r = 0; r < ROWS; r++) {
-            for (int c = 0; c < COLS; c++) {
-                GamePiece gp = gamePieces[r][c];
-                if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == owner) {
-                    mgp.getStats().setRemainingActions(mgp.getEffectiveActions());
+        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
+                .getEntitiesFor(Family.all(SpriteComponent.class, AlignmentComponent.class).get());
+        for (int i = 0; i < entities.size(); i++) {
+            Entity e = entities.get(i);
+            AlignmentComponent ac = e.getComponent(AlignmentComponent.class);
+            if (ac != null && ac.alignment == owner) {
+                SpriteComponent sc = e.getComponent(SpriteComponent.class);
+                if (sc != null && sc.piece != null) {
+                    sc.piece.getStats().setRemainingActions(sc.piece.getEffectiveActions());
                 }
             }
         }
@@ -396,16 +416,15 @@ public class Board extends HigherOrderTexture implements Updatable {
             for (Renderable r : getRenderables()) {
                 zSet.addAll(r.getZs());
             }
-            for (int r = 0; r < ROWS; r++) {
-                for (int c = 0; c < COLS; c++) {
-                    GamePiece gp = gamePieces[r][c];
-                    if (gp != null && gp.getSprite() != null) {
-                        List<Integer> pZs = gp.getSprite().getZs();
-                        zSet.addAll(pZs);
-                        // HP overlays are rendered on top
-                        for (Integer pz : pZs) {
-                            zSet.add(pz + 3);
-                        }
+            ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
+                    .getEntitiesFor(Family.all(SpriteComponent.class).get());
+            for (int i = 0; i < entities.size(); i++) {
+                SpriteComponent sc = entities.get(i).getComponent(SpriteComponent.class);
+                if (sc != null && sc.piece != null && sc.piece.getSprite() != null) {
+                    List<Integer> pZs = sc.piece.getSprite().getZs();
+                    zSet.addAll(pZs);
+                    for (Integer pz : pZs) {
+                        zSet.add(pz + 3);
                     }
                 }
             }

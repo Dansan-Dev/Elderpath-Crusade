@@ -1,8 +1,13 @@
 package io.github.elderpath_crusade.game_objects.board.components;
 
-import io.github.elderpath_crusade.enums.GamePieceData;
+import com.badlogic.ashley.core.Entity;
+import com.badlogic.ashley.core.Family;
+import com.badlogic.ashley.utils.ImmutableArray;
+import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.components.PositionComponent;
+import io.github.elderpath_crusade.ecs.components.SpriteComponent;
+import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import lombok.Getter;
@@ -21,9 +26,8 @@ public class BoardPerspectiveManager {
     }
 
     /**
-     * Physically flip the board by swapping rows in the board and gamePieces
-     * arrays.
-     * Updates all plot bounds and GamePiece POSITION data to reflect new positions.
+     * Physically flip the board by swapping rows in the layout array.
+     * Updates plot bounds and rebuilds GridIndexSystem to reflect new positions.
      */
     public void flipRows() {
         int rows = board.getROWS();
@@ -31,7 +35,6 @@ public class BoardPerspectiveManager {
         int plotWidth = board.getPLOT_WIDTH();
         int plotHeight = board.getPLOT_HEIGHT();
         Renderable[][] layout = board.getLayout();
-        GamePiece[][] pieces = board.getGamePieces();
 
         // Swap plots in layout array (visual)
         for (int row = 0; row < rows / 2; row++) {
@@ -57,45 +60,16 @@ public class BoardPerspectiveManager {
             }
         }
 
-        // Swap gamePieces array rows (write-cache) and update positions
-        for (int row = 0; row < rows / 2; row++) {
-            int swapRow = rows - 1 - row;
-            GamePiece[] tempPieces = pieces[row];
-            pieces[row] = pieces[swapRow];
-            pieces[swapRow] = tempPieces;
-        }
-
-        // Update all piece positions to match new array layout
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                GamePiece gp = pieces[row][col];
-                if (gp != null) {
-                    Object posObj = gp.getData(GamePieceData.POSITION);
-                    if (posObj instanceof Board.Position pos) {
-                        pos.setRow(row);
-                        pos.setCol(col);
-                    }
-                }
-            }
-        }
-
-        // Rebuild GridIndexSystem to match new positions
-        io.github.elderpath_crusade.ecs.systems.GridIndexSystem gridIndex =
-                io.github.elderpath_crusade.GameContext.get().getEcsEngine()
-                        .getSystem(io.github.elderpath_crusade.ecs.systems.GridIndexSystem.class);
-        if (gridIndex != null) {
-            gridIndex.clear();
-            for (int row = 0; row < rows; row++) {
-                for (int col = 0; col < cols; col++) {
-                    GamePiece gp = pieces[row][col];
-                    if (gp != null && gp instanceof io.github.elderpath_crusade.game_objects.board.MonsterGamePiece mgp) {
-                        com.badlogic.ashley.core.Entity entity = mgp.getEntity();
-                        if (entity != null) {
-                            gridIndex.onEntitySpawned(entity, row, col);
-                        }
-                    }
-                }
-            }
+        // Flip all entity positions via ECS and rebuild GridIndexSystem
+        GridIndexSystem gridIndex = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
+        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
+                .getEntitiesFor(Family.all(SpriteComponent.class, PositionComponent.class).get());
+        if (gridIndex != null) gridIndex.clear();
+        for (int i = 0; i < entities.size(); i++) {
+            Entity e = entities.get(i);
+            PositionComponent pos = e.getComponent(PositionComponent.class);
+            pos.row = rows - 1 - pos.row;
+            if (gridIndex != null) gridIndex.onEntitySpawned(e, pos.row, pos.col);
         }
 
         physicallyFlipped = !physicallyFlipped;

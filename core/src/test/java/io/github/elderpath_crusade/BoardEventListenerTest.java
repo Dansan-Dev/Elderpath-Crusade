@@ -1,20 +1,18 @@
 package io.github.elderpath_crusade;
 
+import com.badlogic.ashley.core.Engine;
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
+import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -22,28 +20,24 @@ import static org.mockito.Mockito.*;
 class BoardEventListenerTest {
 
     private Board board;
-    private GamePiece[][] gamePieces;
+    private Engine engine;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         TypedEventBus.get().clear();
         GameContext.create();
-
-        // Create a mock Board with real method implementations for notify methods
+        engine = GameContext.get().getEcsEngine();
         board = mock(Board.class, withSettings().defaultAnswer(CALLS_REAL_METHODS));
-        gamePieces = new GamePiece[3][3];
+    }
 
-        Field gpField = Board.class.getDeclaredField("gamePieces");
-        gpField.setAccessible(true);
-        gpField.set(board, gamePieces);
-
-        Field rowsField = Board.class.getDeclaredField("ROWS");
-        rowsField.setAccessible(true);
-        rowsField.set(board, 3);
-
-        Field colsField = Board.class.getDeclaredField("COLS");
-        colsField.setAccessible(true);
-        colsField.set(board, 3);
+    private void addPieceEntity(MonsterGamePiece piece, PieceAlignment alignment) {
+        Entity entity = engine.createEntity();
+        SpriteComponent sc = new SpriteComponent();
+        sc.piece = piece;
+        entity.add(sc);
+        AlignmentComponent ac = new AlignmentComponent().set(alignment);
+        entity.add(ac);
+        engine.addEntity(entity);
     }
 
     @Test
@@ -104,7 +98,7 @@ class BoardEventListenerTest {
     @Test
     void turnStarted_notifiesPiecesOnBoard() {
         MonsterGamePiece piece = mock(MonsterGamePiece.class);
-        gamePieces[1][1] = piece;
+        addPieceEntity(piece, PieceAlignment.P1);
 
         board.notifyTurnStartedForPieces(PieceAlignment.P1);
 
@@ -114,7 +108,7 @@ class BoardEventListenerTest {
     @Test
     void turnEnded_notifiesPiecesOnBoard() {
         MonsterGamePiece piece = mock(MonsterGamePiece.class);
-        gamePieces[0][2] = piece;
+        addPieceEntity(piece, PieceAlignment.P1);
 
         board.notifyTurnEndedForPieces(PieceAlignment.P1);
 
@@ -123,7 +117,7 @@ class BoardEventListenerTest {
 
     @Test
     void turnStarted_skipsNullPieces() {
-        // All positions are null — should not throw
+        // No entities in engine — should not throw
         assertDoesNotThrow(() -> board.notifyTurnStartedForPieces(PieceAlignment.P1));
     }
 }
