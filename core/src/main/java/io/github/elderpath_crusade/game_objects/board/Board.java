@@ -27,6 +27,7 @@ import io.github.elderpath_crusade.game_objects.board.components.BoardInteractio
 import io.github.elderpath_crusade.game_objects.board.components.BoardNavigator;
 import io.github.elderpath_crusade.game_objects.board.components.BoardOverlayRenderer;
 import io.github.elderpath_crusade.game_objects.board.components.BoardPerspectiveManager;
+import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.game_objects.board.components.BoardRenderer;
 import lombok.Getter;
 import lombok.Setter;
@@ -253,6 +254,11 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public GamePiece getGamePieceAtPos(int row, int col) {
+        GridIndexSystem gridIndex = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
+        if (gridIndex != null) {
+            GamePiece piece = gridIndex.getPieceAt(row, col);
+            if (piece != null) return piece;
+        }
         return gamePieces[row][col];
     }
 
