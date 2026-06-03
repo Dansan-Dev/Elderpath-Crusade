@@ -9,7 +9,7 @@ import io.github.elderpath_crusade.model.board.Position;
  */
 public class PieceModel {
     private final String id;
-    private final String name;
+    private String name;
     private final PieceAlignment alignment;
     private final PieceStats baseStats;
 
@@ -32,6 +32,7 @@ public class PieceModel {
 
     public String getId() { return id; }
     public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
     public PieceAlignment getAlignment() { return alignment; }
     public PieceStats getBaseStats() { return baseStats; }
     public int getCurrentHealth() { return currentHealth; }

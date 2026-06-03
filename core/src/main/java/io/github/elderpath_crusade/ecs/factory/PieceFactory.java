@@ -31,6 +31,7 @@ public final class PieceFactory {
         MonsterGamePiece piece = new MonsterGamePiece(
                 stats, GamePieceType.MONSTER, alignment, UUID.randomUUID(),
                 new NamedCheckerSprite(x, y, width, height, def.id(), alignment));
+        piece.getPieceModel().setName(def.id());
         for (String abilityName : def.abilities()) {
             Ability ability = AbilityFactory.create(abilityName, piece);
             if (ability != null) piece.addAbility(ability);

@@ -4,7 +4,7 @@ import io.github.elderpath_crusade.abilities.impl._multi.aura.PackHunterAbility;
 import io.github.elderpath_crusade.abilities.impl.trigger.OnSummonShockAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
-import io.github.elderpath_crusade.characters.pieces.WolfCub;
+import io.github.elderpath_crusade.model.piece.PieceModel;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
@@ -46,7 +46,7 @@ class AbilityEffectTest {
         wolf.addAbility(new PackHunterAbility());
 
         // WolfCub at (2,3) — mock to avoid LibGDX sprite deps
-        WolfCub cub = createMockWolfCub(PieceAlignment.P1);
+        MonsterGamePiece cub = createMockWolfCub(PieceAlignment.P1);
         Board.Position cubPos = new Board.Position(board, 2, 3);
         cub.updateData(GamePieceData.POSITION, cubPos);
         when(board.getGamePieceAtPos(2, 3)).thenReturn(cub);
@@ -69,7 +69,7 @@ class AbilityEffectTest {
         wolf.updateData(GamePieceData.POSITION, wolfPos);
         wolf.addAbility(new PackHunterAbility());
 
-        WolfCub cub = createMockWolfCub(PieceAlignment.P1);
+        MonsterGamePiece cub = createMockWolfCub(PieceAlignment.P1);
         Board.Position cubPos = new Board.Position(board, 2, 3);
         cub.updateData(GamePieceData.POSITION, cubPos);
         when(board.getGamePieceAtPos(2, 3)).thenReturn(cub);
@@ -164,20 +164,23 @@ class AbilityEffectTest {
     }
 
     /**
-     * Creates a WolfCub-like piece that passes instanceof WolfCub checks
+     * Creates a WolfCub-like piece that passes name-based checks
      * without triggering LibGDX sprite initialization.
      */
-    private WolfCub createMockWolfCub(PieceAlignment alignment) {
-        WolfCub cub = mock(WolfCub.class);
+    private MonsterGamePiece createMockWolfCub(PieceAlignment alignment) {
+        MonsterGamePiece cub = mock(MonsterGamePiece.class);
         StatsAccumulator acc = new StatsAccumulator();
         GamePieceStats stats = GamePieceStats.getMonsterStats(0, 1, 0, 1, 1);
         HashMap<GamePieceData, Object> data = new HashMap<>();
         UUID id = UUID.randomUUID();
+        PieceModel model = mock(PieceModel.class);
+        when(model.getName()).thenReturn("WolfCub");
 
         when(cub.getAlignment()).thenReturn(alignment);
         when(cub.getStatsAccumulator()).thenReturn(acc);
         when(cub.getStats()).thenReturn(stats);
         when(cub.getId()).thenReturn(id);
+        when(cub.getPieceModel()).thenReturn(model);
         // Delegate getData/updateData to the real map
         doAnswer(inv -> data.get(inv.getArgument(0))).when(cub).getData(any());
         doAnswer(inv -> { data.put(inv.getArgument(0), inv.getArgument(1)); return null; })

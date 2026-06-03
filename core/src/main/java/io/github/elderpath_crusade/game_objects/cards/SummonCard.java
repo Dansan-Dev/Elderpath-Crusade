@@ -15,6 +15,9 @@ import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.enums.GameMode;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.utils.Logger;
@@ -45,7 +48,12 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         initializeClickableEffect();
     }
 
-    protected abstract GamePiece instantiatePiece(GamePieceStats stats);
+    protected GamePiece instantiatePiece(GamePieceStats stats) {
+        String key = getRegistryKey();
+        PieceDefinition def = PieceRegistry.get(key);
+        if (def == null) return null;
+        return PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), alignment);
+    }
 
     /**
      * Attempts to spend mana for this card based on its unified stats cost.

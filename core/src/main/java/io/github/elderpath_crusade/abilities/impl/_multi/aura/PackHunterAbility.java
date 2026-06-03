@@ -4,7 +4,6 @@ import io.github.elderpath_crusade.abilities.AbilityType;
 import io.github.elderpath_crusade.abilities.PassiveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
-import io.github.elderpath_crusade.characters.pieces.WolfCub;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.GameEvent;
@@ -123,7 +122,7 @@ public class PackHunterAbility implements PassiveAbility, TriggeredAbility {
             if (nr < 0 || nr >= board.getROWS() || nc < 0 || nc >= board.getCOLS()) continue;
             GamePiece gp = board.getGamePieceAtPos(nr, nc);
             if (gp instanceof MonsterGamePiece mgp) {
-                if (mgp.getAlignment() == align && mgp instanceof WolfCub) {
+                if (mgp.getAlignment() == align && "WolfCub".equals(mgp.getPieceModel().getName())) {
                     now.add(mgp);
                 }
             }
