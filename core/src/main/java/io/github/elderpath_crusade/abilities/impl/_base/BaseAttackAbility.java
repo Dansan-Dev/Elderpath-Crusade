@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.ecs.systems.AttackSystem;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.game.TurnManager;
@@ -156,15 +157,13 @@ public class BaseAttackAbility implements BasicAbility {
         if (!valid)
             return;
 
-        // Perform the attack
-        AbilityUtils.performAttack(
-                board,
-                owner,
-                enemy,
-                ownerRow,
-                ownerCol,
-                targetRow,
-                targetCol);
+        // Perform attack via ECS AttackSystem
+        if (owner.getEntity() == null) return;
+        AttackSystem attackSystem = GameContext.get().getEcsEngine().getSystem(AttackSystem.class);
+        if (attackSystem == null) return;
+        if (!attackSystem.executeAttack(owner.getEntity(), targetRow, targetCol)) return;
+
+        try { owner.notifyAttack(enemy, owner.getEffectiveDamage()); } catch (Exception ignored) {}
 
         // Spend 1 action
         AbilityUtils.spendAction(owner);

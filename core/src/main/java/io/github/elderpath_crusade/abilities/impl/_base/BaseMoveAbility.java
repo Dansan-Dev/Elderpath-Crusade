@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.utils.AbilityUtils;
 import io.github.elderpath_crusade.abilities.BasicAbility;
 import io.github.elderpath_crusade.abilities.MovementUtils;
+import io.github.elderpath_crusade.ecs.systems.MovementSystem;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.GamePieceData;
@@ -142,15 +143,14 @@ public class BaseMoveAbility implements BasicAbility {
         if (!valid) return;
         if (board.isOccupied(destRow, destCol)) return;
 
-        // Perform the movement
-        MovementUtils.performActiveMovement(
-                board,
-                owner,
-                ownerRow,
-                ownerCol,
-                destRow,
-                destCol
-        );
+        // Perform movement via ECS MovementSystem
+        if (owner.getEntity() == null) return;
+        MovementSystem movementSystem = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
+        if (movementSystem == null) return;
+        if (!movementSystem.executeMove(owner.getEntity(), destRow, destCol)) return;
+
+        try { owner.notifyMoved(ownerRow, ownerCol, destRow, destCol); } catch (Exception ignored) {}
+        AbilityUtils.spendAction(owner);
     }
 
     private Plot resolveToPlot(CustomBox box) {
