@@ -33,42 +33,39 @@ public class BoardPerspectiveManager {
         Renderable[][] layout = board.getLayout();
         GamePiece[][] pieces = board.getGamePieces();
 
-        // Swap plots and game pieces in the arrays
+        // Swap plots in layout array (visual)
         for (int row = 0; row < rows / 2; row++) {
             int swapRow = rows - 1 - row;
 
-            // Swap plots in board array
             Renderable[] tempRow = layout[row];
             layout[row] = layout[swapRow];
             layout[swapRow] = tempRow;
 
-            // Swap game pieces in gamePieces array
-            GamePiece[] tempPieces = pieces[row];
-            pieces[row] = pieces[swapRow];
-            pieces[swapRow] = tempPieces;
-
-            // Update bounds for swapped plots in both rows
             for (int col = 0; col < cols; col++) {
-                // Update plot bounds to match new row positions
                 Renderable plot = layout[row][col];
                 if (plot != null && plot.getBounds() != null) {
                     plot.getBounds().setX(col * plotWidth);
                     plot.getBounds().setY(row * plotHeight);
-                    if (plot instanceof Plot p)
-                        p.setGridPos(row, col);
+                    if (plot instanceof Plot p) p.setGridPos(row, col);
                 }
-
                 Renderable swapPlot = layout[swapRow][col];
                 if (swapPlot != null && swapPlot.getBounds() != null) {
                     swapPlot.getBounds().setX(col * plotWidth);
                     swapPlot.getBounds().setY(swapRow * plotHeight);
-                    if (swapPlot instanceof Plot p)
-                        p.setGridPos(swapRow, col);
+                    if (swapPlot instanceof Plot p) p.setGridPos(swapRow, col);
                 }
             }
         }
 
-        // Update all game pieces' POSITION data to reflect new row positions
+        // Swap gamePieces array rows (write-cache) and update positions
+        for (int row = 0; row < rows / 2; row++) {
+            int swapRow = rows - 1 - row;
+            GamePiece[] tempPieces = pieces[row];
+            pieces[row] = pieces[swapRow];
+            pieces[swapRow] = tempPieces;
+        }
+
+        // Update all piece positions to match new array layout
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 GamePiece gp = pieces[row][col];
@@ -77,17 +74,31 @@ public class BoardPerspectiveManager {
                     if (posObj instanceof Board.Position pos) {
                         pos.setRow(row);
                         pos.setCol(col);
-                    } else {
-                        gp.updateData(GamePieceData.POSITION, new Board.Position(board, row, col));
                     }
                 }
             }
         }
 
-        // Toggle the tracked flip state
-        physicallyFlipped = !physicallyFlipped;
+        // Rebuild GridIndexSystem to match new positions
+        io.github.elderpath_crusade.ecs.systems.GridIndexSystem gridIndex =
+                io.github.elderpath_crusade.GameContext.get().getEcsEngine()
+                        .getSystem(io.github.elderpath_crusade.ecs.systems.GridIndexSystem.class);
+        if (gridIndex != null) {
+            gridIndex.clear();
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < cols; col++) {
+                    GamePiece gp = pieces[row][col];
+                    if (gp != null && gp instanceof io.github.elderpath_crusade.game_objects.board.MonsterGamePiece mgp) {
+                        com.badlogic.ashley.core.Entity entity = mgp.getEntity();
+                        if (entity != null) {
+                            gridIndex.onEntitySpawned(entity, row, col);
+                        }
+                    }
+                }
+            }
+        }
 
-        // Notify z-index registry that board structure changed
+        physicallyFlipped = !physicallyFlipped;
         board.markDirtyAndNotify();
     }
 
