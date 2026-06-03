@@ -1,76 +1,47 @@
 package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.events.TurnEndedEvent;
-import io.github.elderpath_crusade.events.TurnStartedEvent;
-import io.github.elderpath_crusade.events.TypedEventBus;
 
 /**
- * Minimal turn manager: tracks current player and invokes PlayerManager
- * start/end turn hooks. P1 starts.
- * Supports waiting state for LOCAL_MATCH mode where players manually start
- * turns.
- *
- * Instance held by GameContext; access via GameContext.get().getTurnManager().
+ * Thin facade over TurnSystem (ECS). Preserves existing API for callers.
+ * All state lives in TurnStateComponent via TurnSystem.
  */
 public class TurnManager {
-    private boolean started = false;
-    private PieceAlignment currentPlayer = PieceAlignment.P1;
-    private boolean waitingForNextPlayer = false;
 
     public TurnManager() {}
 
     public PieceAlignment getCurrentPlayer() {
-        return currentPlayer;
+        return getTurnSystem().getCurrentPlayer();
     }
 
     public boolean isWaitingForNextPlayer() {
-        return waitingForNextPlayer;
+        return getTurnSystem().isWaitingForNextPlayer();
     }
 
     public void startIfNeeded() {
-        if (!started) {
-            started = true;
-            currentPlayer = PieceAlignment.P1;
-            startTurn(currentPlayer);
-        }
+        getTurnSystem().startIfNeeded();
     }
 
     public void endTurn() {
-        if (!started) return;
-        GameContext.get().getPlayerManager().onEndTurn(currentPlayer);
-        TypedEventBus.get().emit(new TurnEndedEvent(currentPlayer));
-
-        currentPlayer = (currentPlayer == PieceAlignment.P1)
-            ? PieceAlignment.P2
-            : PieceAlignment.P1;
-
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
-            waitingForNextPlayer = true;
-        } else {
-            startTurn(currentPlayer);
-        }
+        getTurnSystem().endTurn();
     }
 
     public void startNextPlayerTurn() {
-        if (!waitingForNextPlayer) return;
-        waitingForNextPlayer = false;
-        GameContext.get().getPlayerManager().initializeIfNeeded();
-        startTurn(currentPlayer);
+        getTurnSystem().startNextPlayerTurn();
     }
 
     public void startTurn(PieceAlignment player) {
-        GameContext.get().getPlayerManager().initializeIfNeeded();
-        GameContext.get().getPlayerManager().onStartTurn(player);
-        TypedEventBus.get().emit(new TurnStartedEvent(player));
+        // Legacy method — delegates to startIfNeeded or direct start
+        getTurnSystem().startIfNeeded();
     }
 
     public void reset() {
-        started = false;
-        currentPlayer = PieceAlignment.P1;
-        waitingForNextPlayer = false;
-        GameContext.get().getPlayerManager().resetForNewGame();
+        getTurnSystem().reset();
+    }
+
+    private TurnSystem getTurnSystem() {
+        return GameContext.get().getEcsEngine().getSystem(TurnSystem.class);
     }
 }

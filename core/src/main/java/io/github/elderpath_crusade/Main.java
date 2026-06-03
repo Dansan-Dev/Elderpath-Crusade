@@ -69,6 +69,7 @@ public class Main extends ApplicationAdapter {
         }
 
         // UPDATE
+        GameContext.get().getEcsEngine().update(delta);
         GameContext.get().getHighlightManager().update();
         GameContext.get().getGraphicsManager().update(delta);
 
