@@ -40,7 +40,6 @@ public class MovementSystem extends EntitySystem {
 
     /**
      * Execute a move synchronously (for abilities/input that need immediate resolution).
-     * Adds intent, processes it, removes it — all in one call.
      */
     public boolean executeMove(Entity entity, int toRow, int toCol) {
         Board board = GameContext.get().getActiveBoard();
@@ -62,6 +61,33 @@ public class MovementSystem extends EntitySystem {
         TypedEventBus.get().emit(new PieceMovedEvent(
                 pieceId, owner, fromRow, fromCol, toRow, toCol,
                 PieceMovedEvent.MovementType.ACTIVE, "MovementSystem"));
+        return true;
+    }
+
+    /**
+     * Execute a forced move (no validation beyond bounds/occupancy, no action cost).
+     */
+    public boolean executeForcedMove(Entity entity, int toRow, int toCol, String cause, String abilityName) {
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null || !isValidMove(board, toRow, toCol)) return false;
+
+        PositionComponent pos = posMapper.get(entity);
+        if (pos == null) return false;
+
+        int fromRow = pos.row;
+        int fromCol = pos.col;
+        if (fromRow == toRow && fromCol == toCol) return false;
+
+        pos.set(toRow, toCol);
+        board.moveGamePiece(fromRow, fromCol, toRow, toCol);
+
+        AlignmentComponent align = alignMapper.get(entity);
+        IdentityComponent id = idMapper.get(entity);
+        PieceAlignment owner = (align != null) ? align.alignment : PieceAlignment.NEUTRAL;
+        String pieceId = (id != null) ? id.id : "";
+        TypedEventBus.get().emit(new PieceMovedEvent(
+                pieceId, owner, fromRow, fromCol, toRow, toCol,
+                PieceMovedEvent.MovementType.FORCED, cause != null ? cause : "ABILITY", abilityName));
         return true;
     }
 

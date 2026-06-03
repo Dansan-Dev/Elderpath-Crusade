@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.ecs.components.ModifierComponent;
+import io.github.elderpath_crusade.ecs.components.StunComponent;
 import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.enums.GamePieceData;
@@ -280,6 +281,10 @@ public class MonsterGamePiece extends GamePiece {
      * @return true if STUN_TURNS_REMAINING > 0
      */
     public boolean isStunned() {
+        if (entity != null) {
+            StunComponent stun = entity.getComponent(StunComponent.class);
+            if (stun != null) return stun.isStunned();
+        }
         Object stunObj = getData(GamePieceData.STUN_TURNS_REMAINING);
         if (stunObj instanceof Integer stunTurns) {
             return stunTurns > 0;
