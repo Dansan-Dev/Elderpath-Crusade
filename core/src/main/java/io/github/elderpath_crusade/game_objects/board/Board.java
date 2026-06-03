@@ -265,7 +265,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     public GamePiece getGamePieceAtPlot(Plot plot) {
         if (plot == null)
             return null;
-        return gamePieces[plot.getRow()][plot.getCol()];
+        return getGamePieceAtPos(plot.getRow(), plot.getCol());
     }
 
     public boolean isValidSummonTarget(Plot plot, PieceAlignment alignment) {

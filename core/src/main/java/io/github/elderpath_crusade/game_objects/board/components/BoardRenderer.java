@@ -28,7 +28,6 @@ public class BoardRenderer {
         int pw = board.getPLOT_WIDTH();
         int ph = board.getPLOT_HEIGHT();
         Renderable[][] layout = board.getLayout();
-        GamePiece[][] gamePieces = board.getGamePieces();
         BoardIdentifierSymbol[] rowSymbols = board.getRowIdentifierSymbols();
         BoardIdentifierSymbol[] colSymbols = board.getColIdentifierSymbols();
 
@@ -36,7 +35,7 @@ public class BoardRenderer {
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 layout[row][col].render(batch, zLevel, isPaused, col * pw, row * ph);
-                GamePiece gp = gamePieces[row][col];
+                GamePiece gp = board.getGamePieceAtPos(row, col);
                 if (gp != null) {
                     overlayRenderer.renderHpOverlay(batch, zLevel, col * pw, row * ph, gp, seen);
                 }
@@ -55,7 +54,6 @@ public class BoardRenderer {
         int pw = board.getPLOT_WIDTH();
         int ph = board.getPLOT_HEIGHT();
         Renderable[][] layout = board.getLayout();
-        GamePiece[][] gamePieces = board.getGamePieces();
         BoardIdentifierSymbol[] rowSymbols = board.getRowIdentifierSymbols();
         BoardIdentifierSymbol[] colSymbols = board.getColIdentifierSymbols();
 
@@ -65,7 +63,7 @@ public class BoardRenderer {
                 int absX = x + col * pw;
                 int absY = y + row * ph;
                 layout[row][col].render(batch, zLevel, isPaused, absX, absY);
-                GamePiece gp = gamePieces[row][col];
+                GamePiece gp = board.getGamePieceAtPos(row, col);
                 if (gp != null) {
                     overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
                 }
