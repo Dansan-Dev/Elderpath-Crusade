@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Engine;
 import io.github.elderpath_crusade.assets.AssetService;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.ecs.systems.MovementSystem;
+import io.github.elderpath_crusade.ecs.systems.AttackSystem;
 import io.github.elderpath_crusade.ecs.systems.PieceSyncSystem;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.ecs.systems.PieceRenderSystem;
@@ -82,6 +83,7 @@ public class GameContext {
         this.ecsEngine.addSystem(new PieceSyncSystem());
         this.ecsEngine.addSystem(new GridIndexSystem());
         this.ecsEngine.addSystem(new MovementSystem());
+        this.ecsEngine.addSystem(new AttackSystem());
         this.ecsEngine.addSystem(this.combatSystem);
         this.ecsEngine.addSystem(this.pieceRenderSystem);
         this.assets = new AssetService();
