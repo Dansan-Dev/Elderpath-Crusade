@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.*;
 import com.badlogic.ashley.utils.ImmutableArray;
 import io.github.elderpath_crusade.abilities.data.*;
 import io.github.elderpath_crusade.ecs.components.*;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
 
 import java.util.*;
@@ -53,11 +54,25 @@ public class AbilityResolverSystem extends EntitySystem {
         TriggerType trigger = TriggerMatcher.fromEvent(event);
         if (trigger == null) return;
 
+        String eventPieceId = getEventPieceId(event);
+        PieceAlignment eventPlayer = getEventPlayer(event);
+
         ImmutableArray<Entity> entities = getEngine().getEntitiesFor(family);
         for (int i = 0; i < entities.size(); i++) {
             Entity entity = entities.get(i);
             AbilityInstanceComponent aic = entity.getComponent(AbilityInstanceComponent.class);
             if (aic == null) continue;
+
+            // Ownership check: ON_MOVE/ON_ATTACK/ON_SUMMON/ON_DEATH/ON_KILL fire only for the entity involved
+            if (isOwnerTrigger(trigger)) {
+                IdentityComponent id = entity.getComponent(IdentityComponent.class);
+                if (id == null || !id.id.equals(eventPieceId)) continue;
+            }
+            // Turn triggers fire only for entities matching the turn player
+            if (trigger == TriggerType.ON_TURN_START || trigger == TriggerType.ON_TURN_END) {
+                AlignmentComponent align = entity.getComponent(AlignmentComponent.class);
+                if (align == null || align.alignment != eventPlayer) continue;
+            }
 
             for (AbilityDefinition def : aic.definitions) {
                 if (def.reactions() == null) continue;
@@ -136,5 +151,25 @@ public class AbilityResolverSystem extends EntitySystem {
     @Override
     public void update(float deltaTime) {
         if (!eventQueue.isEmpty()) processQueue();
+    }
+
+    private boolean isOwnerTrigger(TriggerType trigger) {
+        return trigger == TriggerType.ON_MOVE || trigger == TriggerType.ON_ATTACK
+                || trigger == TriggerType.ON_SUMMON || trigger == TriggerType.ON_DEATH
+                || trigger == TriggerType.ON_KILL;
+    }
+
+    private String getEventPieceId(GameEvent event) {
+        if (event instanceof PieceMovedEvent e) return e.pieceId();
+        if (event instanceof PieceAttackedEvent e) return e.attackerId();
+        if (event instanceof PieceSpawnedEvent e) return e.pieceId();
+        if (event instanceof PieceDiedEvent e) return e.pieceId();
+        return "";
+    }
+
+    private PieceAlignment getEventPlayer(GameEvent event) {
+        if (event instanceof TurnStartedEvent e) return e.player();
+        if (event instanceof TurnEndedEvent e) return e.player();
+        return null;
     }
 }
