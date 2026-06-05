@@ -26,27 +26,38 @@ import io.github.elderpath_crusade.utils.Logger;
 import java.util.HashMap;
 
 /**
- * Base class for summon-type cards. Handles multi-target click flow, mana cost,
+ * Data-driven summon card. Handles multi-target click flow, mana cost,
  * summoning onto a Board plot, emitting events, and consuming the card.
  */
-public abstract class SummonCard extends UnitCard implements TargetFilter {
+public class SummonCard extends UnitCard implements TargetFilter {
     protected final Board board;
     protected final PieceAlignment alignment;
+    private final String cardName;
+    private final String registryKey;
 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
 
-    protected SummonCard(
+    public SummonCard(
         Board board, PieceAlignment alignment,
         int x, int y,
         int width, int height,
-        int z
+        int z,
+        String cardName, String registryKey
     ) {
         super(x, y, width, height, z);
         this.board = board;
         this.alignment = alignment;
+        this.cardName = cardName;
+        this.registryKey = registryKey;
         initializeClickableEffect();
     }
+
+    @Override
+    public String getCardName() { return cardName; }
+
+    @Override
+    protected String getRegistryKey() { return registryKey; }
 
     /**
      * Attempts to spend mana for this card based on its unified stats cost.

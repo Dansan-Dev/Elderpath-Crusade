@@ -5,15 +5,15 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.game.PlayerManager;
-import io.github.elderpath_crusade.config.SettingsManager;
-import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
@@ -24,12 +24,27 @@ import io.github.elderpath_crusade.data_objects.Box;
 import java.util.HashMap;
 
 /**
- * Base class for spell-type cards. Handles targeting, mana cost,
- * manual effect execution, and standard spell rendering (Mana + Description).
+ * Data-driven spell card. Handles targeting, mana cost, effect execution, and standard spell rendering.
  */
-public abstract class SpellCard extends Card implements TargetFilter {
+public class SpellCard extends Card implements TargetFilter {
+
+    @FunctionalInterface
+    public interface SpellEffect {
+        void apply(Board board, Plot plot, PieceAlignment caster);
+    }
+
+    @FunctionalInterface
+    public interface SpellTargetFilter {
+        boolean test(Board board, Plot plot, PieceAlignment caster);
+    }
+
     protected final Board board;
     protected final PieceAlignment alignment;
+    private final String spellName;
+    private final String description;
+    private final int manaCost;
+    private final SpellEffect effect;
+    private final SpellTargetFilter targetFilter;
 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
@@ -37,47 +52,41 @@ public abstract class SpellCard extends Card implements TargetFilter {
     private Text manaText;
     private Text descText;
 
-    protected SpellCard(
+    public SpellCard(
             Board board, PieceAlignment alignment,
-            int x, int y,
-            int width, int height,
-            int z) {
+            int x, int y, int width, int height, int z,
+            String spellName, int manaCost, String description,
+            SpellEffect effect,
+            SpellTargetFilter targetFilter) {
         super(x, y, width, height, z, null);
         this.board = board;
         this.alignment = alignment;
+        this.spellName = spellName;
+        this.description = description;
+        this.manaCost = manaCost;
+        this.effect = effect;
+        this.targetFilter = targetFilter;
 
-        setTitle(getSpellName(), FontType.SILKSCREEN);
+        setTitle(spellName, FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
-
         initUi();
         initializeClickableEffect();
     }
 
-    protected abstract String getSpellName();
-
-    protected abstract String getSpellDescription();
-
-    protected abstract int getManaCost();
-
-    protected abstract ClickableEffectData getSpellEffectData();
-
-    /**
-     * Concrete effect logic for the spell.
-     */
-    protected abstract void applySpellEffect(HashMap<Integer, CustomBox> entities);
+    public String getSpellName() { return spellName; }
+    public int getManaCost() { return manaCost; }
 
     private void initUi() {
         manaText = new Text(
-                String.valueOf(getManaCost()),
+                String.valueOf(manaCost),
                 FontType.SILKSCREEN,
                 0, 0,
                 getZLayer(),
                 Color.WHITE);
 
-        String desc = getSpellDescription();
-        if (desc != null && !desc.isEmpty()) {
+        if (description != null && !description.isEmpty()) {
             descText = new Text(
-                    desc,
+                    description,
                     FontType.SILKSCREEN,
                     0, 0,
                     getZLayer(),
@@ -112,22 +121,24 @@ public abstract class SpellCard extends Card implements TargetFilter {
                 (HashMap<Integer, CustomBox> entities) -> {
                     if (!trySpendMana())
                         return;
-                    applySpellEffect(entities);
+                    CustomBox target = entities.get(1);
+                    if (target instanceof Plot plot) {
+                        effect.apply(board, plot, alignment);
+                    }
                     consume();
                 },
-                getSpellEffectData());
+                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
     }
 
-    protected boolean trySpendMana() {
+    private boolean trySpendMana() {
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        int cost = getManaCost();
-        if (playerState == null || playerState.mana < cost) {
+        if (playerState == null || playerState.mana < manaCost) {
             Logger.log(
                     "SpellCard",
-                    "Not enough mana. Need=" + cost + ", have=" + (playerState == null ? 0 : playerState.mana));
+                    "Not enough mana. Need=" + manaCost + ", have=" + (playerState == null ? 0 : playerState.mana));
             return false;
         }
-        playerState.mana -= cost;
+        playerState.mana -= manaCost;
         return true;
     }
 
@@ -156,11 +167,18 @@ public abstract class SpellCard extends Card implements TargetFilter {
             return null;
 
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        int cost = getManaCost();
-        if (playerState == null || playerState.mana < cost)
+        if (playerState == null || playerState.mana < manaCost)
             return null;
 
         return clickableEffectData;
+    }
+
+    @Override
+    public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+        if (box instanceof Plot plot) {
+            return targetFilter.test(board, plot, alignment);
+        }
+        return false;
     }
 
     @Override
@@ -168,14 +186,12 @@ public abstract class SpellCard extends Card implements TargetFilter {
         int w = getWidth();
         int h = getHeight();
 
-        // Mana
         if (manaText != null) {
             int tx = x + Math.round(w * CardRenderUtils.MANA_CX) - manaText.getWidth() / 2;
             int ty = y + Math.round(h * CardRenderUtils.MANA_CY) - manaText.getHeight() / 2;
             manaText.render(batch, zLevel, false, tx, ty);
         }
 
-        // Description
         if (descText != null) {
             int marginX = Math.round(w * CardRenderUtils.DESC_MARGIN_X_PCT);
             int wrapW = Math.max(1, w - marginX * 2);

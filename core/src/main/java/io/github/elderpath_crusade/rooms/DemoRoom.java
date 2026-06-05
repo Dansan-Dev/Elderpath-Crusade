@@ -1,8 +1,8 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.cards.*;
 import io.github.elderpath_crusade.game_objects.cards.Card;
+import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game.DeckManager;
@@ -50,21 +50,12 @@ public class DemoRoom extends BattleRoom {
                     cards.add(cardCreator.apply(params));
                 }
             } else {
+                String[] fallbackDeck = {"Rogue","Fairy","Wind Spirit","Big Toad","Sniper",
+                        "Barbarian","King","Charger","Crossbowman","Skeleton Bomber","Warp Mage"};
                 for (int i = 0; i < 24; i++) {
-                    int kind = i % 11;
-                    switch (kind) {
-                        case 1 -> cards.add(new RogueCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 2 -> cards.add(new FairyCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 3 -> cards.add(new WindSpiritCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 4 -> cards.add(new BigToadCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 5 -> cards.add(new SniperCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 6 -> cards.add(new BarbarianCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 7 -> cards.add(new KingCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 8 -> cards.add(new ChargerCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 9 -> cards.add(new CrossbowmanCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        case 10 -> cards.add(new SkeletonBomberCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                        default -> cards.add(new WarpMageCard(board, PieceAlignment.P1, 0, 0, 125, 200, 0));
-                    }
+                    String name = fallbackDeck[i % fallbackDeck.length];
+                    DeckManager.CardCreationParams p = new DeckManager.CardCreationParams(board, PieceAlignment.P1, 0, 0, 125, 200, 0);
+                    cards.add(CardFactory.create(name, p));
                 }
             }
             Deck deck = new Deck(cards, 0, 10, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
@@ -76,8 +67,9 @@ public class DemoRoom extends BattleRoom {
         } else {
             // P2 Deck Logic
             for (int i = 0; i < 10; i++) {
-                if (i % 2 == 0) cards.add(new RiflemanCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
-                else cards.add(new RogueCard(board, PieceAlignment.P2, 0, 0, 125, 200, 0));
+                String name = (i % 2 == 0) ? "Rifleman" : "Rogue";
+                DeckManager.CardCreationParams p = new DeckManager.CardCreationParams(board, PieceAlignment.P2, 0, 0, 125, 200, 0);
+                cards.add(CardFactory.create(name, p));
             }
             Deck deck = new Deck(cards, 0, screenH - 200, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
             deck.shuffle();

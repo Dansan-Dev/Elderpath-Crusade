@@ -3,7 +3,7 @@ package io.github.elderpath_crusade.bot.impl;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.utils.Timer;
-import io.github.elderpath_crusade.cards.WolfCard;
+import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -63,8 +63,8 @@ public class BasicBot implements Bot {
     private boolean tryPlayOneWolfCard(Board b) {
         var ps = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (ps == null || ps.hand == null) return false;
-        WolfCard targetCard = null;
-        for (var c : ps.hand.getCards()) { if (c instanceof WolfCard wc) { targetCard = wc; break; } }
+        SummonCard targetCard = null;
+        for (var c : ps.hand.getCards()) { if (c instanceof SummonCard sc && "Wolf".equals(sc.getCardName())) { targetCard = sc; break; } }
         if (targetCard == null) return false;
 
         int lastRow = b.getROWS() - 1;

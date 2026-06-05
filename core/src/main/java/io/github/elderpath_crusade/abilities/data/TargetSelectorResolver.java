@@ -28,6 +28,10 @@ public class TargetSelectorResolver {
             case "AllEnemyUnits" -> getAllByAlignment(owner, true);
             case "AllFriendlyUnits" -> getAllByAlignment(owner, false);
             case "NearestEnemy" -> getNearestByAlignment(owner, true);
+            case "NearestAdjacentEnemy" -> {
+                List<Entity> adj = getAdjacentByAlignment(owner, true);
+                yield adj.isEmpty() ? List.of() : List.of(adj.get(0));
+            }
             case "UnitsInRow" -> getUnitsInRow(owner, selector, context);
             default -> List.of();
         };

@@ -1,7 +1,15 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
-import io.github.elderpath_crusade.cards.*;
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.StatsComponent;
+import io.github.elderpath_crusade.ecs.systems.CombatSystem;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game.DeckManager;
+import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.game_objects.board.Plot;
 
 import java.util.*;
 import java.util.function.Function;
@@ -13,28 +21,73 @@ public final class CardFactory {
 
     public static void initialize() {
         REGISTRY.clear();
-        register("Wolf", p -> new WolfCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Wolf Cub", p -> new WolfCubCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Rogue", p -> new RogueCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Fairy", p -> new FairyCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Wind Spirit", p -> new WindSpiritCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Big Toad", p -> new BigToadCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Sniper", p -> new SniperCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Barbarian", p -> new BarbarianCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("King", p -> new KingCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Charger", p -> new ChargerCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Crossbowman", p -> new CrossbowmanCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Skeleton Bomber", p -> new SkeletonBomberCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Warp Mage", p -> new WarpMageCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Commander", p -> new CommanderCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Hero", p -> new HeroCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Storm Mage", p -> new StormMageCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Rifleman", p -> new RiflemanCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Crow", p -> new CrowCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Shockling", p -> new ShocklingCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Fireball", p -> new Fireball(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Healing Light", p -> new HealingLight(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
-        register("Frostbolt", p -> new Frostbolt(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z()));
+        registerSummon("Wolf", "Wolf");
+        registerSummon("Wolf Cub", "WolfCub");
+        registerSummon("Rogue", "Rogue");
+        registerSummon("Fairy", "Fairy");
+        registerSummon("Wind Spirit", "WindSpirit");
+        registerSummon("Big Toad", "BigToad");
+        registerSummon("Sniper", "Sniper");
+        registerSummon("Barbarian", "Barbarian");
+        registerSummon("King", "King");
+        registerSummon("Charger", "Charger");
+        registerSummon("Crossbowman", "Crossbowman");
+        registerSummon("Skeleton Bomber", "SkeletonBomber");
+        registerSummon("Warp Mage", "WarpMage");
+        registerSummon("Commander", "Commander");
+        registerSummon("Hero", "Hero");
+        registerSummon("Storm Mage", "StormMage");
+        registerSummon("Rifleman", "Rifleman");
+        registerSummon("Crow", "Crow");
+        registerSummon("Shockling", "Shockling");
+
+        registerSpell("Fireball", 3, "Deal 2 damage to a target piece.",
+                (board, plot, caster) -> {
+                    Entity e = board.getEntityAtPlot(plot);
+                    if (e != null) GameContext.get().getEcsEngine().getSystem(CombatSystem.class).applyDamage(e, 2);
+                },
+                (board, plot, caster) -> board.getEntityAtPlot(plot) != null);
+
+        registerSpell("Frostbolt", 2, "Deal 1 damage to an enemy\nand freeze it (0 actions).",
+                (board, plot, caster) -> {
+                    Entity e = board.getEntityAtPlot(plot);
+                    if (e != null) {
+                        GameContext.get().getEcsEngine().getSystem(CombatSystem.class).applyDamage(e, 1);
+                        StatsComponent stats = e.getComponent(StatsComponent.class);
+                        if (stats != null && stats.currentHealth > 0) stats.remainingActions = 0;
+                    }
+                },
+                (board, plot, caster) -> {
+                    Entity e = board.getEntityAtPlot(plot);
+                    if (e == null) return false;
+                    PieceAlignment target = EntityUtils.getAlignment(e);
+                    return target != caster && target != PieceAlignment.NEUTRAL;
+                });
+
+        registerSpell("Healing Light", 2, "Heal a friendly piece\nfor 2 HP.",
+                (board, plot, caster) -> {
+                    Entity e = board.getEntityAtPlot(plot);
+                    if (e != null) {
+                        StatsComponent stats = e.getComponent(StatsComponent.class);
+                        if (stats != null) stats.currentHealth = Math.min(stats.currentHealth + 2, EntityUtils.getMaxHealth(e));
+                    }
+                },
+                (board, plot, caster) -> {
+                    Entity e = board.getEntityAtPlot(plot);
+                    if (e == null) return false;
+                    return EntityUtils.getAlignment(e) == caster
+                            && EntityUtils.getCurrentHealth(e) < EntityUtils.getMaxHealth(e);
+                });
+    }
+
+    private static void registerSummon(String displayName, String registryKey) {
+        register(displayName, p -> new SummonCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), displayName, registryKey));
+    }
+
+    private static void registerSpell(String name, int manaCost, String description,
+                                      SpellCard.SpellEffect effect, SpellCard.SpellTargetFilter targetFilter) {
+        register(name, p -> new SpellCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(),
+                name, manaCost, description, effect, targetFilter));
     }
 
     public static void register(String name, Function<DeckManager.CardCreationParams, Card> creator) {

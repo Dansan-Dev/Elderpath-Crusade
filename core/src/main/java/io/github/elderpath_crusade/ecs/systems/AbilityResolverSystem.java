@@ -142,10 +142,9 @@ public class AbilityResolverSystem extends EntitySystem {
         Object targetParam = effect.params().get("target");
         if (targetParam instanceof String s) {
             if (s.equals("$self")) return List.of(owner);
-            List<Entity> resolved = TargetSelectorResolver.resolve(new TargetSelector(s), owner, context);
-            if (!resolved.isEmpty()) return resolved;
+            return TargetSelectorResolver.resolve(new TargetSelector(s), owner, context);
         }
-        return List.of(owner);
+        return List.of();
     }
 
     @Override
