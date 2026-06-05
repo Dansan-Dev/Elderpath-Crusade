@@ -1,15 +1,15 @@
 package io.github.elderpath_crusade.cards;
 
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.game_objects.cards.SpellCard;
 import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.utils.AbilityUtils;
 
 import java.util.HashMap;
 
@@ -50,9 +50,9 @@ public class Fireball extends SpellCard {
     protected void applySpellEffect(HashMap<Integer, CustomBox> entities) {
         CustomBox firstClicked = entities.get(1);
         if (firstClicked instanceof Plot plot) {
-            GamePiece gp = board.getGamePieceAtPlot(plot);
-            if (gp instanceof MonsterGamePiece target) {
-                AbilityUtils.dealDamage(target, 2, null, true);
+            Entity entity = board.getEntityAtPlot(plot);
+            if (entity != null) {
+                GameContext.get().getEcsEngine().getSystem(CombatSystem.class).applyDamage(entity, 2);
             }
         }
     }
@@ -60,8 +60,7 @@ public class Fireball extends SpellCard {
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (box instanceof Plot plot) {
-            GamePiece gp = board.getGamePieceAtPlot(plot);
-            return gp instanceof MonsterGamePiece;
+            return board.getEntityAtPlot(plot) != null;
         }
         return false;
     }

@@ -231,8 +231,11 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public GamePiece getGamePieceAtPos(int row, int col) {
-        GridIndexSystem gi = getGridIndex();
-        return gi != null ? gi.getPieceAt(row, col) : null;
+        Entity entity = getEntityAtPos(row, col);
+        if (entity == null) return null;
+        io.github.elderpath_crusade.ecs.components.PieceRefComponent ref =
+                entity.getComponent(io.github.elderpath_crusade.ecs.components.PieceRefComponent.class);
+        return ref != null ? ref.piece : null;
     }
 
     public com.badlogic.ashley.core.Entity getEntityAtPos(int row, int col) {
@@ -244,6 +247,11 @@ public class Board extends HigherOrderTexture implements Updatable {
         if (plot == null)
             return null;
         return getGamePieceAtPos(plot.getRow(), plot.getCol());
+    }
+
+    public Entity getEntityAtPlot(Plot plot) {
+        if (plot == null) return null;
+        return getEntityAtPos(plot.getRow(), plot.getCol());
     }
 
     public boolean isValidSummonTarget(Plot plot, PieceAlignment alignment) {
@@ -380,8 +388,8 @@ public class Board extends HigherOrderTexture implements Updatable {
                     .getEntitiesFor(Family.all(SpriteComponent.class).get());
             for (int i = 0; i < entities.size(); i++) {
                 SpriteComponent sc = entities.get(i).getComponent(SpriteComponent.class);
-                if (sc != null && sc.piece != null && sc.piece.getSprite() != null) {
-                    List<Integer> pZs = sc.piece.getSprite().getZs();
+                if (sc != null && sc.renderable != null) {
+                    List<Integer> pZs = sc.renderable.getZs();
                     zSet.addAll(pZs);
                     for (Integer pz : pZs) {
                         zSet.add(pz + 3);

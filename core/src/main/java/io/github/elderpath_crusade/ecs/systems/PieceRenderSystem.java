@@ -10,16 +10,15 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 
 /**
  * ECS system that renders pieces using SpriteComponent + PositionComponent.
- * Applies stun/exhaustion tinting based on piece status.
+ * Applies stun/exhaustion tinting based on entity status.
  */
 public class PieceRenderSystem extends EntitySystem {
 
@@ -40,9 +39,6 @@ public class PieceRenderSystem extends EntitySystem {
         entities = engine.getEntitiesFor(family);
     }
 
-    /**
-     * Render all piece entities at their grid positions with status effect tinting.
-     */
     public void render(SpriteBatch batch, int zLevel, boolean isPaused,
                        int boardX, int boardY, int plotWidth, int plotHeight) {
         for (int i = 0; i < entities.size(); i++) {
@@ -55,16 +51,15 @@ public class PieceRenderSystem extends EntitySystem {
             int absX = boardX + pos.col * plotWidth;
             int absY = boardY + pos.row * plotHeight;
 
-            MonsterGamePiece piece = sprite.piece;
-            if (piece != null && piece.isStunned()) {
+            if (EntityUtils.isStunned(entity)) {
                 Color original = batch.getColor().cpy();
                 batch.setColor(STUN_TINT);
                 sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
                 batch.setColor(original);
                 renderStunSymbol(batch, zLevel, absX, absY, plotWidth, plotHeight);
-            } else if (piece != null && piece.isExhausted()) {
+            } else if (EntityUtils.isExhausted(entity)) {
                 PieceAlignment currentPlayer = GameContext.get().getTurnManager().getCurrentPlayer();
-                if (piece.getAlignment() == currentPlayer) {
+                if (EntityUtils.getAlignment(entity) == currentPlayer) {
                     Color original = batch.getColor().cpy();
                     batch.setColor(DARKEN_TINT);
                     sprite.renderable.render(batch, zLevel, isPaused, absX, absY);

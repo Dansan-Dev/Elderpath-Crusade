@@ -55,7 +55,8 @@ public class PieceSyncSystem extends EntitySystem {
                 piece.getStats().getSpeed(),
                 piece.getStats().getActions()
         ));
-        entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()).setPiece(piece));
+        entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()));
+        entity.add(new PieceRefComponent().set(piece));
         entity.add(new ModifierComponent());
         entity.add(new ComputedStatsComponent());
 
@@ -107,9 +108,9 @@ public class PieceSyncSystem extends EntitySystem {
         if (gridIndex != null) {
             gridIndex.onEntityDied(event.row(), event.col());
         }
-        SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
-        if (sprite != null && sprite.piece != null) {
-            sprite.piece.setEntity(null);
+        PieceRefComponent ref = entity.getComponent(PieceRefComponent.class);
+        if (ref != null && ref.piece instanceof MonsterGamePiece mgp) {
+            mgp.setEntity(null);
         }
         getEngine().removeEntity(entity);
     }

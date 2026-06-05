@@ -53,10 +53,7 @@ public class AttackSystem extends EntitySystem {
         IdentityComponent defenderId = idMapper.get(defender);
         PositionComponent defenderPos = posMapper.get(defender);
 
-        SpriteComponent attackerSprite = attacker.getComponent(SpriteComponent.class);
-        int damage = (attackerSprite != null && attackerSprite.piece != null)
-                ? attackerSprite.piece.getEffectiveDamage()
-                : statsMapper.get(attacker).damage;
+        int damage = io.github.elderpath_crusade.ecs.EntityUtils.getDamage(attacker);
 
         CombatSystem combat = getEngine().getSystem(CombatSystem.class);
         boolean died = (combat != null) && combat.resolveAttack(attacker, defender, damage);
@@ -101,11 +98,8 @@ public class AttackSystem extends EntitySystem {
         IdentityComponent defenderId = idMapper.get(defender);
         PositionComponent defenderPos = posMapper.get(defender);
 
-        // Resolve damage — use effective damage (includes modifiers) when piece reference available
-        SpriteComponent attackerSprite = attacker.getComponent(SpriteComponent.class);
-        int damage = (attackerSprite != null && attackerSprite.piece != null)
-                ? attackerSprite.piece.getEffectiveDamage()
-                : attackerStats.damage;
+        // Resolve damage — use effective damage (includes modifiers)
+        int damage = io.github.elderpath_crusade.ecs.EntityUtils.getDamage(attacker);
         CombatSystem combat = getEngine().getSystem(CombatSystem.class);
         boolean died = (combat != null) && combat.resolveAttack(attacker, defender, damage);
 

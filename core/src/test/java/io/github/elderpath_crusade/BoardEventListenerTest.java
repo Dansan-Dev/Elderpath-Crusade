@@ -3,6 +3,7 @@ package io.github.elderpath_crusade;
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
+import io.github.elderpath_crusade.ecs.components.PieceRefComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -33,8 +34,8 @@ class BoardEventListenerTest {
     private void addPieceEntity(MonsterGamePiece piece, PieceAlignment alignment) {
         Entity entity = engine.createEntity();
         SpriteComponent sc = new SpriteComponent();
-        sc.piece = piece;
         entity.add(sc);
+        entity.add(new PieceRefComponent().set(piece));
         AlignmentComponent ac = new AlignmentComponent().set(alignment);
         entity.add(ac);
         engine.addEntity(entity);

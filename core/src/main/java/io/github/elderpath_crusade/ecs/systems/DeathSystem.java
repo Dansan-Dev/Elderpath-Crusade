@@ -41,11 +41,6 @@ public class DeathSystem extends EntitySystem {
 
         Board board = GameContext.get().getActiveBoard();
         for (Entity entity : dead) {
-            SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
-            if (sprite != null && sprite.piece != null) {
-                sprite.piece.detachAllAbilities();
-            }
-
             PositionComponent pos = entity.getComponent(PositionComponent.class);
             IdentityComponent id = entity.getComponent(IdentityComponent.class);
             String pieceId = (id != null) ? id.id : "";
@@ -56,10 +51,6 @@ public class DeathSystem extends EntitySystem {
 
             if (board != null && pos != null) {
                 board.removeGamePieceAtPos(row, col);
-            }
-
-            if (sprite != null && sprite.piece != null) {
-                sprite.piece.setEntity(null);
             }
 
             getEngine().removeEntity(entity);

@@ -5,11 +5,9 @@ import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
-import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.ecs.systems.MovementSystem;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +16,6 @@ import java.util.Map;
 public class EffectExecutor {
 
     private static final ComponentMapper<StatsComponent> statsMapper = ComponentMapper.getFor(StatsComponent.class);
-    private static final ComponentMapper<SpriteComponent> spriteMapper = ComponentMapper.getFor(SpriteComponent.class);
 
     public static void execute(EffectNode effect, List<Entity> targets, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
         switch (effect.type()) {
@@ -146,9 +143,9 @@ public class EffectExecutor {
         if (params.containsKey("addRange")) mod.addRange = ((Number) params.get("addRange")).intValue();
 
         for (Entity target : targets) {
-            SpriteComponent sc = spriteMapper.get(target);
-            if (sc != null && sc.piece != null) {
-                sc.piece.getStatsAccumulator().add(mod);
+            io.github.elderpath_crusade.ecs.components.ModifierComponent mc = target.getComponent(io.github.elderpath_crusade.ecs.components.ModifierComponent.class);
+            if (mc != null) {
+                mc.accumulator.add(mod);
             }
         }
     }
