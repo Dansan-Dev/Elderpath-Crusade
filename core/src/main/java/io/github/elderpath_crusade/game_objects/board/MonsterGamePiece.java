@@ -1,41 +1,31 @@
 package io.github.elderpath_crusade.game_objects.board;
+
 import io.github.elderpath_crusade.abilities.Ability;
-import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
 import io.github.elderpath_crusade.ecs.components.ModifierComponent;
 import io.github.elderpath_crusade.ecs.components.StunComponent;
-import io.github.elderpath_crusade.abilities.TriggeredAbility;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
-import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.model.piece.PieceModel;
 import io.github.elderpath_crusade.model.piece.PieceStats;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 public class MonsterGamePiece extends GamePiece {
 
     private record BoardContext(Board board, Board.Position position) {}
 
-    // Container for this piece's abilities (defined by concrete piece classes)
-    private final List<Ability> abilities = new ArrayList<>();
-    // Accumulator of all modifiers affecting this piece (local + auras from others)
     private final StatsAccumulator statsAccumulator = new StatsAccumulator();
-    // ECS entity backing this piece (set after spawn by PieceSyncSystem)
     @Getter
     private Entity entity;
-    // Pure model mirror for testability and future migration
     @Getter
     private final PieceModel pieceModel;
 
@@ -45,9 +35,6 @@ public class MonsterGamePiece extends GamePiece {
         this.pieceModel = new PieceModel(
                 id.toString(), type.name(), alignment,
                 new PieceStats(stats.getCost(), stats.getMaxHealth(), stats.getDamage(), stats.getSpeed(), stats.getActions()));
-        // Add default base abilities
-        this.addAbility(new BaseMoveAbility(this));
-        this.addAbility(new BaseAttackAbility(this));
     }
 
     public void setEntity(Entity entity) {
@@ -65,108 +52,28 @@ public class MonsterGamePiece extends GamePiece {
         return statsAccumulator;
     }
 
-    /**
-     * O(1) position lookup from the ECS entity's PositionComponent.
-     * Returns null if no entity is linked.
-     */
     public io.github.elderpath_crusade.ecs.components.PositionComponent getPositionComponent() {
         if (entity == null) return null;
         return entity.getComponent(io.github.elderpath_crusade.ecs.components.PositionComponent.class);
     }
 
-    // ---- Abilities API ----
-    public void addAbility(Ability ability) {
-        if (ability == null) return;
-        abilities.add(ability);
-        if (entity != null) {
-            io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
-                entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
-            if (ac != null) ac.addAbility(ability);
-        }
-        ability.onAttach(this);
-    }
+    // ---- Abilities API (stubs — OOP abilities removed, data-driven system is authoritative) ----
+    public void addAbility(Ability ability) { /* no-op */ }
+    public void removeAbility(Ability ability) { /* no-op */ }
+    public List<Ability> getAbilities() { return Collections.emptyList(); }
+    public void detachAllAbilities() { /* no-op */ }
 
-    public void removeAbility(Ability ability) {
-        if (ability == null) return;
-        if (abilities.remove(ability)) {
-            if (entity != null) {
-                io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
-                    entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
-                if (ac != null) ac.removeAbility(ability);
-            }
-            try { ability.onDetach(); } catch (Exception ignored) {}
-        }
-    }
-
-    public List<Ability> getAbilities() {
-        if (entity != null) {
-            io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
-                entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
-            if (ac != null) return ac.getAbilities();
-        }
-        return Collections.unmodifiableList(abilities);
-    }
-
-    private void forEachTriggered(Consumer<TriggeredAbility> action) {
-        if (abilities.isEmpty()) return;
-        abilities.stream()
-            .filter(ability -> ability instanceof TriggeredAbility)
-            .map(ability -> (TriggeredAbility) ability)
-            .forEach((triggeredAbility) -> {
-                try { action.accept(triggeredAbility);} catch (Exception ignored){}
-            });
-    }
-
-    public void notifySpawned(int row, int col) {
-        forEachTriggered(a -> a.onOwnerSpawned(this, row, col));
-    }
-
-    public void notifyMoved(int fromRow, int fromCol, int toRow, int toCol) {
-        forEachTriggered(a -> a.onOwnerMoved(this, fromRow, fromCol, toRow, toCol));
-    }
-
-    public void notifyAttack(MonsterGamePiece target, int damage) {
-        forEachTriggered(a -> a.onOwnerAttack(this, target, damage));
-    }
-
-    public void notifyDamaged(int amount, MonsterGamePiece source) {
-        forEachTriggered(a -> a.onOwnerDamaged(this, amount, source));
-    }
-
-    public void notifyDied() {
-        forEachTriggered(a -> a.onOwnerDied(this));
-    }
-
-    public void notifyTurnStarted(PieceAlignment currentPlayer) {
-        forEachTriggered(a -> a.onTurnStarted(currentPlayer));
-    }
-
-    public void notifyTurnEnded(PieceAlignment endingPlayer) {
-        forEachTriggered(a -> a.onTurnEnded(endingPlayer));
-    }
-
-    public void detachAllAbilities() {
-        for (Ability a : abilities) {
-            try { a.onDetach(); } catch (Exception ignored) {}
-        }
-        abilities.clear();
-        if (entity != null) {
-            io.github.elderpath_crusade.ecs.components.AbilityComponent ac =
-                entity.getComponent(io.github.elderpath_crusade.ecs.components.AbilityComponent.class);
-            if (ac != null) ac.clear();
-        }
-        // Clear any lingering external modifiers targeting this piece
-        // External abilities should call StatsModifier.clear(), but as a safety, remove by null source does nothing.
-    }
+    public void notifySpawned(int row, int col) { /* no-op */ }
+    public void notifyMoved(int fromRow, int fromCol, int toRow, int toCol) { /* no-op */ }
+    public void notifyAttack(MonsterGamePiece target, int damage) { /* no-op */ }
+    public void notifyDamaged(int amount, MonsterGamePiece source) { /* no-op */ }
+    public void notifyDied() { /* no-op */ }
+    public void notifyTurnStarted(PieceAlignment currentPlayer) { /* no-op */ }
+    public void notifyTurnEnded(PieceAlignment endingPlayer) { /* no-op */ }
 
     public GamePieceStats getEffectiveStats() {
-        int damage = getEffectiveDamage();
-        int speed = getEffectiveSpeed();
-        int actions = getEffectiveActions();
-        int maxHealth = getEffectiveMaxHealth();
-        int cost = getEffectiveCost();
         return GamePieceStats.getMonsterStats(
-            cost, maxHealth, damage, speed, actions
+            getEffectiveCost(), getEffectiveMaxHealth(), getEffectiveDamage(), getEffectiveSpeed(), getEffectiveActions()
         );
     }
 
@@ -226,9 +133,6 @@ public class MonsterGamePiece extends GamePiece {
         return StatsModifier.applyInt(base, add, mult);
     }
 
-    /**
-     * Effective attack range in tiles (cardinal lines). Base is 0 and must be modified by abilities.
-     */
     public int getEffectiveRange() {
         if (entity != null) {
             io.github.elderpath_crusade.ecs.components.ComputedStatsComponent c = entity.getComponent(io.github.elderpath_crusade.ecs.components.ComputedStatsComponent.class);
@@ -267,30 +171,19 @@ public class MonsterGamePiece extends GamePiece {
         return false;
     }
 
-    /**
-     * Heal this piece by the specified amount, capped at max health.
-     * @param amount The amount of health to restore
-     * @return true if health increased, false if already at max health
-     */
     public boolean heal(int amount) {
         if (amount <= 0) return false;
         int currentHealth = getStats().getCurrentHealth();
         int maxHealth = getEffectiveMaxHealth();
-        if (currentHealth >= maxHealth) {
-            return false; // Already at max health
-        }
+        if (currentHealth >= maxHealth) return false;
         int newHealth = Math.min(currentHealth + amount, maxHealth);
         getStats().setCurrentHealth(newHealth);
-        return newHealth > currentHealth; // Return true if health actually increased
+        return newHealth > currentHealth;
     }
 
     public void die() {
         Optional<BoardContext> context = getBoardContext();
         if (context.isEmpty()) return;
-
-        // Detach abilities before removing from board
-        detachAllAbilities();
-
         BoardContext ctx = context.get();
         Board.Position pos = ctx.position;
         Board board = ctx.board;
@@ -299,40 +192,22 @@ public class MonsterGamePiece extends GamePiece {
 
     private Optional<BoardContext> getBoardContext() {
         Object posObj = getData(GamePieceData.POSITION);
-        if (!(posObj instanceof Board.Position pos)) {
-            return Optional.empty();
-        }
-
+        if (!(posObj instanceof Board.Position pos)) return Optional.empty();
         Board board = pos.getBoard();
-        if (board == null) {
-            return Optional.empty();
-        }
-
+        if (board == null) return Optional.empty();
         return Optional.of(new BoardContext(board, pos));
     }
 
-    // --- Status effect checks ---
-    /**
-     * Check if this piece is currently stunned (cannot act).
-     * @return true if STUN_TURNS_REMAINING > 0
-     */
     public boolean isStunned() {
         if (entity != null) {
             StunComponent stun = entity.getComponent(StunComponent.class);
             if (stun != null) return stun.isStunned();
         }
         Object stunObj = getData(GamePieceData.STUN_TURNS_REMAINING);
-        if (stunObj instanceof Integer stunTurns) {
-            return stunTurns > 0;
-        }
+        if (stunObj instanceof Integer stunTurns) return stunTurns > 0;
         return false;
     }
 
-    /**
-     * Check if this piece is currently exhausted (has 0 remaining actions).
-     * This includes both out-of-actions and summoning sickness.
-     * @return true if remainingActions == 0
-     */
     public boolean isExhausted() {
         return getStats().getRemainingActions() == 0;
     }

@@ -3,13 +3,11 @@ package io.github.elderpath_crusade.ecs.systems;
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.EntitySystem;
-import io.github.elderpath_crusade.abilities.Ability;
 import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.ecs.components.*;
-import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
@@ -58,28 +56,17 @@ public class PieceSyncSystem extends EntitySystem {
                 piece.getStats().getActions()
         ));
         entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()).setPiece(piece));
-
-        AbilityComponent ac = new AbilityComponent();
-        for (Ability a : piece.getAbilities()) {
-            ac.addAbility(a);
-        }
-        entity.add(ac);
         entity.add(new ModifierComponent());
         entity.add(new ComputedStatsComponent());
 
-        // Attach data-driven ability definitions
+        // Attach data-driven ability definitions from PieceRegistry
         AbilityInstanceComponent aic = new AbilityInstanceComponent();
-        for (Ability a : piece.getAbilities()) {
-            AbilityDefinition def = AbilityRegistry.get(a.getClass().getSimpleName().replace("Ability", ""));
-            if (def != null) aic.addAbility(def);
-        }
-        // Also try matching by ability name patterns
         String pieceName = piece.getPieceModel().getName();
         PieceDefinition pieceDef = PieceRegistry.get(pieceName);
         if (pieceDef != null) {
             for (String abilityName : pieceDef.abilities()) {
                 AbilityDefinition abDef = AbilityRegistry.get(abilityName);
-                if (abDef != null && !aic.definitions.contains(abDef)) {
+                if (abDef != null) {
                     aic.addAbility(abDef);
                 }
             }
@@ -96,7 +83,7 @@ public class PieceSyncSystem extends EntitySystem {
         if (posObj instanceof Board.Position boardPos) {
             boardPos.linkEntity(entity);
         }
-        // Directly notify GridIndexSystem (avoids event ordering dependency)
+        // Directly notify GridIndexSystem
         GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
         if (gridIndex != null) {
             gridIndex.onEntitySpawned(entity, event.row(), event.col());
@@ -116,12 +103,10 @@ public class PieceSyncSystem extends EntitySystem {
     private void onDeath(PieceDiedEvent event) {
         Entity entity = entityMap.remove(event.pieceId());
         if (entity == null) return;
-        // Notify GridIndexSystem before removal
         GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
         if (gridIndex != null) {
             gridIndex.onEntityDied(event.row(), event.col());
         }
-        // Clear piece's entity reference to prevent stale delegation
         SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
         if (sprite != null && sprite.piece != null) {
             sprite.piece.setEntity(null);

@@ -2,7 +2,7 @@ package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
-import io.github.elderpath_crusade.abilities.AbilityRelay;
+
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -109,7 +109,7 @@ public abstract class BattleRoom extends Room {
         GameContext.get().getPlayerManager().setDeck(PieceAlignment.P2, deckP2);
 
         GameContext.get().getTurnManager().startIfNeeded();
-        AbilityRelay.startIfNeeded();
+
 
         // 8. HUDs
         addUI(new ManaHud());

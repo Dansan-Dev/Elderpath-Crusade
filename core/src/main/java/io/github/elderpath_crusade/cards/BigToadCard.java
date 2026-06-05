@@ -1,29 +1,14 @@
 package io.github.elderpath_crusade.cards;
 
-import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 
-import java.util.List;
-
-/**
- * Big Toad card. Jump Movement: Can move in cardinal directions only, jumping over terrain and units.
- */
 public class BigToadCard extends SummonCard {
     public BigToadCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
         super(board, alignment, x, y, width, height, z);
     }
 
-    @Override
-    protected String getRegistryKey() { return "BigToad"; }
-
-    @Override
-    protected String getCardName() { return "Big Toad"; }
-
-
-    @Override
-    protected List<String> getAbilityDescriptionsForCard() {
-        return List.of(JumpMoveAbility.getAbilityDescription());
-    }
+    @Override protected String getRegistryKey() { return "BigToad"; }
+    @Override protected String getCardName() { return "Big Toad"; }
 }

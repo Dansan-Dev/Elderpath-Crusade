@@ -2,13 +2,7 @@ package io.github.elderpath_crusade.rendering.highlight;
 
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.abilities.Ability;
-import io.github.elderpath_crusade.abilities.AbilityContext;
-import io.github.elderpath_crusade.abilities.BasicAbility;
-import io.github.elderpath_crusade.abilities.impl._base.BaseAttackAbility;
-import io.github.elderpath_crusade.abilities.impl._base.BaseMoveAbility;
-import io.github.elderpath_crusade.abilities.impl._base_override.JumpMoveAbility;
-import io.github.elderpath_crusade.abilities.impl._base_override.OncePerTurnAttackAbility;
+import io.github.elderpath_crusade.enums.GamePieceData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
@@ -119,8 +113,8 @@ class HighlightState {
             if (target instanceof Plot p) {
                 highlightedPlots.add(p);
             } else if (target instanceof GamePiece gp) {
-                Board.Position pos = AbilityContext.getOwnerPos(gp);
-                if (pos != null && pos.getBoard() != null) {
+                Object posObj = gp.getData(GamePieceData.POSITION);
+                if (posObj instanceof Board.Position pos && pos.getBoard() != null) {
                     Renderable r = pos.getBoard().getPlotAtPos(pos.getRow(), pos.getCol());
                     if (r instanceof Plot p) highlightedPlots.add(p);
                 }
@@ -130,47 +124,19 @@ class HighlightState {
 
     private void updateMovementAndAttackHighlights(Plot sourcePlot) {
         Board board = sourcePlot.getBoard();
-        int[] sIdx = sourcePlot.getIndices();
-        if (sIdx == null) return;
-        int sr = sIdx[0], sc = sIdx[1];
+        if (board == null) return;
+        int sr = sourcePlot.getRow(), sc = sourcePlot.getCol();
         GamePiece gp = board.getGamePieceAtPos(sr, sc);
         if (!(gp instanceof MonsterGamePiece mgp)) return;
         if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer()) return;
         if (mgp.isStunned()) return;
 
-        List<Plot> reachable = List.of();
-        List<Plot> attackables = List.of();
-        JumpMoveAbility jumpMoveAbility = null;
-        BaseMoveAbility baseMoveAbility = null;
-        OncePerTurnAttackAbility oncePerTurnAttackAbility = null;
+        // Use BoardNavigator-based methods for highlights
+        int speed = mgp.getEffectiveSpeed();
+        List<Plot> reachable = board.getReachablePlots(sr, sc, speed);
+        List<Plot> attackable = board.getAttackableEnemyPlots(sr, sc, mgp.getAlignment());
 
-        for (Ability ability : mgp.getAbilities()) {
-            if (ability instanceof BasicAbility basicAbility) {
-                if (basicAbility instanceof JumpMoveAbility jma) {
-                    jumpMoveAbility = jma;
-                } else if (basicAbility instanceof BaseMoveAbility bma) {
-                    baseMoveAbility = bma;
-                } else if (basicAbility instanceof OncePerTurnAttackAbility opta) {
-                    oncePerTurnAttackAbility = opta;
-                } else if (basicAbility instanceof BaseAttackAbility) {
-                    if (oncePerTurnAttackAbility == null) {
-                        attackables = basicAbility.getEligibleTargets(1);
-                    }
-                }
-            }
-        }
-
-        if (oncePerTurnAttackAbility != null) {
-            attackables = oncePerTurnAttackAbility.getEligibleTargets(1);
-        }
-
-        if (jumpMoveAbility != null) {
-            reachable = jumpMoveAbility.getEligibleTargets(1);
-        } else if (baseMoveAbility != null) {
-            reachable = baseMoveAbility.getEligibleTargets(1);
-        }
-
-        for (Plot p : attackables) {
+        for (Plot p : attackable) {
             if (p != null) attackCandidatePlots.add(p);
         }
         for (Plot p : reachable) {

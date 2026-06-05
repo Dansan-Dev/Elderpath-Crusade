@@ -75,7 +75,25 @@ public abstract class UnitCard extends Card {
         return GamePieceStats.getMonsterStats(def.cost(), def.health(), def.damage(), def.speed(), def.actions());
     }
     protected abstract String getCardName();
-    protected abstract List<String> getAbilityDescriptionsForCard();
+    /**
+     * Returns ability descriptions for card display.
+     * Default implementation looks up descriptions from AbilityRegistry via PieceRegistry.
+     * Subclasses may override for custom text.
+     */
+    protected List<String> getAbilityDescriptionsForCard() {
+        String key = getRegistryKey();
+        io.github.elderpath_crusade.data.PieceDefinition def = PieceRegistry.get(key);
+        if (def == null || def.abilities().isEmpty()) return List.of();
+        List<String> descs = new java.util.ArrayList<>();
+        for (String abilityName : def.abilities()) {
+            io.github.elderpath_crusade.abilities.data.AbilityDefinition abDef =
+                io.github.elderpath_crusade.data.AbilityRegistry.get(abilityName);
+            if (abDef != null && abDef.description() != null && !abDef.description().isEmpty()) {
+                descs.add(abDef.description());
+            }
+        }
+        return descs;
+    }
 
     /**
      * Read-only access to the base stats represented by this card.

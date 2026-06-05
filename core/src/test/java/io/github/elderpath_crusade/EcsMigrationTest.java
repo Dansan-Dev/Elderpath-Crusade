@@ -55,7 +55,6 @@ class EcsMigrationTest {
         assertNotNull(entity.getComponent(PositionComponent.class));
         assertNotNull(entity.getComponent(StatsComponent.class));
         assertNotNull(entity.getComponent(SpriteComponent.class));
-        assertNotNull(entity.getComponent(AbilityComponent.class));
 
         assertEquals(id, entity.getComponent(IdentityComponent.class).id);
         assertEquals(PieceAlignment.P1, entity.getComponent(AlignmentComponent.class).alignment);
@@ -68,9 +67,6 @@ class EcsMigrationTest {
         assertEquals(3, stats.damage);
         assertEquals(2, stats.speed);
         assertEquals(1, stats.actions);
-
-        // BaseMoveAbility + BaseAttackAbility are always attached
-        assertTrue(entity.getComponent(AbilityComponent.class).abilityNames.size() >= 2);
     }
 
     @Test

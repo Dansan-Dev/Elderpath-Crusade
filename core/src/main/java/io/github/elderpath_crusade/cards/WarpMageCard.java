@@ -1,29 +1,14 @@
 package io.github.elderpath_crusade.cards;
 
-import io.github.elderpath_crusade.abilities.impl.actionable.DisplaceAbility;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 
-import java.util.List;
-
-/**
- * Warp Mage card.
- * Note: The actionable Displace ability is implemented on the piece itself (DisplaceAbility).
- * Card text is intentionally empty to rely on ability descriptions, per project guidelines.
- */
 public class WarpMageCard extends SummonCard {
     public WarpMageCard(Board board, PieceAlignment alignment, int x, int y, int width, int height, int z) {
         super(board, alignment, x, y, width, height, z);
     }
 
-    @Override
-    protected String getRegistryKey() { return "WarpMage"; }
-
-    @Override
-    protected String getCardName() { return "Warp Mage"; }
-
-
-    @Override
-    protected List<String> getAbilityDescriptionsForCard() { return List.of(DisplaceAbility.getAbilityDescription()); }
+    @Override protected String getRegistryKey() { return "WarpMage"; }
+    @Override protected String getCardName() { return "Warp Mage"; }
 }
