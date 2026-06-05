@@ -4,6 +4,10 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.EntitySystem;
 import io.github.elderpath_crusade.abilities.Ability;
+import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
+import io.github.elderpath_crusade.data.AbilityRegistry;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.events.PieceDiedEvent;
@@ -62,6 +66,27 @@ public class PieceSyncSystem extends EntitySystem {
         entity.add(ac);
         entity.add(new ModifierComponent());
         entity.add(new ComputedStatsComponent());
+
+        // Attach data-driven ability definitions
+        AbilityInstanceComponent aic = new AbilityInstanceComponent();
+        for (Ability a : piece.getAbilities()) {
+            AbilityDefinition def = AbilityRegistry.get(a.getClass().getSimpleName().replace("Ability", ""));
+            if (def != null) aic.addAbility(def);
+        }
+        // Also try matching by ability name patterns
+        String pieceName = piece.getPieceModel().getName();
+        PieceDefinition pieceDef = PieceRegistry.get(pieceName);
+        if (pieceDef != null) {
+            for (String abilityName : pieceDef.abilities()) {
+                AbilityDefinition abDef = AbilityRegistry.get(abilityName);
+                if (abDef != null && !aic.definitions.contains(abDef)) {
+                    aic.addAbility(abDef);
+                }
+            }
+        }
+        if (!aic.definitions.isEmpty()) {
+            entity.add(aic);
+        }
 
         getEngine().addEntity(entity);
         entityMap.put(event.pieceId(), entity);
