@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.ecs.systems.HealSystem;
 import io.github.elderpath_crusade.ecs.systems.ModifierResolutionSystem;
 import io.github.elderpath_crusade.ecs.systems.PieceSyncSystem;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
+import io.github.elderpath_crusade.ecs.systems.AbilityResolverSystem;
 import io.github.elderpath_crusade.ecs.systems.PieceRenderSystem;
 import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
@@ -92,6 +93,7 @@ public class GameContext {
         this.ecsEngine.addSystem(new DeathSystem());
         this.ecsEngine.addSystem(new HealSystem());
         this.ecsEngine.addSystem(this.pieceRenderSystem);
+        this.ecsEngine.addSystem(new AbilityResolverSystem());
         this.assets = new AssetService();
         this.turnManager = new TurnManager();
         this.playerManager = new PlayerManager();
