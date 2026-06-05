@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.bot.command.BotCommand;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.bot.search.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 
@@ -30,7 +30,7 @@ public class BotActionContext {
         }
     }
 
-    public record PieceEntry(Coord pos, MonsterGamePiece piece) {
+    public record PieceEntry(Coord pos, Entity entity) {
     }
 
     public record TacticalState(List<PieceEntry> allies, List<PieceEntry> enemies, ThreatMap threats) {

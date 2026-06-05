@@ -1,9 +1,9 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 
 import java.util.ArrayDeque;
@@ -17,16 +17,16 @@ public class BotUtils {
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                GamePiece piece = board.getGamePieceAtPos(row, col);
-                if (!(piece instanceof MonsterGamePiece enemy) || enemy.getAlignment() != enemySide) {
+                Entity enemy = board.getEntityAtPos(row, col);
+                if (enemy == null || EntityUtils.getAlignment(enemy) != enemySide) {
                     continue;
                 }
-                if (enemy.getEffectiveDamage() <= 0 || enemy.getEffectiveActions() <= 0) {
+                if (EntityUtils.getDamage(enemy) <= 0 || EntityUtils.getActions(enemy) <= 0) {
                     continue;
                 }
 
-                int actions = enemy.getEffectiveActions();
-                int speed = enemy.getEffectiveSpeed();
+                int actions = EntityUtils.getActions(enemy);
+                int speed = EntityUtils.getSpeed(enemy);
                 int moveSteps = Math.max(0, (actions - 1) * Math.max(0, speed));
 
                 Queue<int[]> queue = new ArrayDeque<>();

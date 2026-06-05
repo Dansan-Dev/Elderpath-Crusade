@@ -1,9 +1,10 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
@@ -34,8 +35,8 @@ public class MovementEvaluator extends BotEvaluatorBase {
         reachableCache.clear();
     }
 
-    private List<Plot> getReachableCached(Board board, int row, int col, int speed, UUID pieceId) {
-        String key = pieceId.toString() + '_' + row + '_' + col;
+    private List<Plot> getReachableCached(Board board, int row, int col, int speed, String entityId) {
+        String key = entityId + '_' + row + '_' + col;
         return reachableCache.computeIfAbsent(key, k -> board.getReachablePlots(row, col, speed));
     }
 
@@ -49,14 +50,14 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
     private void buildWinPathIntents(Board board, TacticalState tactical, List<Intent> output) {
         for (PieceEntry entry : tactical.allies()) {
-            MonsterGamePiece piece = entry.piece();
+            Entity entity = entry.entity();
             Coord pos = entry.pos();
-            if (!canAct(piece)) {
+            if (!canAct(entity)) {
                 continue;
             }
 
-            WinPathResult result = estimateTurnsToRow0(board, piece, pos.row(), pos.col(), tactical.threats(),
-                    getRemainingActions(piece));
+            WinPathResult result = estimateTurnsToRow0(board, entity, pos.row(), pos.col(), tactical.threats(),
+                    getRemainingActions(entity));
             if (result == null || result.turns() > 2 || result.firstMove() == null) {
                 continue;
             }
@@ -67,7 +68,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 default -> config.scoreWinPath2();
             };
 
-            int penalty = calculateWinPathPenalty(board, piece, result, tactical.threats());
+            int penalty = calculateWinPathPenalty(board, entity, result, tactical.threats());
             int finalScore = Math.max(config.scoreWinPathMin(), baseScore - penalty);
 
             Plot destination = getPlot(board, result.firstMove());
@@ -79,8 +80,9 @@ public class MovementEvaluator extends BotEvaluatorBase {
             final Coord firstMove = result.firstMove();
             IntentType kind = (result.turns() == 0) ? IntentType.WIN_MOVE
                     : (result.turns() == 1 ? IntentType.WIN_PATH1 : IntentType.WIN_PATH2);
+            GamePiece reference = board.getGamePieceAtPos(pos.row(), pos.col());
             output.add(new Intent(finalScore,
-                    () -> moveAndVerify(board, pos.row(), pos.col(), finalWinPlot, piece, firstMove.row(),
+                    () -> moveAndVerify(board, pos.row(), pos.col(), finalWinPlot, reference, firstMove.row(),
                             firstMove.col()),
                     kind));
         }
@@ -92,16 +94,18 @@ public class MovementEvaluator extends BotEvaluatorBase {
         }
 
         for (PieceEntry entry : tactical.allies()) {
-            MonsterGamePiece piece = entry.piece();
+            Entity entity = entry.entity();
             Coord pos = entry.pos();
-            if (!canAct(piece)) {
+            if (!canAct(entity)) {
                 continue;
             }
 
-            int speed = piece.getEffectiveSpeed();
-            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), speed, piece.getId());
+            int speed = EntityUtils.getSpeed(entity);
+            String entityId = EntityUtils.getId(entity);
+            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), speed, entityId);
             int currentDist = nearestManhattan(pos.row(), pos.col(), tactical.enemies());
-            boolean hasRogue = isRogue(piece);
+            boolean hasRogue = isRogue(entity);
+            GamePiece reference = board.getGamePieceAtPos(pos.row(), pos.col());
 
             Plot bestPlot = null;
             int bestDist = currentDist;
@@ -118,10 +122,10 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
                     boolean lethalExists = false;
                     for (Plot targetPlot : attacks) {
-                        GamePiece target = board.getGamePieceAtPos(targetPlot.getRow(), targetPlot.getCol());
-                        if (target instanceof MonsterGamePiece targetMonster) {
-                            if (piece.getEffectiveDamage() >= Math.max(0,
-                                    targetMonster.getStats().getCurrentHealth())) {
+                        Entity target = board.getEntityAtPos(targetPlot.getRow(), targetPlot.getCol());
+                        if (target != null) {
+                            if (EntityUtils.getDamage(entity) >= Math.max(0,
+                                    EntityUtils.getCurrentHealth(target))) {
                                 lethalExists = true;
                                 break;
                             }
@@ -146,7 +150,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                         score -= config.dirBackwardPenalty();
 
                     output.add(new Intent(score,
-                            () -> moveAndVerify(board, pos.row(), pos.col(), finalLethalDest, piece,
+                            () -> moveAndVerify(board, pos.row(), pos.col(), finalLethalDest, reference,
                                     finalLethalDest.getRow(), finalLethalDest.getCol()),
                             IntentType.ADVANCE));
                     continue;
@@ -177,7 +181,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             // lethal next turn
             if (bestPlot == null && reachable != null) {
                 for (Plot p : reachable) {
-                    if (wouldEnableLethal(board, piece, p.getRow(), p.getCol())) {
+                    if (wouldEnableLethal(board, entity, p.getRow(), p.getCol())) {
                         bestPlot = p;
                         bestDist = nearestManhattan(p.getRow(), p.getCol(), tactical.enemies());
                         break;
@@ -194,17 +198,17 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 else if (finalBestPlot.getRow() > pos.row())
                     score -= config.dirBackwardPenalty();
 
-                if (isRogue(piece)) {
+                if (isRogue(entity)) {
                     List<Plot> attacks = board.getAttackableEnemyPlots(finalBestPlot.getRow(), finalBestPlot.getCol(),
                             PieceAlignment.P2);
                     if (attacks != null && !attacks.isEmpty()) {
                         int bonus = config.bonusRogueFreeStrike();
                         boolean lethalExists = false;
                         for (Plot targetPlot : attacks) {
-                            GamePiece target = board.getGamePieceAtPos(targetPlot.getRow(), targetPlot.getCol());
-                            if (target instanceof MonsterGamePiece targetMonster) {
-                                if (piece.getEffectiveDamage() >= Math.max(0,
-                                        targetMonster.getStats().getCurrentHealth())) {
+                            Entity target = board.getEntityAtPos(targetPlot.getRow(), targetPlot.getCol());
+                            if (target != null) {
+                                if (EntityUtils.getDamage(entity) >= Math.max(0,
+                                        EntityUtils.getCurrentHealth(target))) {
                                     lethalExists = true;
                                     break;
                                 }
@@ -217,7 +221,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 }
 
                 output.add(new Intent(score,
-                        () -> moveAndVerify(board, pos.row(), pos.col(), finalBestPlot, piece, finalBestPlot.getRow(),
+                        () -> moveAndVerify(board, pos.row(), pos.col(), finalBestPlot, reference, finalBestPlot.getRow(),
                                 finalBestPlot.getCol()),
                         IntentType.ADVANCE));
             }
@@ -227,15 +231,16 @@ public class MovementEvaluator extends BotEvaluatorBase {
     private void buildManeuverIntents(Board board, TacticalState tactical, List<Intent> output) {
         int rows = board.getROWS();
         for (PieceEntry entry : tactical.allies()) {
-            MonsterGamePiece piece = entry.piece();
+            Entity entity = entry.entity();
             Coord pos = entry.pos();
-            if (!canAct(piece)) {
+            if (!canAct(entity)) {
                 continue;
             }
 
-            int actionsRemaining = getRemainingActions(piece);
-            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), piece.getEffectiveSpeed(), piece.getId());
+            int actionsRemaining = getRemainingActions(entity);
+            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), EntityUtils.getSpeed(entity), EntityUtils.getId(entity));
             Plot stayPlot = getPlot(board, pos);
+            GamePiece reference = board.getGamePieceAtPos(pos.row(), pos.col());
 
             List<Plot> candidates = new ArrayList<>();
             if (stayPlot != null)
@@ -250,32 +255,32 @@ public class MovementEvaluator extends BotEvaluatorBase {
             // Lane decongestion scan
             int allyWeightInLane = -1;
             for (int r = pos.row() + 1; r < rows; r++) {
-                GamePiece g2 = board.getGamePieceAtPos(r, pos.col());
-                if (g2 instanceof MonsterGamePiece m2 && m2.getAlignment() == PieceAlignment.P2) {
-                    allyWeightInLane = m2.getStats().getDamage() * 2 + m2.getStats().getActions()
-                            + m2.getStats().getSpeed();
-                    WinPathResult myTTW = estimateTurnsToRow0(board, piece, pos.row(), pos.col(), tactical.threats(),
+                Entity allyBehind = board.getEntityAtPos(r, pos.col());
+                if (allyBehind != null && EntityUtils.getAlignment(allyBehind) == PieceAlignment.P2) {
+                    allyWeightInLane = EntityUtils.getDamage(allyBehind) * 2 + EntityUtils.getActions(allyBehind)
+                            + EntityUtils.getSpeed(allyBehind);
+                    WinPathResult myTTW = estimateTurnsToRow0(board, entity, pos.row(), pos.col(), tactical.threats(),
                             actionsRemaining);
-                    WinPathResult allyTTW = estimateTurnsToRow0(board, m2, r, pos.col(), tactical.threats(),
-                            getRemainingActions(m2));
+                    WinPathResult allyTTW = estimateTurnsToRow0(board, allyBehind, r, pos.col(), tactical.threats(),
+                            getRemainingActions(allyBehind));
                     if (myTTW != null && allyTTW != null
                             && allyTTW.turns() < (myTTW.turns() == 0 ? 0 : myTTW.turns())) {
                         allyWeightInLane += 6;
                     }
                     break;
-                } else if (g2 != null)
+                } else if (board.getGamePieceAtPos(r, pos.col()) != null)
                     break;
             }
 
             int currentDist = tactical.enemies().isEmpty() ? Integer.MAX_VALUE
                     : nearestManhattan(pos.row(), pos.col(), tactical.enemies());
-            WinPathResult myTTWNow = estimateTurnsToRow0(board, piece, pos.row(), pos.col(), tactical.threats(),
+            WinPathResult myTTWNow = estimateTurnsToRow0(board, entity, pos.row(), pos.col(), tactical.threats(),
                     actionsRemaining);
 
             for (Plot p : candidates) {
                 int dr = p.getRow();
                 int dc = p.getCol();
-                if (isLethalThreatNextTurn(board, piece, dr, dc))
+                if (isLethalThreatNextTurn(board, entity, dr, dc))
                     continue;
 
                 int score = config.scoreManeuverBase();
@@ -306,7 +311,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 }
 
                 int actionsAfter = actionsRemaining - ((dr == pos.row() && dc == pos.col()) ? 0 : 1);
-                WinPathResult myTTWDest = estimateTurnsToRow0(board, piece, dr, dc, tactical.threats(),
+                WinPathResult myTTWDest = estimateTurnsToRow0(board, entity, dr, dc, tactical.threats(),
                         Math.max(0, actionsAfter));
                 if (myTTWNow != null && myTTWDest != null && myTTWNow.turns() > myTTWDest.turns()) {
                     if (myTTWNow.turns() == 2 && myTTWDest.turns() == 1)
@@ -332,20 +337,20 @@ public class MovementEvaluator extends BotEvaluatorBase {
             if (bestPlot != null && !(bestPlot.getRow() == pos.row() && bestPlot.getCol() == pos.col())) {
                 final Plot finalManeuverPlot = bestPlot;
                 output.add(new Intent(bestScore,
-                        () -> moveAndVerify(board, pos.row(), pos.col(), finalManeuverPlot, piece,
+                        () -> moveAndVerify(board, pos.row(), pos.col(), finalManeuverPlot, reference,
                                 finalManeuverPlot.getRow(), finalManeuverPlot.getCol()),
                         IntentType.MANEUVER));
             }
         }
     }
 
-    private int calculateWinPathPenalty(Board board, MonsterGamePiece piece, WinPathResult result, ThreatMap threats) {
+    private int calculateWinPathPenalty(Board board, Entity entity, WinPathResult result, ThreatMap threats) {
         int penalty = Math.min(config.penaltyWinPathExposureMax(),
                 result.threatExposure() * config.penaltyWinPathExposureScale());
         if (result.turns() == 0)
             return penalty;
 
-        if (isLethalThreatNextTurn(board, piece, result.firstMove().row(), result.firstMove().col())) {
+        if (isLethalThreatNextTurn(board, entity, result.firstMove().row(), result.firstMove().col())) {
             penalty += config.penaltyLethalExposure();
         }
 
@@ -357,11 +362,11 @@ public class MovementEvaluator extends BotEvaluatorBase {
         return penalty;
     }
 
-    private WinPathResult estimateTurnsToRow0(Board board, MonsterGamePiece piece, int row, int col, ThreatMap threats,
+    private WinPathResult estimateTurnsToRow0(Board board, Entity entity, int row, int col, ThreatMap threats,
             int actions) {
-        int speed = piece.getEffectiveSpeed();
-        int maxActions = piece.getEffectiveActions();
-        UUID pieceId = piece.getId();
+        int speed = EntityUtils.getSpeed(entity);
+        int maxActions = EntityUtils.getActions(entity);
+        String entityId = EntityUtils.getId(entity);
         Deque<BotSearchState> queue = new ArrayDeque<>();
         Set<Integer> visited = new HashSet<>();
 
@@ -389,7 +394,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
             // Movement options
             if (state.actionsLeft > 0) {
-                String cacheKey = pieceId.toString() + "_" + state.pos.row() + "_" + state.pos.col();
+                String cacheKey = entityId + "_" + state.pos.row() + "_" + state.pos.col();
                 List<Plot> reachablePlots = reachableCache.computeIfAbsent(cacheKey,
                         k -> board.getReachablePlots(state.pos.row(), state.pos.col(), speed));
                 for (Plot plot : reachablePlots) {
@@ -406,15 +411,15 @@ public class MovementEvaluator extends BotEvaluatorBase {
         return null;
     }
 
-    private boolean wouldEnableLethal(Board board, MonsterGamePiece piece, int row, int col) {
+    private boolean wouldEnableLethal(Board board, Entity entity, int row, int col) {
         int[][] directions = new int[][] { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
         for (int[] dir : directions) {
             int nr = row + dir[0];
             int nc = col + dir[1];
             if (inBounds(board, nr, nc)) {
-                GamePiece gp = board.getGamePieceAtPos(nr, nc);
-                if (gp instanceof MonsterGamePiece target && target.getAlignment() == PieceAlignment.P1) {
-                    if (piece.getEffectiveDamage() >= target.getStats().getCurrentHealth())
+                Entity target = board.getEntityAtPos(nr, nc);
+                if (target != null && EntityUtils.getAlignment(target) == PieceAlignment.P1) {
+                    if (EntityUtils.getDamage(entity) >= EntityUtils.getCurrentHealth(target))
                         return true;
                 }
             }

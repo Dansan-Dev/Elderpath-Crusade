@@ -2,11 +2,11 @@ package io.github.elderpath_crusade.bot.impl;
 import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.GameContext;
+import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.utils.Timer;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.bot.Bot;
@@ -163,14 +163,14 @@ public class SmartBot implements Bot {
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                GamePiece gp = board.getGamePieceAtPos(row, col);
-                if (!(gp instanceof MonsterGamePiece mgp))
+                Entity entity = board.getEntityAtPos(row, col);
+                if (entity == null)
                     continue;
 
                 Coord pos = new Coord(row, col);
-                switch (mgp.getAlignment()) {
-                    case P1 -> enemies.add(new BotActionContext.PieceEntry(pos, mgp));
-                    case P2 -> allies.add(new BotActionContext.PieceEntry(pos, mgp));
+                switch (EntityUtils.getAlignment(entity)) {
+                    case P1 -> enemies.add(new BotActionContext.PieceEntry(pos, entity));
+                    case P2 -> allies.add(new BotActionContext.PieceEntry(pos, entity));
                     case NEUTRAL -> {}
                 }
 
@@ -188,10 +188,10 @@ public class SmartBot implements Bot {
 
         for (int row = 0; row < board.getROWS(); row++) {
             for (int col = 0; col < board.getCOLS(); col++) {
-                GamePiece gp = board.getGamePieceAtPos(row, col);
-                if (!(gp instanceof MonsterGamePiece mgp) || mgp.getAlignment() != PieceAlignment.P2)
+                Entity entity = board.getEntityAtPos(row, col);
+                if (entity == null || EntityUtils.getAlignment(entity) != PieceAlignment.P2)
                     continue;
-                if (mgp.isStunned() || mgp.getStats().getRemainingActions() <= 0)
+                if (EntityUtils.isStunned(entity) || EntityUtils.getRemainingActions(entity) <= 0)
                     continue;
                 return false;
             }

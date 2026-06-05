@@ -1,10 +1,12 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -28,16 +30,16 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         this.config = config;
     }
 
-    protected int getRemainingActions(MonsterGamePiece piece) {
-        return piece.getStats().getRemainingActions();
+    protected int getRemainingActions(Entity entity) {
+        return EntityUtils.getRemainingActions(entity);
     }
 
-    protected boolean canAct(MonsterGamePiece piece) {
-        if (piece == null)
+    protected boolean canAct(Entity entity) {
+        if (entity == null)
             return false;
-        if (piece.isStunned())
+        if (EntityUtils.isStunned(entity))
             return false;
-        return getRemainingActions(piece) > 0;
+        return getRemainingActions(entity) > 0;
     }
 
     protected boolean inBounds(Board board, int row, int col) {
@@ -58,7 +60,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
     }
 
     protected boolean attackAndVerify(Board board, int sourceRow, int sourceCol, int targetRow, int targetCol,
-            MonsterGamePiece attacker) {
+            Entity attacker) {
         Renderable sourceRenderable = board.getPlotAtPos(sourceRow, sourceCol);
         Renderable targetRenderable = board.getPlotAtPos(targetRow, targetCol);
         if (!(sourceRenderable instanceof Plot sourcePlot) || !(targetRenderable instanceof Plot targetPlot))
@@ -80,31 +82,31 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return actionsAfter < actionsBefore; // action spent implies a hit
     }
 
-    protected boolean isLethalThreatNextTurn(Board board, MonsterGamePiece piece, int row, int col) {
+    protected boolean isLethalThreatNextTurn(Board board, Entity entity, int row, int col) {
         int rows = board.getROWS();
         int cols = board.getCOLS();
-        int health = Math.max(0, piece.getStats().getCurrentHealth());
-        PieceAlignment enemyAlignment = (piece.getAlignment() == PieceAlignment.P1) ? PieceAlignment.P2
+        int health = Math.max(0, EntityUtils.getCurrentHealth(entity));
+        PieceAlignment enemyAlignment = (EntityUtils.getAlignment(entity) == PieceAlignment.P1) ? PieceAlignment.P2
                 : PieceAlignment.P1;
 
         for (int enemyRow = 0; enemyRow < rows; enemyRow++) {
             for (int enemyCol = 0; enemyCol < cols; enemyCol++) {
-                GamePiece enemyPiece = board.getGamePieceAtPos(enemyRow, enemyCol);
-                if (!(enemyPiece instanceof MonsterGamePiece enemy) || enemy.getAlignment() != enemyAlignment) {
+                Entity enemy = board.getEntityAtPos(enemyRow, enemyCol);
+                if (enemy == null || EntityUtils.getAlignment(enemy) != enemyAlignment) {
                     continue;
                 }
 
-                int damage = enemy.getEffectiveDamage();
+                int damage = EntityUtils.getDamage(enemy);
                 if (damage <= 0) {
                     continue;
                 }
 
-                int actions = enemy.getEffectiveActions();
+                int actions = EntityUtils.getActions(enemy);
                 if (actions <= 0) {
                     continue;
                 }
 
-                int speed = enemy.getStats().getSpeed();
+                int speed = EntityUtils.getSpeed(enemy);
                 int maxReach = Math.max(1, (actions - 1) * speed + 1);
 
                 java.util.Queue<int[]> queue = new java.util.ArrayDeque<>();
@@ -182,13 +184,16 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return minDistance;
     }
 
-    protected boolean hasAbility(MonsterGamePiece piece, String abilityName) {
-        if (piece == null)
+    protected boolean hasAbility(Entity entity, String abilityId) {
+        if (entity == null)
             return false;
         try {
-            for (var ability : piece.getAbilities()) {
-                if (ability != null && ability.getClass().getSimpleName().equals(abilityName)) {
-                    return true;
+            AbilityInstanceComponent aic = entity.getComponent(AbilityInstanceComponent.class);
+            if (aic != null) {
+                for (var def : aic.definitions) {
+                    if (def != null && def.id().equals(abilityId)) {
+                        return true;
+                    }
                 }
             }
         } catch (Exception ignored) {
@@ -196,7 +201,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return false;
     }
 
-    protected boolean isRogue(MonsterGamePiece piece) {
-        return hasAbility(piece, "RogueFreeStrikeAbility");
+    protected boolean isRogue(Entity entity) {
+        return hasAbility(entity, "RogueFreeStrike");
     }
 }

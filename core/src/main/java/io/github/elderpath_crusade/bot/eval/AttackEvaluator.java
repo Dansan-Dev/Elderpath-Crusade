@@ -1,9 +1,9 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.bot.command.AttackCommand;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
@@ -27,7 +27,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
     @Override
     public void build(Board board, TacticalState tactical, List<Intent> output) {
         for (PieceEntry entry : tactical.allies()) {
-            MonsterGamePiece attacker = entry.piece();
+            Entity attacker = entry.entity();
             Coord source = entry.pos();
 
             if (!canAct(attacker)) {
@@ -41,33 +41,33 @@ public class AttackEvaluator extends BotEvaluatorBase {
 
             for (Plot plot : hostilePlots) {
                 Coord target = new Coord(plot.getRow(), plot.getCol());
-                GamePiece defender = board.getGamePieceAtPos(target.row(), target.col());
+                Entity defender = board.getEntityAtPos(target.row(), target.col());
 
                 int score = scoreAdjacentAttack(board, source, target, attacker, defender, tactical.threats());
                 output.add(new Intent(score,
                         () -> attackAndVerify(board, source.row(), source.col(), target.row(), target.col(), attacker),
                         IntentType.ADJ_ATTACK,
-                        new AttackCommand(attacker.getId().toString(), source.row(), source.col(), target.row(), target.col())));
+                        new AttackCommand(EntityUtils.getId(attacker), source.row(), source.col(), target.row(), target.col())));
             }
         }
     }
 
-    private int scoreAdjacentAttack(Board board, Coord source, Coord target, MonsterGamePiece attacker,
-            GamePiece defender, ThreatMap threats) {
+    private int scoreAdjacentAttack(Board board, Coord source, Coord target, Entity attacker,
+            Entity defender, ThreatMap threats) {
         int basePoints = config.scoreAdjAttackBase();
         boolean lethal = false;
 
-        if (defender instanceof MonsterGamePiece mgpDefender) {
-            int damage = attacker.getEffectiveDamage();
-            int health = mgpDefender.getStats().getCurrentHealth();
+        if (defender != null) {
+            int damage = EntityUtils.getDamage(attacker);
+            int health = EntityUtils.getCurrentHealth(defender);
             lethal = damage >= health;
 
             if (lethal) {
                 basePoints = config.scoreAdjAttackLethal();
             }
 
-            basePoints += Math.min(10, mgpDefender.getStats().getCost());
-            basePoints += Math.min(3, Math.max(0, mgpDefender.getEffectiveDamage()));
+            basePoints += Math.min(10, EntityUtils.getCost(defender));
+            basePoints += Math.min(3, Math.max(0, EntityUtils.getDamage(defender)));
 
             // Defensive Urgency: prioritize enemies closer to our home row (ROWS-1)
             int rows = board.getROWS();
@@ -87,7 +87,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
         if (!lethalHere && !lethal && threats.isThreatened(source.row(), source.col())) {
             int threatenedCount = threats.getCount(source.row(), source.col());
             // Value at Risk: Higher value units are more cautious
-            int myValueFactor = Math.min(10, attacker.getStats().getCost()) / 3;
+            int myValueFactor = Math.min(10, EntityUtils.getCost(attacker)) / 3;
             int penalty = 8 + Math.min(12, (3 + myValueFactor) * Math.max(0, threatenedCount - 1));
             if (actionsBefore <= 1) {
                 basePoints -= penalty;

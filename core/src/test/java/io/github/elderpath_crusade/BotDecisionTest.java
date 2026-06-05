@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade;
 
+import com.badlogic.ashley.core.Engine;
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.bot.eval.AttackEvaluator;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
@@ -8,18 +10,16 @@ import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
 import io.github.elderpath_crusade.bot.eval.BotConfig;
 import io.github.elderpath_crusade.bot.search.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
+import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,6 +30,7 @@ class BotDecisionTest {
     private AttackEvaluator evaluator;
     private Board board;
     private ThreatMap threats;
+    private Engine engine;
 
     @BeforeEach
     void setUp() {
@@ -41,36 +42,36 @@ class BotDecisionTest {
         when(board.getROWS()).thenReturn(3);
         when(board.getCOLS()).thenReturn(3);
         threats = mock(ThreatMap.class);
+        engine = new Engine();
     }
 
-    private MonsterGamePiece mockAlly(int actions, int damage) {
-        MonsterGamePiece ally = mock(MonsterGamePiece.class);
-        when(ally.getId()).thenReturn(UUID.randomUUID());
-        when(ally.getAlignment()).thenReturn(PieceAlignment.P2);
-        when(ally.isStunned()).thenReturn(false);
-        GamePieceStats stats = mock(GamePieceStats.class);
-        when(stats.getRemainingActions()).thenReturn(actions);
-        when(stats.getCost()).thenReturn(3);
-        when(stats.getCurrentHealth()).thenReturn(5);
-        when(stats.getSpeed()).thenReturn(1);
-        when(ally.getStats()).thenReturn(stats);
-        when(ally.getEffectiveDamage()).thenReturn(damage);
-        when(ally.getEffectiveActions()).thenReturn(actions);
-        when(ally.getAbilities()).thenReturn(List.of());
-        return ally;
+    private Entity makeEntity(PieceAlignment alignment, int damage, int speed, int actions, int cost, int health) {
+        Entity entity = engine.createEntity();
+        StatsComponent stats = new StatsComponent().set(cost, health, damage, speed, actions);
+        stats.currentHealth = health;
+        stats.remainingActions = actions;
+        entity.add(stats);
+        ComputedStatsComponent computed = new ComputedStatsComponent();
+        computed.damage = damage;
+        computed.speed = speed;
+        computed.actions = actions;
+        computed.maxHealth = health;
+        computed.cost = cost;
+        entity.add(computed);
+        AlignmentComponent ac = new AlignmentComponent().set(alignment);
+        entity.add(ac);
+        IdentityComponent ic = new IdentityComponent().set("TestPiece");
+        entity.add(ic);
+        engine.addEntity(entity);
+        return entity;
     }
 
-    private MonsterGamePiece mockEnemy(int health) {
-        MonsterGamePiece enemy = mock(MonsterGamePiece.class);
-        when(enemy.getId()).thenReturn(UUID.randomUUID());
-        when(enemy.getAlignment()).thenReturn(PieceAlignment.P1);
-        GamePieceStats stats = mock(GamePieceStats.class);
-        when(stats.getCurrentHealth()).thenReturn(health);
-        when(stats.getCost()).thenReturn(3);
-        when(enemy.getStats()).thenReturn(stats);
-        when(enemy.getEffectiveDamage()).thenReturn(2);
-        when(enemy.getEffectiveActions()).thenReturn(1);
-        return enemy;
+    private Entity mockAlly(int actions, int damage) {
+        return makeEntity(PieceAlignment.P2, damage, 1, actions, 3, 5);
+    }
+
+    private Entity mockEnemy(int health) {
+        return makeEntity(PieceAlignment.P1, 2, 1, 1, 3, health);
     }
 
     private Plot mockPlot(int row, int col) {
@@ -82,12 +83,12 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_generatesIntentForAdjacentEnemy() {
-        MonsterGamePiece ally = mockAlly(1, 3);
-        MonsterGamePiece enemy = mockEnemy(5);
+        Entity ally = mockAlly(1, 3);
+        Entity enemy = mockEnemy(5);
         Plot targetPlot = mockPlot(1, 2);
 
         when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of(targetPlot));
-        when(board.getGamePieceAtPos(1, 2)).thenReturn(enemy);
+        when(board.getEntityAtPos(1, 2)).thenReturn(enemy);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -104,12 +105,12 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_lethalAttackScoresHigher() {
-        MonsterGamePiece ally = mockAlly(1, 3);
-        MonsterGamePiece enemy = mockEnemy(2);
+        Entity ally = mockAlly(1, 3);
+        Entity enemy = mockEnemy(2);
         Plot targetPlot = mockPlot(1, 2);
 
         when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of(targetPlot));
-        when(board.getGamePieceAtPos(1, 2)).thenReturn(enemy);
+        when(board.getEntityAtPos(1, 2)).thenReturn(enemy);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -125,8 +126,10 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_skipsStunnedPiece() {
-        MonsterGamePiece ally = mockAlly(1, 3);
-        when(ally.isStunned()).thenReturn(true);
+        Entity ally = mockAlly(1, 3);
+        StunComponent stun = new StunComponent();
+        stun.turnsRemaining = 1;
+        ally.add(stun);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -141,7 +144,7 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_skipsNoActionsPiece() {
-        MonsterGamePiece ally = mockAlly(0, 3);
+        Entity ally = mockAlly(0, 3);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -156,7 +159,7 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_noTargets_emptyOutput() {
-        MonsterGamePiece ally = mockAlly(1, 3);
+        Entity ally = mockAlly(1, 3);
         when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of());
 
         TacticalState tactical = new TacticalState(
@@ -172,15 +175,15 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_multipleTargets_generatesMultipleIntents() {
-        MonsterGamePiece ally = mockAlly(1, 3);
-        MonsterGamePiece enemy1 = mockEnemy(5);
-        MonsterGamePiece enemy2 = mockEnemy(4);
+        Entity ally = mockAlly(1, 3);
+        Entity enemy1 = mockEnemy(5);
+        Entity enemy2 = mockEnemy(4);
         Plot plot1 = mockPlot(1, 2);
         Plot plot2 = mockPlot(0, 1);
 
         when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of(plot1, plot2));
-        when(board.getGamePieceAtPos(1, 2)).thenReturn(enemy1);
-        when(board.getGamePieceAtPos(0, 1)).thenReturn(enemy2);
+        when(board.getEntityAtPos(1, 2)).thenReturn(enemy1);
+        when(board.getEntityAtPos(0, 1)).thenReturn(enemy2);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
