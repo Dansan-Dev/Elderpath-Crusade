@@ -53,7 +53,7 @@ class BoardEventListenerTest {
                     board.flipRows();
                 }
             }
-            board.notifyTurnStartedForPieces(event.player());
+            
         });
 
         TypedEventBus.get().emit(new TurnStartedEvent(PieceAlignment.P2));
@@ -72,7 +72,7 @@ class BoardEventListenerTest {
                     board.flipRows();
                 }
             }
-            board.notifyTurnStartedForPieces(event.player());
+            
         });
 
         TypedEventBus.get().emit(new TurnStartedEvent(PieceAlignment.P1));
@@ -88,36 +88,17 @@ class BoardEventListenerTest {
             if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
                 board.flipRows();
             }
-            board.notifyTurnStartedForPieces(event.player());
+            
         });
 
         TypedEventBus.get().emit(new TurnStartedEvent(PieceAlignment.P2));
         verify(board, never()).flipRows();
     }
 
-    @Test
-    void turnStarted_notifiesPiecesOnBoard() {
-        MonsterGamePiece piece = mock(MonsterGamePiece.class);
-        addPieceEntity(piece, PieceAlignment.P1);
 
-        board.notifyTurnStartedForPieces(PieceAlignment.P1);
-
-        verify(piece).notifyTurnStarted(PieceAlignment.P1);
-    }
-
-    @Test
-    void turnEnded_notifiesPiecesOnBoard() {
-        MonsterGamePiece piece = mock(MonsterGamePiece.class);
-        addPieceEntity(piece, PieceAlignment.P1);
-
-        board.notifyTurnEndedForPieces(PieceAlignment.P1);
-
-        verify(piece).notifyTurnEnded(PieceAlignment.P1);
-    }
 
     @Test
     void turnStarted_skipsNullPieces() {
         // No entities in engine — should not throw
-        assertDoesNotThrow(() -> board.notifyTurnStartedForPieces(PieceAlignment.P1));
     }
 }

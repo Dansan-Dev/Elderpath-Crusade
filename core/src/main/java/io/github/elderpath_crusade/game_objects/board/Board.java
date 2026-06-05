@@ -68,37 +68,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     public void update(float delta) {
     }
 
-    /**
-     * Notify all monster pieces on this board that a turn has started for the given
-     * player.
-     */
-    public void notifyTurnStartedForPieces(PieceAlignment player) {
-        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
-                .getEntitiesFor(Family.all(SpriteComponent.class, AlignmentComponent.class).get());
-        for (int i = 0; i < entities.size(); i++) {
-            Entity e = entities.get(i);
-            SpriteComponent sc = e.getComponent(SpriteComponent.class);
-            if (sc != null && sc.piece != null) {
-                try { sc.piece.notifyTurnStarted(player); } catch (Exception ignored) {}
-            }
-        }
-    }
 
-    /**
-     * Notify all monster pieces on this board that a turn has ended for the given
-     * player.
-     */
-    public void notifyTurnEndedForPieces(PieceAlignment player) {
-        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
-                .getEntitiesFor(Family.all(SpriteComponent.class, AlignmentComponent.class).get());
-        for (int i = 0; i < entities.size(); i++) {
-            Entity e = entities.get(i);
-            SpriteComponent sc = e.getComponent(SpriteComponent.class);
-            if (sc != null && sc.piece != null) {
-                try { sc.piece.notifyTurnEnded(player); } catch (Exception ignored) {}
-            }
-        }
-    }
 
     private List<Integer> cachedZs = new ArrayList<>();
     private boolean zsDirty = true;
@@ -136,11 +106,10 @@ public class Board extends HigherOrderTexture implements Updatable {
             boolean shouldBeFlipped = (event.player() == PieceAlignment.P2);
             if (shouldBeFlipped != isFlipped()) { flipRows(); }
         }
-        notifyTurnStartedForPieces(event.player());
     }
 
     private void onTurnEnded(TurnEndedEvent event) {
-        notifyTurnEndedForPieces(event.player());
+        // No longer needed — AbilityRelay handles turn hooks via ECS
     }
 
 
@@ -382,20 +351,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         return navigator.getAdjacentHostilePlots(row, col, friendlyAlignment);
     }
 
-    public void resetActionsForOwner(PieceAlignment owner) {
-        ImmutableArray<Entity> entities = GameContext.get().getEcsEngine()
-                .getEntitiesFor(Family.all(SpriteComponent.class, AlignmentComponent.class).get());
-        for (int i = 0; i < entities.size(); i++) {
-            Entity e = entities.get(i);
-            AlignmentComponent ac = e.getComponent(AlignmentComponent.class);
-            if (ac != null && ac.alignment == owner) {
-                SpriteComponent sc = e.getComponent(SpriteComponent.class);
-                if (sc != null && sc.piece != null) {
-                    sc.piece.getStats().setRemainingActions(sc.piece.getEffectiveActions());
-                }
-            }
-        }
-    }
 
     public void handlePlotMove(HashMap<Integer, CustomBox> entities) {
         interactionResolver.handlePlotMove(entities);

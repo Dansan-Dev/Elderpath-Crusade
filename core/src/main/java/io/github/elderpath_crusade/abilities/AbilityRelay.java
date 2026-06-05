@@ -6,6 +6,8 @@ import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
 import io.github.elderpath_crusade.ecs.components.AbilityComponent;
 import io.github.elderpath_crusade.events.GameEvent;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
+import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.GameContext;
 
@@ -58,6 +60,11 @@ public final class AbilityRelay {
             for (Ability a : ac.getAbilities()) {
                 if (a instanceof TriggeredAbility trig) {
                     try { trig.onGameEvent(event); } catch (Exception ignored) {}
+                    if (event instanceof TurnStartedEvent tse) {
+                        try { trig.onTurnStarted(tse.player()); } catch (Exception ignored) {}
+                    } else if (event instanceof TurnEndedEvent tee) {
+                        try { trig.onTurnEnded(tee.player()); } catch (Exception ignored) {}
+                    }
                 }
             }
         }

@@ -73,7 +73,7 @@ public class PlayerManager {
         TypedEventBus.get().emit(new ManaChangedEvent(id, ps.mana));
         draw(ps, 3);
         applyBotHandVisibilityOnTurnStart(id);
-        resetActionsFor(id);
+        // Action reset handled by TurnSystem via ECS
         TypedEventBus.get().emit(new ActionsResetEvent(id));
     }
 
@@ -96,13 +96,6 @@ public class PlayerManager {
             c.consume();
         }
         ps.hand.updateBounds();
-    }
-
-    private void resetActionsFor(PieceAlignment id) {
-        Board b = GameContext.get().getActiveBoard();
-        if (b != null) {
-            b.resetActionsForOwner(id);
-        }
     }
 
     private void applyBotHandVisibilityOnTurnStart(PieceAlignment current) {
