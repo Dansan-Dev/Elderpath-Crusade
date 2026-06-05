@@ -235,6 +235,11 @@ public class Board extends HigherOrderTexture implements Updatable {
         return gi != null ? gi.getPieceAt(row, col) : null;
     }
 
+    public com.badlogic.ashley.core.Entity getEntityAtPos(int row, int col) {
+        GridIndexSystem gi = getGridIndex();
+        return gi != null ? gi.getEntityAt(row, col) : null;
+    }
+
     public GamePiece getGamePieceAtPlot(Plot plot) {
         if (plot == null)
             return null;
