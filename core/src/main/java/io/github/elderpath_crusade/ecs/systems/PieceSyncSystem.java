@@ -53,20 +53,13 @@ public class PieceSyncSystem extends EntitySystem {
     private void onMove(PieceMovedEvent event) {
         Entity entity = entityMap.get(event.pieceId());
         if (entity == null) return;
-        entity.getComponent(PositionComponent.class).set(event.toRow(), event.toCol());
-        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
-        if (gridIndex != null) {
-            gridIndex.onEntityMoved(event.fromRow(), event.fromCol(), entity, event.toRow(), event.toCol());
-        }
+        // PositionComponent already updated by MovementSystem
+        // GridIndexSystem already updated by Board.moveEntity
+        // Just keep entityMap in sync (no-op, pieceId unchanged)
     }
 
     private void onDeath(PieceDiedEvent event) {
-        Entity entity = entityMap.remove(event.pieceId());
-        if (entity == null) return;
-        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
-        if (gridIndex != null) {
-            gridIndex.onEntityDied(event.row(), event.col());
-        }
-        getEngine().removeEntity(entity);
+        // Just remove from our tracking map — DeathSystem handles engine removal and GridIndex
+        entityMap.remove(event.pieceId());
     }
 }

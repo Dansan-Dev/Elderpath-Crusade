@@ -56,7 +56,9 @@ public abstract class BattleRoom extends Room {
         GameContext.get().setActiveBoard(board);
         addContent(board);
 
-        // Common terrain setup (terrain entities removed — MountainTile deleted)
+        // Terrain setup — place blocking terrain entities
+        placeTerrain(board, 2, 1);
+        placeTerrain(board, 2, 3);
 
         // 3. UI: Pause Hint
         int[] pmPos = this.pauseMenuPos.get();
@@ -193,5 +195,18 @@ public abstract class BattleRoom extends Room {
             deckP2.getBounds().setX(screenW - deckP2.getWidth() - 10);
             deckP2.getBounds().setY(screenH - deckP2.getHeight() - 10);
         }
+    }
+
+    private void placeTerrain(Board board, int row, int col) {
+        com.badlogic.ashley.core.Engine engine = GameContext.get().getEcsEngine();
+        com.badlogic.ashley.core.Entity terrain = engine.createEntity();
+        terrain.add(new io.github.elderpath_crusade.ecs.components.PositionComponent().set(row, col));
+        terrain.add(new io.github.elderpath_crusade.ecs.components.TerrainComponent());
+        terrain.add(new io.github.elderpath_crusade.ecs.components.SpriteComponent()
+                .set("MountainTerrain")
+                .setRenderable(new io.github.elderpath_crusade.characters.sprites.terrain_sprites.MountainSprite(
+                        0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT())));
+        engine.addEntity(terrain);
+        board.addEntityToPos(row, col, terrain, "terrain_" + row + "_" + col);
     }
 }
