@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
@@ -80,7 +79,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             final Coord firstMove = result.firstMove();
             IntentType kind = (result.turns() == 0) ? IntentType.WIN_MOVE
                     : (result.turns() == 1 ? IntentType.WIN_PATH1 : IntentType.WIN_PATH2);
-            GamePiece reference = board.getGamePieceAtPos(pos.row(), pos.col());
+            Entity reference = board.getEntityAtPos(pos.row(), pos.col());
             output.add(new Intent(finalScore,
                     () -> moveAndVerify(board, pos.row(), pos.col(), finalWinPlot, reference, firstMove.row(),
                             firstMove.col()),
@@ -105,7 +104,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), speed, entityId);
             int currentDist = nearestManhattan(pos.row(), pos.col(), tactical.enemies());
             boolean hasRogue = isRogue(entity);
-            GamePiece reference = board.getGamePieceAtPos(pos.row(), pos.col());
+            Entity reference = board.getEntityAtPos(pos.row(), pos.col());
 
             Plot bestPlot = null;
             int bestDist = currentDist;
@@ -240,7 +239,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             int actionsRemaining = getRemainingActions(entity);
             List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), EntityUtils.getSpeed(entity), EntityUtils.getId(entity));
             Plot stayPlot = getPlot(board, pos);
-            GamePiece reference = board.getGamePieceAtPos(pos.row(), pos.col());
+            Entity reference = board.getEntityAtPos(pos.row(), pos.col());
 
             List<Plot> candidates = new ArrayList<>();
             if (stayPlot != null)
@@ -268,7 +267,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                         allyWeightInLane += 6;
                     }
                     break;
-                } else if (board.getGamePieceAtPos(r, pos.col()) != null)
+                } else if (board.getEntityAtPos(r, pos.col()) != null)
                     break;
             }
 

@@ -6,12 +6,8 @@ import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.GameContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,29 +35,31 @@ class EcsMigrationTest {
     @Test
     void spawnCreatesEntityWithCorrectComponents() {
         String id = UUID.randomUUID().toString();
-        MonsterGamePiece piece = new MonsterGamePiece(
-                GamePieceStats.getMonsterStats(2, 5, 3, 2, 1),
-                GamePieceType.MONSTER, PieceAlignment.P1, UUID.fromString(id), null);
 
-        when(board.getGamePieceAtPos(1, 2)).thenReturn(piece);
+        // Create entity directly (simulating what PieceFactory does)
+        Entity entity = engine.createEntity();
+        entity.add(new IdentityComponent().set(id, "MONSTER"));
+        entity.add(new AlignmentComponent().set(PieceAlignment.P1));
+        entity.add(new PositionComponent().set(1, 2));
+        entity.add(new StatsComponent().set(2, 5, 3, 2, 1));
+        entity.add(new SpriteComponent().set("MONSTER"));
+        entity.add(new ModifierComponent());
+        engine.addEntity(entity);
+
+        // Register in PieceSyncSystem via spawn event
+        when(board.getEntityAtPos(1, 2)).thenReturn(entity);
         TypedEventBus.get().emit(new PieceSpawnedEvent(id, PieceAlignment.P1, 1, 2));
 
         ImmutableArray<Entity> entities = engine.getEntitiesFor(Family.all(IdentityComponent.class).get());
         assertEquals(1, entities.size());
 
-        Entity entity = entities.first();
-        assertNotNull(entity.getComponent(IdentityComponent.class));
-        assertNotNull(entity.getComponent(AlignmentComponent.class));
-        assertNotNull(entity.getComponent(PositionComponent.class));
-        assertNotNull(entity.getComponent(StatsComponent.class));
-        assertNotNull(entity.getComponent(SpriteComponent.class));
+        Entity e = entities.first();
+        assertEquals(id, e.getComponent(IdentityComponent.class).id);
+        assertEquals(PieceAlignment.P1, e.getComponent(AlignmentComponent.class).alignment);
+        assertEquals(1, e.getComponent(PositionComponent.class).row);
+        assertEquals(2, e.getComponent(PositionComponent.class).col);
 
-        assertEquals(id, entity.getComponent(IdentityComponent.class).id);
-        assertEquals(PieceAlignment.P1, entity.getComponent(AlignmentComponent.class).alignment);
-        assertEquals(1, entity.getComponent(PositionComponent.class).row);
-        assertEquals(2, entity.getComponent(PositionComponent.class).col);
-
-        StatsComponent stats = entity.getComponent(StatsComponent.class);
+        StatsComponent stats = e.getComponent(StatsComponent.class);
         assertEquals(2, stats.cost);
         assertEquals(5, stats.maxHealth);
         assertEquals(3, stats.damage);
@@ -72,18 +70,20 @@ class EcsMigrationTest {
     @Test
     void moveUpdatesPosition() {
         String id = UUID.randomUUID().toString();
-        MonsterGamePiece piece = new MonsterGamePiece(
-                GamePieceStats.getMonsterStats(1, 3, 1, 1, 1),
-                GamePieceType.MONSTER, PieceAlignment.P2, UUID.fromString(id), null);
+        Entity entity = engine.createEntity();
+        entity.add(new IdentityComponent().set(id, "MONSTER"));
+        entity.add(new AlignmentComponent().set(PieceAlignment.P2));
+        entity.add(new PositionComponent().set(0, 0));
+        entity.add(new StatsComponent().set(1, 3, 1, 1, 1));
+        entity.add(new ModifierComponent());
+        engine.addEntity(entity);
 
-        when(board.getGamePieceAtPos(0, 0)).thenReturn(piece);
+        when(board.getEntityAtPos(0, 0)).thenReturn(entity);
         TypedEventBus.get().emit(new PieceSpawnedEvent(id, PieceAlignment.P2, 0, 0));
-
         TypedEventBus.get().emit(new PieceMovedEvent(
                 id, PieceAlignment.P2, 0, 0, 3, 4,
                 PieceMovedEvent.MovementType.ACTIVE, "test"));
 
-        Entity entity = engine.getEntitiesFor(Family.all(PositionComponent.class).get()).first();
         assertEquals(3, entity.getComponent(PositionComponent.class).row);
         assertEquals(4, entity.getComponent(PositionComponent.class).col);
     }
@@ -91,11 +91,15 @@ class EcsMigrationTest {
     @Test
     void deathRemovesEntity() {
         String id = UUID.randomUUID().toString();
-        MonsterGamePiece piece = new MonsterGamePiece(
-                GamePieceStats.getMonsterStats(1, 2, 1, 1, 1),
-                GamePieceType.MONSTER, PieceAlignment.P1, UUID.fromString(id), null);
+        Entity entity = engine.createEntity();
+        entity.add(new IdentityComponent().set(id, "MONSTER"));
+        entity.add(new AlignmentComponent().set(PieceAlignment.P1));
+        entity.add(new PositionComponent().set(2, 3));
+        entity.add(new StatsComponent().set(1, 2, 1, 1, 1));
+        entity.add(new ModifierComponent());
+        engine.addEntity(entity);
 
-        when(board.getGamePieceAtPos(2, 3)).thenReturn(piece);
+        when(board.getEntityAtPos(2, 3)).thenReturn(entity);
         TypedEventBus.get().emit(new PieceSpawnedEvent(id, PieceAlignment.P1, 2, 3));
         assertEquals(1, engine.getEntitiesFor(Family.all(IdentityComponent.class).get()).size());
 
@@ -107,10 +111,15 @@ class EcsMigrationTest {
     void multipleSpawnsCreateMultipleEntities() {
         for (int i = 0; i < 3; i++) {
             String id = UUID.randomUUID().toString();
-            MonsterGamePiece piece = new MonsterGamePiece(
-                    GamePieceStats.getMonsterStats(1, 2 + i, 1, 1, 1),
-                    GamePieceType.MONSTER, PieceAlignment.P1, UUID.fromString(id), null);
-            when(board.getGamePieceAtPos(i, 0)).thenReturn(piece);
+            Entity entity = engine.createEntity();
+            entity.add(new IdentityComponent().set(id, "MONSTER"));
+            entity.add(new AlignmentComponent().set(PieceAlignment.P1));
+            entity.add(new PositionComponent().set(i, 0));
+            entity.add(new StatsComponent().set(1, 2 + i, 1, 1, 1));
+            entity.add(new ModifierComponent());
+            engine.addEntity(entity);
+
+            when(board.getEntityAtPos(i, 0)).thenReturn(entity);
             TypedEventBus.get().emit(new PieceSpawnedEvent(id, PieceAlignment.P1, i, 0));
         }
 

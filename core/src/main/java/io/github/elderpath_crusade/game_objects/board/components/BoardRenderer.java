@@ -1,9 +1,9 @@
 package io.github.elderpath_crusade.game_objects.board.components;
 
+import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.ui_objects.BoardIdentifierSymbol;
 
@@ -31,13 +31,13 @@ public class BoardRenderer {
         BoardIdentifierSymbol[] rowSymbols = board.getRowIdentifierSymbols();
         BoardIdentifierSymbol[] colSymbols = board.getColIdentifierSymbols();
 
-        Set<UUID> seen = new HashSet<>();
+        Set<String> seen = new HashSet<>();
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 layout[row][col].render(batch, zLevel, isPaused, col * pw, row * ph);
-                GamePiece gp = board.getGamePieceAtPos(row, col);
-                if (gp != null) {
-                    overlayRenderer.renderHpOverlay(batch, zLevel, col * pw, row * ph, gp, seen);
+                Entity entity = board.getEntityAtPos(row, col);
+                if (entity != null) {
+                    overlayRenderer.renderHpOverlay(batch, zLevel, col * pw, row * ph, entity, seen);
                 }
             }
         }
@@ -57,15 +57,15 @@ public class BoardRenderer {
         BoardIdentifierSymbol[] rowSymbols = board.getRowIdentifierSymbols();
         BoardIdentifierSymbol[] colSymbols = board.getColIdentifierSymbols();
 
-        Set<UUID> seen = new HashSet<>();
+        Set<String> seen = new HashSet<>();
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 int absX = x + col * pw;
                 int absY = y + row * ph;
                 layout[row][col].render(batch, zLevel, isPaused, absX, absY);
-                GamePiece gp = board.getGamePieceAtPos(row, col);
-                if (gp != null) {
-                    overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, gp, seen);
+                Entity entity = board.getEntityAtPos(row, col);
+                if (entity != null) {
+                    overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, entity, seen);
                 }
             }
         }

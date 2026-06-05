@@ -1,10 +1,12 @@
 package io.github.elderpath_crusade.game_objects.board;
 
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.enums.GamePieceData;
+import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.sprites.TextureObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -78,35 +80,29 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         Plot targetPlot = null;
         if (box instanceof Plot p) {
             targetPlot = p;
-        } else if (box instanceof GamePiece piece) {
-            Object posObj = piece.getData(GamePieceData.POSITION);
-            if (posObj instanceof Board.Position pos && pos.getBoard() == boardRef) {
-                var r = pos.getRow(); var c = pos.getCol();
-                var rp = boardRef.getPlotAtPos(r, c);
-                if (rp instanceof Plot pp) targetPlot = pp;
-            }
         }
         if (targetPlot == null) return false;
 
-        GamePiece gp = boardRef.getGamePieceAtPlot(this);
-        if (!(gp instanceof MonsterGamePiece mgp)) return false;
-        if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
-        if (mgp.isStunned()) return false;
+        Entity entity = boardRef.getEntityAtPlot(this);
+        if (entity == null) return false;
+        PieceAlignment alignment = EntityUtils.getAlignment(entity);
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
+        if (EntityUtils.isStunned(entity)) return false;
 
         int[] dstIdx = targetPlot.getIndices();
         if (dstIdx == null) return false;
         int dr = dstIdx[0], dc = dstIdx[1];
-        GamePiece dstPiece = boardRef.getGamePieceAtPos(dr, dc);
+        Entity dstEntity = boardRef.getEntityAtPos(dr, dc);
 
-        if (dstPiece instanceof MonsterGamePiece enemy && enemy.getAlignment() != mgp.getAlignment()) {
+        if (dstEntity != null && EntityUtils.getAlignment(dstEntity) != alignment) {
             // Attack validation: check if target is in attackable plots
-            List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, mgp.getAlignment());
+            List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, alignment);
             return attackable.contains(targetPlot);
         }
 
-        if (dstPiece == null) {
+        if (dstEntity == null) {
             // Move validation: check if target is reachable
-            int speed = mgp.getEffectiveSpeed();
+            int speed = EntityUtils.getSpeed(entity);
             List<Plot> reachable = boardRef.getReachablePlots(this.row, this.col, speed);
             return reachable.contains(targetPlot);
         }
@@ -117,14 +113,15 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     @Override
     public List<Plot> getEligibleTargets(int targetIndex) {
         if (boardRef == null) return List.of();
-        GamePiece gp = boardRef.getGamePieceAtPlot(this);
-        if (!(gp instanceof MonsterGamePiece mgp)) return List.of();
-        if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer()) return List.of();
-        if (mgp.isStunned()) return List.of();
+        Entity entity = boardRef.getEntityAtPlot(this);
+        if (entity == null) return List.of();
+        PieceAlignment alignment = EntityUtils.getAlignment(entity);
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return List.of();
+        if (EntityUtils.isStunned(entity)) return List.of();
 
-        int speed = mgp.getEffectiveSpeed();
+        int speed = EntityUtils.getSpeed(entity);
         List<Plot> reachable = boardRef.getReachablePlots(this.row, this.col, speed);
-        List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, mgp.getAlignment());
+        List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, alignment);
 
         List<Plot> combined = new java.util.ArrayList<>(reachable);
         for (Plot p : attackable) {
@@ -141,8 +138,8 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
         plotDirt.setZ(-1);
         plot.setZ(0);
-        plotDecorBack.setZ(2);
-        plotDecorFront.setZ(3);
+        plotDecorFront.setZ(2);
+        plotDecorBack.setZ(3);
 
         this.plot = plot;
         this.plotDirt = plotDirt;
@@ -164,12 +161,11 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     @Override
     public ClickableEffectData getClickableEffectData() {
         if (boardRef == null) return null;
-        GamePiece gp = boardRef.getGamePieceAtPlot(this);
-        if (!(gp instanceof MonsterGamePiece mgp)) return null;
-        if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
-        if (mgp.isStunned()) return null;
-        int actionsLeft = mgp.getStats().getRemainingActions();
-        if (actionsLeft <= 0) return null;
+        Entity entity = boardRef.getEntityAtPlot(this);
+        if (entity == null) return null;
+        if (EntityUtils.getAlignment(entity) != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
+        if (EntityUtils.isStunned(entity)) return null;
+        if (EntityUtils.getRemainingActions(entity) <= 0) return null;
         return clickableEffectData;
     }
 

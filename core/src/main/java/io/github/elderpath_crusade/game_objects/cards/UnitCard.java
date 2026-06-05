@@ -7,7 +7,6 @@ import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
 import io.github.elderpath_crusade.utils.ColorSettings;
@@ -16,11 +15,13 @@ import java.util.List;
 
 /**
  * Shared base for unit-like cards that display five core stats and optional rules text.
- * Extracted from SummonCard so both SummonCard and other card types can reuse the same
- * title/stats/description rendering without duplicating logic.
  */
 public abstract class UnitCard extends Card {
-    private final GamePieceStats stats;
+    private int cost;
+    private int maxHealth;
+    private int damage;
+    private int speed;
+    private int actions;
 
     private Text manaText;
     private Text hpText;
@@ -32,7 +33,7 @@ public abstract class UnitCard extends Card {
 
     protected UnitCard(int x, int y, int width, int height, int z) {
         super(x, y, width, height, z, null);
-        this.stats = buildStats();
+        loadStats();
         setTitle(getCardName(), FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
 
@@ -46,16 +47,17 @@ public abstract class UnitCard extends Card {
 
     /**
      * Alternate constructor for cases where the subclass already has concrete stats/name/descriptions
-     * available at construction time (e.g., non-interactive PreviewCard). This avoids calling the
-     * abstract hooks in the default constructor.
+     * available at construction time (e.g., non-interactive PreviewCard).
      */
     protected UnitCard(int x, int y, int width, int height, int z,
-                       GamePieceStats readyStats, String name, List<String> descs) {
+                       int cost, int maxHealth, int damage, int speed, int actions,
+                       String name, List<String> descs) {
         super(x, y, width, height, z, null);
-        if (readyStats == null) {
-            throw new IllegalArgumentException("readyStats must not be null for this UnitCard constructor");
-        }
-        this.stats = readyStats.copy();
+        this.cost = cost;
+        this.maxHealth = maxHealth;
+        this.damage = damage;
+        this.speed = speed;
+        this.actions = actions;
         setTitle(name == null ? "" : name, FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
 
@@ -68,21 +70,21 @@ public abstract class UnitCard extends Card {
 
     // Subclass hooks
     protected String getRegistryKey() { return PieceRegistry.toRegistryKey(getCardName()); }
-    protected GamePieceStats buildStats() {
+    private void loadStats() {
         String key = getRegistryKey();
         PieceDefinition def = PieceRegistry.get(key);
         if (def == null) throw new IllegalArgumentException("No piece definition for: " + key);
-        return GamePieceStats.getMonsterStats(def.cost(), def.health(), def.damage(), def.speed(), def.actions());
+        this.cost = def.cost();
+        this.maxHealth = def.health();
+        this.damage = def.damage();
+        this.speed = def.speed();
+        this.actions = def.actions();
     }
     protected abstract String getCardName();
-    /**
-     * Returns ability descriptions for card display.
-     * Default implementation looks up descriptions from AbilityRegistry via PieceRegistry.
-     * Subclasses may override for custom text.
-     */
+
     protected List<String> getAbilityDescriptionsForCard() {
         String key = getRegistryKey();
-        io.github.elderpath_crusade.data.PieceDefinition def = PieceRegistry.get(key);
+        PieceDefinition def = PieceRegistry.get(key);
         if (def == null || def.abilities().isEmpty()) return List.of();
         List<String> descs = new java.util.ArrayList<>();
         for (String abilityName : def.abilities()) {
@@ -95,11 +97,12 @@ public abstract class UnitCard extends Card {
         return descs;
     }
 
-    /**
-     * Read-only access to the base stats represented by this card.
-     * Returns a copy to prevent external mutation of the card's internal state.
-     */
-    public GamePieceStats getStats() { return stats.copy(); }
+    /** Read-only access to cost. */
+    public int getStatsCost() { return cost; }
+    public int getStatsMaxHealth() { return maxHealth; }
+    public int getStatsDamage() { return damage; }
+    public int getStatsSpeed() { return speed; }
+    public int getStatsActions() { return actions; }
 
     /**
      * Allow subclasses to update the description text dynamically (e.g., PreviewCard hover panel).
@@ -123,27 +126,18 @@ public abstract class UnitCard extends Card {
         }
     }
 
-    // --- Stat overlay initialization and sizing ---
     private void initStatTexts() {
-        manaText = makeStatText(stats.getCost());
-        hpText = makeStatText(stats.getMaxHealth());
-        spdText = makeStatText(stats.getSpeed());
-        actText = makeStatText(stats.getActions());
-        atkText = makeStatText(stats.getDamage());
+        manaText = makeStatText(cost);
+        hpText = makeStatText(maxHealth);
+        spdText = makeStatText(speed);
+        actText = makeStatText(actions);
+        atkText = makeStatText(damage);
         updateStatTextSizes();
     }
 
-    // Small helper to avoid repeated constructor boilerplate for stat texts
     private Text makeStatText(int value) { return makeStatText(String.valueOf(value)); }
     private Text makeStatText(String text) {
-        return new Text(
-            text,
-            FontType.SILKSCREEN,
-            0,
-            0,
-            getZLayer(),
-            Color.WHITE
-        );
+        return new Text(text, FontType.SILKSCREEN, 0, 0, getZLayer(), Color.WHITE);
     }
 
     private void updateStatTextSizes() {

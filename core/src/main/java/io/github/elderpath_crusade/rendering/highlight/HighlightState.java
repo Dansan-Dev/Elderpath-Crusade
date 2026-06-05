@@ -1,12 +1,11 @@
 package io.github.elderpath_crusade.rendering.highlight;
 
+import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.enums.GamePieceData;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
@@ -112,12 +111,6 @@ class HighlightState {
         for (CustomBox target : targets) {
             if (target instanceof Plot p) {
                 highlightedPlots.add(p);
-            } else if (target instanceof GamePiece gp) {
-                Object posObj = gp.getData(GamePieceData.POSITION);
-                if (posObj instanceof Board.Position pos && pos.getBoard() != null) {
-                    Renderable r = pos.getBoard().getPlotAtPos(pos.getRow(), pos.getCol());
-                    if (r instanceof Plot p) highlightedPlots.add(p);
-                }
             }
         }
     }
@@ -126,15 +119,14 @@ class HighlightState {
         Board board = sourcePlot.getBoard();
         if (board == null) return;
         int sr = sourcePlot.getRow(), sc = sourcePlot.getCol();
-        GamePiece gp = board.getGamePieceAtPos(sr, sc);
-        if (!(gp instanceof MonsterGamePiece mgp)) return;
-        if (mgp.getAlignment() != GameContext.get().getTurnManager().getCurrentPlayer()) return;
-        if (mgp.isStunned()) return;
+        Entity entity = board.getEntityAtPos(sr, sc);
+        if (entity == null) return;
+        if (EntityUtils.getAlignment(entity) != GameContext.get().getTurnManager().getCurrentPlayer()) return;
+        if (EntityUtils.isStunned(entity)) return;
 
-        // Use BoardNavigator-based methods for highlights
-        int speed = mgp.getEffectiveSpeed();
+        int speed = EntityUtils.getSpeed(entity);
         List<Plot> reachable = board.getReachablePlots(sr, sc, speed);
-        List<Plot> attackable = board.getAttackableEnemyPlots(sr, sc, mgp.getAlignment());
+        List<Plot> attackable = board.getAttackableEnemyPlots(sr, sc, EntityUtils.getAlignment(entity));
 
         for (Plot p : attackable) {
             if (p != null) attackCandidatePlots.add(p);
@@ -162,9 +154,9 @@ class HighlightState {
             Board board = plot.getBoard();
             if (board == null) continue;
 
-            GamePiece piece = board.getGamePieceAtPlot(plot);
-            if (piece instanceof MonsterGamePiece mgp) {
-                PieceAlignment pieceAlignment = mgp.getAlignment();
+            Entity entity = board.getEntityAtPlot(plot);
+            if (entity != null) {
+                PieceAlignment pieceAlignment = EntityUtils.getAlignment(entity);
                 if (pieceAlignment != currentPlayer && pieceAlignment != PieceAlignment.NEUTRAL) {
                     attackCandidatePlots.add(plot);
                 } else if (pieceAlignment == currentPlayer) {

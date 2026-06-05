@@ -1,7 +1,6 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 
 import java.util.List;
 
@@ -11,23 +10,18 @@ import java.util.List;
  */
 public class PreviewCard extends UnitCard {
 
-    public PreviewCard(int x, int y, int width, int height, int z, String title, GamePieceStats stats) {
-        super(x, y, width, height, z, stats, title, null);
+    public PreviewCard(int x, int y, int width, int height, int z, String title,
+                       int cost, int maxHealth, int damage, int speed, int actions) {
+        super(x, y, width, height, z, cost, maxHealth, damage, speed, actions, title, null);
     }
 
     public void setDescription(String desc) {
         setDescriptionText(desc);
     }
 
-    // Non-interactive: never returns a click effect
     @Override
     public ClickableEffectData getClickableEffectData() {
         return null;
-    }
-
-    @Override
-    protected GamePieceStats buildStats() {
-        throw new UnsupportedOperationException("PreviewCard should be constructed with ready stats");
     }
 
     @Override

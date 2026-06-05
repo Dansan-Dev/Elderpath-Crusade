@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Stores all StatsModifiers currently affecting a MonsterGamePiece.
+ * Stores all StatsModifiers currently affecting an entity.
  * Abilities add/remove their modifiers here based on triggers and conditions.
  */
 public final class StatsAccumulator {

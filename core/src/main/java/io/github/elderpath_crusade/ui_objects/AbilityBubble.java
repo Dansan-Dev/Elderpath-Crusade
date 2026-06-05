@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.elderpath_crusade.abilities.ActionableAbility;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -40,8 +39,8 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
     private ClickableEffectData effectData;
     private OnClick onClick;
 
-    // Ability reference for TargetFilter access
-    private ActionableAbility ability;
+    // Ability reference for TargetFilter access (data-driven, no longer OOP ability)
+    private TargetFilter abilityFilter;
 
     // Cache for generated circle textures per key (size+colors)
     private static final Map<String, Texture> CIRCLE_CACHE = new ConcurrentHashMap<>();
@@ -91,13 +90,13 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
         return this;
     }
 
-    public AbilityBubble withAbility(ActionableAbility ability) {
-        this.ability = ability;
+    public AbilityBubble withAbility(TargetFilter filter) {
+        this.abilityFilter = filter;
         return this;
     }
 
-    public ActionableAbility getAbility() {
-        return ability;
+    public TargetFilter getAbilityFilter() {
+        return abilityFilter;
     }
 
     @Override
@@ -162,13 +161,13 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
 
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-        if (ability instanceof TargetFilter tf) return tf.isValidTargetForEffect(box, targetIndex);
+        if (abilityFilter != null) return abilityFilter.isValidTargetForEffect(box, targetIndex);
         return true;
     }
 
     @Override
     public List<Plot> getEligibleTargets(int targetIndex) {
-        if (ability instanceof TargetFilter tf) return tf.getEligibleTargets(targetIndex);
+        if (abilityFilter != null) return abilityFilter.getEligibleTargets(targetIndex);
         return null;
     }
 

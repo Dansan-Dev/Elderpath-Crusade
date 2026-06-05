@@ -1,12 +1,13 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
@@ -17,8 +18,8 @@ import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
-import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
+import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.utils.Logger;
 
@@ -27,7 +28,6 @@ import java.util.HashMap;
 /**
  * Base class for summon-type cards. Handles multi-target click flow, mana cost,
  * summoning onto a Board plot, emitting events, and consuming the card.
- * Subclasses provide the concrete piece instantiation and stats/name.
  */
 public abstract class SummonCard extends UnitCard implements TargetFilter {
     protected final Board board;
@@ -48,20 +48,13 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         initializeClickableEffect();
     }
 
-    protected GamePiece instantiatePiece(GamePieceStats stats) {
-        String key = getRegistryKey();
-        PieceDefinition def = PieceRegistry.get(key);
-        if (def == null) return null;
-        return PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(), alignment);
-    }
-
     /**
      * Attempts to spend mana for this card based on its unified stats cost.
      * Returns true if the player had enough mana and the cost was deducted.
      */
     protected boolean trySpendMana() {
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        int cost = getStats().getCost();
+        int cost = getStatsCost();
         if (playerState == null || playerState.mana < cost) {
             Logger.log(
                 "SummonCard",
@@ -74,25 +67,27 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
     }
 
     /**
-     * Creates the piece instance and places it on the board at the given location.
-     * Emits a generic CARD_PLAYED event upon success.
+     * Creates the entity and places it on the board at the given location.
+     * Emits CARD_PLAYED and PIECE_SPAWNED events upon success.
      */
     protected void performSummon(int row, int col) {
-        GamePiece piece = instantiatePiece(getStats());
-        if (piece == null) {
-            Logger.error("SummonCard", "instantiatePiece(stats) returned null for " + getCardName() + "Card");
+        String key = getRegistryKey();
+        PieceDefinition def = PieceRegistry.get(key);
+        if (def == null) {
+            Logger.error("SummonCard", "No PieceDefinition for " + key);
             return;
         }
-        board.addGamePieceToPos(row, col, piece);
+        Entity entity = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
+                alignment, row, col);
+        String pieceId = EntityUtils.getId(entity);
+        board.addEntityToPos(row, col, entity, pieceId);
 
-        TypedEventBus.get().emit(new CardPlayedEvent(
-            getCardName(), alignment, row, col, piece.getId().toString()
-        ));
+        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, row, col));
+        TypedEventBus.get().emit(new CardPlayedEvent(getCardName(), alignment, row, col, pieceId));
     }
 
     /**
      * Resolves the selected plot from the interaction entities into board coordinates.
-     * Returns a two-element array {row, col} or null if the input is invalid.
      */
     private int[] resolveSelectedPlot(HashMap<Integer, CustomBox> entities) {
         if (board == null) return null;
@@ -100,7 +95,7 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         if (!(secondClicked instanceof Plot plot)) {
             return null;
         }
-        return plot.getIndices(); // may be null if plot isn't on this board
+        return plot.getIndices();
     }
 
     private void initializeClickableEffect() {
@@ -111,7 +106,7 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
                 int row = pos[0];
                 int col = pos[1];
 
-                if (board.getGamePieceAtPos(row, col) != null) {
+                if (board.getEntityAtPos(row, col) != null) {
                     Logger.log("SummonCard", "Summon aborted: occupied (" + row + "," + col + ")");
                     return;
                 }
@@ -156,7 +151,7 @@ public abstract class SummonCard extends UnitCard implements TargetFilter {
         if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
 
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        int cost = getStats().getCost();
+        int cost = getStatsCost();
         if (playerState == null || playerState.mana < cost) return null;
 
         return clickableEffectData;

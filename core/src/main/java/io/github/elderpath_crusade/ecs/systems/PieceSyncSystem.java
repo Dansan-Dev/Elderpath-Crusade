@@ -13,8 +13,6 @@ import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.GameContext;
 
 import java.util.HashMap;
@@ -38,57 +36,18 @@ public class PieceSyncSystem extends EntitySystem {
     }
 
     private void onSpawn(PieceSpawnedEvent event) {
+        // Entity already created by PieceFactory before spawn event — just index it
+        // Look up existing entity from engine by pieceId
+        Entity existing = entityMap.get(event.pieceId());
+        if (existing != null) return; // already tracked
+
+        // Find the entity that was just added (by PieceFactory) via GridIndexSystem
         Board board = GameContext.get().getActiveBoard();
         if (board == null) return;
+        Entity entity = board.getEntityAtPos(event.row(), event.col());
+        if (entity == null) return;
 
-        GamePiece gp = board.getGamePieceAtPos(event.row(), event.col());
-        if (!(gp instanceof MonsterGamePiece piece)) return;
-
-        Entity entity = getEngine().createEntity();
-        entity.add(new IdentityComponent().set(event.pieceId(), piece.getType().name()));
-        entity.add(new AlignmentComponent().set(event.owner()));
-        entity.add(new PositionComponent().set(event.row(), event.col()));
-        entity.add(new StatsComponent().set(
-                piece.getStats().getCost(),
-                piece.getStats().getMaxHealth(),
-                piece.getStats().getDamage(),
-                piece.getStats().getSpeed(),
-                piece.getStats().getActions()
-        ));
-        entity.add(new SpriteComponent().set(piece.getType().name()).setRenderable(piece.getSprite()));
-        entity.add(new PieceRefComponent().set(piece));
-        entity.add(new ModifierComponent());
-        entity.add(new ComputedStatsComponent());
-
-        // Attach data-driven ability definitions from PieceRegistry
-        AbilityInstanceComponent aic = new AbilityInstanceComponent();
-        String pieceName = piece.getPieceModel().getName();
-        PieceDefinition pieceDef = PieceRegistry.get(pieceName);
-        if (pieceDef != null) {
-            for (String abilityName : pieceDef.abilities()) {
-                AbilityDefinition abDef = AbilityRegistry.get(abilityName);
-                if (abDef != null) {
-                    aic.addAbility(abDef);
-                }
-            }
-        }
-        if (!aic.definitions.isEmpty()) {
-            entity.add(aic);
-        }
-
-        getEngine().addEntity(entity);
         entityMap.put(event.pieceId(), entity);
-        piece.setEntity(entity);
-        // Link Board.Position to ECS PositionComponent
-        Object posObj = piece.getData(io.github.elderpath_crusade.enums.GamePieceData.POSITION);
-        if (posObj instanceof Board.Position boardPos) {
-            boardPos.linkEntity(entity);
-        }
-        // Directly notify GridIndexSystem
-        GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
-        if (gridIndex != null) {
-            gridIndex.onEntitySpawned(entity, event.row(), event.col());
-        }
     }
 
     private void onMove(PieceMovedEvent event) {
@@ -107,10 +66,6 @@ public class PieceSyncSystem extends EntitySystem {
         GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
         if (gridIndex != null) {
             gridIndex.onEntityDied(event.row(), event.col());
-        }
-        PieceRefComponent ref = entity.getComponent(PieceRefComponent.class);
-        if (ref != null && ref.piece instanceof MonsterGamePiece mgp) {
-            mgp.setEntity(null);
         }
         getEngine().removeEntity(entity);
     }

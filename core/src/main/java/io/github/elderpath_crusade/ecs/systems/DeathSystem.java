@@ -50,7 +50,7 @@ public class DeathSystem extends EntitySystem {
             TypedEventBus.get().emit(new PieceDiedEvent(pieceId, row, col));
 
             if (board != null && pos != null) {
-                board.removeGamePieceAtPos(row, col);
+                board.removeEntityAtPos(row, col);
             }
 
             getEngine().removeEntity(entity);

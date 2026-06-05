@@ -76,13 +76,12 @@ public class SummonEvaluator extends BotEvaluatorBase {
         int bestValueScore = Integer.MIN_VALUE;
 
         for (Card card : player.hand.getCards()) {
-            if (!(card instanceof SummonCard sc) || sc.getStats().getCost() > currentMana) {
+            if (!(card instanceof SummonCard sc) || sc.getStatsCost() > currentMana) {
                 continue;
             }
 
-            var stats = sc.getStats();
-            int value = (stats.getMaxHealth() * 2) + (stats.getDamage() * 3) +
-                    (stats.getActions()) + (stats.getSpeed()) + stats.getCost();
+            int value = (sc.getStatsMaxHealth() * 2) + (sc.getStatsDamage() * 3) +
+                    (sc.getStatsActions()) + (sc.getStatsSpeed()) + sc.getStatsCost();
 
             if (value > bestValueScore) {
                 bestValueScore = value;

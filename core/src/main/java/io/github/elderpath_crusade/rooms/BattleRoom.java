@@ -13,7 +13,6 @@ import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.supers.Room;
-import io.github.elderpath_crusade.tiles.MountainTile;
 import io.github.elderpath_crusade.ui_objects.*;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.Logger;
@@ -57,11 +56,7 @@ public abstract class BattleRoom extends Room {
         GameContext.get().setActiveBoard(board);
         addContent(board);
 
-        // Common terrain setup
-        board.addGamePieceToPos(4, 3, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-        board.addGamePieceToPos(2, 1, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-        board.addGamePieceToPos(5, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
-        board.addGamePieceToPos(1, 2, new MountainTile(0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT()));
+        // Common terrain setup (terrain entities removed — MountainTile deleted)
 
         // 3. UI: Pause Hint
         int[] pmPos = this.pauseMenuPos.get();

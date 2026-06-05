@@ -4,16 +4,11 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.abilities.stats.StatsAccumulator;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
+import io.github.elderpath_crusade.ecs.components.ModifierComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
-import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,85 +24,54 @@ class EcsStatsSyncTest {
     }
 
     @Test
-    void gamePieceStats_beforeLink_readsLocalValues() {
-        GamePieceStats stats = GamePieceStats.getMonsterStats(2, 5, 3, 1, 2);
+    void statsComponent_readsValues() {
+        StatsComponent stats = new StatsComponent().set(2, 5, 3, 1, 2);
 
-        assertEquals(2, stats.getCost());
-        assertEquals(5, stats.getMaxHealth());
-        assertEquals(3, stats.getDamage());
-        assertEquals(1, stats.getSpeed());
-        assertEquals(2, stats.getActions());
-        assertEquals(5, stats.getCurrentHealth());
+        assertEquals(2, stats.cost);
+        assertEquals(5, stats.maxHealth);
+        assertEquals(3, stats.damage);
+        assertEquals(1, stats.speed);
+        assertEquals(2, stats.actions);
+        assertEquals(5, stats.currentHealth);
     }
 
     @Test
-    void gamePieceStats_afterLink_readsFromStatsComponent() {
-        GamePieceStats stats = GamePieceStats.getMonsterStats(2, 5, 3, 1, 2);
-        Entity entity = engine.createEntity();
-        entity.add(new StatsComponent().set(2, 5, 3, 1, 2));
-        engine.addEntity(entity);
+    void statsComponent_dealDamage() {
+        StatsComponent stats = new StatsComponent().set(2, 5, 3, 1, 2);
+        stats.currentHealth -= 2;
 
-        stats.linkEntity(entity);
-        entity.getComponent(StatsComponent.class).damage = 10;
-
-        assertEquals(10, stats.getDamage());
+        assertEquals(3, stats.currentHealth);
     }
 
     @Test
-    void gamePieceStats_afterLink_writesGoToStatsComponent() {
-        GamePieceStats stats = GamePieceStats.getMonsterStats(2, 5, 3, 1, 2);
-        Entity entity = engine.createEntity();
-        entity.add(new StatsComponent().set(2, 5, 3, 1, 2));
-        engine.addEntity(entity);
-        stats.linkEntity(entity);
+    void statsComponent_setRemainingActions() {
+        StatsComponent stats = new StatsComponent().set(2, 5, 3, 1, 2);
+        stats.remainingActions = 1;
 
-        stats.dealDamage(2);
-
-        assertEquals(3, entity.getComponent(StatsComponent.class).currentHealth);
-        assertEquals(3, stats.getCurrentHealth());
+        assertEquals(1, stats.remainingActions);
     }
 
     @Test
-    void gamePieceStats_afterLink_setRemainingActions() {
-        GamePieceStats stats = GamePieceStats.getMonsterStats(2, 5, 3, 1, 2);
+    void modifierComponent_accumulator_addsModifier() {
         Entity entity = engine.createEntity();
         entity.add(new StatsComponent().set(2, 5, 3, 1, 2));
+        ModifierComponent mc = new ModifierComponent();
+        entity.add(mc);
         engine.addEntity(entity);
-        stats.linkEntity(entity);
-
-        stats.setRemainingActions(1);
-
-        assertEquals(1, entity.getComponent(StatsComponent.class).remainingActions);
-    }
-
-    @Test
-    void monsterGamePiece_setEntity_linksStats() {
-        GamePieceStats stats = GamePieceStats.getMonsterStats(2, 5, 3, 1, 2);
-        MonsterGamePiece piece = new MonsterGamePiece(stats, GamePieceType.MONSTER, PieceAlignment.P1, UUID.randomUUID(), null);
-        Entity entity = engine.createEntity();
-        entity.add(new StatsComponent().set(2, 5, 3, 1, 2));
-        engine.addEntity(entity);
-
-        piece.setEntity(entity);
-        entity.getComponent(StatsComponent.class).damage = 7;
-
-        assertEquals(7, piece.getStats().getDamage());
-    }
-
-    @Test
-    void effectiveStats_readBaseFromEcs_withModifier() {
-        GamePieceStats stats = GamePieceStats.getMonsterStats(2, 5, 3, 1, 2);
-        MonsterGamePiece piece = new MonsterGamePiece(stats, GamePieceType.MONSTER, PieceAlignment.P1, UUID.randomUUID(), null);
-        Entity entity = engine.createEntity();
-        entity.add(new StatsComponent().set(2, 5, 3, 1, 2));
-        engine.addEntity(entity);
-        piece.setEntity(entity);
 
         StatsModifier mod = new StatsModifier();
         mod.addDamage = 2;
-        piece.getStatsAccumulator().add(mod);
-        entity.getComponent(StatsComponent.class).damage = 3;
+        mc.accumulator.add(mod);
 
-        assertEquals(5, piece.getEffectiveDamage());
+        assertTrue(mc.accumulator.has(mod));
+        assertEquals(1, mc.accumulator.getAll().size());
+    }
+
+    @Test
+    void statsModifier_applyInt_formula() {
+        // effective = max(0, round((base + add) * (1 + mult)))
+        int result = StatsModifier.applyInt(3, 2, 0.5f);
+        // (3 + 2) * (1 + 0.5) = 5 * 1.5 = 7.5 -> round = 8
+        assertEquals(8, result);
     }
 }

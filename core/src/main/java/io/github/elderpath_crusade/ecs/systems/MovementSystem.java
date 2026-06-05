@@ -52,7 +52,7 @@ public class MovementSystem extends EntitySystem {
         int fromCol = pos.col;
 
         pos.set(toRow, toCol);
-        board.moveGamePiece(fromRow, fromCol, toRow, toCol);
+        board.moveEntity(fromRow, fromCol, entity, toRow, toCol);
 
         AlignmentComponent align = alignMapper.get(entity);
         IdentityComponent id = idMapper.get(entity);
@@ -79,7 +79,7 @@ public class MovementSystem extends EntitySystem {
         if (fromRow == toRow && fromCol == toCol) return false;
 
         pos.set(toRow, toCol);
-        board.moveGamePiece(fromRow, fromCol, toRow, toCol);
+        board.moveEntity(fromRow, fromCol, entity, toRow, toCol);
 
         AlignmentComponent align = alignMapper.get(entity);
         IdentityComponent id = idMapper.get(entity);
@@ -112,8 +112,8 @@ public class MovementSystem extends EntitySystem {
         // Update ECS position
         pos.set(toRow, toCol);
 
-        // Sync Board write-cache
-        board.moveGamePiece(fromRow, fromCol, toRow, toCol);
+        // Sync Board
+        board.moveEntity(fromRow, fromCol, entity, toRow, toCol);
 
         // Emit event
         PieceAlignment owner = (align != null) ? align.alignment : PieceAlignment.NEUTRAL;

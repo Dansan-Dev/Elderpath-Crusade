@@ -6,7 +6,6 @@ import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -46,7 +45,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return row >= 0 && row < board.getROWS() && col >= 0 && col < board.getCOLS();
     }
 
-    protected boolean moveAndVerify(Board board, int sourceRow, int sourceCol, Plot destination, GamePiece reference,
+    protected boolean moveAndVerify(Board board, int sourceRow, int sourceCol, Plot destination, Entity reference,
             int targetRow, int targetCol) {
         Renderable sourceRenderable = board.getPlotAtPos(sourceRow, sourceCol);
         if (!(sourceRenderable instanceof Plot sourcePlot))
@@ -55,8 +54,8 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         entities.put(0, sourcePlot);
         entities.put(1, destination);
         sourcePlot.triggerClickEffect(entities);
-        GamePiece pieceAfter = board.getGamePieceAtPos(targetRow, targetCol);
-        return pieceAfter == reference;
+        Entity entityAfter = board.getEntityAtPos(targetRow, targetCol);
+        return entityAfter == reference;
     }
 
     protected boolean attackAndVerify(Board board, int sourceRow, int sourceCol, int targetRow, int targetCol,
@@ -66,7 +65,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         if (!(sourceRenderable instanceof Plot sourcePlot) || !(targetRenderable instanceof Plot targetPlot))
             return false;
 
-        GamePiece defenderBefore = board.getGamePieceAtPos(targetRow, targetCol);
+        Entity defenderBefore = board.getEntityAtPos(targetRow, targetCol);
         int actionsBefore = getRemainingActions(attacker);
 
         HashMap<Integer, CustomBox> entities = new HashMap<>();
@@ -74,7 +73,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         entities.put(1, targetPlot);
         sourcePlot.triggerClickEffect(entities);
 
-        GamePiece defenderAfter = board.getGamePieceAtPos(targetRow, targetCol);
+        Entity defenderAfter = board.getEntityAtPos(targetRow, targetCol);
         if (defenderBefore != null && (defenderAfter == null || defenderAfter != defenderBefore))
             return true; // killed or moved
 
@@ -145,7 +144,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
                             continue;
                         }
 
-                        if (board.getGamePieceAtPos(nextRow, nextCol) != null) {
+                        if (board.getEntityAtPos(nextRow, nextCol) != null) {
                             continue; // Cannot pass through pieces
                         }
 

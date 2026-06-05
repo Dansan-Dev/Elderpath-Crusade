@@ -71,7 +71,7 @@ public class AttackSystem extends EntitySystem {
         if (died) {
             TypedEventBus.get().emit(new PieceDiedEvent(dId, dRow, dCol));
             Board board = GameContext.get().getActiveBoard();
-            if (board != null) board.removeGamePieceAtPos(dRow, dCol);
+            if (board != null) board.removeEntityAtPos(dRow, dCol);
         }
         return true;
     }
@@ -119,7 +119,7 @@ public class AttackSystem extends EntitySystem {
             TypedEventBus.get().emit(new PieceDiedEvent(dId, dRow, dCol));
             Board board = GameContext.get().getActiveBoard();
             if (board != null) {
-                board.removeGamePieceAtPos(dRow, dCol);
+                board.removeEntityAtPos(dRow, dCol);
             }
         }
 

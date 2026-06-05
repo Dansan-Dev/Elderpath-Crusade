@@ -1,20 +1,13 @@
 package io.github.elderpath_crusade;
 
-import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePieceStats;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.game.PlayerManager;
-import io.github.elderpath_crusade.game.TurnManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,15 +75,7 @@ class TurnFlowTest {
     }
 
     @Test
-    void turnStartResetsActionsForCurrentPlayer() {
-        MonsterGamePiece p1Piece = new MonsterGamePiece(
-            GamePieceStats.getMonsterStats(1, 5, 2, 2, 2),
-            GamePieceType.MONSTER, PieceAlignment.P1, UUID.randomUUID(), null
-        );
-        p1Piece.getStats().setRemainingActions(0);
-
-        // TurnSystem resets actions via ECS — piece must have entity linked
-        // For this test, just verify turn starts without error
+    void turnStartResetsActions() {
         assertDoesNotThrow(() -> GameContext.get().getTurnManager().startIfNeeded());
     }
 
@@ -121,7 +106,7 @@ class TurnFlowTest {
 
             assertEquals(1, captured.size());
             assertEquals(PieceAlignment.P1, captured.get(0).player());
-            assertEquals(1, captured.get(0).newMana()); // first turn = 1 mana
+            assertEquals(1, captured.get(0).newMana());
         } finally {
             TypedEventBus.get().unregister(ManaChangedEvent.class, listener);
         }
@@ -142,7 +127,7 @@ class TurnFlowTest {
     @Test
     void resetClearsStateForNewGame() {
         GameContext.get().getTurnManager().startIfNeeded();
-        GameContext.get().getTurnManager().endTurn(); // now P2
+        GameContext.get().getTurnManager().endTurn();
 
         GameContext.get().getTurnManager().reset();
         assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());

@@ -1,6 +1,5 @@
 package io.github.elderpath_crusade.enums;
 
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import lombok.Getter;
@@ -9,7 +8,6 @@ import java.util.Set;
 
 public enum ClickableTargetType {
     NONE(),
-    GAME_PIECE(GamePiece.class),
     PLOT(Plot.class);
 
     @Getter private final Set<Class<?>> allowedClasses;

@@ -12,9 +12,6 @@ import io.github.elderpath_crusade.enums.*;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
-import io.github.elderpath_crusade.game_objects.board.EmptyTexture;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Updatable;
@@ -34,7 +31,6 @@ import io.github.elderpath_crusade.game_objects.board.components.BoardPerspectiv
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.game_objects.board.components.BoardRenderer;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -67,8 +63,6 @@ public class Board extends HigherOrderTexture implements Updatable {
     @Override
     public void update(float delta) {
     }
-
-
 
     private List<Integer> cachedZs = new ArrayList<>();
     private boolean zsDirty = true;
@@ -109,9 +103,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     private void onTurnEnded(TurnEndedEvent event) {
-        // No longer needed — AbilityRelay handles turn hooks via ECS
     }
-
 
     public static class Position {
         @Getter private final Board board;
@@ -230,23 +222,9 @@ public class Board extends HigherOrderTexture implements Updatable {
         return layout[row][col];
     }
 
-    public GamePiece getGamePieceAtPos(int row, int col) {
-        Entity entity = getEntityAtPos(row, col);
-        if (entity == null) return null;
-        io.github.elderpath_crusade.ecs.components.PieceRefComponent ref =
-                entity.getComponent(io.github.elderpath_crusade.ecs.components.PieceRefComponent.class);
-        return ref != null ? ref.piece : null;
-    }
-
-    public com.badlogic.ashley.core.Entity getEntityAtPos(int row, int col) {
+    public Entity getEntityAtPos(int row, int col) {
         GridIndexSystem gi = getGridIndex();
         return gi != null ? gi.getEntityAt(row, col) : null;
-    }
-
-    public GamePiece getGamePieceAtPlot(Plot plot) {
-        if (plot == null)
-            return null;
-        return getGamePieceAtPos(plot.getRow(), plot.getCol());
     }
 
     public Entity getEntityAtPlot(Plot plot) {
@@ -260,7 +238,7 @@ public class Board extends HigherOrderTexture implements Updatable {
         int[] idx = plot.getIndices();
         if (idx == null)
             return false;
-        if (getGamePieceAtPos(idx[0], idx[1]) != null)
+        if (getEntityAtPos(idx[0], idx[1]) != null)
             return false;
 
         boolean flipped = isFlipped();
@@ -278,82 +256,41 @@ public class Board extends HigherOrderTexture implements Updatable {
         layout[row][col] = EmptyTexture.get(PLOT_WIDTH * col, PLOT_HEIGHT * row, PLOT_WIDTH, PLOT_HEIGHT);
     }
 
-    public void removeGamePieceAtPos(int row, int col) {
-        setGamePiecePos(row, col, null);
-    }
-
-    public void setGamePiecePos(int row, int col, GamePiece gamePiece) {
+    public void removeEntityAtPos(int row, int col) {
         checkBoardPosition(row, col);
         GridIndexSystem gi = getGridIndex();
-        if (gamePiece != null) {
-            if (gamePiece instanceof MonsterGamePiece mgp && mgp.getEntity() != null && gi != null) {
-                gi.onEntitySpawned(mgp.getEntity(), row, col);
-            }
-            if (model.isOccupied(row, col)) model.removePiece(row, col);
-            model.placePiece(row, col, gamePiece.getId().toString());
-        } else {
-            if (gi != null) gi.onEntityDied(row, col);
-            if (model.isOccupied(row, col)) model.removePiece(row, col);
-        }
+        if (gi != null) gi.onEntityDied(row, col);
+        if (model.isOccupied(row, col)) model.removePiece(row, col);
         markDirtyAndNotify();
     }
 
-    public void moveGamePiece(int currentRow, int currentCol, int newRow, int newCol) {
-        GamePiece gamePiece = getGamePieceAtPos(currentRow, currentCol);
+    public void addEntityToPos(int row, int col, Entity entity, String pieceId) {
+        checkBoardPosition(row, col);
         GridIndexSystem gi = getGridIndex();
-        if (gi != null && gamePiece instanceof MonsterGamePiece mgp && mgp.getEntity() != null) {
-            gi.onEntityMoved(currentRow, currentCol, mgp.getEntity(), newRow, newCol);
+        if (entity != null && gi != null) {
+            gi.onEntitySpawned(entity, row, col);
         }
-        // Sync BoardModel
-        if (model.isOccupied(currentRow, currentCol)) model.removePiece(currentRow, currentCol);
-        if (gamePiece != null) {
-            if (model.isOccupied(newRow, newCol)) model.removePiece(newRow, newCol);
-            model.placePiece(newRow, newCol, gamePiece.getId().toString());
-        }
+        if (model.isOccupied(row, col)) model.removePiece(row, col);
+        model.placePiece(row, col, pieceId);
         markDirtyAndNotify();
     }
 
-    public void addGamePieceToPos(int row, int col, GamePiece gamePiece) {
-        setGamePiecePos(row, col, gamePiece);
-        gamePiece.updateData(GamePieceData.POSITION, new Position(this, row, col));
-        if (gamePiece instanceof MonsterGamePiece mgp) {
-            mgp.getStats().setRemainingActions(0);
-            mgp.notifySpawned(row, col);
+    public void moveEntity(int currentRow, int currentCol, Entity entity, int newRow, int newCol) {
+        GridIndexSystem gi = getGridIndex();
+        if (gi != null && entity != null) {
+            gi.onEntityMoved(currentRow, currentCol, entity, newRow, newCol);
         }
-        io.github.elderpath_crusade.events.TypedEventBus.get().emit(
-                new io.github.elderpath_crusade.events.PieceSpawnedEvent(
-                        gamePiece.getId().toString(),
-                        gamePiece.getAlignment(),
-                        row, col));
-    }
-
-    private void replacePlotAtPos(int row, int col, Renderable newRenderable) {
-        if (newRenderable.getBounds().getWidth() != PLOT_WIDTH
-                || newRenderable.getBounds().getHeight() != PLOT_HEIGHT)
-            throw new IllegalArgumentException("Renderable must be in PLOT size");
-
-        Renderable renderable = layout[row][col];
-        getRenderables().remove(renderable);
-
-        if (newRenderable.getBounds() != null) {
-            newRenderable.getBounds().setX(col * PLOT_WIDTH);
-            newRenderable.getBounds().setY(row * PLOT_HEIGHT);
-        }
-        newRenderable.setParent(getBounds());
-        layout[row][col] = newRenderable;
-        getRenderables().add(newRenderable);
-
-        if (newRenderable instanceof Plot plot) {
-            plot.setBoard(this);
-            plot.setClickableEffect(
-                    this::handlePlotMove,
-                    ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
+        if (model.isOccupied(currentRow, currentCol)) model.removePiece(currentRow, currentCol);
+        if (model.isOccupied(newRow, newCol)) model.removePiece(newRow, newCol);
+        String pieceId = io.github.elderpath_crusade.ecs.EntityUtils.getId(entity);
+        if (!pieceId.isEmpty()) {
+            model.placePiece(newRow, newCol, pieceId);
         }
         markDirtyAndNotify();
     }
 
     public boolean isOccupied(int row, int col) {
-        return getGamePieceAtPos(row, col) != null;
+        return getEntityAtPos(row, col) != null;
     }
 
     public List<Plot> getReachablePlots(int row, int col, int speed) {
@@ -363,7 +300,6 @@ public class Board extends HigherOrderTexture implements Updatable {
     public List<Plot> getAdjacentHostilePlots(int row, int col, PieceAlignment friendlyAlignment) {
         return navigator.getAdjacentHostilePlots(row, col, friendlyAlignment);
     }
-
 
     public void handlePlotMove(HashMap<Integer, CustomBox> entities) {
         interactionResolver.handlePlotMove(entities);
@@ -424,5 +360,30 @@ public class Board extends HigherOrderTexture implements Updatable {
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
         boardRenderer.render(batch, zLevel, isPaused, x, y);
+    }
+
+    private void replacePlotAtPos(int row, int col, Renderable newRenderable) {
+        if (newRenderable.getBounds().getWidth() != PLOT_WIDTH
+                || newRenderable.getBounds().getHeight() != PLOT_HEIGHT)
+            throw new IllegalArgumentException("Renderable must be in PLOT size");
+
+        Renderable renderable = layout[row][col];
+        getRenderables().remove(renderable);
+
+        if (newRenderable.getBounds() != null) {
+            newRenderable.getBounds().setX(col * PLOT_WIDTH);
+            newRenderable.getBounds().setY(row * PLOT_HEIGHT);
+        }
+        newRenderable.setParent(getBounds());
+        layout[row][col] = newRenderable;
+        getRenderables().add(newRenderable);
+
+        if (newRenderable instanceof Plot plot) {
+            plot.setBoard(this);
+            plot.setClickableEffect(
+                    this::handlePlotMove,
+                    ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
+        }
+        markDirtyAndNotify();
     }
 }

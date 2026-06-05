@@ -57,7 +57,7 @@ public class BotUtils {
                         int nr = cr + dir[0];
                         int nc = cc + dir[1];
                         if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc]
-                                && board.getGamePieceAtPos(nr, nc) == null) {
+                                && board.getEntityAtPos(nr, nc) == null) {
                             visited[nr][nc] = true;
                             queue.add(new int[] { nr, nc, d + 1 });
                         }

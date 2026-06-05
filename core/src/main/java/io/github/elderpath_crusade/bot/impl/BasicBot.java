@@ -1,12 +1,12 @@
 package io.github.elderpath_crusade.bot.impl;
 
+import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.cards.WolfCard;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.GamePiece;
-import io.github.elderpath_crusade.game_objects.board.MonsterGamePiece;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
@@ -67,7 +67,7 @@ public class BasicBot implements Bot {
         for (var c : ps.hand.getCards()) { if (c instanceof WolfCard wc) { targetCard = wc; break; } }
         if (targetCard == null) return false;
 
-        int lastRow = b.getROWS() - 1; // P2 home row
+        int lastRow = b.getROWS() - 1;
         for (int col = 0; col < b.getCOLS(); col++) {
             Renderable r = b.getPlotAtPos(lastRow, col);
             if (r instanceof Plot p && b.isValidSummonTarget(p, PieceAlignment.P2)) {
@@ -89,8 +89,8 @@ public class BasicBot implements Bot {
         int rows = b.getROWS(), cols = b.getCOLS();
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                GamePiece gp = b.getGamePieceAtPos(r, c);
-                if (gp instanceof MonsterGamePiece mgp && mgp.getAlignment() == PieceAlignment.P2) {
+                Entity entity = b.getEntityAtPos(r, c);
+                if (entity != null && EntityUtils.getAlignment(entity) == PieceAlignment.P2) {
                     List<Plot> hostile = b.getAttackableEnemyPlots(r, c, PieceAlignment.P2);
                     if (!hostile.isEmpty()) {
                         Renderable srcR = b.getPlotAtPos(r, c);
@@ -98,22 +98,16 @@ public class BasicBot implements Bot {
                             Plot dstPlot = hostile.get(0);
                             int[] dIdx = dstPlot.getIndices();
                             if (dIdx == null) continue;
-                            GamePiece defenderBefore = b.getGamePieceAtPos(dIdx[0], dIdx[1]);
-                            int defenderHpBefore = -1;
-                            if (defenderBefore instanceof MonsterGamePiece defM) defenderHpBefore = defM.getStats().getCurrentHealth();
-                            int actionsBefore = mgp.getStats().getRemainingActions();
+                            Entity defenderBefore = b.getEntityAtPos(dIdx[0], dIdx[1]);
+                            int actionsBefore = EntityUtils.getRemainingActions(entity);
                             HashMap<Integer, CustomBox> entities = new HashMap<>();
                             entities.put(0, srcPlot); entities.put(1, dstPlot);
                             srcPlot.triggerClickEffect(entities);
-                            GamePiece defenderAfter = b.getGamePieceAtPos(dIdx[0], dIdx[1]);
-                            boolean defenderDied = (defenderBefore instanceof MonsterGamePiece) && (defenderAfter == null || defenderAfter != defenderBefore);
-                            boolean defenderDamaged = false;
-                            if (defenderBefore instanceof MonsterGamePiece defM2 && defenderAfter instanceof MonsterGamePiece defM2After && defenderBefore == defenderAfter) {
-                                defenderDamaged = defM2After.getStats().getCurrentHealth() < defenderHpBefore;
-                            }
-                            int actionsAfter = mgp.getStats().getRemainingActions();
+                            Entity defenderAfter = b.getEntityAtPos(dIdx[0], dIdx[1]);
+                            boolean defenderDied = (defenderBefore != null) && (defenderAfter == null || defenderAfter != defenderBefore);
+                            int actionsAfter = EntityUtils.getRemainingActions(entity);
                             boolean spentAction = actionsAfter < actionsBefore;
-                            if (defenderDied || defenderDamaged || spentAction) return true;
+                            if (defenderDied || spentAction) return true;
                         }
                     }
                 }
@@ -126,16 +120,16 @@ public class BasicBot implements Bot {
         int rows = b.getROWS(), cols = b.getCOLS();
         List<int[]> enemies = new ArrayList<>();
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
-            GamePiece gp = b.getGamePieceAtPos(r, c);
-            if (gp instanceof MonsterGamePiece em && em.getAlignment() == PieceAlignment.P1) enemies.add(new int[]{r,c});
+            Entity e = b.getEntityAtPos(r, c);
+            if (e != null && EntityUtils.getAlignment(e) == PieceAlignment.P1) enemies.add(new int[]{r,c});
         }
         if (enemies.isEmpty()) return false;
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
-            GamePiece gp = b.getGamePieceAtPos(r, c);
-            if (!(gp instanceof MonsterGamePiece mgp) || mgp.getAlignment() != PieceAlignment.P2) continue;
+            Entity entity = b.getEntityAtPos(r, c);
+            if (entity == null || EntityUtils.getAlignment(entity) != PieceAlignment.P2) continue;
             int currentDist = nearestEnemyManhattan(r,c,enemies);
             if (currentDist <= 1) continue;
-            int speed = mgp.getStats().getSpeed();
+            int speed = EntityUtils.getSpeed(entity);
             List<Plot> reachable = b.getReachablePlots(r,c,speed);
             if (reachable.isEmpty()) continue;
             Plot best = null; int bestDist = currentDist;
@@ -148,12 +142,11 @@ public class BasicBot implements Bot {
                 Renderable srcR = b.getPlotAtPos(r,c);
                 if (srcR instanceof Plot srcPlot) {
                     int[] bestIdx = best.getIndices(); if (bestIdx == null) continue;
-                    GamePiece before = b.getGamePieceAtPos(r,c);
                     HashMap<Integer, CustomBox> entities = new HashMap<>();
                     entities.put(0, srcPlot); entities.put(1, best);
                     srcPlot.triggerClickEffect(entities);
-                    GamePiece afterAtDest = b.getGamePieceAtPos(bestIdx[0], bestIdx[1]);
-                    if (afterAtDest == before) return true;
+                    Entity afterAtDest = b.getEntityAtPos(bestIdx[0], bestIdx[1]);
+                    if (afterAtDest == entity) return true;
                 }
             }
         }
