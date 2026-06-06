@@ -4,7 +4,7 @@
 if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
     CONFIG_REPO="/home/user/elderpath-crusade-claude"
 else
-    CONFIG_REPO="/home/dansan/git/elderpath-crusade-claude"
+    CONFIG_REPO="$HOME/git/elderpath-crusade-claude"
 fi
 CLAUDE_DIR="$CLAUDE_PROJECT_DIR/.claude"
 
