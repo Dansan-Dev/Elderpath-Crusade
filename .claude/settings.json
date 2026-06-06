@@ -2,11 +2,10 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/user/elderpath-crusade/.claude/scripts/link-claude-config.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/link-claude-config.sh\""
           }
         ]
       }

@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# Determine the config repo path based on environment
-if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
-    CONFIG_REPO="/home/user/elderpath-crusade-claude"
-else
-    CONFIG_REPO="$HOME/git/elderpath-crusade-claude"
-fi
-CLAUDE_DIR="$CLAUDE_PROJECT_DIR/.claude"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+PARENT_DIR="$(dirname "$PROJECT_DIR")"
+CONFIG_REPO="$PARENT_DIR/elderpath-crusade-claude"
+CLAUDE_DIR="$PROJECT_DIR/.claude"
 
-# Symlink each item from the config repo into the project's .claude/
+if [ ! -d "$CONFIG_REPO" ]; then
+    echo "Config repo not found at $CONFIG_REPO — skipping link"
+    exit 0
+fi
+
 for item in "$CONFIG_REPO"/*; do
-  name=$(basename "$item")
-  # Don't overwrite settings.json — it's already there and is what launched this hook
-  [ "$name" = "settings.json" ] && continue
-  [ "$name" = "settings.local.json" ] && continue
-  ln -sfn "$item" "$CLAUDE_DIR/$name"
+    name=$(basename "$item")
+    [ "$name" = "settings.json" ] && continue
+    [ "$name" = "settings.local.json" ] && continue
+    ln -sfn "$item" "$CLAUDE_DIR/$name"
 done
 
 echo "Claude config linked from $CONFIG_REPO"
