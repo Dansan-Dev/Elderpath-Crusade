@@ -18,14 +18,3 @@ for item in "$CONFIG_REPO"/*; do
 done
 
 echo "Claude config linked from $CONFIG_REPO"
-
-# Workaround: platform may clone with stale capitalized URL instead of the local proxy.
-# Repoint to the local proxy so git fetch/pull works correctly.
-CURRENT_URL=$(git -C "$PROJECT_DIR" remote get-url origin 2>/dev/null)
-EXPECTED_URL="http://local_proxy@127.0.0.1:41365/git/Dansan-Dev/elderpath-crusade"
-if [ "$CURRENT_URL" != "$EXPECTED_URL" ]; then
-    echo "Fixing git remote URL: $CURRENT_URL -> $EXPECTED_URL"
-    git -C "$PROJECT_DIR" remote set-url origin "$EXPECTED_URL"
-    git -C "$PROJECT_DIR" fetch origin
-    git -C "$PROJECT_DIR" pull origin main
-fi
