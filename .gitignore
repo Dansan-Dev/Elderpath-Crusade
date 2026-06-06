@@ -3,10 +3,7 @@ lwjgl3/icons/*
 lwjgl3/src/main/resources/*
 .env
 .kiro/
-.claude/*
-!.claude/settings.json
-!.claude/scripts/
-!.claude/scripts/**
+.claude/
 
 ## Gradle:
 .gradle/
