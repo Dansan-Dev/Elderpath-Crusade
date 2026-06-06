@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# Only run in cloud sessions
-[ "$CLAUDE_CODE_REMOTE" != "true" ] && exit 0
-
-CONFIG_REPO="/home/user/elderpath-crusade-claude"
+# Determine the config repo path based on environment
+if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
+    CONFIG_REPO="/home/user/elderpath-crusade-claude"
+else
+    CONFIG_REPO="/home/dansan/git/elderpath-crusade-claude"
+fi
 CLAUDE_DIR="$CLAUDE_PROJECT_DIR/.claude"
 
 # Symlink each item from the config repo into the project's .claude/
