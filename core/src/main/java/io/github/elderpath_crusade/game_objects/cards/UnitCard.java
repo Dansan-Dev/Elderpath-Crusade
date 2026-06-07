@@ -37,12 +37,13 @@ public abstract class UnitCard extends Card {
 
     protected UnitCard(int x, int y, int width, int height, int z, String registryKeyOverride) {
         super(x, y, width, height, z, null);
-        loadStats(registryKeyOverride != null ? registryKeyOverride : getRegistryKey());
+        String key = registryKeyOverride != null ? registryKeyOverride : getRegistryKey();
+        loadStats(key);
         setTitle(getCardName(), FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
 
         initStatTexts();
-        List<String> descs = getAbilityDescriptionsForCard();
+        List<String> descs = getAbilityDescriptionsForCard(key);
         if (descs != null && !descs.isEmpty()) {
             String desc = String.join("\n\n", descs);
             descText = new Text(desc, FontType.SILKSCREEN, 0, 0, getZLayer(), ColorSettings.TEXT_DEFAULT.getColor());
@@ -86,7 +87,10 @@ public abstract class UnitCard extends Card {
     protected abstract String getCardName();
 
     protected List<String> getAbilityDescriptionsForCard() {
-        String key = getRegistryKey();
+        return getAbilityDescriptionsForCard(getRegistryKey());
+    }
+
+    private List<String> getAbilityDescriptionsForCard(String key) {
         PieceDefinition def = PieceRegistry.get(key);
         if (def == null || def.abilities().isEmpty()) return List.of();
         List<String> descs = new java.util.ArrayList<>();
