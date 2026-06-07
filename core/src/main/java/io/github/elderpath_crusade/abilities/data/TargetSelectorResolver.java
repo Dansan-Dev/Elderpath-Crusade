@@ -107,14 +107,25 @@ public class TargetSelectorResolver {
             row = ownerPos.row;
         }
 
+        String alignmentFilter = selector.params() != null ? (String) selector.params().get("alignment") : null;
+        AlignmentComponent ownerAlign = alignMapper.get(owner);
+
         Engine engine = GameContext.get().getEcsEngine();
-        ImmutableArray<Entity> all = engine.getEntitiesFor(Family.all(PositionComponent.class).get());
+        ImmutableArray<Entity> all = engine.getEntitiesFor(Family.all(PositionComponent.class, AlignmentComponent.class).get());
         List<Entity> result = new ArrayList<>();
 
         for (int i = 0; i < all.size(); i++) {
             Entity e = all.get(i);
             PositionComponent pos = posMapper.get(e);
-            if (pos.row == row) result.add(e);
+            if (pos.row != row) continue;
+            if (alignmentFilter != null && ownerAlign != null) {
+                AlignmentComponent eAlign = alignMapper.get(e);
+                if (eAlign == null) continue;
+                boolean isEnemy = eAlign.alignment != ownerAlign.alignment;
+                if ("Enemy".equals(alignmentFilter) && !isEnemy) continue;
+                if ("Friendly".equals(alignmentFilter) && isEnemy) continue;
+            }
+            result.add(e);
         }
         return result;
     }

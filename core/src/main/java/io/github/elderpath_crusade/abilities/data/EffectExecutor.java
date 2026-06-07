@@ -67,6 +67,15 @@ public class EffectExecutor {
         MovementSystem movement = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
         String destination = (String) effect.params().get("destination");
 
+        if ("$chosenTile".equals(destination)) {
+            int destRow = ExpressionEvaluator.evaluateInt(context.get("$chosenTile.row"), context);
+            int destCol = ExpressionEvaluator.evaluateInt(context.get("$chosenTile.col"), context);
+            for (Entity target : targets) {
+                movement.executeForcedMove(target, destRow, destCol, "ability", null);
+            }
+            return;
+        }
+
         if ("AwayFromSelf".equals(destination)) {
             PositionComponent ownerPos = posMapper.get(owner);
             if (ownerPos == null) return;
@@ -224,14 +233,18 @@ public class EffectExecutor {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void executeAddModifier(EffectNode effect, List<Entity> targets) {
         Map<String, Object> params = effect.params();
+        // Stats may be nested under a "stats" key (from YAML: {target: ..., stats: {addDamage: 1}})
+        Object statsObj = params.get("stats");
+        Map<String, Object> stats = (statsObj instanceof Map<?, ?> m) ? (Map<String, Object>) m : params;
         StatsModifier mod = new StatsModifier();
-        if (params.containsKey("addDamage")) mod.addDamage = ((Number) params.get("addDamage")).intValue();
-        if (params.containsKey("addSpeed")) mod.addSpeed = ((Number) params.get("addSpeed")).intValue();
-        if (params.containsKey("addActions")) mod.addActions = ((Number) params.get("addActions")).intValue();
-        if (params.containsKey("addMaxHealth")) mod.addMaxHealth = ((Number) params.get("addMaxHealth")).intValue();
-        if (params.containsKey("addRange")) mod.addRange = ((Number) params.get("addRange")).intValue();
+        if (stats.containsKey("addDamage")) mod.addDamage = ((Number) stats.get("addDamage")).intValue();
+        if (stats.containsKey("addSpeed")) mod.addSpeed = ((Number) stats.get("addSpeed")).intValue();
+        if (stats.containsKey("addActions")) mod.addActions = ((Number) stats.get("addActions")).intValue();
+        if (stats.containsKey("addMaxHealth")) mod.addMaxHealth = ((Number) stats.get("addMaxHealth")).intValue();
+        if (stats.containsKey("addRange")) mod.addRange = ((Number) stats.get("addRange")).intValue();
 
         for (Entity target : targets) {
             io.github.elderpath_crusade.ecs.components.ModifierComponent mc = target.getComponent(io.github.elderpath_crusade.ecs.components.ModifierComponent.class);
