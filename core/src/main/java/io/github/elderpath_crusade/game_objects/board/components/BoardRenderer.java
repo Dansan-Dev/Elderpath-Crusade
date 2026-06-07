@@ -35,13 +35,18 @@ public class BoardRenderer {
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 layout[row][col].render(batch, zLevel, isPaused, col * pw, row * ph);
+            }
+        }
+        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, 0, 0, pw, ph);
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
                 Entity entity = board.getEntityAtPos(row, col);
                 if (entity != null) {
                     overlayRenderer.renderHpOverlay(batch, zLevel, col * pw, row * ph, entity, seen);
                 }
             }
         }
-        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, 0, 0, pw, ph);
 
         Arrays.stream(rowSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
         Arrays.stream(colSymbols).forEach(s -> s.render(batch, zLevel, isPaused));
@@ -63,13 +68,20 @@ public class BoardRenderer {
                 int absX = x + col * pw;
                 int absY = y + row * ph;
                 layout[row][col].render(batch, zLevel, isPaused, absX, absY);
+            }
+        }
+        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, x, y, pw, ph);
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
                 Entity entity = board.getEntityAtPos(row, col);
                 if (entity != null) {
+                    int absX = x + col * pw;
+                    int absY = y + row * ph;
                     overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, entity, seen);
                 }
             }
         }
-        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, x, y, pw, ph);
 
         Arrays.stream(rowSymbols).forEach(s -> s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY()));
         Arrays.stream(colSymbols).forEach(s -> s.render(batch, zLevel, isPaused, x + s.getX(), y + s.getY()));
