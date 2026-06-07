@@ -141,7 +141,11 @@ public class SelectionStateMachine {
     private void triggerImmediate() {
         HashMap<Integer, CustomBox> entities = buildEntities();
         source.triggerClickEffect(entities);
-        reset();
+        // If triggerClickEffect started a new selection (e.g., requestPick for ChooseX abilities),
+        // don't reset — the new selection state is the one we want to keep.
+        if (!isActive()) {
+            reset();
+        }
     }
 
     private void trigger() {

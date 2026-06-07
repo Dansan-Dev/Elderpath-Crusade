@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
@@ -77,9 +78,10 @@ public class AbilityPopup extends HigherOrderUI {
         PieceAlignment currentPlayer = ctx.getTurnManager().getCurrentPlayer();
         ImmutableArray<Entity> entities = ctx.getEcsEngine().getEntitiesFor(FAMILY);
 
-        Set<String> desiredKeys = new HashSet<>();
-        List<BubbleSpec> specs = new ArrayList<>();
+        int boardX = board.getBounds().getX();
+        int boardY = board.getBounds().getY();
 
+        List<BubbleSpec> specs = new ArrayList<>();
         for (Entity entity : entities) {
             AlignmentComponent alignment = ALIGNMENT_M.get(entity);
             if (alignment.alignment != currentPlayer) continue;
@@ -95,15 +97,48 @@ public class AbilityPopup extends HigherOrderUI {
             if (identity == null) continue;
 
             PositionComponent pos = POSITION_M.get(entity);
-
             int abilityIndex = 0;
             for (AbilityDefinition def : abilityComp.definitions) {
                 if (def.actions() == null || def.actions().isEmpty()) continue;
-
                 String key = identity.id + "_" + abilityIndex;
-                desiredKeys.add(key);
-                specs.add(new BubbleSpec(key, entity, def, abilityIndex, pos));
+                specs.add(new BubbleSpec(key, entity, def, abilityIndex, pos, identity.id));
                 abilityIndex++;
+            }
+        }
+
+        // Determine hovered piece using LibGDX-flipped mouse coords
+        int mx = Gdx.input.getX();
+        int my = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+        String hoveredPieceId = null;
+
+        // Sticky corridor: if hovering an existing bubble, keep that piece's bubbles visible
+        for (Map.Entry<String, AbilityBubble> entry : activeBubbles.entrySet()) {
+            if (entry.getValue().inRange(mx, my)) {
+                String key = entry.getKey();
+                int last = key.lastIndexOf('_');
+                hoveredPieceId = last >= 0 ? key.substring(0, last) : key;
+                break;
+            }
+        }
+        // Otherwise check if hovering a plot that belongs to an eligible piece
+        if (hoveredPieceId == null) {
+            for (BubbleSpec spec : specs) {
+                int plotX = boardX + spec.pos.col * board.getPLOT_WIDTH();
+                int plotY = boardY + spec.pos.row * board.getPLOT_HEIGHT();
+                if (mx >= plotX && mx < plotX + board.getPLOT_WIDTH()
+                        && my >= plotY && my < plotY + board.getPLOT_HEIGHT()) {
+                    hoveredPieceId = spec.pieceId;
+                    break;
+                }
+            }
+        }
+
+        // Only show bubbles for the currently hovered piece
+        Set<String> desiredKeys = new HashSet<>();
+        if (hoveredPieceId != null) {
+            for (BubbleSpec spec : specs) {
+                if (spec.pieceId.equals(hoveredPieceId)) desiredKeys.add(spec.key);
             }
         }
 
@@ -115,10 +150,8 @@ public class AbilityPopup extends HigherOrderUI {
         }
 
         int bubbleSize = (int) (board.getPLOT_WIDTH() * 0.7f);
-        int boardX = board.getBounds().getX();
-        int boardY = board.getBounds().getY();
-
         for (BubbleSpec spec : specs) {
+            if (!desiredKeys.contains(spec.key)) continue;
             if (!activeBubbles.containsKey(spec.key)) {
                 int plotX = boardX + spec.pos.col * board.getPLOT_WIDTH();
                 int plotY = boardY + spec.pos.row * board.getPLOT_HEIGHT();
@@ -153,5 +186,5 @@ public class AbilityPopup extends HigherOrderUI {
         activeBubbles.clear();
     }
 
-    private record BubbleSpec(String key, Entity entity, AbilityDefinition def, int abilityIndex, PositionComponent pos) {}
+    private record BubbleSpec(String key, Entity entity, AbilityDefinition def, int abilityIndex, PositionComponent pos, String pieceId) {}
 }
