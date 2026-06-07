@@ -32,8 +32,12 @@ public abstract class UnitCard extends Card {
     private Text descText;
 
     protected UnitCard(int x, int y, int width, int height, int z) {
+        this(x, y, width, height, z, null);
+    }
+
+    protected UnitCard(int x, int y, int width, int height, int z, String registryKeyOverride) {
         super(x, y, width, height, z, null);
-        loadStats();
+        loadStats(registryKeyOverride != null ? registryKeyOverride : getRegistryKey());
         setTitle(getCardName(), FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
 
@@ -70,8 +74,7 @@ public abstract class UnitCard extends Card {
 
     // Subclass hooks
     protected String getRegistryKey() { return PieceRegistry.toRegistryKey(getCardName()); }
-    private void loadStats() {
-        String key = getRegistryKey();
+    private void loadStats(String key) {
         PieceDefinition def = PieceRegistry.get(key);
         if (def == null) throw new IllegalArgumentException("No piece definition for: " + key);
         this.cost = def.cost();
