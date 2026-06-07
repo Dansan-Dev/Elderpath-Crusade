@@ -45,7 +45,7 @@ public class SummonCard extends UnitCard implements TargetFilter {
         int z,
         String cardName, String registryKey
     ) {
-        super(x, y, width, height, z, registryKey);
+        super(x, y, width, height, z, registryKey, cardName);
         this.board = board;
         this.alignment = alignment;
         this.cardName = cardName;

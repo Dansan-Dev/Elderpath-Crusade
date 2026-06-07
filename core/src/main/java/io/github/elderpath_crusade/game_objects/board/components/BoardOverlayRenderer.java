@@ -68,10 +68,10 @@ public class BoardOverlayRenderer {
 
         if (!healthIndicatorText.getZs().contains(zLevel)) return;
 
+        int tx = absX + HP_PADDING_X;
+        int ty = absY + HP_PADDING_Y;
         int textW = Math.max(1, healthIndicatorText.getWidth());
         int textH = Math.max(1, healthIndicatorText.getHeight());
-        int tx = absX + HP_PADDING_X;
-        int ty = absY + board.getPLOT_HEIGHT() - textH - HP_PADDING_Y;
         int bgX = tx - HP_BG_PAD_X;
         int bgY = ty - HP_BG_PAD_Y;
         int bgW = textW + HP_BG_PAD_X * 2;

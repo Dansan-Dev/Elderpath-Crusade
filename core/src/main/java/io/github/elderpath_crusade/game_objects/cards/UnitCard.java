@@ -32,14 +32,14 @@ public abstract class UnitCard extends Card {
     private Text descText;
 
     protected UnitCard(int x, int y, int width, int height, int z) {
-        this(x, y, width, height, z, null);
+        this(x, y, width, height, z, null, null);
     }
 
-    protected UnitCard(int x, int y, int width, int height, int z, String registryKeyOverride) {
+    protected UnitCard(int x, int y, int width, int height, int z, String registryKeyOverride, String cardNameOverride) {
         super(x, y, width, height, z, null);
         String key = registryKeyOverride != null ? registryKeyOverride : getRegistryKey();
         loadStats(key);
-        setTitle(getCardName(), FontType.SILKSCREEN);
+        setTitle(cardNameOverride != null ? cardNameOverride : getCardName(), FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
 
         initStatTexts();
