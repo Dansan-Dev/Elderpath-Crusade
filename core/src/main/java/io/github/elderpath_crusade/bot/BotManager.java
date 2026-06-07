@@ -60,5 +60,10 @@ public final class BotManager {
         });
     }
 
+    public void resetSession() {
+        initialized = false;
+        initialize();
+    }
+
     public void setBot(Bot bot) { this.bot = bot; }
 }

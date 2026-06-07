@@ -24,6 +24,12 @@ public final class WinConditionManager {
 
     public void reset() { gameWon = false; }
 
+    public void resetSession() {
+        initialized = false;
+        gameWon = false;
+        initialize();
+    }
+
     public void initialize() {
         if (initialized) return;
         initialized = true;

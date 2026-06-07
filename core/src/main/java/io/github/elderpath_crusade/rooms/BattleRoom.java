@@ -45,6 +45,12 @@ public abstract class BattleRoom extends Room {
     public BattleRoom(GameMode mode) {
         super();
 
+        // 0. Reset previous game session: clear ECS entities and session-scoped event listeners
+        GameContext.get().getEcsEngine().removeAllEntities();
+        TypedEventBus.get().clearGroup("session");
+        GameContext.get().getWinConditionManager().resetSession();
+        GameContext.get().getBotManager().resetSession();
+
         // 1. Core State & Mode
         GameContext.get().getMusicManager().playLoopingMusic("Daniel_Game.mp3");
         GameContext.get().getTurnManager().reset();
