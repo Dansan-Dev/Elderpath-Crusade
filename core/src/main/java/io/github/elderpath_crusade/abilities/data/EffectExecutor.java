@@ -159,7 +159,10 @@ public class EffectExecutor {
         int value = ExpressionEvaluator.evaluateInt(effect.params().get("value"), context);
         if (key == null || operation == null) return;
 
-        int current = abilityState.containsKey(key) ? ((Number) abilityState.get(key)).intValue() : 0;
+        Object stored = abilityState.get(key);
+        int current = stored == null ? 0
+                : stored instanceof Boolean b ? (b ? 1 : 0)
+                : ((Number) stored).intValue();
         int newValue = switch (operation) {
             case "Set" -> value;
             case "Add" -> current + value;
