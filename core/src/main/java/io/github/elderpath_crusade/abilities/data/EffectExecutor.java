@@ -4,10 +4,16 @@ import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
+import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
+import io.github.elderpath_crusade.ecs.components.IdentityComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
+import io.github.elderpath_crusade.ecs.components.StunComponent;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.ecs.systems.MovementSystem;
+import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.PieceMovedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,12 +22,17 @@ import java.util.Map;
 public class EffectExecutor {
 
     private static final ComponentMapper<StatsComponent> statsMapper = ComponentMapper.getFor(StatsComponent.class);
+    private static final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
+    private static final ComponentMapper<IdentityComponent> idMapper = ComponentMapper.getFor(IdentityComponent.class);
+    private static final ComponentMapper<AlignmentComponent> alignMapper = ComponentMapper.getFor(AlignmentComponent.class);
 
     public static void execute(EffectNode effect, List<Entity> targets, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
         switch (effect.type()) {
             case "Damage" -> executeDamage(effect, targets, context);
             case "Heal" -> executeHeal(effect, targets, context);
-            case "Move" -> executeMove(effect, targets, context);
+            case "Move" -> executeMove(effect, targets, owner, context);
+            case "Swap" -> executeSwap(effect, targets, owner);
+            case "ApplyStatus" -> executeApplyStatus(effect, targets, context);
             case "SpendAction" -> executeSpendAction(effect, owner, context);
             case "ModifyState" -> executeModifyState(effect, context, abilityState);
             case "Branch" -> executeBranch(effect, targets, owner, context, abilityState);
@@ -52,12 +63,84 @@ public class EffectExecutor {
         }
     }
 
-    private static void executeMove(EffectNode effect, List<Entity> targets, ExpressionContext context) {
+    private static void executeMove(EffectNode effect, List<Entity> targets, Entity owner, ExpressionContext context) {
+        MovementSystem movement = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
+        String destination = (String) effect.params().get("destination");
+
+        if ("AwayFromSelf".equals(destination)) {
+            PositionComponent ownerPos = posMapper.get(owner);
+            if (ownerPos == null) return;
+            for (Entity target : targets) {
+                PositionComponent targetPos = posMapper.get(target);
+                if (targetPos == null) continue;
+                int dRow = targetPos.row - ownerPos.row;
+                int dCol = targetPos.col - ownerPos.col;
+                if (dRow != 0) dRow = dRow > 0 ? 1 : -1;
+                if (dCol != 0) dCol = dCol > 0 ? 1 : -1;
+                int pushRow = targetPos.row + dRow;
+                int pushCol = targetPos.col + dCol;
+                movement.executeForcedMove(target, pushRow, pushCol, "ABILITY", "PushOnAttack");
+            }
+            return;
+        }
+
         int row = ExpressionEvaluator.evaluateInt(effect.params().get("row"), context);
         int col = ExpressionEvaluator.evaluateInt(effect.params().get("col"), context);
-        MovementSystem movement = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
         for (Entity target : targets) {
             movement.executeForcedMove(target, row, col, "ability", null);
+        }
+    }
+
+    private static void executeSwap(EffectNode effect, List<Entity> targets, Entity owner) {
+        if (targets.isEmpty()) return;
+        Entity target = targets.get(0);
+        if (target == null || target == owner) return;
+
+        PositionComponent ownerPos = posMapper.get(owner);
+        PositionComponent targetPos = posMapper.get(target);
+        if (ownerPos == null || targetPos == null) return;
+
+        int ownerRow = ownerPos.row, ownerCol = ownerPos.col;
+        int targetRow = targetPos.row, targetCol = targetPos.col;
+
+        io.github.elderpath_crusade.game_objects.board.Board board = GameContext.get().getActiveBoard();
+        if (board == null) return;
+
+        board.removeEntityAtPos(ownerRow, ownerCol);
+        board.removeEntityAtPos(targetRow, targetCol);
+
+        ownerPos.set(targetRow, targetCol);
+        targetPos.set(ownerRow, ownerCol);
+
+        String ownerId = idMapper.get(owner) != null ? idMapper.get(owner).id : "";
+        String targetId = idMapper.get(target) != null ? idMapper.get(target).id : "";
+        board.addEntityToPos(targetRow, targetCol, owner, ownerId);
+        board.addEntityToPos(ownerRow, ownerCol, target, targetId);
+
+        PieceAlignment ownerAlign = alignMapper.get(owner) != null ? alignMapper.get(owner).alignment : PieceAlignment.NEUTRAL;
+        PieceAlignment targetAlign = alignMapper.get(target) != null ? alignMapper.get(target).alignment : PieceAlignment.NEUTRAL;
+        TypedEventBus.get().emit(new PieceMovedEvent(
+                ownerId, ownerAlign, ownerRow, ownerCol, targetRow, targetCol,
+                PieceMovedEvent.MovementType.FORCED, "ABILITY", "SwapOnAttack"));
+        TypedEventBus.get().emit(new PieceMovedEvent(
+                targetId, targetAlign, targetRow, targetCol, ownerRow, ownerCol,
+                PieceMovedEvent.MovementType.FORCED, "ABILITY", "SwapOnAttack"));
+    }
+
+    private static void executeApplyStatus(EffectNode effect, List<Entity> targets, ExpressionContext context) {
+        String status = (String) effect.params().get("status");
+        if (status == null) return;
+        int turns = ExpressionEvaluator.evaluateInt(effect.params().get("turns"), context);
+
+        for (Entity target : targets) {
+            if ("Stun".equals(status)) {
+                StunComponent stun = target.getComponent(StunComponent.class);
+                if (stun == null) {
+                    stun = new StunComponent();
+                    target.add(stun);
+                }
+                stun.turnsRemaining = Math.max(stun.turnsRemaining, turns);
+            }
         }
     }
 
@@ -111,6 +194,11 @@ public class EffectExecutor {
             selector = ts;
         } else if (selectorObj instanceof String s) {
             selector = new TargetSelector(s);
+        } else if (selectorObj instanceof Map<?, ?> map) {
+            String type = (String) map.get("type");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> params = (Map<String, Object>) map.get("params");
+            selector = new TargetSelector(type, params);
         } else {
             return;
         }

@@ -14,6 +14,7 @@ public sealed interface GameEvent permits
         PieceMovedEvent,
         PieceAttackedEvent,
         PieceDiedEvent,
+        PieceKilledEvent,
         ManaChangedEvent,
         ActionsResetEvent,
         ActionSpentEvent,

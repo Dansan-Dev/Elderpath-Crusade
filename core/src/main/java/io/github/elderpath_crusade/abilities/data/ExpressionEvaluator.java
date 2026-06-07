@@ -7,6 +7,7 @@ public class ExpressionEvaluator {
     public static int evaluateInt(Object expression, ExpressionContext context) {
         Object result = evaluate(expression, context);
         if (result instanceof Number n) return n.intValue();
+        if (result instanceof Boolean b) return b ? 1 : 0;
         return 0;
     }
 

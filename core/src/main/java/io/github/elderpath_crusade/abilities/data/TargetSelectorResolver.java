@@ -33,6 +33,8 @@ public class TargetSelectorResolver {
                 yield adj.isEmpty() ? List.of() : List.of(adj.get(0));
             }
             case "UnitsInRow" -> getUnitsInRow(owner, selector, context);
+            case "AdjacentUnitsAt" -> getAdjacentByAlignmentAt(owner, selector, context);
+            case "NextInLine" -> getNextInLine(owner, context);
             default -> List.of();
         };
     }
@@ -113,6 +115,54 @@ public class TargetSelectorResolver {
             Entity e = all.get(i);
             PositionComponent pos = posMapper.get(e);
             if (pos.row == row) result.add(e);
+        }
+        return result;
+    }
+
+    private static List<Entity> getNextInLine(Entity owner, ExpressionContext context) {
+        PositionComponent ownerPos = posMapper.get(owner);
+        if (ownerPos == null) return List.of();
+
+        int victimRow = ExpressionEvaluator.evaluateInt(context.get("$event.row"), context);
+        int victimCol = ExpressionEvaluator.evaluateInt(context.get("$event.col"), context);
+
+        int dRow = victimRow - ownerPos.row;
+        int dCol = victimCol - ownerPos.col;
+        if (dRow != 0) dRow = dRow > 0 ? 1 : -1;
+        if (dCol != 0) dCol = dCol > 0 ? 1 : -1;
+
+        GridIndexSystem grid = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
+        Entity next = grid.getEntityAt(victimRow + dRow, victimCol + dCol);
+        return next != null ? List.of(next) : List.of();
+    }
+
+    private static List<Entity> getAdjacentByAlignmentAt(Entity owner, TargetSelector selector, ExpressionContext context) {
+        AlignmentComponent ownerAlign = alignMapper.get(owner);
+        if (ownerAlign == null) return List.of();
+
+        // Get center position from context variables or selector params
+        Object rowParam = selector.params() != null ? selector.params().get("row") : null;
+        Object colParam = selector.params() != null ? selector.params().get("col") : null;
+        int centerRow = ExpressionEvaluator.evaluateInt(rowParam != null ? rowParam : context.get("$event.defenderRow"), context);
+        int centerCol = ExpressionEvaluator.evaluateInt(colParam != null ? colParam : context.get("$event.defenderCol"), context);
+
+        // Get alignment filter from params
+        String alignmentFilter = selector.params() != null ? (String) selector.params().get("alignment") : null;
+        boolean findEnemies = "Enemy".equals(alignmentFilter);
+        boolean findFriendly = "Friendly".equals(alignmentFilter);
+
+        GridIndexSystem grid = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
+        List<Entity> result = new ArrayList<>();
+
+        for (int[] dir : CARDINAL) {
+            Entity neighbor = grid.getEntityAt(centerRow + dir[0], centerCol + dir[1]);
+            if (neighbor == null || neighbor == owner) continue;
+            AlignmentComponent neighborAlign = alignMapper.get(neighbor);
+            if (neighborAlign == null) continue;
+            boolean isEnemy = neighborAlign.alignment != ownerAlign.alignment;
+            if (findEnemies && isEnemy) result.add(neighbor);
+            else if (findFriendly && !isEnemy) result.add(neighbor);
+            else if (!findEnemies && !findFriendly) result.add(neighbor); // all units at position
         }
         return result;
     }

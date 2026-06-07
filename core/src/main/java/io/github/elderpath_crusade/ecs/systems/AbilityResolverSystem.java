@@ -27,6 +27,7 @@ public class AbilityResolverSystem extends EntitySystem {
         bus.register(PieceMovedEvent.class, this::enqueue);
         bus.register(PieceAttackedEvent.class, this::enqueue);
         bus.register(PieceDiedEvent.class, this::enqueue);
+        bus.register(PieceKilledEvent.class, this::enqueue);
         bus.register(TurnStartedEvent.class, this::enqueue);
         bus.register(TurnEndedEvent.class, this::enqueue);
     }
@@ -53,6 +54,21 @@ public class AbilityResolverSystem extends EntitySystem {
     private void processEvent(GameEvent event) {
         TriggerType trigger = TriggerMatcher.fromEvent(event);
         if (trigger == null) return;
+
+        // Decrement stun timers at the end of each player's turn
+        if (trigger == TriggerType.ON_TURN_END) {
+            PieceAlignment endingPlayer = getEventPlayer(event);
+            ImmutableArray<Entity> all = getEngine().getEntitiesFor(
+                Family.all(StunComponent.class, AlignmentComponent.class).get());
+            for (int i = 0; i < all.size(); i++) {
+                Entity e = all.get(i);
+                AlignmentComponent align = e.getComponent(AlignmentComponent.class);
+                if (align == null || align.alignment != endingPlayer) continue;
+                StunComponent stun = e.getComponent(StunComponent.class);
+                stun.decrement();
+                if (!stun.isStunned()) e.remove(StunComponent.class);
+            }
+        }
 
         String eventPieceId = getEventPieceId(event);
         PieceAlignment eventPlayer = getEventPlayer(event);
@@ -135,13 +151,35 @@ public class AbilityResolverSystem extends EntitySystem {
         }
 
         TriggerMatcher.populateEventContext(event, context);
+
+        // Populate entity references for effect target resolution
+        if (event instanceof PieceAttackedEvent attacked) {
+            Entity defenderEntity = findEntityById(attacked.defenderId());
+            if (defenderEntity != null) context.set("$event.defenderEntity", defenderEntity);
+        }
+
         return context;
+    }
+
+    private Entity findEntityById(String id) {
+        if (id == null || id.isEmpty()) return null;
+        ImmutableArray<Entity> all = getEngine().getEntitiesFor(Family.all(IdentityComponent.class).get());
+        for (int i = 0; i < all.size(); i++) {
+            Entity e = all.get(i);
+            IdentityComponent ic = e.getComponent(IdentityComponent.class);
+            if (id.equals(ic.id)) return e;
+        }
+        return null;
     }
 
     private List<Entity> resolveEffectTargets(EffectNode effect, Entity owner, ExpressionContext context) {
         Object targetParam = effect.params().get("target");
         if (targetParam instanceof String s) {
             if (s.equals("$self")) return List.of(owner);
+            if (s.equals("$event.defender")) {
+                Object ref = context.get("$event.defenderEntity");
+                return (ref instanceof Entity e) ? List.of(e) : List.of();
+            }
             return TargetSelectorResolver.resolve(new TargetSelector(s), owner, context);
         }
         return List.of();
@@ -163,6 +201,7 @@ public class AbilityResolverSystem extends EntitySystem {
         if (event instanceof PieceAttackedEvent e) return e.attackerId();
         if (event instanceof PieceSpawnedEvent e) return e.pieceId();
         if (event instanceof PieceDiedEvent e) return e.pieceId();
+        if (event instanceof PieceKilledEvent e) return e.killerId();
         return "";
     }
 

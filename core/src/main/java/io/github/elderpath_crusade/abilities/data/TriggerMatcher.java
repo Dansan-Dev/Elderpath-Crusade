@@ -12,6 +12,7 @@ public class TriggerMatcher {
         if (event instanceof PieceMovedEvent) return TriggerType.ON_MOVE;
         if (event instanceof PieceAttackedEvent) return TriggerType.ON_ATTACK;
         if (event instanceof PieceDiedEvent) return TriggerType.ON_DEATH;
+        if (event instanceof PieceKilledEvent) return TriggerType.ON_KILL;
         if (event instanceof TurnStartedEvent) return TriggerType.ON_TURN_START;
         if (event instanceof TurnEndedEvent) return TriggerType.ON_TURN_END;
         return null;
@@ -36,6 +37,12 @@ public class TriggerMatcher {
             context.set("$event.col", e.col());
         } else if (event instanceof PieceDiedEvent e) {
             context.set("$event.pieceId", e.pieceId());
+            context.set("$event.row", e.row());
+            context.set("$event.col", e.col());
+        } else if (event instanceof PieceKilledEvent e) {
+            context.set("$event.killerId", e.killerId());
+            context.set("$event.victimId", e.victimId());
+            context.set("$event.excessDamage", e.excessDamage());
             context.set("$event.row", e.row());
             context.set("$event.col", e.col());
         } else if (event instanceof TurnStartedEvent e) {
