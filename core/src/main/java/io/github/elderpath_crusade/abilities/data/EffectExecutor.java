@@ -39,6 +39,7 @@ public class EffectExecutor {
             case "Sequence" -> executeSequence(effect, targets, owner, context, abilityState);
             case "ForEach" -> executeForEach(effect, owner, context, abilityState);
             case "AddModifier" -> executeAddModifier(effect, targets);
+            case "SetActions" -> executeSetActions(effect, targets, context);
             default -> {}
         }
     }
@@ -229,6 +230,16 @@ public class EffectExecutor {
             }
             for (EffectNode node : doEffects) {
                 execute(node, List.of(target), owner, context, abilityState);
+            }
+        }
+    }
+
+    private static void executeSetActions(EffectNode effect, List<Entity> targets, ExpressionContext context) {
+        int amount = ExpressionEvaluator.evaluateInt(effect.params().get("amount"), context);
+        for (Entity target : targets) {
+            StatsComponent stats = statsMapper.get(target);
+            if (stats != null) {
+                stats.remainingActions = amount;
             }
         }
     }

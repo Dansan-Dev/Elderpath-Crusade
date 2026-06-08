@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +36,10 @@ public class TargetSelectorResolver {
             case "UnitsInRow" -> getUnitsInRow(owner, selector, context);
             case "AdjacentUnitsAt" -> getAdjacentByAlignmentAt(owner, selector, context);
             case "NextInLine" -> getNextInLine(owner, context);
-            default -> List.of();
+            default -> {
+                Logger.log("TargetSelectorResolver", "Unrecognized selector type: " + selector.type());
+                yield List.of();
+            }
         };
     }
 

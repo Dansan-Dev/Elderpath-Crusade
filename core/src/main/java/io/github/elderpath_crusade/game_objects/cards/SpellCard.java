@@ -1,37 +1,40 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
-import io.github.elderpath_crusade.GameContext;
+import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
+import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
+import io.github.elderpath_crusade.abilities.data.ActionDef;
+import io.github.elderpath_crusade.abilities.data.EffectExecutor;
+import io.github.elderpath_crusade.abilities.data.EffectNode;
+import io.github.elderpath_crusade.abilities.data.ExpressionContext;
+import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.FontType;
+import io.github.elderpath_crusade.enums.GameMode;
+import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.game.PlayerManager;
-import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.Logger;
-import io.github.elderpath_crusade.data_objects.Box;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Data-driven spell card. Handles targeting, mana cost, effect execution, and standard spell rendering.
  */
 public class SpellCard extends Card implements TargetFilter {
-
-    @FunctionalInterface
-    public interface SpellEffect {
-        void apply(Board board, Plot plot, PieceAlignment caster);
-    }
 
     @FunctionalInterface
     public interface SpellTargetFilter {
@@ -43,7 +46,7 @@ public class SpellCard extends Card implements TargetFilter {
     private final String spellName;
     private final String description;
     private final int manaCost;
-    private final SpellEffect effect;
+    private final AbilityDefinition definition;
     private final SpellTargetFilter targetFilter;
 
     private OnClick onClick = null;
@@ -55,22 +58,32 @@ public class SpellCard extends Card implements TargetFilter {
     public SpellCard(
             Board board, PieceAlignment alignment,
             int x, int y, int width, int height, int z,
-            String spellName, int manaCost, String description,
-            SpellEffect effect,
+            String spellName,
+            AbilityDefinition definition,
             SpellTargetFilter targetFilter) {
         super(x, y, width, height, z, null);
         this.board = board;
         this.alignment = alignment;
         this.spellName = spellName;
-        this.description = description;
-        this.manaCost = manaCost;
-        this.effect = effect;
+        this.definition = definition;
+        this.description = definition.description();
+        this.manaCost = extractManaCost(definition);
         this.targetFilter = targetFilter;
 
         setTitle(spellName, FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
         initUi();
         initializeClickableEffect();
+    }
+
+    private static int extractManaCost(AbilityDefinition def) {
+        if (def == null || def.actions() == null || def.actions().isEmpty()) return 0;
+        ActionDef action = def.actions().get(0);
+        if (action.costs() == null) return 0;
+        for (var cost : action.costs()) {
+            if ("Mana".equals(cost.type())) return cost.amount();
+        }
+        return 0;
     }
 
     public String getSpellName() { return spellName; }
@@ -123,7 +136,17 @@ public class SpellCard extends Card implements TargetFilter {
                         return;
                     CustomBox target = entities.get(1);
                     if (target instanceof Plot plot) {
-                        effect.apply(board, plot, alignment);
+                        Entity e = board.getEntityAtPlot(plot);
+                        if (e != null && !definition.actions().isEmpty()) {
+                            ActionDef action = definition.actions().get(0);
+                            ExpressionContext ctx = new ExpressionContext();
+                            Map<String, Object> state = definition.state() != null
+                                    ? new HashMap<>(definition.state()) : new HashMap<>();
+                            List<Entity> effectTargets = List.of(e);
+                            for (EffectNode effectNode : action.effects()) {
+                                EffectExecutor.execute(effectNode, effectTargets, e, ctx, state);
+                            }
+                        }
                     }
                     consume();
                 },
