@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.test.RequiresAssets;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
@@ -12,6 +13,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@RequiresAssets
 class CardFactoryTest {
     private static Set<String> registryKeys;
 

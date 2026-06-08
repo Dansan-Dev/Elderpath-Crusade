@@ -22,4 +22,10 @@ dependencies {
 
 test {
   useJUnitPlatform()
+  // Pass testProfile to tests so AssetsCondition can gate asset-dependent tests.
+  // Values: "local" (run all), "cloud" (skip asset tests), absent (auto-detect).
+  // Override: ./gradlew :core:test -PtestProfile=local
+  if (project.hasProperty('testProfile')) {
+    systemProperty 'testProfile', project.testProfile
+  }
 }

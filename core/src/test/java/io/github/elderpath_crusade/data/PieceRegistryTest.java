@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.data;
 
+import io.github.elderpath_crusade.test.RequiresAssets;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@RequiresAssets
 class PieceRegistryTest {
     private static Map<String, PieceDefinition> pieces;
 
