@@ -56,6 +56,8 @@ public class AbilityPopup extends HigherOrderUI {
     ).get();
 
     private final Map<String, AbilityBubble> activeBubbles = new HashMap<>();
+    // Narrow corridor between each bubble and its piece's plot — keeps bubble alive while mouse travels upward
+    private final Map<String, int[]> corridors = new HashMap<>(); // [x, y, w, h]
 
     public AbilityPopup() {
         super();
@@ -112,10 +114,15 @@ public class AbilityPopup extends HigherOrderUI {
 
         String hoveredPieceId = null;
 
-        // Sticky corridor: if hovering an existing bubble, keep that piece's bubbles visible
+        // Sticky corridor: if hovering an existing bubble or the corridor leading up to it, keep that piece's bubbles visible
         for (Map.Entry<String, AbilityBubble> entry : activeBubbles.entrySet()) {
-            if (entry.getValue().inRange(mx, my)) {
-                String key = entry.getKey();
+            String key = entry.getKey();
+            boolean hit = entry.getValue().inRange(mx, my);
+            if (!hit) {
+                int[] c = corridors.get(key);
+                if (c != null) hit = mx >= c[0] && mx < c[0] + c[2] && my >= c[1] && my < c[1] + c[3];
+            }
+            if (hit) {
                 int last = key.lastIndexOf('_');
                 hoveredPieceId = last >= 0 ? key.substring(0, last) : key;
                 break;
@@ -147,6 +154,7 @@ public class AbilityPopup extends HigherOrderUI {
         for (String key : staleKeys) {
             interactionManager.removeClickable(activeBubbles.get(key));
             activeBubbles.remove(key);
+            corridors.remove(key);
         }
 
         int bubbleSize = (int) (board.getPLOT_WIDTH() * 0.7f);
@@ -169,6 +177,8 @@ public class AbilityPopup extends HigherOrderUI {
                                 ClickableEffectData.getImmediate()
                         );
 
+                // Corridor: narrow strip from plot top to bubble bottom, same width as bubble
+                corridors.put(spec.key, new int[]{bubX, plotY + board.getPLOT_HEIGHT(), bubbleSize, BUBBLE_Y_OFFSET});
                 activeBubbles.put(spec.key, bubble);
                 interactionManager.addClickable(bubble);
             }
@@ -184,6 +194,7 @@ public class AbilityPopup extends HigherOrderUI {
             interactionManager.removeClickable(bubble);
         }
         activeBubbles.clear();
+        corridors.clear();
     }
 
     private record BubbleSpec(String key, Entity entity, AbilityDefinition def, int abilityIndex, PositionComponent pos, String pieceId) {}
