@@ -54,8 +54,9 @@ public class ActionableAbilityExecutor {
                 executeEffects(actionDef.effects(), owner, ctx, abilityState);
                 deductCosts(owner, actionDef.costs());
             }
-            case "ChooseEnemy" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, true);
-            case "ChooseFriendly" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, false);
+            case "ChooseEnemy" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ENEMY);
+            case "ChooseFriendly" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.FRIENDLY);
+            case "ChooseAny" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ANY);
             case "ChooseRow" -> startRowPick(owner, abilityDef, actionDef, ctx, abilityState);
         }
     }
@@ -118,8 +119,18 @@ public class ActionableAbilityExecutor {
         return List.of();
     }
 
+    private enum AlignmentFilter { ENEMY, FRIENDLY, ANY }
+
+    private static boolean matchesAlignment(AlignmentFilter filter, boolean isEnemy) {
+        return switch (filter) {
+            case ENEMY -> isEnemy;
+            case FRIENDLY -> !isEnemy;
+            case ANY -> true;
+        };
+    }
+
     private static void startSinglePick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
-            ExpressionContext ctx, Map<String, Object> abilityState, boolean chooseEnemy) {
+            ExpressionContext ctx, Map<String, Object> abilityState, AlignmentFilter alignmentFilter) {
         TargetSelector selector = actionDef.targetSelector();
         int range = selector.params() != null && selector.params().containsKey("range")
                 ? ((Number) selector.params().get("range")).intValue() : 99;
@@ -137,11 +148,11 @@ public class ActionableAbilityExecutor {
                 int dc = Math.abs(idx[1] - ownerPos.col);
                 if (Math.max(dr, dc) > range) return false;
                 Entity entity = GameContext.get().getActiveBoard().getEntityAtPlot(plot);
-                if (entity == null) return false;
+                if (entity == null || entity == owner) return false;
                 AlignmentComponent align = alignMapper.get(entity);
                 if (align == null) return false;
                 boolean isEnemy = align.alignment != ownerAlign.alignment;
-                return chooseEnemy ? isEnemy : !isEnemy;
+                return matchesAlignment(alignmentFilter, isEnemy);
             }
 
             @Override
@@ -157,11 +168,11 @@ public class ActionableAbilityExecutor {
                         int dc = Math.abs(c - ownerPos.col);
                         if (Math.max(dr, dc) > range) continue;
                         Entity entity = board.getEntityAtPos(r, c);
-                        if (entity == null) continue;
+                        if (entity == null || entity == owner) continue;
                         AlignmentComponent align = alignMapper.get(entity);
                         if (align == null) continue;
                         boolean isEnemy = align.alignment != ownerAlign.alignment;
-                        if (chooseEnemy ? isEnemy : !isEnemy) eligible.add(plot);
+                        if (matchesAlignment(alignmentFilter, isEnemy)) eligible.add(plot);
                     }
                 }
                 return eligible;

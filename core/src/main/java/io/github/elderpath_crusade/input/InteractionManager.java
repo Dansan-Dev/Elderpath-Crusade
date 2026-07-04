@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.input;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableEffectType;
+import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interaction.SelectionStateMachine;
 import io.github.elderpath_crusade.interfaces.*;
@@ -75,19 +76,35 @@ public class InteractionManager {
             stateMachine.cancel();
         }
 
-        Clickable hit = findHit(mouseX, mouseY, paused);
-
-        if (hit != null) {
-            if (!stateMachine.isActive()) {
-                stateMachine.beginFromClickable(hit);
-            } else {
-                stateMachine.addTarget(hit);
-            }
+        if (!stateMachine.isActive()) {
+            Clickable hit = findHit(mouseX, mouseY, paused);
+            if (hit != null) stateMachine.beginFromClickable(hit);
+            return;
         }
+
+        // While a selection is active, the click must resolve to the target type the
+        // selection requires (e.g. PLOT), even if another clickable (an ability bubble,
+        // a card) overlaps the same pixel.
+        ClickableTargetType requiredType = getActiveTargetType();
+        Clickable hit = findHit(mouseX, mouseY, paused, requiredType);
+        if (hit != null) {
+            stateMachine.addTarget(hit);
+        }
+    }
+
+    private ClickableTargetType getActiveTargetType() {
+        InteractionSource source = stateMachine.getSource();
+        if (source == null) return null;
+        ClickableEffectData data = source.getClickableEffectData();
+        return (data == null) ? null : data.getTargetType();
     }
 
     private Clickable findHit(int mouseX, int mouseY, boolean paused) {
         return hitTestService.findHit(mouseX, mouseY, paused);
+    }
+
+    private Clickable findHit(int mouseX, int mouseY, boolean paused, ClickableTargetType requiredType) {
+        return hitTestService.findHit(mouseX, mouseY, paused, requiredType);
     }
 
     public void addClickable(Clickable clickable) {

@@ -49,7 +49,22 @@ public class SelectionStateMachine {
             return;
         }
         if (!isValidTarget(box, data)) {
-            Logger.log("SelectionStateMachine", "Ignored: target does not match required type " + data.getTargetType());
+            // If the clicked element has its own selection effect and its type doesn't match
+            // the current selection's target type, cancel the current selection and start a new one.
+            // This handles the case where a user accidentally activates piece movement selection
+            // and then tries to click a card (or other source).
+            ClickableTargetType targetType = data.getTargetType();
+            boolean typeOk = (targetType == null) || targetType.matches(box);
+            if (!typeOk && box instanceof InteractionSource newSource && box != source) {
+                ClickableEffectData newData = newSource.getClickableEffectData();
+                if (newData != null) {
+                    reset();
+                    beginFromClickable(newSource);
+                    return;
+                }
+            }
+            Logger.log("SelectionStateMachine", "Ignored: target=" + box.getClass().getSimpleName()
+                    + " does not satisfy required type " + data.getTargetType());
             return;
         }
         if (targets.contains(box)) {
