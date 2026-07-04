@@ -11,7 +11,10 @@ import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.IdentityComponent;
 import io.github.elderpath_crusade.ecs.components.ModifierComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
+import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +22,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Reads passive modifier definitions from each entity's AbilityInstanceComponent
@@ -39,6 +43,15 @@ public class PassiveModifierSystem extends EntitySystem {
      */
     private final Map<Entity, Map<String, AuraEntry>> trackers = new IdentityHashMap<>();
 
+    /**
+     * Tracks which (owner,key) aura combinations have already bumped a given target's
+     * remainingActions this turn, to prevent farming extra actions by repeatedly
+     * leaving and re-entering aura range within the same turn.
+     */
+    private final Map<Entity, Set<String>> actionsBumpedThisTurn = new IdentityHashMap<>();
+
+    private final Consumer<TurnStartedEvent> onTurnStarted = this::handleTurnStarted;
+
     private static class AuraEntry {
         final StatsModifier modifier;
         final Set<Entity> appliedTo = new HashSet<>();
@@ -57,6 +70,16 @@ public class PassiveModifierSystem extends EntitySystem {
             AlignmentComponent.class
         ).get();
         gridIndex = engine.getSystem(GridIndexSystem.class);
+        TypedEventBus.get().register(TurnStartedEvent.class, onTurnStarted);
+    }
+
+    @Override
+    public void removedFromEngine(Engine engine) {
+        TypedEventBus.get().unregister(TurnStartedEvent.class, onTurnStarted);
+    }
+
+    private void handleTurnStarted(TurnStartedEvent event) {
+        actionsBumpedThisTurn.clear();
     }
 
     @Override
@@ -131,6 +154,20 @@ public class PassiveModifierSystem extends EntitySystem {
                         if (mc != null) {
                             mc.accumulator.add(entry.modifier);
                         }
+
+                        StatsComponent targetStats = target.getComponent(StatsComponent.class);
+                        if (targetStats != null) {
+                            if (entry.modifier.addMaxHealth > 0) {
+                                targetStats.currentHealth += entry.modifier.addMaxHealth;
+                            }
+                            if (entry.modifier.addActions > 0) {
+                                Set<String> bumped = actionsBumpedThisTurn.computeIfAbsent(target, k -> new HashSet<>());
+                                String bumpKey = System.identityHashCode(owner) + ":" + key;
+                                if (bumped.add(bumpKey)) {
+                                    targetStats.remainingActions += entry.modifier.addActions;
+                                }
+                            }
+                        }
                     }
 
                     // Update the applied-to set
@@ -176,6 +213,20 @@ public class PassiveModifierSystem extends EntitySystem {
                     if (adjAlign == null) continue;
                     if (adjAlign.alignment == ownerAlignment.alignment) continue;
                     result.add(adj);
+                }
+                return result;
+            }
+
+            case "AllFriendlyUnits": {
+                Set<Entity> result = new HashSet<>();
+                ImmutableArray<Entity> all = getEngine().getEntitiesFor(
+                    Family.all(AlignmentComponent.class).get());
+                for (int i = 0; i < all.size(); i++) {
+                    Entity e = all.get(i);
+                    if (e == owner) continue;
+                    AlignmentComponent align = e.getComponent(AlignmentComponent.class);
+                    if (align == null || align.alignment != ownerAlignment.alignment) continue;
+                    result.add(e);
                 }
                 return result;
             }

@@ -40,6 +40,7 @@ public class EffectExecutor {
             case "ForEach" -> executeForEach(effect, owner, context, abilityState);
             case "AddModifier" -> executeAddModifier(effect, targets);
             case "SetActions" -> executeSetActions(effect, targets, context);
+            case "GrantAction" -> executeGrantAction(effect, targets, context);
             default -> {}
         }
     }
@@ -240,6 +241,16 @@ public class EffectExecutor {
             StatsComponent stats = statsMapper.get(target);
             if (stats != null) {
                 stats.remainingActions = amount;
+            }
+        }
+    }
+
+    private static void executeGrantAction(EffectNode effect, List<Entity> targets, ExpressionContext context) {
+        int amount = ExpressionEvaluator.evaluateInt(effect.params().get("amount"), context);
+        for (Entity target : targets) {
+            StatsComponent stats = statsMapper.get(target);
+            if (stats != null) {
+                stats.remainingActions += amount;
             }
         }
     }

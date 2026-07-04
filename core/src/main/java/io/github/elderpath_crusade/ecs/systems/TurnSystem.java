@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.*;
 import com.badlogic.ashley.utils.ImmutableArray;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
+import io.github.elderpath_crusade.ecs.components.ComputedStatsComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.TurnStateComponent;
 import io.github.elderpath_crusade.enums.GameMode;
@@ -20,6 +21,7 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 public class TurnSystem extends EntitySystem {
     private final ComponentMapper<StatsComponent> statsMapper = ComponentMapper.getFor(StatsComponent.class);
     private final ComponentMapper<AlignmentComponent> alignMapper = ComponentMapper.getFor(AlignmentComponent.class);
+    private final ComponentMapper<ComputedStatsComponent> computedStatsMapper = ComponentMapper.getFor(ComputedStatsComponent.class);
     private Family pieceFamily;
 
     private Entity stateEntity;
@@ -106,7 +108,8 @@ public class TurnSystem extends EntitySystem {
             AlignmentComponent align = alignMapper.get(e);
             if (align.alignment == player) {
                 StatsComponent stats = statsMapper.get(e);
-                stats.resetActions();
+                ComputedStatsComponent computed = computedStatsMapper.get(e);
+                stats.remainingActions = (computed != null) ? computed.actions : stats.actions;
             }
         }
     }

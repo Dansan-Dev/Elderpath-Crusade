@@ -55,6 +55,13 @@ public class AbilityResolverSystem extends EntitySystem {
         TriggerType trigger = TriggerMatcher.fromEvent(event);
         if (trigger == null) return;
 
+        // ON_MOVE reactions (e.g. RogueFreeStrike) should only fire for the piece's own
+        // manual move (costs an action), not when it is displaced by another ability.
+        if (trigger == TriggerType.ON_MOVE && event instanceof PieceMovedEvent moved
+                && moved.movementType() == PieceMovedEvent.MovementType.FORCED) {
+            return;
+        }
+
         // Decrement stun timers at the end of each player's turn
         if (trigger == TriggerType.ON_TURN_END) {
             PieceAlignment endingPlayer = getEventPlayer(event);
