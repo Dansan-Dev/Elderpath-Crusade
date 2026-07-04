@@ -1,7 +1,10 @@
 package io.github.elderpath_crusade.abilities;
 
 import com.badlogic.ashley.core.ComponentMapper;
+import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
+import com.badlogic.ashley.core.Family;
+import com.badlogic.ashley.utils.ImmutableArray;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
 import io.github.elderpath_crusade.abilities.data.ActionDef;
@@ -159,21 +162,23 @@ public class ActionableAbilityExecutor {
             public List<Plot> getEligibleTargets(int targetIndex) {
                 Board board = GameContext.get().getActiveBoard();
                 if (board == null) return List.of();
+                Engine engine = GameContext.get().getEcsEngine();
+                ImmutableArray<Entity> all = engine.getEntitiesFor(
+                        Family.all(PositionComponent.class, AlignmentComponent.class).get());
+
                 List<Plot> eligible = new ArrayList<>();
-                for (int r = 0; r < board.getROWS(); r++) {
-                    for (int c = 0; c < board.getCOLS(); c++) {
-                        Renderable cell = board.getPlotAtPos(r, c);
-                        if (!(cell instanceof Plot plot)) continue;
-                        int dr = Math.abs(r - ownerPos.row);
-                        int dc = Math.abs(c - ownerPos.col);
-                        if (Math.max(dr, dc) > range) continue;
-                        Entity entity = board.getEntityAtPos(r, c);
-                        if (entity == null || entity == owner) continue;
-                        AlignmentComponent align = alignMapper.get(entity);
-                        if (align == null) continue;
-                        boolean isEnemy = align.alignment != ownerAlign.alignment;
-                        if (matchesAlignment(alignmentFilter, isEnemy)) eligible.add(plot);
-                    }
+                for (int i = 0; i < all.size(); i++) {
+                    Entity entity = all.get(i);
+                    if (entity == owner) continue;
+                    PositionComponent pos = posMapper.get(entity);
+                    int dr = Math.abs(pos.row - ownerPos.row);
+                    int dc = Math.abs(pos.col - ownerPos.col);
+                    if (Math.max(dr, dc) > range) continue;
+                    AlignmentComponent align = alignMapper.get(entity);
+                    boolean isEnemy = align.alignment != ownerAlign.alignment;
+                    if (!matchesAlignment(alignmentFilter, isEnemy)) continue;
+                    Renderable cell = board.getPlotAtPos(pos.row, pos.col);
+                    if (cell instanceof Plot plot) eligible.add(plot);
                 }
                 return eligible;
             }
