@@ -35,6 +35,7 @@ public class TargetSelectorResolver {
             }
             case "UnitsInRow" -> getUnitsInRow(owner, selector, context);
             case "AdjacentUnitsAt" -> getAdjacentByAlignmentAt(owner, selector, context);
+            case "UnitAt" -> getUnitAt(selector, context);
             case "NextInLine" -> getNextInLine(owner, context);
             default -> {
                 Logger.log("TargetSelectorResolver", "Unrecognized selector type: " + selector.type());
@@ -149,6 +150,17 @@ public class TargetSelectorResolver {
         GridIndexSystem grid = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
         Entity next = grid.getEntityAt(victimRow + dRow, victimCol + dCol);
         return next != null ? List.of(next) : List.of();
+    }
+
+    private static List<Entity> getUnitAt(TargetSelector selector, ExpressionContext context) {
+        Object rowParam = selector.params() != null ? selector.params().get("row") : null;
+        Object colParam = selector.params() != null ? selector.params().get("col") : null;
+        int row = ExpressionEvaluator.evaluateInt(rowParam, context);
+        int col = ExpressionEvaluator.evaluateInt(colParam, context);
+
+        GridIndexSystem grid = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
+        Entity unit = (grid != null) ? grid.getEntityAt(row, col) : null;
+        return unit != null ? List.of(unit) : List.of();
     }
 
     private static List<Entity> getAdjacentByAlignmentAt(Entity owner, TargetSelector selector, ExpressionContext context) {

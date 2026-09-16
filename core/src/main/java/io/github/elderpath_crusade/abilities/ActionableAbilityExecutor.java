@@ -23,6 +23,7 @@ import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.events.ActionSpentEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -43,6 +44,8 @@ public class ActionableAbilityExecutor {
     private static final ComponentMapper<AbilityInstanceComponent> aicMapper = ComponentMapper.getFor(AbilityInstanceComponent.class);
 
     public static void execute(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef) {
+        if (!canAffordCosts(owner, actionDef.costs())) return;
+
         ExpressionContext ctx = buildContext(owner);
         AbilityInstanceComponent aic = aicMapper.get(owner);
         Map<String, Object> abilityState = (aic != null)
@@ -61,7 +64,29 @@ public class ActionableAbilityExecutor {
             case "ChooseFriendly" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.FRIENDLY);
             case "ChooseAny" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ANY);
             case "ChooseRow" -> startRowPick(owner, abilityDef, actionDef, ctx, abilityState);
+            case "ChooseTile" -> startTilePickAnywhere(owner, actionDef, ctx, abilityState);
         }
+    }
+
+    /**
+     * Checks whether the owner can pay every cost of an action (Action points and/or Mana)
+     * without deducting anything. Callers must not start a targeting flow or execute effects
+     * if this returns false.
+     */
+    static boolean canAffordCosts(Entity owner, List<Cost> costs) {
+        if (costs == null) return true;
+        StatsComponent stats = statsMapper.get(owner);
+        AlignmentComponent align = alignMapper.get(owner);
+        for (Cost cost : costs) {
+            if ("Action".equals(cost.type())) {
+                if (stats == null || stats.remainingActions < cost.amount()) return false;
+            } else if ("Mana".equals(cost.type())) {
+                if (align == null) return false;
+                PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(align.alignment);
+                if (playerState == null || playerState.mana < cost.amount()) return false;
+            }
+        }
+        return true;
     }
 
     private static ExpressionContext buildContext(Entity owner) {
@@ -85,7 +110,7 @@ public class ActionableAbilityExecutor {
         return ctx;
     }
 
-    private static void deductCosts(Entity owner, List<Cost> costs) {
+    static void deductCosts(Entity owner, List<Cost> costs) {
         StatsComponent stats = statsMapper.get(owner);
         IdentityComponent id = idMapper.get(owner);
         AlignmentComponent align = alignMapper.get(owner);
@@ -97,6 +122,11 @@ public class ActionableAbilityExecutor {
                 }
                 if (id != null && align != null) {
                     TypedEventBus.get().emit(new ActionSpentEvent(id.id, align.alignment, stats.remainingActions));
+                }
+            } else if ("Mana".equals(cost.type()) && align != null) {
+                PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(align.alignment);
+                if (playerState != null) {
+                    playerState.mana = Math.max(0, playerState.mana - cost.amount());
                 }
             }
         }
@@ -253,6 +283,63 @@ public class ActionableAbilityExecutor {
                     int[] idx = plot.getIndices();
                     ctx.set("$chosenTile.row", idx[0]);
                     ctx.set("$chosenTile.col", idx[1]);
+                    executeEffects(actionDef.effects(), owner, ctx, abilityState);
+                    deductCosts(owner, actionDef.costs());
+                }
+        );
+    }
+
+    /**
+     * Lets the owner pick any tile (occupied or empty) within range of itself, setting
+     * $chosen.row / $chosen.col for use by effects. Used by area-effect abilities like
+     * StormAction that target a point on the board rather than a specific unit.
+     */
+    private static void startTilePickAnywhere(Entity owner, ActionDef actionDef,
+            ExpressionContext ctx, Map<String, Object> abilityState) {
+        TargetSelector selector = actionDef.targetSelector();
+        int range = selector.params() != null && selector.params().containsKey("range")
+                ? ((Number) selector.params().get("range")).intValue() : 99;
+
+        PositionComponent ownerPos = posMapper.get(owner);
+        if (ownerPos == null) return;
+
+        TargetFilter filter = new TargetFilter() {
+            @Override
+            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+                if (!(box instanceof Plot plot)) return false;
+                int[] idx = plot.getIndices();
+                int dr = Math.abs(idx[0] - ownerPos.row);
+                int dc = Math.abs(idx[1] - ownerPos.col);
+                return Math.max(dr, dc) <= range;
+            }
+
+            @Override
+            public List<Plot> getEligibleTargets(int targetIndex) {
+                Board board = GameContext.get().getActiveBoard();
+                if (board == null) return List.of();
+                List<Plot> eligible = new ArrayList<>();
+                for (int r = 0; r < board.getROWS(); r++) {
+                    for (int c = 0; c < board.getCOLS(); c++) {
+                        int dr = Math.abs(r - ownerPos.row);
+                        int dc = Math.abs(c - ownerPos.col);
+                        if (Math.max(dr, dc) > range) continue;
+                        Renderable cell = board.getPlotAtPos(r, c);
+                        if (cell instanceof Plot plot) eligible.add(plot);
+                    }
+                }
+                return eligible;
+            }
+        };
+
+        GameContext.get().getInteractionManager().requestPick(
+                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
+                filter,
+                (picks) -> {
+                    CustomBox chosen = picks.get(1);
+                    if (!(chosen instanceof Plot plot)) return;
+                    int[] idx = plot.getIndices();
+                    ctx.set("$chosen.row", idx[0]);
+                    ctx.set("$chosen.col", idx[1]);
                     executeEffects(actionDef.effects(), owner, ctx, abilityState);
                     deductCosts(owner, actionDef.costs());
                 }
