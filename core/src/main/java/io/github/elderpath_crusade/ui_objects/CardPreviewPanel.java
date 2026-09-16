@@ -104,8 +104,10 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
         PieceDefinition pieceDef = PieceRegistry.get(pieceName);
         if (pieceDef != null && !pieceDef.abilities().isEmpty()) {
             List<String> lines = new ArrayList<>();
-            for (String abilityName : pieceDef.abilities()) {
-                AbilityDefinition abDef = AbilityRegistry.get(abilityName);
+            for (io.github.elderpath_crusade.data.AbilityRef ref : pieceDef.abilities()) {
+                AbilityDefinition abDef = ref.params().isEmpty()
+                    ? AbilityRegistry.get(ref.name())
+                    : AbilityRegistry.specialize(ref.name(), ref.params());
                 if (abDef != null && abDef.description() != null && !abDef.description().isEmpty()) {
                     lines.add(abDef.description());
                 }

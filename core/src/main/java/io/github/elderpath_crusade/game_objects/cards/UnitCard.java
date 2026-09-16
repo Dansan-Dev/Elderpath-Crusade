@@ -94,9 +94,10 @@ public abstract class UnitCard extends Card {
         PieceDefinition def = PieceRegistry.get(key);
         if (def == null || def.abilities().isEmpty()) return List.of();
         List<String> descs = new java.util.ArrayList<>();
-        for (String abilityName : def.abilities()) {
-            io.github.elderpath_crusade.abilities.data.AbilityDefinition abDef =
-                io.github.elderpath_crusade.data.AbilityRegistry.get(abilityName);
+        for (io.github.elderpath_crusade.data.AbilityRef ref : def.abilities()) {
+            io.github.elderpath_crusade.abilities.data.AbilityDefinition abDef = ref.params().isEmpty()
+                ? io.github.elderpath_crusade.data.AbilityRegistry.get(ref.name())
+                : io.github.elderpath_crusade.data.AbilityRegistry.specialize(ref.name(), ref.params());
             if (abDef != null && abDef.description() != null && !abDef.description().isEmpty()) {
                 descs.add(abDef.description());
             }

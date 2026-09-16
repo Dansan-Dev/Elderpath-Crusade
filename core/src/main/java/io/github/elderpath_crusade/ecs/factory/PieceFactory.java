@@ -40,8 +40,10 @@ public final class PieceFactory {
 
         // Attach data-driven ability definitions
         AbilityInstanceComponent aic = new AbilityInstanceComponent();
-        for (String abilityName : def.abilities()) {
-            AbilityDefinition abDef = AbilityRegistry.get(abilityName);
+        for (io.github.elderpath_crusade.data.AbilityRef ref : def.abilities()) {
+            AbilityDefinition abDef = ref.params().isEmpty()
+                    ? AbilityRegistry.get(ref.name())
+                    : AbilityRegistry.specialize(ref.name(), ref.params());
             if (abDef != null) {
                 aic.addAbility(abDef);
             }

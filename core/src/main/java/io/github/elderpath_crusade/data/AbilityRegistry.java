@@ -44,6 +44,40 @@ public final class AbilityRegistry {
         return REGISTRY.containsKey(name);
     }
 
+    /**
+     * Looks up an ability by name and builds a per-piece specialized copy from {@code params}.
+     */
+    public static AbilityDefinition specialize(String name, Map<String, Object> params) {
+        return applyParams(REGISTRY.get(name), params);
+    }
+
+    /**
+     * Builds a per-piece copy of a base ability with its modifier stats overridden by
+     * {@code params} (e.g. RangeBonus + {addRange: 4}) and its description's
+     * "{key}" placeholders substituted with the corresponding param values.
+     */
+    public static AbilityDefinition applyParams(AbilityDefinition base, Map<String, Object> params) {
+        if (base == null || params == null || params.isEmpty()) return base;
+
+        List<ModifierDef> modifiers = base.modifiers();
+        if (modifiers != null && !modifiers.isEmpty()) {
+            List<ModifierDef> specialized = new ArrayList<>();
+            for (ModifierDef md : modifiers) {
+                Map<String, Object> mergedStats = new HashMap<>(md.stats());
+                mergedStats.putAll(params);
+                specialized.add(new ModifierDef(md.target(), mergedStats));
+            }
+            modifiers = specialized;
+        }
+
+        String description = base.description();
+        for (Map.Entry<String, Object> e : params.entrySet()) {
+            description = description.replace("{" + e.getKey() + "}", String.valueOf(e.getValue()));
+        }
+
+        return new AbilityDefinition(base.id(), description, base.state(), base.reactions(), base.actions(), modifiers);
+    }
+
     @SuppressWarnings("unchecked")
     private static AbilityDefinition parseDefinition(String name, Map<?, ?> map) {
         String description = map.containsKey("description") ? map.get("description").toString() : "";

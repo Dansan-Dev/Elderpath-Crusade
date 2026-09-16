@@ -28,8 +28,8 @@ class PieceRegistryTest {
             for (Map.Entry<String, Map<String, Object>> entry : entries.entrySet()) {
                 String name = entry.getKey();
                 Map<String, Object> v = entry.getValue();
-                List<String> abilities = v.containsKey("abilities")
-                        ? ((List<?>) v.get("abilities")).stream().map(Object::toString).toList()
+                List<AbilityRef> abilities = v.containsKey("abilities")
+                        ? parseAbilities((List<?>) v.get("abilities"))
                         : List.of();
                 pieces.put(name, new PieceDefinition(
                         name,
@@ -42,6 +42,22 @@ class PieceRegistryTest {
                 ));
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<AbilityRef> parseAbilities(List<?> raw) {
+        List<AbilityRef> abilities = new java.util.ArrayList<>();
+        for (Object item : raw) {
+            if (item instanceof Map<?, ?> m) {
+                String name = (String) m.get("name");
+                Map<String, Object> params = m.containsKey("params")
+                        ? (Map<String, Object>) m.get("params") : Map.of();
+                abilities.add(new AbilityRef(name, params));
+            } else {
+                abilities.add(new AbilityRef(item.toString()));
+            }
+        }
+        return abilities;
     }
 
     @Test
@@ -70,7 +86,7 @@ class PieceRegistryTest {
         assertEquals(1, wolf.damage());
         assertEquals(1, wolf.speed());
         assertEquals(1, wolf.actions());
-        assertEquals(List.of("PackHunter"), wolf.abilities());
+        assertEquals(List.of(new AbilityRef("PackHunter")), wolf.abilities());
     }
 
     @Test
@@ -80,7 +96,7 @@ class PieceRegistryTest {
         assertEquals(3, king.cost());
         assertEquals(2, king.health());
         assertEquals(0, king.damage());
-        assertEquals(List.of("KingEnemyAura", "KingFriendlyAura"), king.abilities());
+        assertEquals(List.of(new AbilityRef("KingEnemyAura"), new AbilityRef("KingFriendlyAura")), king.abilities());
     }
 
     @Test
@@ -91,6 +107,10 @@ class PieceRegistryTest {
         assertEquals(1, xbow.health());
         assertEquals(2, xbow.damage());
         assertEquals(2, xbow.actions());
-        assertEquals(List.of("CrossbowmanRange", "OncePerTurnAttack", "ExcessDamageCarryOver"), xbow.abilities());
+        assertEquals(List.of(
+                new AbilityRef("RangeBonus", Map.of("addRange", 3)),
+                new AbilityRef("OncePerTurnAttack"),
+                new AbilityRef("ExcessDamageCarryOver")
+        ), xbow.abilities());
     }
 }

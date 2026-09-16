@@ -19,8 +19,8 @@ public final class PieceRegistry {
         for (Map.Entry<String, Map<String, Object>> entry : entries.entrySet()) {
             String name = entry.getKey();
             Map<String, Object> v = entry.getValue();
-            List<String> abilities = v.containsKey("abilities")
-                    ? ((List<?>) v.get("abilities")).stream().map(Object::toString).toList()
+            List<AbilityRef> abilities = v.containsKey("abilities")
+                    ? parseAbilities((List<?>) v.get("abilities"))
                     : List.of();
             PIECES.put(name, new PieceDefinition(
                     name,
@@ -32,6 +32,22 @@ public final class PieceRegistry {
                     abilities
             ));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<AbilityRef> parseAbilities(List<?> raw) {
+        List<AbilityRef> abilities = new ArrayList<>();
+        for (Object item : raw) {
+            if (item instanceof Map<?, ?> m) {
+                String name = (String) m.get("name");
+                Map<String, Object> params = m.containsKey("params")
+                        ? (Map<String, Object>) m.get("params") : Map.of();
+                abilities.add(new AbilityRef(name, params));
+            } else {
+                abilities.add(new AbilityRef(item.toString()));
+            }
+        }
+        return abilities;
     }
 
     public static String toRegistryKey(String displayName) {
