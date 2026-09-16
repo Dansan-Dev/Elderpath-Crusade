@@ -74,7 +74,7 @@ public abstract class UnitCard extends Card {
     }
 
     // Subclass hooks
-    protected String getRegistryKey() { return PieceRegistry.toRegistryKey(getCardName()); }
+    public String getRegistryKey() { return PieceRegistry.toRegistryKey(getCardName()); }
     private void loadStats(String key) {
         PieceDefinition def = PieceRegistry.get(key);
         if (def == null) throw new IllegalArgumentException("No piece definition for: " + key);

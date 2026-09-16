@@ -57,7 +57,7 @@ public class SummonCard extends UnitCard implements TargetFilter {
     public String getCardName() { return cardName; }
 
     @Override
-    protected String getRegistryKey() { return registryKey; }
+    public String getRegistryKey() { return registryKey; }
 
     /**
      * Attempts to spend mana for this card based on its unified stats cost.

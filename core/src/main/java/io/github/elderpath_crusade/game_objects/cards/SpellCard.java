@@ -5,13 +5,16 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
-import io.github.elderpath_crusade.abilities.data.ActionDef;
+import io.github.elderpath_crusade.abilities.data.ConditionEvaluator;
 import io.github.elderpath_crusade.abilities.data.EffectExecutor;
 import io.github.elderpath_crusade.abilities.data.EffectNode;
 import io.github.elderpath_crusade.abilities.data.ExpressionContext;
+import io.github.elderpath_crusade.abilities.data.TargetSelector;
+import io.github.elderpath_crusade.abilities.data.TargetSelectorResolver;
+import io.github.elderpath_crusade.data.SpellDefinition;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.GameMode;
@@ -33,21 +36,16 @@ import java.util.Map;
 
 /**
  * Data-driven spell card. Handles targeting, mana cost, effect execution, and standard spell rendering.
+ * Backed by a SpellDefinition loaded from spells.yaml (SpellRegistry) rather than hardcoded Java.
  */
 public class SpellCard extends Card implements TargetFilter {
-
-    @FunctionalInterface
-    public interface SpellTargetFilter {
-        boolean test(Board board, Plot plot, PieceAlignment caster);
-    }
 
     protected final Board board;
     protected final PieceAlignment alignment;
     private final String spellName;
     private final String description;
     private final int manaCost;
-    private final AbilityDefinition definition;
-    private final SpellTargetFilter targetFilter;
+    private final SpellDefinition definition;
 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
@@ -59,31 +57,19 @@ public class SpellCard extends Card implements TargetFilter {
             Board board, PieceAlignment alignment,
             int x, int y, int width, int height, int z,
             String spellName,
-            AbilityDefinition definition,
-            SpellTargetFilter targetFilter) {
+            SpellDefinition definition) {
         super(x, y, width, height, z, null);
         this.board = board;
         this.alignment = alignment;
         this.spellName = spellName;
         this.definition = definition;
         this.description = definition.description();
-        this.manaCost = extractManaCost(definition);
-        this.targetFilter = targetFilter;
+        this.manaCost = definition.manaCost();
 
         setTitle(spellName, FontType.SILKSCREEN);
         setTitleColor(Color.WHITE);
         initUi();
         initializeClickableEffect();
-    }
-
-    private static int extractManaCost(AbilityDefinition def) {
-        if (def == null || def.actions() == null || def.actions().isEmpty()) return 0;
-        ActionDef action = def.actions().get(0);
-        if (action.costs() == null) return 0;
-        for (var cost : action.costs()) {
-            if ("Mana".equals(cost.type())) return cost.amount();
-        }
-        return 0;
     }
 
     public String getSpellName() { return spellName; }
@@ -130,6 +116,17 @@ public class SpellCard extends Card implements TargetFilter {
     }
 
     private void initializeClickableEffect() {
+        if (definition.targeting() == null) {
+            setClickableEffect(
+                    (HashMap<Integer, CustomBox> entities) -> {
+                        if (!trySpendMana()) return;
+                        runEffects(null);
+                        consume();
+                    },
+                    ClickableEffectData.getImmediate());
+            return;
+        }
+
         setClickableEffect(
                 (HashMap<Integer, CustomBox> entities) -> {
                     if (!trySpendMana())
@@ -137,20 +134,39 @@ public class SpellCard extends Card implements TargetFilter {
                     CustomBox target = entities.get(1);
                     if (target instanceof Plot plot) {
                         Entity e = board.getEntityAtPlot(plot);
-                        if (e != null && !definition.actions().isEmpty()) {
-                            ActionDef action = definition.actions().get(0);
-                            ExpressionContext ctx = new ExpressionContext();
-                            Map<String, Object> state = definition.state() != null
-                                    ? new HashMap<>(definition.state()) : new HashMap<>();
-                            List<Entity> effectTargets = List.of(e);
-                            for (EffectNode effectNode : action.effects()) {
-                                EffectExecutor.execute(effectNode, effectTargets, e, ctx, state);
-                            }
+                        if (e != null) {
+                            runEffects(e);
                         }
                     }
                     consume();
                 },
                 ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
+    }
+
+    /** Executes this spell's effects. chosen is the clicked target entity, or null for a no-target spell. */
+    private void runEffects(Entity chosen) {
+        ExpressionContext ctx = new ExpressionContext();
+        ctx.set("$caster.alignment", alignment.name());
+        Map<String, Object> state = new HashMap<>();
+        for (EffectNode effectNode : definition.effects()) {
+            List<Entity> targets = resolveTopLevelTarget(effectNode, chosen, ctx);
+            EffectExecutor.execute(effectNode, targets, null, ctx, state);
+        }
+    }
+
+    /**
+     * Resolves a top-level effect's "target" param the same way
+     * ActionableAbilityExecutor/AbilityResolverSystem do for abilities. Effects with no
+     * "target" param (DrawCard, Branch, ForEach, Recast, ...) resolve their own operands
+     * internally and ignore the returned list.
+     */
+    private List<Entity> resolveTopLevelTarget(EffectNode effect, Entity chosen, ExpressionContext context) {
+        Object targetParam = effect.params().get("target");
+        if (targetParam instanceof String s) {
+            if ("$chosen".equals(s)) return chosen != null ? List.of(chosen) : List.of();
+            return TargetSelectorResolver.resolve(new TargetSelector(s), null, context);
+        }
+        return List.of();
     }
 
     private boolean trySpendMana() {
@@ -198,10 +214,28 @@ public class SpellCard extends Card implements TargetFilter {
 
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-        if (box instanceof Plot plot) {
-            return targetFilter.test(board, plot, alignment);
+        if (definition.targeting() == null) return false;
+        if (!(box instanceof Plot plot)) return false;
+
+        Entity candidate = board.getEntityAtPlot(plot);
+        if (candidate == null) return false;
+
+        List<io.github.elderpath_crusade.abilities.data.Condition> conditions = definition.targeting().conditions();
+        if (conditions == null || conditions.isEmpty()) return true;
+
+        ExpressionContext ctx = new ExpressionContext();
+        ctx.set("$self.alignment", alignment.name());
+        ctx.withTarget(Map.of(
+                "health", EntityUtils.getCurrentHealth(candidate),
+                "maxHealth", EntityUtils.getMaxHealth(candidate),
+                "damage", EntityUtils.getDamage(candidate),
+                "alignment", EntityUtils.getAlignment(candidate).name()
+        ));
+
+        for (var condition : conditions) {
+            if (!ConditionEvaluator.evaluate(condition, ctx)) return false;
         }
-        return false;
+        return true;
     }
 
     @Override
