@@ -116,6 +116,7 @@ public class PassiveModifierSystem extends EntitySystem {
             AlignmentComponent alignment = owner.getComponent(AlignmentComponent.class);
 
             Map<String, AuraEntry> ownerEntries = trackers.computeIfAbsent(owner, k -> new HashMap<>());
+            Set<String> validKeys = new HashSet<>();
 
             for (AbilityDefinition def : aic.definitions) {
                 List<ModifierDef> modifiers = def.modifiers();
@@ -124,6 +125,7 @@ public class PassiveModifierSystem extends EntitySystem {
                 for (int idx = 0; idx < modifiers.size(); idx++) {
                     ModifierDef modDef = modifiers.get(idx);
                     String key = def.id() + "#" + idx;
+                    validKeys.add(key);
 
                     // Get or create a stable AuraEntry for this key
                     AuraEntry entry = ownerEntries.get(key);
@@ -174,6 +176,16 @@ public class PassiveModifierSystem extends EntitySystem {
                     entry.appliedTo.clear();
                     entry.appliedTo.addAll(newTargets);
                 }
+            }
+
+            // Detach modifiers for any ability that was removed from aic.definitions since
+            // last frame (e.g. a timed spell buff's RemoveSelfAbility) — otherwise the
+            // modifier would keep affecting its targets forever with nothing left tracking it.
+            Set<String> staleKeys = new HashSet<>(ownerEntries.keySet());
+            staleKeys.removeAll(validKeys);
+            for (String staleKey : staleKeys) {
+                AuraEntry entry = ownerEntries.remove(staleKey);
+                if (entry != null) entry.modifier.clear();
             }
         }
     }

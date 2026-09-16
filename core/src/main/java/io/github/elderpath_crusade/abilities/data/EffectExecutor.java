@@ -4,18 +4,32 @@ import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
+import io.github.elderpath_crusade.data.AbilityRegistry;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.IdentityComponent;
+import io.github.elderpath_crusade.ecs.components.ModifierComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.StunComponent;
+import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.ecs.systems.MovementSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
+import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.game.PlayerManager;
+import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.game_objects.cards.Card;
+import io.github.elderpath_crusade.game_objects.cards.UnitCard;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +39,10 @@ public class EffectExecutor {
     private static final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
     private static final ComponentMapper<IdentityComponent> idMapper = ComponentMapper.getFor(IdentityComponent.class);
     private static final ComponentMapper<AlignmentComponent> alignMapper = ComponentMapper.getFor(AlignmentComponent.class);
+
+    /** Hard ceiling on Recast iterations regardless of authored maxChains — guards against a data mistake hanging the game. */
+    private static final int RECAST_HARD_CEILING = 50;
+    private static int timedModifierCounter = 0;
 
     public static void execute(EffectNode effect, List<Entity> targets, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
         switch (effect.type()) {
@@ -41,6 +59,13 @@ public class EffectExecutor {
             case "AddModifier" -> executeAddModifier(effect, targets);
             case "SetActions" -> executeSetActions(effect, targets, context);
             case "GrantAction" -> executeGrantAction(effect, targets, context);
+            case "DrawCard" -> executeDrawCard(owner, context);
+            case "DiscardCard" -> executeDiscardCard(effect, context);
+            case "SummonPiece" -> executeSummonPiece(effect, owner, context);
+            case "GenerateMana" -> executeGenerateMana(effect, owner, context);
+            case "AttachTimedModifier" -> executeAttachTimedModifier(effect, targets, context);
+            case "RemoveSelfAbility" -> executeRemoveSelfAbility(owner, context);
+            case "Recast" -> executeRecast(effect, owner, context, abilityState);
             default -> {}
         }
     }
@@ -51,6 +76,11 @@ public class EffectExecutor {
         CombatSystem combat = GameContext.get().getEcsEngine().getSystem(CombatSystem.class);
         for (Entity target : targets) {
             combat.applyDamage(target, amount);
+            PositionComponent pos = posMapper.get(target);
+            context.set("$lastDamage.target", target);
+            context.set("$lastDamage.row", pos != null ? pos.row : -1);
+            context.set("$lastDamage.col", pos != null ? pos.col : -1);
+            context.set("$lastDamage.targetDied", EntityUtils.isDead(target));
         }
     }
 
@@ -186,7 +216,7 @@ public class EffectExecutor {
 
     private static void executeBranch(EffectNode effect, List<Entity> targets, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
         Object condObj = effect.params().get("condition");
-        boolean result = evaluateCondition(condObj, context);
+        boolean result = ConditionEvaluator.evaluate(toCondition(condObj), context);
 
         List<EffectNode> branch = toEffectNodes(result ? effect.params().get("then") : effect.params().get("else"));
         for (EffectNode node : branch) {
@@ -202,20 +232,8 @@ public class EffectExecutor {
     }
 
     private static void executeForEach(EffectNode effect, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
-        Object selectorObj = effect.params().get("targets");
-        TargetSelector selector;
-        if (selectorObj instanceof TargetSelector ts) {
-            selector = ts;
-        } else if (selectorObj instanceof String s) {
-            selector = new TargetSelector(s);
-        } else if (selectorObj instanceof Map<?, ?> map) {
-            String type = (String) map.get("type");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> params = (Map<String, Object>) map.get("params");
-            selector = new TargetSelector(type, params);
-        } else {
-            return;
-        }
+        TargetSelector selector = toSelector(effect.params().get("targets"));
+        if (selector == null) return;
 
         List<Entity> resolved = TargetSelectorResolver.resolve(selector, owner, context);
         List<EffectNode> doEffects = toEffectNodes(effect.params().get("do"));
@@ -229,6 +247,7 @@ public class EffectExecutor {
                         "damage", targetStats.damage
                 ));
             }
+            context.set("$target.stunned", EntityUtils.isStunned(target));
             for (EffectNode node : doEffects) {
                 execute(node, List.of(target), owner, context, abilityState);
             }
@@ -261,6 +280,11 @@ public class EffectExecutor {
         // Stats may be nested under a "stats" key (from YAML: {target: ..., stats: {addDamage: 1}})
         Object statsObj = params.get("stats");
         Map<String, Object> stats = (statsObj instanceof Map<?, ?> m) ? (Map<String, Object>) m : params;
+        applyStatsModifierToTargets(stats, targets);
+    }
+
+    /** Adds a permanent (until the entity's own lifetime ends) StatsModifier built from a stats map. */
+    private static void applyStatsModifierToTargets(Map<String, Object> stats, List<Entity> targets) {
         StatsModifier mod = new StatsModifier();
         if (stats.containsKey("addDamage")) mod.addDamage = ((Number) stats.get("addDamage")).intValue();
         if (stats.containsKey("addSpeed")) mod.addSpeed = ((Number) stats.get("addSpeed")).intValue();
@@ -269,40 +293,229 @@ public class EffectExecutor {
         if (stats.containsKey("addRange")) mod.addRange = ((Number) stats.get("addRange")).intValue();
 
         for (Entity target : targets) {
-            io.github.elderpath_crusade.ecs.components.ModifierComponent mc = target.getComponent(io.github.elderpath_crusade.ecs.components.ModifierComponent.class);
+            ModifierComponent mc = target.getComponent(ModifierComponent.class);
             if (mc != null) {
                 mc.accumulator.add(mod);
             }
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static boolean evaluateCondition(Object condObj, ExpressionContext context) {
-        if (condObj == null) return false;
-        Condition cond;
-        if (condObj instanceof Condition c) {
-            cond = c;
-        } else if (condObj instanceof Map<?, ?> map) {
-            cond = new Condition((String) map.get("type"), (Map<String, Object>) map);
+    private static void executeDrawCard(Entity owner, ExpressionContext context) {
+        PieceAlignment alignment = resolveCasterAlignment(owner, context);
+        if (alignment == null) return;
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
+        if (playerState == null || playerState.deck == null || playerState.hand == null) return;
+
+        playerState.deck.draw();
+        List<Card> cards = playerState.hand.getCards();
+        if (cards.isEmpty()) return;
+        Card drawn = cards.get(cards.size() - 1);
+
+        context.set("$drawn.card", drawn);
+        if (drawn instanceof UnitCard unitCard) {
+            context.set("$drawn.isPiece", true);
+            context.set("$drawn.cost", unitCard.getStatsCost());
+            context.set("$drawn.registryKey", unitCard.getRegistryKey());
         } else {
-            return false;
+            context.set("$drawn.isPiece", false);
+            context.set("$drawn.cost", 0);
+        }
+    }
+
+    private static void executeDiscardCard(EffectNode effect, ExpressionContext context) {
+        Object ref = effect.params().get("target");
+        Card card = resolveCardReference(ref, context);
+        if (card != null) card.consume();
+    }
+
+    private static void executeSummonPiece(EffectNode effect, Entity owner, ExpressionContext context) {
+        PieceAlignment alignment = resolveCasterAlignment(owner, context);
+        if (alignment == null) return;
+
+        String registryKey;
+        Card sourceCard = null;
+        Object pieceParam = effect.params().get("piece");
+        Object sourceParam = effect.params().get("source");
+        if (pieceParam instanceof String pieceName) {
+            registryKey = PieceRegistry.toRegistryKey(pieceName);
+        } else if ("$drawn".equals(sourceParam)) {
+            Object regKey = context.get("$drawn.registryKey");
+            if (!(regKey instanceof String)) return;
+            registryKey = (String) regKey;
+            sourceCard = resolveCardReference("$drawn", context);
+        } else {
+            return;
         }
 
-        return switch (cond.type()) {
-            case "HealthBelow" -> {
-                int threshold = ExpressionEvaluator.evaluateInt(cond.params().get("threshold"), context);
-                int health = ExpressionEvaluator.evaluateInt(context.get("$self.health"), context);
-                yield health < threshold;
+        PieceDefinition def = PieceRegistry.get(registryKey);
+        if (def == null) return;
+
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null) return;
+        int[] slot = findEmptySummonSlot(board, alignment);
+        if (slot == null) return; // no empty tile in caster's zone — summon silently fizzles
+
+        Entity piece = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
+                alignment, slot[0], slot[1]);
+        String pieceId = EntityUtils.getId(piece);
+        board.addEntityToPos(slot[0], slot[1], piece, pieceId);
+        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, slot[0], slot[1]));
+
+        if (sourceCard != null) sourceCard.consume();
+    }
+
+    private static void executeGenerateMana(EffectNode effect, Entity owner, ExpressionContext context) {
+        int amount = ExpressionEvaluator.evaluateInt(effect.params().get("amount"), context);
+        if (amount <= 0) return;
+        PieceAlignment alignment = resolveCasterAlignment(owner, context);
+        if (alignment == null) return;
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
+        if (playerState != null) playerState.mana += amount;
+    }
+
+    /**
+     * Attaches a stat modifier to each target. With no "turns" param (or turns <= 0) this
+     * is permanent for the entity's lifetime — "until end of battle", since entities never
+     * outlive the current match — identical to AddModifier. With turns > 0, builds a small
+     * self-contained AbilityDefinition (unique id, Self-targeted modifier, an ON_TURN_END
+     * reaction that counts down and removes itself once it reaches 0) and attaches it to
+     * the target's AbilityInstanceComponent — the existing passive-modifier machinery
+     * (PassiveModifierSystem) then applies/cleans up the stat change automatically for as
+     * long as that ability stays attached.
+     */
+    @SuppressWarnings("unchecked")
+    private static void executeAttachTimedModifier(EffectNode effect, List<Entity> targets, ExpressionContext context) {
+        Object statsObj = effect.params().get("stats");
+        Map<String, Object> stats = (statsObj instanceof Map<?, ?> m) ? (Map<String, Object>) m : Map.of();
+        int turns = effect.params().containsKey("turns")
+                ? ExpressionEvaluator.evaluateInt(effect.params().get("turns"), context) : 0;
+
+        if (turns <= 0) {
+            applyStatsModifierToTargets(stats, targets);
+            return;
+        }
+
+        for (Entity target : targets) {
+            AbilityInstanceComponent aic = target.getComponent(AbilityInstanceComponent.class);
+            if (aic == null) {
+                aic = new AbilityInstanceComponent();
+                target.add(aic);
             }
-            case "IsEnemy" -> ExpressionEvaluator.evaluateBoolean(context.get("$target.isEnemy"), context);
-            case "ModuloEquals" -> {
-                int value = ExpressionEvaluator.evaluateInt(cond.params().get("value"), context);
-                int divisor = ExpressionEvaluator.evaluateInt(cond.params().get("divisor"), context);
-                int remainder = ExpressionEvaluator.evaluateInt(cond.params().get("remainder"), context);
-                yield divisor != 0 && (value % divisor) == remainder;
+            String id = "TimedMod#" + (++timedModifierCounter);
+            AbilityDefinition timed = new AbilityDefinition(
+                    id, "", Map.of("turnsRemaining", turns),
+                    List.of(new Reaction(TriggerType.ON_TURN_END, null, List.of(
+                            new EffectNode("ModifyState", Map.of(
+                                    "key", "turnsRemaining", "operation", "Subtract", "value", 1)),
+                            new EffectNode("Branch", Map.of(
+                                    "condition", new Condition("Compare", Map.of(
+                                            "left", "$state.turnsRemaining", "op", "<=", "right", 0)),
+                                    "then", List.of(new EffectNode("RemoveSelfAbility", Map.of()))))
+                    ))),
+                    null,
+                    List.of(new ModifierDef(new TargetSelector("Self"), stats)));
+            aic.addAbility(timed);
+        }
+    }
+
+    /** Removes the ability currently executing (identified by $ability.id) from its owner. */
+    private static void executeRemoveSelfAbility(Entity owner, ExpressionContext context) {
+        if (owner == null) return;
+        Object idObj = context.get("$ability.id");
+        if (!(idObj instanceof String id)) return;
+        AbilityInstanceComponent aic = owner.getComponent(AbilityInstanceComponent.class);
+        if (aic != null) aic.removeAbility(id);
+    }
+
+    /**
+     * While "condition" holds and "newTargets" resolves to a match, runs "effects" against
+     * the newly resolved target and re-checks — bounded by "maxChains" (author-tunable,
+     * default 10) and a fixed hard ceiling so a data mistake can never hang the game.
+     */
+    private static void executeRecast(EffectNode effect, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
+        Object condObj = effect.params().get("condition");
+        int maxChains = effect.params().containsKey("maxChains")
+                ? ExpressionEvaluator.evaluateInt(effect.params().get("maxChains"), context) : 10;
+        int limit = Math.min(maxChains, RECAST_HARD_CEILING);
+
+        TargetSelector selector = toSelector(effect.params().get("newTargets"));
+        List<EffectNode> body = toEffectNodes(effect.params().get("effects"));
+        if (selector == null || body.isEmpty()) return;
+
+        int chains = 0;
+        while (chains < limit && ConditionEvaluator.evaluate(toCondition(condObj), context)) {
+            List<Entity> next = TargetSelectorResolver.resolve(selector, owner, context);
+            if (next.isEmpty()) break;
+            Entity target = next.get(0);
+            context.set("$chosen", target);
+            for (EffectNode node : body) {
+                execute(node, List.of(target), owner, context, abilityState);
             }
-            default -> false;
-        };
+            chains++;
+        }
+    }
+
+    private static PieceAlignment resolveCasterAlignment(Entity owner, ExpressionContext context) {
+        Object raw = context.get("$caster.alignment");
+        if (raw == null && owner != null) {
+            AlignmentComponent align = alignMapper.get(owner);
+            if (align != null) raw = align.alignment.name();
+        }
+        if (raw == null) return null;
+        try {
+            return PieceAlignment.valueOf(raw.toString());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static Card resolveCardReference(Object ref, ExpressionContext context) {
+        if ("$drawn".equals(ref)) {
+            Object card = context.get("$drawn.card");
+            return card instanceof Card c ? c : null;
+        }
+        return null;
+    }
+
+    /** First empty tile in the caster's own summon zone (mirrors Board.isValidSummonTarget, used by SummonCard). */
+    private static int[] findEmptySummonSlot(Board board, PieceAlignment alignment) {
+        for (int row = 0; row < board.getROWS(); row++) {
+            for (int col = 0; col < board.getCOLS(); col++) {
+                Object cell = board.getPlotAtPos(row, col);
+                if (cell instanceof Plot plot && board.isValidSummonTarget(plot, alignment)) {
+                    return new int[]{row, col};
+                }
+            }
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static TargetSelector toSelector(Object selectorObj) {
+        if (selectorObj instanceof TargetSelector ts) return ts;
+        if (selectorObj instanceof String s) return new TargetSelector(s);
+        if (selectorObj instanceof Map<?, ?> map) {
+            String type = (String) map.get("type");
+            Map<String, Object> params = (Map<String, Object>) map.get("params");
+            return new TargetSelector(type, params);
+        }
+        return null;
+    }
+
+    /**
+     * Converts a raw inline "condition" value (Branch/Recast) into a Condition record.
+     * Unlike top-level effects, an inline condition map is NOT run through
+     * AbilityDataParsing.parseConditions at load time, so it keeps its flat shape
+     * (extra keys directly on the map, not nested under "params") — matching how
+     * reaction-level conditions look once parsed.
+     */
+    @SuppressWarnings("unchecked")
+    private static Condition toCondition(Object condObj) {
+        if (condObj instanceof Condition c) return c;
+        if (condObj instanceof Map<?, ?> map) {
+            return new Condition((String) map.get("type"), (Map<String, Object>) map);
+        }
+        return new Condition("Always", Map.of());
     }
 
     @SuppressWarnings("unchecked")
@@ -311,10 +524,25 @@ public class EffectExecutor {
         List<EffectNode> nodes = new ArrayList<>();
         for (Object item : list) {
             if (item instanceof EffectNode en) nodes.add(en);
-            else if (item instanceof Map<?, ?> map) {
-                nodes.add(new EffectNode((String) map.get("type"), (Map<String, Object>) map));
-            }
+            else if (item instanceof Map<?, ?> map) nodes.add(toEffectNode(map));
         }
         return nodes;
+    }
+
+    /**
+     * Converts a raw YAML-shaped effect map into an EffectNode, flattening a nested
+     * "params" key into the top level — the same convention AbilityDataParsing.parseEffects
+     * applies to top-level effects, needed here too since nested effects (Branch then/else,
+     * ForEach do, Sequence steps, Recast effects) are only converted at execution time.
+     */
+    @SuppressWarnings("unchecked")
+    private static EffectNode toEffectNode(Map<?, ?> map) {
+        String type = (String) map.get("type");
+        Map<String, Object> params = new java.util.HashMap<>((Map<String, Object>) map);
+        params.remove("type");
+        if (params.containsKey("params")) {
+            params.putAll((Map<String, Object>) params.remove("params"));
+        }
+        return new EffectNode(type, params);
     }
 }

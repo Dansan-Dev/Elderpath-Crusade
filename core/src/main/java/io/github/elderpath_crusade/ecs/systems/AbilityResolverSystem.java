@@ -97,7 +97,9 @@ public class AbilityResolverSystem extends EntitySystem {
                 if (align == null || align.alignment != eventPlayer) continue;
             }
 
-            for (AbilityDefinition def : aic.definitions) {
+            // Snapshot-copy: a reaction effect (RemoveSelfAbility) may remove its own
+            // definition from aic.definitions mid-iteration.
+            for (AbilityDefinition def : new ArrayList<>(aic.definitions)) {
                 if (def.reactions() == null) continue;
                 for (Reaction reaction : def.reactions()) {
                     if (reaction.trigger() != trigger) continue;
@@ -129,6 +131,7 @@ public class AbilityResolverSystem extends EntitySystem {
 
     private ExpressionContext buildContext(Entity entity, AbilityDefinition def, AbilityInstanceComponent aic, GameEvent event) {
         ExpressionContext context = new ExpressionContext();
+        context.set("$ability.id", def.id());
 
         StatsComponent stats = entity.getComponent(StatsComponent.class);
         if (stats != null) {

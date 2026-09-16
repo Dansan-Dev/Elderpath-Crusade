@@ -23,4 +23,10 @@ public class AbilityInstanceComponent implements Component {
             state.put(def.id(), new HashMap<>());
         }
     }
+
+    /** Detaches an ability by id — used by dynamically-attached, self-expiring abilities (e.g. timed spell buffs). */
+    public void removeAbility(String id) {
+        definitions.removeIf(def -> def.id().equals(id));
+        state.remove(id);
+    }
 }

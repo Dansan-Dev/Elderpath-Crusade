@@ -6,6 +6,7 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
@@ -14,12 +15,14 @@ import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class TargetSelectorResolver {
 
     private static final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
     private static final ComponentMapper<AlignmentComponent> alignMapper = ComponentMapper.getFor(AlignmentComponent.class);
     private static final int[][] CARDINAL = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    private static final Random RANDOM = new Random();
 
     public static List<Entity> resolve(TargetSelector selector, Entity owner, ExpressionContext context) {
         return switch (selector.type()) {
@@ -36,6 +39,8 @@ public class TargetSelectorResolver {
             case "UnitsInRow" -> getUnitsInRow(owner, selector, context);
             case "AdjacentUnitsAt" -> getAdjacentByAlignmentAt(owner, selector, context);
             case "UnitAt" -> getUnitAt(selector, context);
+            case "AllUnits" -> getAllUnits(owner);
+            case "RandomUnitInRange" -> getRandomUnitInRange(owner, selector, context);
             case "NextInLine" -> getNextInLine(owner, context);
             default -> {
                 Logger.log("TargetSelectorResolver", "Unrecognized selector type: " + selector.type());
@@ -161,6 +166,62 @@ public class TargetSelectorResolver {
         GridIndexSystem grid = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
         Entity unit = (grid != null) ? grid.getEntityAt(row, col) : null;
         return unit != null ? List.of(unit) : List.of();
+    }
+
+    /** Every unit on the board (both alignments), excluding owner if one is given. */
+    private static List<Entity> getAllUnits(Entity owner) {
+        Engine engine = GameContext.get().getEcsEngine();
+        ImmutableArray<Entity> all = engine.getEntitiesFor(
+                Family.all(AlignmentComponent.class, PositionComponent.class).get());
+        List<Entity> result = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            Entity e = all.get(i);
+            if (e == owner) continue;
+            result.add(e);
+        }
+        return result;
+    }
+
+    /**
+     * Picks one unit uniformly at random within Chebyshev "range" of a center tile
+     * (row/col params, evaluated as expressions so callers can reference context
+     * values like "$lastDamage.row"), excluding the center tile itself and any
+     * already-dead entity still pending cleanup. Optional "alignment" param ("Enemy"/
+     * "Friendly", relative to the given owner) narrows the candidate set.
+     */
+    private static List<Entity> getRandomUnitInRange(Entity owner, TargetSelector selector, ExpressionContext context) {
+        if (selector.params() == null) return List.of();
+        int centerRow = ExpressionEvaluator.evaluateInt(selector.params().get("row"), context);
+        int centerCol = ExpressionEvaluator.evaluateInt(selector.params().get("col"), context);
+        int range = selector.params().containsKey("range")
+                ? ExpressionEvaluator.evaluateInt(selector.params().get("range"), context) : 1;
+        String alignmentFilter = (String) selector.params().get("alignment");
+        AlignmentComponent ownerAlign = owner != null ? alignMapper.get(owner) : null;
+
+        Engine engine = GameContext.get().getEcsEngine();
+        ImmutableArray<Entity> all = engine.getEntitiesFor(
+                Family.all(AlignmentComponent.class, PositionComponent.class).get());
+        List<Entity> candidates = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            Entity e = all.get(i);
+            PositionComponent pos = posMapper.get(e);
+            if (pos == null) continue;
+            int dr = Math.abs(pos.row - centerRow);
+            int dc = Math.abs(pos.col - centerCol);
+            if (dr == 0 && dc == 0) continue; // exclude the center tile itself
+            if (Math.max(dr, dc) > range) continue;
+            if (EntityUtils.isDead(e)) continue;
+            if (alignmentFilter != null && ownerAlign != null) {
+                AlignmentComponent align = alignMapper.get(e);
+                if (align == null) continue;
+                boolean isEnemy = align.alignment != ownerAlign.alignment;
+                if ("Enemy".equals(alignmentFilter) && !isEnemy) continue;
+                if ("Friendly".equals(alignmentFilter) && isEnemy) continue;
+            }
+            candidates.add(e);
+        }
+        if (candidates.isEmpty()) return List.of();
+        return List.of(candidates.get(RANDOM.nextInt(candidates.size())));
     }
 
     private static List<Entity> getAdjacentByAlignmentAt(Entity owner, TargetSelector selector, ExpressionContext context) {
