@@ -74,6 +74,16 @@ class SpellRegistryTest {
     }
 
     @Test
+    void frostboltUsesStunNotAFreezeKeyword() {
+        SpellDefinition frostbolt = spells.get("Frostbolt");
+        assertNotNull(frostbolt);
+        assertFalse(frostbolt.description().toLowerCase().contains("freeze"),
+                "afflictions must only ever be described/implemented as Stun, never a separate Freeze keyword");
+        assertEquals("ApplyStatus", frostbolt.effects().get(1).type());
+        assertEquals("Stun", frostbolt.effects().get(1).params().get("status"));
+    }
+
+    @Test
     void healingLightKeepsItsOriginalManaCost() {
         SpellDefinition healingLight = spells.get("Healing Light");
         assertNotNull(healingLight);
