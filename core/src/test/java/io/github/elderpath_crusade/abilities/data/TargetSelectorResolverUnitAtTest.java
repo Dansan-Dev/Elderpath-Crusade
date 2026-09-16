@@ -83,4 +83,22 @@ class TargetSelectorResolverUnitAtTest {
         assertTrue(resolved.contains(friendly), "StormAction's blast must hit friendly units too");
         assertTrue(resolved.contains(enemy), "StormAction's blast must hit enemy units too");
     }
+
+    @Test
+    void adjacentUnitsAt_exclude_omitsThatSpecificEntity() {
+        Entity attacker = buildPiece(PieceAlignment.P1, 5, 5);
+        Entity primaryTarget = buildPiece(PieceAlignment.P2, 5, 6);
+        Entity otherEnemy = buildPiece(PieceAlignment.P2, 4, 5);
+
+        ExpressionContext ctx = new ExpressionContext();
+        ctx.set("$event.defenderEntity", primaryTarget);
+
+        TargetSelector selector = new TargetSelector("AdjacentUnitsAt",
+                Map.of("row", 5, "col", 5, "alignment", "Enemy", "exclude", "$event.defenderEntity"));
+        List<Entity> resolved = TargetSelectorResolver.resolve(selector, attacker, ctx);
+
+        assertFalse(resolved.contains(primaryTarget),
+                "CleaveAttack must not re-hit the piece already damaged by the main attack");
+        assertTrue(resolved.contains(otherEnemy), "other adjacent enemies must still be hit");
+    }
 }

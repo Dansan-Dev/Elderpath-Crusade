@@ -239,12 +239,17 @@ public class TargetSelectorResolver {
         boolean findEnemies = "Enemy".equals(alignmentFilter);
         boolean findFriendly = "Friendly".equals(alignmentFilter);
 
+        // Optional exclusion (e.g. CleaveAttack excluding the primary target it already hit)
+        Object excludeParam = selector.params() != null ? selector.params().get("exclude") : null;
+        Object resolvedExclude = excludeParam instanceof String s ? context.get(s) : null;
+        Entity toExclude = resolvedExclude instanceof Entity e ? e : null;
+
         GridIndexSystem grid = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
         List<Entity> result = new ArrayList<>();
 
         for (int[] dir : CARDINAL) {
             Entity neighbor = grid.getEntityAt(centerRow + dir[0], centerCol + dir[1]);
-            if (neighbor == null || neighbor == owner) continue;
+            if (neighbor == null || neighbor == owner || neighbor == toExclude) continue;
             AlignmentComponent neighborAlign = alignMapper.get(neighbor);
             if (neighborAlign == null) continue;
             boolean isEnemy = neighborAlign.alignment != ownerAlign.alignment;
