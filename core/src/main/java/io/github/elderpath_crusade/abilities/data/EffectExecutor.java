@@ -15,6 +15,7 @@ import io.github.elderpath_crusade.ecs.components.ModifierComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.StunComponent;
+import io.github.elderpath_crusade.ecs.components.TerrainComponent;
 import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.ecs.systems.MovementSystem;
@@ -70,6 +71,8 @@ public class EffectExecutor {
             case "AttachTimedModifier" -> executeAttachTimedModifier(effect, targets, context);
             case "RemoveSelfAbility" -> executeRemoveSelfAbility(owner, context);
             case "Recast" -> executeRecast(effect, owner, context, abilityState);
+            case "PushAndAdvance" -> executePushAndAdvance(targets, owner);
+            case "ChooseTarget" -> executeChooseTarget(effect, owner, context, abilityState);
             default -> {}
         }
     }
@@ -112,28 +115,54 @@ public class EffectExecutor {
             return;
         }
 
-        if ("AwayFromSelf".equals(destination)) {
-            PositionComponent ownerPos = posMapper.get(owner);
-            if (ownerPos == null) return;
-            for (Entity target : targets) {
-                PositionComponent targetPos = posMapper.get(target);
-                if (targetPos == null) continue;
-                int dRow = targetPos.row - ownerPos.row;
-                int dCol = targetPos.col - ownerPos.col;
-                if (dRow != 0) dRow = dRow > 0 ? 1 : -1;
-                if (dCol != 0) dCol = dCol > 0 ? 1 : -1;
-                int pushRow = targetPos.row + dRow;
-                int pushCol = targetPos.col + dCol;
-                movement.executeForcedMove(target, pushRow, pushCol, "ABILITY", "PushOnAttack");
-            }
-            return;
-        }
-
         int row = ExpressionEvaluator.evaluateInt(effect.params().get("row"), context);
         int col = ExpressionEvaluator.evaluateInt(effect.params().get("col"), context);
         for (Entity target : targets) {
             movement.executeForcedMove(target, row, col, "ability", null);
         }
+    }
+
+    /**
+     * Charger's PushOnAttack: pushes the defender back one tile in the direction away
+     * from the attacker, then the attacker advances into the tile the defender just
+     * vacated. If the push destination is blocked by terrain, the defender takes 1
+     * damage instead and neither piece moves; if it's blocked by anything else (off
+     * the board, or another unit), the whole thing fizzles — no push, no damage, no
+     * advance.
+     */
+    private static void executePushAndAdvance(List<Entity> targets, Entity owner) {
+        if (owner == null || targets.isEmpty()) return;
+        Entity defender = targets.get(0);
+        PositionComponent ownerPos = posMapper.get(owner);
+        PositionComponent defenderPos = posMapper.get(defender);
+        if (ownerPos == null || defenderPos == null) return;
+
+        int dRow = defenderPos.row - ownerPos.row;
+        int dCol = defenderPos.col - ownerPos.col;
+        if (dRow != 0) dRow = dRow > 0 ? 1 : -1;
+        if (dCol != 0) dCol = dCol > 0 ? 1 : -1;
+        int pushRow = defenderPos.row + dRow;
+        int pushCol = defenderPos.col + dCol;
+
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null) return;
+
+        boolean inBounds = pushRow >= 0 && pushRow < board.getROWS() && pushCol >= 0 && pushCol < board.getCOLS();
+        Entity blocker = inBounds ? board.getEntityAtPos(pushRow, pushCol) : null;
+
+        if (blocker != null && blocker.getComponent(TerrainComponent.class) != null) {
+            CombatSystem combat = GameContext.get().getEcsEngine().getSystem(CombatSystem.class);
+            combat.applyDamage(defender, 1);
+            return;
+        }
+        if (!inBounds || blocker != null) return; // off-board or blocked by another unit — fizzles
+
+        int defenderFromRow = defenderPos.row, defenderFromCol = defenderPos.col;
+
+        MovementSystem movement = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
+        boolean pushed = movement.executeForcedMove(defender, pushRow, pushCol, "ABILITY", "PushOnAttack");
+        if (!pushed) return;
+        movement.executeForcedMove(owner, defenderFromRow, defenderFromCol, "ABILITY", "PushOnAttack");
     }
 
     private static void executeSwap(EffectNode effect, List<Entity> targets, Entity owner) {
@@ -522,6 +551,62 @@ public class EffectExecutor {
             }
         }
         return slots;
+    }
+
+    /**
+     * Lets the owner pick which of the resolved "candidates" to run "effects" against,
+     * rather than the engine auto-picking one — e.g. RogueFreeStrike choosing which
+     * adjacent enemy to strike. Fizzles silently if there are no candidates.
+     */
+    private static void executeChooseTarget(EffectNode effect, Entity owner, ExpressionContext context, Map<String, Object> abilityState) {
+        if (owner == null) return;
+        TargetSelector selector = toSelector(effect.params().get("candidates"));
+        if (selector == null) return;
+        List<Entity> candidates = TargetSelectorResolver.resolve(selector, owner, context);
+        if (candidates.isEmpty()) return;
+
+        List<EffectNode> body = toEffectNodes(effect.params().get("effects"));
+        if (body.isEmpty()) return;
+
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null) return;
+
+        Map<Plot, Entity> byPlot = new HashMap<>();
+        for (Entity candidate : candidates) {
+            PositionComponent pos = posMapper.get(candidate);
+            if (pos == null) continue;
+            Object cell = board.getPlotAtPos(pos.row, pos.col);
+            if (cell instanceof Plot plot) byPlot.put(plot, candidate);
+        }
+        if (byPlot.isEmpty()) return;
+        List<Plot> plots = new ArrayList<>(byPlot.keySet());
+
+        TargetFilter filter = new TargetFilter() {
+            @Override
+            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+                return box instanceof Plot plot && plots.contains(plot);
+            }
+
+            @Override
+            public List<Plot> getEligibleTargets(int targetIndex) {
+                return plots;
+            }
+        };
+
+        GameContext.get().getInteractionManager().requestPick(
+                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
+                filter,
+                (picks) -> {
+                    CustomBox chosenBox = picks.get(1);
+                    if (!(chosenBox instanceof Plot plot)) return;
+                    Entity chosen = byPlot.get(plot);
+                    if (chosen == null) return;
+                    context.set("$chosen", chosen);
+                    for (EffectNode node : body) {
+                        execute(node, List.of(chosen), owner, context, abilityState);
+                    }
+                }
+        );
     }
 
     @SuppressWarnings("unchecked")
