@@ -22,11 +22,15 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.UnitCard;
+import io.github.elderpath_crusade.interfaces.CustomBox;
+import io.github.elderpath_crusade.interfaces.TargetFilter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -328,6 +332,12 @@ public class EffectExecutor {
         if (card != null) card.consume();
     }
 
+    /**
+     * Resolves the piece to summon and, if the caster's zone has at least one empty
+     * tile, lets the player pick which one — fizzling silently if none is available.
+     * Consumes the source card (if summoning "$drawn") only once a tile is actually
+     * picked, not merely because a valid tile existed.
+     */
     private static void executeSummonPiece(EffectNode effect, Entity owner, ExpressionContext context) {
         PieceAlignment alignment = resolveCasterAlignment(owner, context);
         if (alignment == null) return;
@@ -352,16 +362,39 @@ public class EffectExecutor {
 
         Board board = GameContext.get().getActiveBoard();
         if (board == null) return;
-        int[] slot = findEmptySummonSlot(board, alignment);
-        if (slot == null) return; // no empty tile in caster's zone — summon silently fizzles
+        List<Plot> slots = findEmptySummonSlots(board, alignment);
+        if (slots.isEmpty()) return; // no empty tile in caster's zone — summon silently fizzles
 
-        Entity piece = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
-                alignment, slot[0], slot[1]);
-        String pieceId = EntityUtils.getId(piece);
-        board.addEntityToPos(slot[0], slot[1], piece, pieceId);
-        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, slot[0], slot[1]));
+        Card cardToConsume = sourceCard;
+        TargetFilter filter = new TargetFilter() {
+            @Override
+            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
+                return box instanceof Plot plot && slots.contains(plot);
+            }
 
-        if (sourceCard != null) sourceCard.consume();
+            @Override
+            public List<Plot> getEligibleTargets(int targetIndex) {
+                return slots;
+            }
+        };
+
+        GameContext.get().getInteractionManager().requestPick(
+                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
+                filter,
+                (picks) -> {
+                    CustomBox chosen = picks.get(1);
+                    if (!(chosen instanceof Plot plot)) return;
+                    int[] idx = plot.getIndices();
+
+                    Entity piece = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
+                            alignment, idx[0], idx[1]);
+                    String pieceId = EntityUtils.getId(piece);
+                    board.addEntityToPos(idx[0], idx[1], piece, pieceId);
+                    TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, idx[0], idx[1]));
+
+                    if (cardToConsume != null) cardToConsume.consume();
+                }
+        );
     }
 
     private static void executeGenerateMana(EffectNode effect, Entity owner, ExpressionContext context) {
@@ -477,17 +510,18 @@ public class EffectExecutor {
         return null;
     }
 
-    /** First empty tile in the caster's own summon zone (mirrors Board.isValidSummonTarget, used by SummonCard). */
-    private static int[] findEmptySummonSlot(Board board, PieceAlignment alignment) {
+    /** Every empty tile in the caster's own summon zone (mirrors Board.isValidSummonTarget, used by SummonCard). */
+    private static List<Plot> findEmptySummonSlots(Board board, PieceAlignment alignment) {
+        List<Plot> slots = new ArrayList<>();
         for (int row = 0; row < board.getROWS(); row++) {
             for (int col = 0; col < board.getCOLS(); col++) {
                 Object cell = board.getPlotAtPos(row, col);
                 if (cell instanceof Plot plot && board.isValidSummonTarget(plot, alignment)) {
-                    return new int[]{row, col};
+                    slots.add(plot);
                 }
             }
         }
-        return null;
+        return slots;
     }
 
     @SuppressWarnings("unchecked")
