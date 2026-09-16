@@ -47,6 +47,12 @@ public abstract class BattleRoom extends Room {
 
         // 0. Reset previous game session: clear ECS entities and session-scoped event listeners
         GameContext.get().getEcsEngine().removeAllEntities();
+        // removeAllEntities() doesn't notify GridIndexSystem (it's a plain map updated only via
+        // onEntitySpawned/onEntityMoved/onEntityDied, not Ashley entity-removal listeners) — without
+        // this, Board.getEntityAtPos keeps resolving dangling entities from the last match at their
+        // final positions (still rendered as "occupied" for click/move validation, just invisible
+        // since nothing re-registers their sprites).
+        GameContext.get().getEcsEngine().getSystem(io.github.elderpath_crusade.ecs.systems.GridIndexSystem.class).clear();
         TypedEventBus.get().clearGroup("session");
         GameContext.get().getWinConditionManager().resetSession();
         GameContext.get().getBotManager().resetSession();
