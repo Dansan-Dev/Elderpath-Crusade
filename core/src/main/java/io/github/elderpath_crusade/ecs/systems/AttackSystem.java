@@ -44,6 +44,7 @@ public class AttackSystem extends EntitySystem {
      * Execute an attack synchronously (for abilities/input that need immediate resolution).
      */
     public boolean executeAttack(Entity attacker, int targetRow, int targetCol) {
+        if (!io.github.elderpath_crusade.ecs.EntityUtils.canAttack(attacker)) return false;
         if (isBlockedByOncePerTurnAbility(attacker)) return false;
 
         GridIndexSystem gridIndex = getEngine().getSystem(GridIndexSystem.class);
@@ -83,7 +84,7 @@ public class AttackSystem extends EntitySystem {
     private void processAttack(Entity attacker) {
         AttackIntentComponent intent = intentMapper.get(attacker);
 
-        if (isBlockedByOncePerTurnAbility(attacker)) {
+        if (!io.github.elderpath_crusade.ecs.EntityUtils.canAttack(attacker) || isBlockedByOncePerTurnAbility(attacker)) {
             attacker.remove(AttackIntentComponent.class);
             return;
         }

@@ -284,6 +284,8 @@ public class PassiveModifierSystem extends EntitySystem {
             mod.ignoreHostileUnitsAsBlockers = (Boolean) stats.get("ignoreHostileUnitsAsBlockers");
         if (stats.containsKey("ignoreTerrainAsBlockers"))
             mod.ignoreTerrainAsBlockers = (Boolean) stats.get("ignoreTerrainAsBlockers");
+        if (stats.containsKey("cannotAttack"))
+            mod.cannotAttack = (Boolean) stats.get("cannotAttack");
         return mod;
     }
 }

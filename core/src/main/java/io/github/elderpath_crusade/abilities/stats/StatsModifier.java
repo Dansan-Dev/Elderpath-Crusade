@@ -32,6 +32,9 @@ public final class StatsModifier {
     public boolean ignoreFriendlyUnitsAsBlockers;
     public boolean ignoreHostileUnitsAsBlockers;
 
+    // OR-reduced across active modifiers: true if any modifier forbids attacking entirely.
+    public boolean cannotAttack;
+
     // Track which accumulators this modifier is currently applied to for fast removal.
     private final Set<StatsAccumulator> holders = new HashSet<>();
 
@@ -40,7 +43,8 @@ public final class StatsModifier {
     public boolean isNoOp() {
         return addCost == 0 && addMaxHealth == 0 && addDamage == 0 && addSpeed == 0 && addActions == 0 && addRange == 0
             && multCost == 0 && multMaxHealth == 0 && multDamage == 0 && multSpeed == 0 && multActions == 0 && multRange == 0f
-            && !ignoreTerrainAsBlockers && !ignoreFriendlyUnitsAsBlockers && !ignoreHostileUnitsAsBlockers;
+            && !ignoreTerrainAsBlockers && !ignoreFriendlyUnitsAsBlockers && !ignoreHostileUnitsAsBlockers
+            && !cannotAttack;
     }
 
     public static int applyInt(int base, int add, float mult) {

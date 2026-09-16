@@ -49,6 +49,11 @@ public final class EntityUtils {
         return c != null ? c.range : 0;
     }
 
+    public static boolean canAttack(Entity e) {
+        ComputedStatsComponent c = COMPUTED.get(e);
+        return c == null || !c.cannotAttack;
+    }
+
     public static int getCurrentHealth(Entity e) {
         StatsComponent s = STATS.get(e);
         return s != null ? s.currentHealth : 0;

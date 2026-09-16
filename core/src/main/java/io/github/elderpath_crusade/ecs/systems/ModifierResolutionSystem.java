@@ -31,7 +31,7 @@ public class ModifierResolutionSystem extends EntitySystem {
 
             int addDamage = 0, addSpeed = 0, addActions = 0, addMaxHealth = 0, addCost = 0, addRange = 0;
             float multDamage = 0f, multSpeed = 0f, multActions = 0f, multMaxHealth = 0f, multCost = 0f, multRange = 0f;
-            boolean terrain = false, friendly = false, hostile = false;
+            boolean terrain = false, friendly = false, hostile = false, cannotAttack = false;
 
             for (StatsModifier m : mc.accumulator.getAll()) {
                 addDamage += m.addDamage; multDamage += m.multDamage;
@@ -43,6 +43,7 @@ public class ModifierResolutionSystem extends EntitySystem {
                 if (m.ignoreTerrainAsBlockers) terrain = true;
                 if (m.ignoreFriendlyUnitsAsBlockers) friendly = true;
                 if (m.ignoreHostileUnitsAsBlockers) hostile = true;
+                if (m.cannotAttack) cannotAttack = true;
             }
 
             c.damage = StatsModifier.applyInt(base.damage, addDamage, multDamage);
@@ -54,6 +55,7 @@ public class ModifierResolutionSystem extends EntitySystem {
             c.ignoreTerrainAsBlockers = terrain;
             c.ignoreFriendlyAsBlockers = friendly;
             c.ignoreHostileAsBlockers = hostile;
+            c.cannotAttack = cannotAttack;
             c.dirty = false;
         }
     }
