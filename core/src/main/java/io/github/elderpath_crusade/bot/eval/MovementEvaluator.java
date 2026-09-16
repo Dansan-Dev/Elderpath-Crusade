@@ -34,9 +34,9 @@ public class MovementEvaluator extends BotEvaluatorBase {
         reachableCache.clear();
     }
 
-    private List<Plot> getReachableCached(Board board, int row, int col, int speed, String entityId) {
-        String key = entityId + '_' + row + '_' + col;
-        return reachableCache.computeIfAbsent(key, k -> board.getReachablePlots(row, col, speed));
+    private List<Plot> getReachableCached(Board board, Entity entity, int row, int col, int speed) {
+        String key = EntityUtils.getId(entity) + '_' + row + '_' + col;
+        return reachableCache.computeIfAbsent(key, k -> board.getReachablePlots(entity, row, col, speed));
     }
 
     @Override
@@ -100,8 +100,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             }
 
             int speed = EntityUtils.getSpeed(entity);
-            String entityId = EntityUtils.getId(entity);
-            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), speed, entityId);
+            List<Plot> reachable = getReachableCached(board, entity, pos.row(), pos.col(), speed);
             int currentDist = nearestManhattan(pos.row(), pos.col(), tactical.enemies());
             boolean hasRogue = isRogue(entity);
             Entity reference = board.getEntityAtPos(pos.row(), pos.col());
@@ -237,7 +236,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             }
 
             int actionsRemaining = getRemainingActions(entity);
-            List<Plot> reachable = getReachableCached(board, pos.row(), pos.col(), EntityUtils.getSpeed(entity), EntityUtils.getId(entity));
+            List<Plot> reachable = getReachableCached(board, entity, pos.row(), pos.col(), EntityUtils.getSpeed(entity));
             Plot stayPlot = getPlot(board, pos);
             Entity reference = board.getEntityAtPos(pos.row(), pos.col());
 
@@ -395,7 +394,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             if (state.actionsLeft > 0) {
                 String cacheKey = entityId + "_" + state.pos.row() + "_" + state.pos.col();
                 List<Plot> reachablePlots = reachableCache.computeIfAbsent(cacheKey,
-                        k -> board.getReachablePlots(state.pos.row(), state.pos.col(), speed));
+                        k -> board.getReachablePlots(entity, state.pos.row(), state.pos.col(), speed));
                 for (Plot plot : reachablePlots) {
                     Coord next = new Coord(plot.getRow(), plot.getCol());
                     expansions++;

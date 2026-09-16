@@ -130,7 +130,7 @@ public class BasicBot implements Bot {
             int currentDist = nearestEnemyManhattan(r,c,enemies);
             if (currentDist <= 1) continue;
             int speed = EntityUtils.getSpeed(entity);
-            List<Plot> reachable = b.getReachablePlots(r,c,speed);
+            List<Plot> reachable = b.getReachablePlots(entity,r,c,speed);
             if (reachable.isEmpty()) continue;
             Plot best = null; int bestDist = currentDist;
             for (Plot p : reachable) {

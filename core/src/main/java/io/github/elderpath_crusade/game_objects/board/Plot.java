@@ -103,7 +103,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (dstEntity == null) {
             // Move validation: check if target is reachable
             int speed = EntityUtils.getSpeed(entity);
-            List<Plot> reachable = boardRef.getReachablePlots(this.row, this.col, speed);
+            List<Plot> reachable = boardRef.getReachablePlots(entity, this.row, this.col, speed);
             return reachable.contains(targetPlot);
         }
 
@@ -120,7 +120,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (EntityUtils.isStunned(entity)) return List.of();
 
         int speed = EntityUtils.getSpeed(entity);
-        List<Plot> reachable = boardRef.getReachablePlots(this.row, this.col, speed);
+        List<Plot> reachable = boardRef.getReachablePlots(entity, this.row, this.col, speed);
         List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, alignment);
 
         List<Plot> combined = new java.util.ArrayList<>(reachable);

@@ -293,8 +293,8 @@ public class Board extends HigherOrderTexture implements Updatable {
         return getEntityAtPos(row, col) != null;
     }
 
-    public List<Plot> getReachablePlots(int row, int col, int speed) {
-        return navigator.getReachablePlots(row, col, speed);
+    public List<Plot> getReachablePlots(Entity mover, int row, int col, int speed) {
+        return navigator.getReachablePlots(mover, row, col, speed);
     }
 
     public List<Plot> getAdjacentHostilePlots(int row, int col, PieceAlignment friendlyAlignment) {

@@ -2,6 +2,8 @@ package io.github.elderpath_crusade.game_objects.board.components;
 
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.ComputedStatsComponent;
+import io.github.elderpath_crusade.ecs.components.TerrainComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.settings.GamePieceType;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -23,7 +25,25 @@ public class BoardNavigator {
         this.board = board;
     }
 
-    public List<Plot> getReachablePlots(int row, int col, int speed) {
+    /**
+     * Reachable tiles for a move action. Pieces with no blocker-ignoring modifiers use
+     * flood-fill (any combination of cardinal steps around obstacles, up to speed).
+     * Pieces that ignore any blocker type (e.g. JumpMove) instead leap in a single
+     * straight cardinal line, passing over ignorable blockers but never landing on one.
+     */
+    public List<Plot> getReachablePlots(Entity mover, int row, int col, int speed) {
+        ComputedStatsComponent computed = mover != null ? mover.getComponent(ComputedStatsComponent.class) : null;
+        boolean ignoreTerrain = computed != null && computed.ignoreTerrainAsBlockers;
+        boolean ignoreFriendly = computed != null && computed.ignoreFriendlyAsBlockers;
+        boolean ignoreHostile = computed != null && computed.ignoreHostileAsBlockers;
+
+        if (!ignoreTerrain && !ignoreFriendly && !ignoreHostile) {
+            return getReachablePlotsFlood(row, col, speed);
+        }
+        return getReachablePlotsStraightLine(mover, row, col, speed, ignoreTerrain, ignoreFriendly, ignoreHostile);
+    }
+
+    private List<Plot> getReachablePlotsFlood(int row, int col, int speed) {
         List<Plot> out = new ArrayList<>();
         if (speed <= 0) return out;
 
@@ -60,6 +80,50 @@ public class BoardNavigator {
 
                 Renderable r = layout[nr][nc];
                 if (r instanceof Plot p) out.add(p);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Walks each of the 4 cardinal directions up to "speed" tiles. A tile occupied by a
+     * blocker type the mover ignores is passed over (not a landing spot, but scanning
+     * continues past it); any other occupied tile stops the scan in that direction.
+     */
+    private List<Plot> getReachablePlotsStraightLine(Entity mover, int row, int col, int speed,
+            boolean ignoreTerrain, boolean ignoreFriendly, boolean ignoreHostile) {
+        List<Plot> out = new ArrayList<>();
+        if (speed <= 0) return out;
+
+        int rows = board.getROWS();
+        int cols = board.getCOLS();
+        Renderable[][] layout = board.getLayout();
+        PieceAlignment moverAlign = EntityUtils.getAlignment(mover);
+
+        int[][] dirs = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+        for (int[] d : dirs) {
+            for (int dist = 1; dist <= speed; dist++) {
+                int nr = row + d[0] * dist;
+                int nc = col + d[1] * dist;
+                if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) break;
+
+                Entity occupant = board.getEntityAtPos(nr, nc);
+                if (occupant == null) {
+                    Renderable r = layout[nr][nc];
+                    if (r instanceof Plot p) out.add(p);
+                    continue;
+                }
+
+                boolean canPassThrough;
+                if (occupant.getComponent(TerrainComponent.class) != null) {
+                    canPassThrough = ignoreTerrain;
+                } else {
+                    boolean isFriendly = EntityUtils.getAlignment(occupant) == moverAlign;
+                    canPassThrough = isFriendly ? ignoreFriendly : ignoreHostile;
+                }
+
+                if (!canPassThrough) break; // blocked — this direction stops here
+                // occupied but ignorable: not a landing spot, but keep scanning past it
             }
         }
         return out;

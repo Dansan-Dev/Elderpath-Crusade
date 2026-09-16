@@ -125,7 +125,7 @@ class HighlightState {
         if (EntityUtils.isStunned(entity)) return;
 
         int speed = EntityUtils.getSpeed(entity);
-        List<Plot> reachable = board.getReachablePlots(sr, sc, speed);
+        List<Plot> reachable = board.getReachablePlots(entity, sr, sc, speed);
         List<Plot> attackable = board.getAttackableEnemyPlots(sr, sc, EntityUtils.getAlignment(entity));
 
         for (Plot p : attackable) {
