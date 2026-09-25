@@ -17,6 +17,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
+import io.github.elderpath_crusade.multiplayer.net.GameSnapshot;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.HashMap;
@@ -29,15 +30,18 @@ import java.util.Map;
  * correctly, on the host; their own result events are already part of the relayed stream.
  * This class only ever mirrors, never decides.
  *
- * Also reconstructs the guest's OWN hand (not the opponent's — out of scope, see below) from
- * CardDrawnEvent/CardPlayedEvent/CardDiscardedEvent, in the same order the host draws them —
- * this isn't just cosmetic: PlaySummonCard/PlaySpellCard commands reference a card by hand
- * index, so the guest's hand ordering must exactly match the host's for those indices to mean
- * the same card on both sides.
+ * Reconstructs BOTH hands from CardDrawnEvent/CardPlayedEvent/CardDiscardedEvent — the local
+ * player's own hand front-up (its ordering has to exactly match the host's, since
+ * PlaySummonCard/PlaySpellCard commands reference a card by hand index) and the opponent's
+ * hand face-down (real cards are reconstructed there too — safe, since Card only renders
+ * front-specific content while faceUp — purely so the opponent's hand shows the right card
+ * *count*, matching what the host actually holds).
  *
- * Known limitation: the opponent's (host's) hand is not reconstructed on the guest's screen —
- * only the guest's own hand. Watching an opponent's face-down card count is cosmetic and not
- * required for the match to be playable.
+ * A guest joining after the match has already started has missed everything that happened
+ * before it connected — applySnapshot() (driven by a one-time GameSnapshot the host sends
+ * right after accepting the connection, see GameHost/GameSnapshot) bootstraps existing board
+ * pieces, both hands, mana, and whose turn it is, before any further incremental event is
+ * processed.
  */
 public class ReplicaEventApplier {
     private final Map<String, int[]> pendingSpawns = new HashMap<>(); // pieceId -> [row, col]
@@ -152,43 +156,18 @@ public class ReplicaEventApplier {
         GameContext.get().getTurnManager().setCurrentPlayerForReplica(e.player());
     }
 
-    // --- Own hand reconstruction ---
+    // --- Hand reconstruction (both alignments — own hand front-up, opponent's face-down) ---
 
     private void onCardDrawn(CardDrawnEvent e) {
-        PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-        if (local == null || e.owner() != local) return;
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(local);
-        Hand hand = playerState == null ? null : playerState.hand;
-        Board board = GameContext.get().getActiveBoard();
-        if (hand == null || board == null) return;
-        try {
-            DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                    board, local, 0, 0, hand.getCardWidth(), hand.getCardHeight(), 0);
-            Card card = CardFactory.create(e.cardName(), params);
-            card.showFront(); // this is always the local player's own card
-            hand.addCard(card);
-        } catch (IllegalArgumentException ex) {
-            Logger.error("ReplicaEventApplier", "Unknown card in CardDrawnEvent: " + e.cardName());
-        }
+        addCardToHand(e.owner(), e.cardName());
     }
 
     private void onCardDiscarded(CardDiscardedEvent e) {
-        PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-        if (local == null || e.player() != local) return;
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(local);
-        Hand hand = playerState == null ? null : playerState.hand;
-        if (hand == null) return;
-        for (Card c : new java.util.ArrayList<>(hand.getCards())) {
-            hand.removeCard(c);
-        }
-        hand.updateBounds();
+        clearHand(e.player());
     }
 
     private void removeFirstFromLocalHand(PieceAlignment owner, String cardName) {
-        PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-        if (local == null || owner != local) return;
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(local);
-        Hand hand = playerState == null ? null : playerState.hand;
+        Hand hand = handOf(owner);
         if (hand == null) return;
         for (Card c : hand.getCards()) {
             if (cardName.equals(c.getDisplayName())) {
@@ -197,5 +176,66 @@ public class ReplicaEventApplier {
                 return;
             }
         }
+    }
+
+    private void addCardToHand(PieceAlignment owner, String cardName) {
+        PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+        Hand hand = handOf(owner);
+        Board board = GameContext.get().getActiveBoard();
+        if (local == null || hand == null || board == null) return;
+        try {
+            DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
+                    board, owner, 0, 0, hand.getCardWidth(), hand.getCardHeight(), 0);
+            Card card = CardFactory.create(cardName, params);
+            if (owner == local) card.showFront(); else card.showBack();
+            hand.addCard(card);
+        } catch (IllegalArgumentException ex) {
+            Logger.error("ReplicaEventApplier", "Unknown card: " + cardName);
+        }
+    }
+
+    private void clearHand(PieceAlignment owner) {
+        Hand hand = handOf(owner);
+        if (hand == null) return;
+        for (Card c : new java.util.ArrayList<>(hand.getCards())) {
+            hand.removeCard(c);
+        }
+        hand.updateBounds();
+    }
+
+    private Hand handOf(PieceAlignment alignment) {
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
+        return playerState == null ? null : playerState.hand;
+    }
+
+    // --- Late-join catch-up ---
+
+    /** Bootstraps this guest to the host's current state — see GameSnapshot's own doc. */
+    public void applySnapshot(GameSnapshot snapshot) {
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null) return;
+
+        for (GameSnapshot.PieceState p : snapshot.pieces()) {
+            PieceDefinition def = PieceRegistry.get(p.registryKey());
+            if (def == null) continue;
+            Entity entity = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
+                    p.owner(), p.row(), p.col());
+            StatsComponent stats = entity.getComponent(StatsComponent.class);
+            if (stats != null) {
+                stats.currentHealth = p.currentHealth();
+                stats.remainingActions = p.remainingActions();
+            }
+            board.addEntityToPos(p.row(), p.col(), entity, p.pieceId());
+            entitiesById.put(p.pieceId(), entity);
+        }
+
+        for (String cardName : snapshot.p1Hand()) addCardToHand(PieceAlignment.P1, cardName);
+        for (String cardName : snapshot.p2Hand()) addCardToHand(PieceAlignment.P2, cardName);
+
+        PlayerSystem playerSystem = GameContext.get().getEcsEngine().getSystem(PlayerSystem.class);
+        playerSystem.setMana(PieceAlignment.P1, snapshot.p1Mana());
+        playerSystem.setMana(PieceAlignment.P2, snapshot.p2Mana());
+
+        GameContext.get().getTurnManager().setCurrentPlayerForReplica(snapshot.currentPlayer());
     }
 }

@@ -66,6 +66,21 @@ class NetworkTransportTest {
     }
 
     @Test
+    void connectingTriggersSnapshotDeliveryToClient() throws InterruptedException {
+        List<GameSnapshot> received = new ArrayList<>();
+        client.addSnapshotListener(received::add);
+
+        awaitTrue(() -> {
+            host.update(); // builds the snapshot on the main thread and sends it once, on connect
+            client.update();
+            return !received.isEmpty();
+        }, "snapshot delivered to client on connect");
+
+        assertEquals(PieceAlignment.P1, received.get(0).currentPlayer());
+        assertTrue(received.get(0).pieces().isEmpty()); // no entities exist in this test's board
+    }
+
+    @Test
     void eventFromHostIsRelayedToAndDecodedByClient() throws InterruptedException {
         List<PieceMovedEvent> received = new ArrayList<>();
         client.addListener(event -> {

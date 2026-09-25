@@ -41,6 +41,7 @@ public class OnlineMatchRoom extends BattleRoom {
         if (GameContext.get().getOnlineMatch().isGuest()) {
             ReplicaEventApplier applier = new ReplicaEventApplier();
             GameContext.get().getOnlineMatch().getClient().addListener(applier::apply);
+            GameContext.get().getOnlineMatch().getClient().addSnapshotListener(applier::applySnapshot);
         }
 
         layoutBoard();

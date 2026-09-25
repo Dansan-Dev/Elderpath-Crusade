@@ -10,8 +10,11 @@ import io.github.elderpath_crusade.ecs.systems.PlayerSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.multiplayer.net.GameSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -104,6 +107,18 @@ class ReplicaEventApplierTest {
     @Test
     void turnStarted_setsCurrentPlayerWithoutSideEffects() {
         applier.apply(new TurnStartedEvent(PieceAlignment.P2));
+        assertEquals(PieceAlignment.P2, GameContext.get().getTurnManager().getCurrentPlayer());
+    }
+
+    @Test
+    void applySnapshot_bootstrapsManaAndCurrentPlayer() {
+        GameSnapshot snapshot = new GameSnapshot(List.of(), List.of(), List.of(), 3, 5, PieceAlignment.P2);
+
+        applier.applySnapshot(snapshot);
+
+        PlayerSystem playerSystem = GameContext.get().getEcsEngine().getSystem(PlayerSystem.class);
+        assertEquals(3, playerSystem.getMana(PieceAlignment.P1));
+        assertEquals(5, playerSystem.getMana(PieceAlignment.P2));
         assertEquals(PieceAlignment.P2, GameContext.get().getTurnManager().getCurrentPlayer());
     }
 }
