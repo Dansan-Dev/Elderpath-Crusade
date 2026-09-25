@@ -1,6 +1,8 @@
 package io.github.elderpath_crusade.rooms;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
@@ -9,9 +11,12 @@ import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
+import io.github.elderpath_crusade.interfaces.Renderable;
+import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
 import io.github.elderpath_crusade.server.ActionDispatcher;
 import io.github.elderpath_crusade.server.ReplicaEventApplier;
+import io.github.elderpath_crusade.supers.LowestOrderTexture;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,22 +44,55 @@ public class OnlineMatchRoom extends BattleRoom {
         }
 
         layoutBoard();
-        applyFixedHandVisibility();
+        addContent(new HandVisibilityEnforcer(handP1, handP2));
     }
 
     /**
      * Unlike hotseat (LocalMatchRoom), each screen has exactly one local human — so hand
      * visibility doesn't need to track whose turn it is, only whose screen this is: my own
-     * hand is always visible, the opponent's is always hidden. Newly-drawn cards on the
-     * guest's own hand are shown via ReplicaEventApplier.onCardDrawn.
+     * hand is always visible, the opponent's is always hidden. This has to be enforced every
+     * frame, not just once at construction — every newly created Card defaults to face-up
+     * (Card's constructor sets faceUp = true), and new cards keep getting added to hands for
+     * the rest of the match (the host's own real Deck.draw() for both alignments, and the
+     * guest's own hand via ReplicaEventApplier.onCardDrawn) — a one-time pass at room
+     * construction only ever covered the starting hand.
      */
-    private void applyFixedHandVisibility() {
-        PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-        for (Card c : handP1.getCards()) {
-            if (local == PieceAlignment.P1) c.showFront(); else c.showBack();
+    private static final class HandVisibilityEnforcer extends LowestOrderTexture implements Renderable, Updatable {
+        private final Hand handP1;
+        private final Hand handP2;
+
+        HandVisibilityEnforcer(Hand handP1, Hand handP2) {
+            this.handP1 = handP1;
+            this.handP2 = handP2;
+            setBounds(new Box(0, 0, 0, 0));
         }
-        for (Card c : handP2.getCards()) {
-            if (local == PieceAlignment.P2) c.showFront(); else c.showBack();
+
+        @Override
+        public List<Integer> getZs() {
+            return List.of();
+        }
+
+        @Override
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
+        }
+
+        @Override
+        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
+        }
+
+        @Override
+        public void update(float delta) {
+            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+            if (local == null) return;
+            applyTo(handP1, local == PieceAlignment.P1);
+            applyTo(handP2, local == PieceAlignment.P2);
+        }
+
+        private void applyTo(Hand hand, boolean visible) {
+            for (Card c : hand.getCards()) {
+                if (visible && !c.isFaceUp()) c.showFront();
+                else if (!visible && c.isFaceUp()) c.showBack();
+            }
         }
     }
 

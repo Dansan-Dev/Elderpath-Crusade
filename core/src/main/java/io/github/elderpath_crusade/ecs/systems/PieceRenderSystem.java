@@ -13,7 +13,6 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 
 /**
@@ -58,15 +57,14 @@ public class PieceRenderSystem extends EntitySystem {
                 batch.setColor(original);
                 renderStunSymbol(batch, zLevel, absX, absY, plotWidth, plotHeight);
             } else if (EntityUtils.isExhausted(entity)) {
-                PieceAlignment currentPlayer = GameContext.get().getTurnManager().getCurrentPlayer();
-                if (EntityUtils.getAlignment(entity) == currentPlayer) {
-                    Color original = batch.getColor().cpy();
-                    batch.setColor(DARKEN_TINT);
-                    sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
-                    batch.setColor(original);
-                } else {
-                    sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
-                }
+                // Always shows real exhaustion state, regardless of whose turn it currently is —
+                // previously only darkened during the piece's own controller's turn, which made
+                // an exhausted piece look "refreshed" the moment the other player's turn began,
+                // even though it wouldn't actually regain actions until its own next turn.
+                Color original = batch.getColor().cpy();
+                batch.setColor(DARKEN_TINT);
+                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+                batch.setColor(original);
             } else {
                 sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
             }

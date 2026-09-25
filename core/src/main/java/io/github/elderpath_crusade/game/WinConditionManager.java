@@ -65,7 +65,14 @@ public final class WinConditionManager {
         TypedEventBus.get().emit(new GameWonEvent(winner));
     }
 
-    private void onGameWon(GameWonEvent event) {
+    /**
+     * Public so the online match guest can trigger the same victory-screen transition when
+     * GameWonEvent arrives via ReplicaEventApplier — the guest's own checkWin() never fires,
+     * since it only listens for PieceMovedEvent/PieceSpawnedEvent on this process's own event
+     * bus, and the replica deliberately doesn't re-emit those (see ReplicaEventApplier's class
+     * doc). GameWonEvent itself is relayed and handled here directly instead.
+     */
+    public void onGameWon(GameWonEvent event) {
         PieceAlignment winner = event.winner();
         try {
             if (GameContext.get().getInteractionManager().hasActiveSelection()) {

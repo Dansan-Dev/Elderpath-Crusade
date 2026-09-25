@@ -6,7 +6,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.events.ActionsResetEvent;
 import io.github.elderpath_crusade.events.CardDiscardedEvent;
-import io.github.elderpath_crusade.events.ManaChangedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
@@ -79,8 +78,7 @@ public class PlayerManager {
 
     public void onStartTurn(PieceAlignment id) {
         PlayerState ps = get(id);
-        ps.addMana(1);
-        TypedEventBus.get().emit(new ManaChangedEvent(id, ps.getMana()));
+        ps.addMana(1); // PlayerSystem.setMana emits ManaChangedEvent itself
         draw(ps, 3);
         applyBotHandVisibilityOnTurnStart(id);
         // Action reset handled by TurnSystem via ECS

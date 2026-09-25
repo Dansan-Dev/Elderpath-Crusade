@@ -41,6 +41,7 @@ import java.util.Map;
  */
 public class ReplicaEventApplier {
     private final Map<String, int[]> pendingSpawns = new HashMap<>(); // pieceId -> [row, col]
+    private final Map<String, Entity> entitiesById = new HashMap<>();
 
     public void apply(GameEvent event) {
         try {
@@ -54,10 +55,12 @@ public class ReplicaEventApplier {
             else if (event instanceof PieceHealedEvent e) onPieceHealed(e);
             else if (event instanceof PieceDiedEvent e) onPieceDied(e);
             else if (event instanceof ManaChangedEvent e) onManaChanged(e);
+            else if (event instanceof ActionSpentEvent e) onActionSpent(e);
             else if (event instanceof ActionsResetEvent e) onActionsReset(e);
             else if (event instanceof TurnStartedEvent e) onTurnStarted(e);
-            // TurnEndedEvent, ActionSpentEvent, PieceKilledEvent, CardShuffledEvent, GameWonEvent:
-            // no direct board/HUD mutation needed on the replica side.
+            else if (event instanceof GameWonEvent e) GameContext.get().getWinConditionManager().onGameWon(e);
+            // TurnEndedEvent, PieceKilledEvent, CardShuffledEvent: no direct board/HUD
+            // mutation needed on the replica side.
         } catch (Exception ex) {
             Logger.error("ReplicaEventApplier", "Failed to apply " + event + ": " + ex.getMessage());
         }
@@ -81,6 +84,14 @@ public class ReplicaEventApplier {
         Entity entity = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
                 e.owner(), pos[0], pos[1]);
         board.addEntityToPos(pos[0], pos[1], entity, e.pieceId());
+        entitiesById.put(e.pieceId(), entity);
+    }
+
+    private void onActionSpent(ActionSpentEvent e) {
+        Entity entity = entitiesById.get(e.pieceId());
+        if (entity == null) return;
+        StatsComponent stats = entity.getComponent(StatsComponent.class);
+        if (stats != null) stats.remainingActions = e.remaining();
     }
 
     private void onPieceMoved(PieceMovedEvent e) {
@@ -112,6 +123,7 @@ public class ReplicaEventApplier {
     }
 
     private void onPieceDied(PieceDiedEvent e) {
+        entitiesById.remove(e.pieceId());
         Board board = GameContext.get().getActiveBoard();
         if (board != null) board.removeEntityAtPos(e.row(), e.col());
     }
@@ -153,6 +165,7 @@ public class ReplicaEventApplier {
             DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
                     board, local, 0, 0, hand.getCardWidth(), hand.getCardHeight(), 0);
             Card card = CardFactory.create(e.cardName(), params);
+            card.showFront(); // this is always the local player's own card
             hand.addCard(card);
         } catch (IllegalArgumentException ex) {
             Logger.error("ReplicaEventApplier", "Unknown card in CardDrawnEvent: " + e.cardName());

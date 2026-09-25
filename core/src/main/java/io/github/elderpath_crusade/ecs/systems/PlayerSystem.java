@@ -5,6 +5,8 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.EntitySystem;
 import io.github.elderpath_crusade.ecs.components.PlayerComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.ManaChangedEvent;
+import io.github.elderpath_crusade.events.TypedEventBus;
 
 /**
  * Owns mana via PlayerComponent on two singleton entities (P1, P2), created once in
@@ -41,8 +43,19 @@ public class PlayerSystem extends EntitySystem {
         return get(alignment).mana;
     }
 
+    /**
+     * Sets mana and emits ManaChangedEvent — the single choke point every mana change (turn-start
+     * gain, card cost, ability mana effects) goes through, so nothing needs to remember to emit
+     * this itself. Previously only PlayerManager.onStartTurn emitted it (for the +1 gain), so
+     * spending mana on a card was invisible to anything relying on the event — including the
+     * online guest, whose mirrored mana never reflected a card's cost, only the next turn's gain.
+     */
     public void setMana(PieceAlignment alignment, int value) {
-        get(alignment).mana = Math.max(0, value);
+        PlayerComponent component = get(alignment);
+        int clamped = Math.max(0, value);
+        if (component.mana == clamped) return;
+        component.mana = clamped;
+        TypedEventBus.get().emit(new ManaChangedEvent(alignment, clamped));
     }
 
     public void addMana(PieceAlignment alignment, int delta) {
