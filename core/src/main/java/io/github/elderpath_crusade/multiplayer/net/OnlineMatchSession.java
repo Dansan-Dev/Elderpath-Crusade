@@ -11,6 +11,9 @@ import java.io.IOException;
  * in-process (host) or sends a NetworkCommand (guest).
  */
 public class OnlineMatchSession {
+    /** Fixed port for this prototype — no port entry/negotiation UI yet. */
+    public static final int DEFAULT_PORT = 4567;
+
     private GameHost host;
     private GameClient client;
 

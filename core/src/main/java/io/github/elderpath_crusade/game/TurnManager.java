@@ -41,6 +41,11 @@ public class TurnManager {
         getTurnSystem().reset();
     }
 
+    /** See TurnSystem.setCurrentPlayerForReplica — online match guest use only. */
+    public void setCurrentPlayerForReplica(PieceAlignment player) {
+        getTurnSystem().setCurrentPlayerForReplica(player);
+    }
+
     private TurnSystem getTurnSystem() {
         return GameContext.get().getEcsEngine().getSystem(TurnSystem.class);
     }

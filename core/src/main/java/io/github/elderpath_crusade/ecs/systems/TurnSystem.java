@@ -46,6 +46,18 @@ public class TurnSystem extends EntitySystem {
         return state.currentPlayer;
     }
 
+    /**
+     * Sets whose turn it is without running any of the normal transition side effects
+     * (mana/draw/discard, action reset, TurnStartedEvent/TurnEndedEvent emission). For the
+     * online match guest, which mirrors the host's already-relayed TurnStartedEvent/
+     * TurnEndedEvent purely to keep its own turn/HUD display correct — the real side effects
+     * already happened on the host and are already reflected via their own relayed events.
+     */
+    public void setCurrentPlayerForReplica(PieceAlignment player) {
+        state.started = true;
+        state.currentPlayer = player;
+    }
+
     public boolean isStarted() {
         return state.started;
     }
