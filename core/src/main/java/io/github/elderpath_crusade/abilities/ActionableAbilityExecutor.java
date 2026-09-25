@@ -83,7 +83,7 @@ public class ActionableAbilityExecutor {
             } else if ("Mana".equals(cost.type())) {
                 if (align == null) return false;
                 PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(align.alignment);
-                if (playerState == null || playerState.mana < cost.amount()) return false;
+                if (playerState == null || playerState.getMana() < cost.amount()) return false;
             }
         }
         return true;
@@ -126,7 +126,7 @@ public class ActionableAbilityExecutor {
             } else if ("Mana".equals(cost.type()) && align != null) {
                 PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(align.alignment);
                 if (playerState != null) {
-                    playerState.mana = Math.max(0, playerState.mana - cost.amount());
+                    playerState.addMana(-cost.amount());
                 }
             }
         }

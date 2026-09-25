@@ -43,8 +43,8 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         PlayerManager.PlayerState p1 = GameContext.get().getPlayerManager().get(PieceAlignment.P1);
         PlayerManager.PlayerState p2 = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
 
-        String p1Str = "P1 Mana: " + (p1 == null ? 0 : p1.mana);
-        String p2Str = "P2 Mana: " + (p2 == null ? 0 : p2.mana);
+        String p1Str = "P1 Mana: " + (p1 == null ? 0 : p1.getMana());
+        String p2Str = "P2 Mana: " + (p2 == null ? 0 : p2.getMana());
 
         if (!p1Str.equals(p1Text.getText())) { p1Text.setText(p1Str); p1Text.update(); }
         if (!p2Str.equals(p2Text.getText())) { p2Text.setText(p2Str); p2Text.update(); }

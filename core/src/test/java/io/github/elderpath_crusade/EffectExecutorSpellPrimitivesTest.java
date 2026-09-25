@@ -47,24 +47,24 @@ class EffectExecutorSpellPrimitivesTest {
 
     @Test
     void generateMana_addsToCasterMana() {
-        playerState.mana = 2;
+        playerState.setMana(2);
         ExpressionContext ctx = spellContext();
 
         EffectExecutor.execute(new EffectNode("GenerateMana", Map.of("amount", 3)),
                 List.of(), null, ctx, new HashMap<>());
 
-        assertEquals(5, playerState.mana);
+        assertEquals(5, playerState.getMana());
     }
 
     @Test
     void generateMana_zeroOrNegativeAmount_isNoOp() {
-        playerState.mana = 2;
+        playerState.setMana(2);
         ExpressionContext ctx = spellContext();
 
         EffectExecutor.execute(new EffectNode("GenerateMana", Map.of("amount", 0)),
                 List.of(), null, ctx, new HashMap<>());
 
-        assertEquals(2, playerState.mana);
+        assertEquals(2, playerState.getMana());
     }
 
     @Test

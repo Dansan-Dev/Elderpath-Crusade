@@ -33,7 +33,7 @@ public class SummonEvaluator extends BotEvaluatorBase {
             return;
         }
 
-        int currentMana = player.mana;
+        int currentMana = player.getMana();
         int homeRow = board.getROWS() - 1;
         int cols = board.getCOLS();
 

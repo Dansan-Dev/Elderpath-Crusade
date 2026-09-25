@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.systems.PlayerSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.events.ActionsResetEvent;
@@ -19,15 +20,25 @@ import java.util.List;
  * Owns PlayerState for P1 and P2 and performs per-turn start/end actions
  * when invoked by TurnManager. Kept minimal and self-contained.
  *
+ * Mana is ECS-backed (PlayerComponent via PlayerSystem) — this class is a facade
+ * over it, mirroring how TurnManager facades TurnSystem.
+ *
  * Instance held by GameContext; access via GameContext.get().getPlayerManager().
  */
 public class PlayerManager {
     public static class PlayerState {
         public final PieceAlignment id;
-        public int mana = 0;
         public Hand hand;
         public Deck deck;
         public PlayerState(PieceAlignment id) { this.id = id; }
+
+        public int getMana() { return playerSystem().getMana(id); }
+        public void setMana(int value) { playerSystem().setMana(id, value); }
+        public void addMana(int delta) { playerSystem().addMana(id, delta); }
+
+        private PlayerSystem playerSystem() {
+            return GameContext.get().getEcsEngine().getSystem(PlayerSystem.class);
+        }
     }
 
     private boolean initialized = false;
@@ -44,12 +55,11 @@ public class PlayerManager {
     }
 
     public void resetForNewGame() {
-        p1.mana = 0;
-        p2.mana = 0;
         p1.hand = null;
         p1.deck = null;
         p2.hand = null;
         p2.deck = null;
+        GameContext.get().getEcsEngine().getSystem(PlayerSystem.class).resetForNewGame();
     }
 
     public PlayerState get(PieceAlignment id) {
@@ -69,8 +79,8 @@ public class PlayerManager {
 
     public void onStartTurn(PieceAlignment id) {
         PlayerState ps = get(id);
-        ps.mana += 1;
-        TypedEventBus.get().emit(new ManaChangedEvent(id, ps.mana));
+        ps.addMana(1);
+        TypedEventBus.get().emit(new ManaChangedEvent(id, ps.getMana()));
         draw(ps, 3);
         applyBotHandVisibilityOnTurnStart(id);
         // Action reset handled by TurnSystem via ECS

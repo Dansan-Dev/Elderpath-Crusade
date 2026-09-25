@@ -203,7 +203,7 @@ public class SmartBot implements Bot {
         for (Card card : player.hand.getCards()) {
             if (!(card instanceof SummonCard summonCard))
                 continue;
-            if (summonCard.getStatsCost() > player.mana)
+            if (summonCard.getStatsCost() > player.getMana())
                 continue;
             return false;
         }

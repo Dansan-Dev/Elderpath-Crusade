@@ -43,31 +43,31 @@ class ActionableAbilityExecutorManaCostTest {
 
     @Test
     void canAffordCosts_false_whenNotEnoughMana() {
-        playerState.mana = 0;
+        playerState.setMana(0);
         assertFalse(ActionableAbilityExecutor.canAffordCosts(piece, List.of(new Cost("Mana", 1))));
     }
 
     @Test
     void canAffordCosts_true_whenEnoughMana() {
-        playerState.mana = 1;
+        playerState.setMana(1);
         assertTrue(ActionableAbilityExecutor.canAffordCosts(piece, List.of(new Cost("Mana", 1))));
     }
 
     @Test
     void deductCosts_subtractsMana_leavesActionsUntouched() {
-        playerState.mana = 2;
+        playerState.setMana(2);
         int actionsBefore = piece.getComponent(StatsComponent.class).remainingActions;
 
         ActionableAbilityExecutor.deductCosts(piece, List.of(new Cost("Mana", 1)));
 
-        assertEquals(1, playerState.mana);
+        assertEquals(1, playerState.getMana());
         assertEquals(actionsBefore, piece.getComponent(StatsComponent.class).remainingActions);
     }
 
     @Test
     void deductCosts_manaNeverGoesNegative() {
-        playerState.mana = 0;
+        playerState.setMana(0);
         ActionableAbilityExecutor.deductCosts(piece, List.of(new Cost("Mana", 1)));
-        assertEquals(0, playerState.mana);
+        assertEquals(0, playerState.getMana());
     }
 }

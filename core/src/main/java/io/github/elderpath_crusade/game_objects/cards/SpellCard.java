@@ -171,13 +171,13 @@ public class SpellCard extends Card implements TargetFilter {
 
     private boolean trySpendMana() {
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        if (playerState == null || playerState.mana < manaCost) {
+        if (playerState == null || playerState.getMana() < manaCost) {
             Logger.log(
                     "SpellCard",
-                    "Not enough mana. Need=" + manaCost + ", have=" + (playerState == null ? 0 : playerState.mana));
+                    "Not enough mana. Need=" + manaCost + ", have=" + (playerState == null ? 0 : playerState.getMana()));
             return false;
         }
-        playerState.mana -= manaCost;
+        playerState.addMana(-manaCost);
         return true;
     }
 
@@ -206,7 +206,7 @@ public class SpellCard extends Card implements TargetFilter {
             return null;
 
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        if (playerState == null || playerState.mana < manaCost)
+        if (playerState == null || playerState.getMana() < manaCost)
             return null;
 
         return clickableEffectData;

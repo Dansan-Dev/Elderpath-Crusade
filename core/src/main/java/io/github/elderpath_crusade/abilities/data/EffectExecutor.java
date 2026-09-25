@@ -433,7 +433,7 @@ public class EffectExecutor {
         PieceAlignment alignment = resolveCasterAlignment(owner, context);
         if (alignment == null) return;
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        if (playerState != null) playerState.mana += amount;
+        if (playerState != null) playerState.addMana(amount);
     }
 
     /**

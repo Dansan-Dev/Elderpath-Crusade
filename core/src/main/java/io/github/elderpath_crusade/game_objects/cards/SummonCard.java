@@ -66,14 +66,14 @@ public class SummonCard extends UnitCard implements TargetFilter {
     protected boolean trySpendMana() {
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
         int cost = getStatsCost();
-        if (playerState == null || playerState.mana < cost) {
+        if (playerState == null || playerState.getMana() < cost) {
             Logger.log(
                 "SummonCard",
-                "Not enough mana. Need=" + cost + ", have=" + (playerState == null ? 0 : playerState.mana)
+                "Not enough mana. Need=" + cost + ", have=" + (playerState == null ? 0 : playerState.getMana())
             );
             return false;
         }
-        playerState.mana -= cost;
+        playerState.addMana(-cost);
         return true;
     }
 
@@ -163,7 +163,7 @@ public class SummonCard extends UnitCard implements TargetFilter {
 
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
         int cost = getStatsCost();
-        if (playerState == null || playerState.mana < cost) return null;
+        if (playerState == null || playerState.getMana() < cost) return null;
 
         return clickableEffectData;
     }

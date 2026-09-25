@@ -72,13 +72,13 @@ public class BasicBot implements Bot {
             Renderable r = b.getPlotAtPos(lastRow, col);
             if (r instanceof Plot p && b.isValidSummonTarget(p, PieceAlignment.P2)) {
                 int beforeHandSize = ps.hand.getCards().size();
-                int beforeMana = ps.mana;
+                int beforeMana = ps.getMana();
                 HashMap<Integer, CustomBox> entities = new HashMap<>();
                 entities.put(0, targetCard);
                 entities.put(1, p);
                 targetCard.triggerClickEffect(entities);
                 boolean consumed = !ps.hand.getCards().contains(targetCard) || ps.hand.getCards().size() < beforeHandSize;
-                boolean spentMana = ps.mana < beforeMana;
+                boolean spentMana = ps.getMana() < beforeMana;
                 if (consumed || spentMana) return true;
             }
         }

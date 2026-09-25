@@ -162,13 +162,13 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         if (player == null || player.hand == null)
             return false;
         int beforeSize = player.hand.getCards().size();
-        int beforeMana = player.mana;
+        int beforeMana = player.getMana();
         HashMap<Integer, CustomBox> entities = new HashMap<>();
         entities.put(0, card);
         entities.put(1, plot);
         card.triggerClickEffect(entities);
         boolean consumed = !player.hand.getCards().contains(card) || player.hand.getCards().size() < beforeSize;
-        boolean spentMana = player.mana < beforeMana;
+        boolean spentMana = player.getMana() < beforeMana;
         return consumed || spentMana;
     }
 
