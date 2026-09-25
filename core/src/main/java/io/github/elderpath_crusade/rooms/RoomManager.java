@@ -18,7 +18,7 @@ public class RoomManager {
     public RoomManager() {}
 
     public void initialize() {
-        gotoRoom(MainMenuRoom::get);
+        gotoRoom(LoadingRoom.before(MainMenuRoom::get));
     }
 
     public void clearRoom() {

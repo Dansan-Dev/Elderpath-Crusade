@@ -86,6 +86,7 @@ public class Main extends ApplicationAdapter {
     public void dispose() {
         GameContext.get().getGraphicsManager().getBatch().dispose();
         GameContext.get().getTextureManager().dispose();
+        GameContext.get().getAssets().dispose();
         GraphicUtils.dispose();
     }
 }
