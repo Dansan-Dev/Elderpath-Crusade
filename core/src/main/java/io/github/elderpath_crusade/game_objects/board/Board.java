@@ -292,6 +292,11 @@ public class Board extends HigherOrderTexture implements Updatable {
         interactionResolver.handlePlotMove(entities);
     }
 
+    /** Authoritative move/attack by coordinates — see BoardInteractionResolver.movePlot. */
+    public boolean movePiece(int srcRow, int srcCol, int dstRow, int dstCol) {
+        return interactionResolver.movePlot(srcRow, srcCol, dstRow, dstCol);
+    }
+
     public boolean isFlipped() {
         return perspectiveManager.isPhysicallyFlipped();
     }

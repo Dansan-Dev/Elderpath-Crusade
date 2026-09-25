@@ -118,29 +118,41 @@ public class SpellCard extends Card implements TargetFilter {
     private void initializeClickableEffect() {
         if (definition.targeting() == null) {
             setClickableEffect(
-                    (HashMap<Integer, CustomBox> entities) -> {
-                        if (!trySpendMana()) return;
-                        runEffects(null);
-                        consume();
-                    },
+                    (HashMap<Integer, CustomBox> entities) -> executeSpell(null, null),
                     ClickableEffectData.getImmediate());
             return;
         }
 
         setClickableEffect(
                 (HashMap<Integer, CustomBox> entities) -> {
-                    if (!trySpendMana())
-                        return;
                     CustomBox target = entities.get(1);
                     if (target instanceof Plot plot) {
-                        Entity e = board.getEntityAtPlot(plot);
-                        if (e != null) {
-                            runEffects(e);
-                        }
+                        executeSpell(plot.getRow(), plot.getCol());
                     }
-                    consume();
                 },
                 ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
+    }
+
+    /**
+     * Authoritative spell execution — validates turn/mana, resolves the target entity (if
+     * this spell targets one) from board coordinates, runs effects, spends mana, and consumes
+     * the card. targetRow/targetCol are null for an untargeted spell. Called from the local
+     * click lambdas above and, identically, from GameServer for a networked play.
+     */
+    public boolean executeSpell(Integer targetRow, Integer targetCol) {
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
+
+        Entity target = null;
+        if (definition.targeting() != null) {
+            if (targetRow == null || targetCol == null) return false;
+            target = board.getEntityAtPos(targetRow, targetCol);
+            if (target == null) return false;
+        }
+
+        if (!trySpendMana()) return false;
+        runEffects(target);
+        consume();
+        return true;
     }
 
     /** Executes this spell's effects. chosen is the clicked target entity, or null for a no-target spell. */

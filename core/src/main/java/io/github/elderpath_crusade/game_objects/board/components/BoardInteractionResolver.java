@@ -27,30 +27,41 @@ public class BoardInteractionResolver {
 
     public void handlePlotMove(HashMap<Integer, CustomBox> entities) {
         if (entities.get(0) instanceof Plot src && entities.get(1) instanceof Plot dst) {
-            Entity entity = board.getEntityAtPos(src.getRow(), src.getCol());
-            if (entity == null) return;
-
-            PieceAlignment alignment = EntityUtils.getAlignment(entity);
-            if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return;
-            if (EntityUtils.isStunned(entity) || EntityUtils.isExhausted(entity)) return;
-
-            Entity targetEntity = board.getEntityAtPos(dst.getRow(), dst.getCol());
-            if (targetEntity != null && EntityUtils.getAlignment(targetEntity) != alignment) {
-                // Attack via ECS
-                AttackSystem attackSystem = GameContext.get().getEcsEngine().getSystem(AttackSystem.class);
-                if (attackSystem != null) {
-                    boolean success = attackSystem.executeAttack(entity, dst.getRow(), dst.getCol());
-                    if (success) spendAction(entity);
-                }
-            } else if (targetEntity == null) {
-                // Move via ECS
-                MovementSystem movementSystem = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
-                if (movementSystem != null) {
-                    boolean success = movementSystem.executeMove(entity, dst.getRow(), dst.getCol());
-                    if (success) spendAction(entity);
-                }
-            }
+            movePlot(src.getRow(), src.getCol(), dst.getRow(), dst.getCol());
         }
+    }
+
+    /**
+     * Authoritative move/attack execution keyed by board coordinates rather than live
+     * Plot objects, so it can be called identically from a local click (see
+     * handlePlotMove) or a network command (see GameServer) — the source of truth for
+     * "what happens when you move from A to B" lives here, once.
+     */
+    public boolean movePlot(int srcRow, int srcCol, int dstRow, int dstCol) {
+        Entity entity = board.getEntityAtPos(srcRow, srcCol);
+        if (entity == null) return false;
+
+        PieceAlignment alignment = EntityUtils.getAlignment(entity);
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
+        if (EntityUtils.isStunned(entity) || EntityUtils.isExhausted(entity)) return false;
+
+        Entity targetEntity = board.getEntityAtPos(dstRow, dstCol);
+        if (targetEntity != null && EntityUtils.getAlignment(targetEntity) != alignment) {
+            // Attack via ECS
+            AttackSystem attackSystem = GameContext.get().getEcsEngine().getSystem(AttackSystem.class);
+            if (attackSystem == null) return false;
+            boolean success = attackSystem.executeAttack(entity, dstRow, dstCol);
+            if (success) spendAction(entity);
+            return success;
+        } else if (targetEntity == null) {
+            // Move via ECS
+            MovementSystem movementSystem = GameContext.get().getEcsEngine().getSystem(MovementSystem.class);
+            if (movementSystem == null) return false;
+            boolean success = movementSystem.executeMove(entity, dstRow, dstCol);
+            if (success) spendAction(entity);
+            return success;
+        }
+        return false;
     }
 
     private void spendAction(Entity entity) {

@@ -114,20 +114,27 @@ public class SummonCard extends UnitCard implements TargetFilter {
             (HashMap<Integer, CustomBox> entities) -> {
                 int[] pos = resolveSelectedPlot(entities);
                 if (pos == null) return;
-                int row = pos[0];
-                int col = pos[1];
-
-                if (board.getEntityAtPos(row, col) != null) {
-                    Logger.log("SummonCard", "Summon aborted: occupied (" + row + "," + col + ")");
-                    return;
-                }
-
-                if (!trySpendMana()) return;
-                performSummon(row, col);
-                consume();
+                executeSummon(pos[0], pos[1]);
             },
             ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
         );
+    }
+
+    /**
+     * Authoritative summon execution — validates turn/occupancy/mana, spends mana, summons,
+     * and consumes the card. Called from the local click lambda above and, identically, from
+     * GameServer for a networked play. Returns true on success.
+     */
+    public boolean executeSummon(int row, int col) {
+        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
+        if (board.getEntityAtPos(row, col) != null) {
+            Logger.log("SummonCard", "Summon aborted: occupied (" + row + "," + col + ")");
+            return false;
+        }
+        if (!trySpendMana()) return false;
+        performSummon(row, col);
+        consume();
+        return true;
     }
 
     @Override

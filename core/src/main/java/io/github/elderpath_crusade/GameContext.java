@@ -31,6 +31,7 @@ import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
 import io.github.elderpath_crusade.rooms.RoomManager;
+import io.github.elderpath_crusade.server.GameServer;
 import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.rendering.ShaderManager;
 import io.github.elderpath_crusade.audio.SoundManager;
@@ -76,6 +77,7 @@ public class GameContext {
     @Getter private final TextureManager textureManager;
     @Getter private final FontManager fontManager;
     @Getter private final InfoDataManager infoDataManager;
+    @Getter private final GameServer gameServer;
     @Getter private Board activeBoard;
     @Getter private GameSession activeSession;
 
@@ -120,6 +122,7 @@ public class GameContext {
         this.textureManager = new TextureManager();
         this.fontManager = new FontManager();
         this.infoDataManager = new InfoDataManager();
+        this.gameServer = new GameServer();
     }
 
     public static GameContext create() {
