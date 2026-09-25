@@ -25,6 +25,8 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
+import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
+import io.github.elderpath_crusade.server.ActionDispatcher;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
 import io.github.elderpath_crusade.utils.ColorSettings;
@@ -118,7 +120,10 @@ public class SpellCard extends Card implements TargetFilter {
     private void initializeClickableEffect() {
         if (definition.targeting() == null) {
             setClickableEffect(
-                    (HashMap<Integer, CustomBox> entities) -> executeSpell(null, null),
+                    (HashMap<Integer, CustomBox> entities) -> ActionDispatcher.dispatch(
+                            () -> new NetworkCommand.PlaySpellCard(alignment, handIndex(), null, null),
+                            () -> executeSpell(null, null)
+                    ),
                     ClickableEffectData.getImmediate());
             return;
         }
@@ -127,10 +132,22 @@ public class SpellCard extends Card implements TargetFilter {
                 (HashMap<Integer, CustomBox> entities) -> {
                     CustomBox target = entities.get(1);
                     if (target instanceof Plot plot) {
-                        executeSpell(plot.getRow(), plot.getCol());
+                        int row = plot.getRow();
+                        int col = plot.getCol();
+                        ActionDispatcher.dispatch(
+                                () -> new NetworkCommand.PlaySpellCard(alignment, handIndex(), row, col),
+                                () -> executeSpell(row, col)
+                        );
                     }
                 },
                 ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
+    }
+
+    /** This card's position within its owner's hand, for a networked play request. */
+    private int handIndex() {
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
+        var hand = playerState == null ? null : playerState.hand;
+        return hand == null ? -1 : hand.getCards().indexOf(this);
     }
 
     /**
@@ -208,7 +225,10 @@ public class SpellCard extends Card implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        if (alignment == PieceAlignment.P2
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.ONLINE_MATCH) {
+            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+            if (local != null && alignment != local) return null;
+        } else if (alignment == PieceAlignment.P2
                 && GameContext.get().getSettingsManager().debug.enableP2Bot
                 && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH) {
             return null;

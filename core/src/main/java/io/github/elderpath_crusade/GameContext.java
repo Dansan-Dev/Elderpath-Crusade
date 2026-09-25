@@ -30,6 +30,7 @@ import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
+import io.github.elderpath_crusade.multiplayer.net.OnlineMatchSession;
 import io.github.elderpath_crusade.rooms.RoomManager;
 import io.github.elderpath_crusade.server.GameServer;
 import io.github.elderpath_crusade.config.SettingsManager;
@@ -78,6 +79,7 @@ public class GameContext {
     @Getter private final FontManager fontManager;
     @Getter private final InfoDataManager infoDataManager;
     @Getter private final GameServer gameServer;
+    @Getter private final OnlineMatchSession onlineMatch;
     @Getter private Board activeBoard;
     @Getter private GameSession activeSession;
 
@@ -123,6 +125,7 @@ public class GameContext {
         this.fontManager = new FontManager();
         this.infoDataManager = new InfoDataManager();
         this.gameServer = new GameServer();
+        this.onlineMatch = new OnlineMatchSession();
     }
 
     public static GameContext create() {

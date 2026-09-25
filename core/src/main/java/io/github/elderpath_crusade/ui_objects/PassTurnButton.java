@@ -85,6 +85,12 @@ public class PassTurnButton extends Button {
                     GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P2)
                     ? super.getClickableEffectData() : null;
         }
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.ONLINE_MATCH) {
+            // Only clickable for whichever alignment this process locally controls, and only on their turn.
+            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+            return (local != null && GameContext.get().getTurnManager().getCurrentPlayer() == local)
+                    ? super.getClickableEffectData() : null;
+        }
         // In other modes, only P1 can click (existing behavior)
         return (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1) ? super.getClickableEffectData() : null;
     }

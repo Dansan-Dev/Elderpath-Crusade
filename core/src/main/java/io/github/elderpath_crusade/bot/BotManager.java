@@ -35,7 +35,8 @@ public final class BotManager {
         }
 
         TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, evt -> {
-            if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) return;
+            GameMode mode = GameContext.get().getGameModeManager().getCurrent();
+            if (mode == GameMode.LOCAL_MATCH || mode == GameMode.ONLINE_MATCH) return;
             if (!GameContext.get().getSettingsManager().debug.enableP2Bot) return;
             if (evt.player() != PieceAlignment.P2) return;
             if (GameContext.get().getGameManager().isPaused()) return;
@@ -69,8 +70,10 @@ public final class BotManager {
 
     /** True if the given alignment is currently played by the bot rather than a human. */
     public static boolean isBotControlled(PieceAlignment alignment) {
+        GameMode mode = GameContext.get().getGameModeManager().getCurrent();
         return alignment == PieceAlignment.P2
             && GameContext.get().getSettingsManager().debug.enableP2Bot
-            && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH;
+            && mode != GameMode.LOCAL_MATCH
+            && mode != GameMode.ONLINE_MATCH;
     }
 }

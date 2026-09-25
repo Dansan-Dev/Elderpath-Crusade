@@ -21,6 +21,8 @@ import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
+import io.github.elderpath_crusade.server.ActionDispatcher;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.HashMap;
@@ -114,10 +116,22 @@ public class SummonCard extends UnitCard implements TargetFilter {
             (HashMap<Integer, CustomBox> entities) -> {
                 int[] pos = resolveSelectedPlot(entities);
                 if (pos == null) return;
-                executeSummon(pos[0], pos[1]);
+                int row = pos[0];
+                int col = pos[1];
+                ActionDispatcher.dispatch(
+                        () -> new NetworkCommand.PlaySummonCard(alignment, handIndex(), row, col),
+                        () -> executeSummon(row, col)
+                );
             },
             ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
         );
+    }
+
+    /** This card's position within its owner's hand, for a networked play request. */
+    private int handIndex() {
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
+        Hand hand = playerState == null ? null : playerState.hand;
+        return hand == null ? -1 : hand.getCards().indexOf(this);
     }
 
     /**
@@ -158,7 +172,10 @@ public class SummonCard extends UnitCard implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        if (
+        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.ONLINE_MATCH) {
+            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+            if (local != null && alignment != local) return null;
+        } else if (
             alignment == PieceAlignment.P2
             && GameContext.get().getSettingsManager().debug.enableP2Bot
             && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH

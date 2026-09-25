@@ -69,6 +69,7 @@ public class Main extends ApplicationAdapter {
         }
 
         // UPDATE
+        GameContext.get().getOnlineMatch().update();
         GameContext.get().getEcsEngine().update(delta);
         GameContext.get().getHighlightManager().update();
         GameContext.get().getGraphicsManager().update(delta);
@@ -84,6 +85,7 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void dispose() {
+        GameContext.get().getOnlineMatch().stop();
         GameContext.get().getGraphicsManager().getBatch().dispose();
         GameContext.get().getTextureManager().dispose();
         GameContext.get().getAssets().dispose();
