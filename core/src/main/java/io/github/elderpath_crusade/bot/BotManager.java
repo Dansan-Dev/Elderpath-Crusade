@@ -66,4 +66,11 @@ public final class BotManager {
     }
 
     public void setBot(Bot bot) { this.bot = bot; }
+
+    /** True if the given alignment is currently played by the bot rather than a human. */
+    public static boolean isBotControlled(PieceAlignment alignment) {
+        return alignment == PieceAlignment.P2
+            && GameContext.get().getSettingsManager().debug.enableP2Bot
+            && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH;
+    }
 }

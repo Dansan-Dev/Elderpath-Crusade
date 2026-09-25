@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
+import io.github.elderpath_crusade.bot.BotManager;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
@@ -581,6 +582,16 @@ public class EffectExecutor {
         if (byPlot.isEmpty()) return;
         List<Plot> plots = new ArrayList<>(byPlot.keySet());
 
+        if (BotManager.isBotControlled(EntityUtils.getAlignment(owner))) {
+            Entity chosen = pickBestCandidate(candidates);
+            if (chosen == null) return;
+            context.set("$chosen", chosen);
+            for (EffectNode node : body) {
+                execute(node, List.of(chosen), owner, context, abilityState);
+            }
+            return;
+        }
+
         TargetFilter filter = new TargetFilter() {
             @Override
             public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
@@ -607,6 +618,20 @@ public class EffectExecutor {
                     }
                 }
         );
+    }
+
+    /** Bot's target pick for ChooseTarget: favor the candidate closest to dying, so the strike is most likely to secure a kill. */
+    private static Entity pickBestCandidate(List<Entity> candidates) {
+        Entity best = null;
+        int bestHealth = Integer.MAX_VALUE;
+        for (Entity candidate : candidates) {
+            int health = EntityUtils.getCurrentHealth(candidate);
+            if (best == null || health < bestHealth) {
+                best = candidate;
+                bestHealth = health;
+            }
+        }
+        return best;
     }
 
     @SuppressWarnings("unchecked")
