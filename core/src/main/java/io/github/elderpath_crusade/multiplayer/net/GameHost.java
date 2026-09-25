@@ -81,6 +81,8 @@ public class GameHost {
         bus.register(PieceSpawnedEvent.class, this::relay);
         bus.register(PieceMovedEvent.class, this::relay);
         bus.register(PieceAttackedEvent.class, this::relay);
+        bus.register(PieceDamagedEvent.class, this::relay);
+        bus.register(PieceHealedEvent.class, this::relay);
         bus.register(PieceDiedEvent.class, this::relay);
         bus.register(PieceKilledEvent.class, this::relay);
         bus.register(ManaChangedEvent.class, this::relay);

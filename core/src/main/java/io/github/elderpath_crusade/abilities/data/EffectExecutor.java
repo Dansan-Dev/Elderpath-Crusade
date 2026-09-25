@@ -89,6 +89,9 @@ public class EffectExecutor {
             context.set("$lastDamage.row", pos != null ? pos.row : -1);
             context.set("$lastDamage.col", pos != null ? pos.col : -1);
             context.set("$lastDamage.targetDied", EntityUtils.isDead(target));
+            TypedEventBus.get().emit(new io.github.elderpath_crusade.events.PieceDamagedEvent(
+                    EntityUtils.getId(target), EntityUtils.getAlignment(target),
+                    pos != null ? pos.row : -1, pos != null ? pos.col : -1, amount));
         }
     }
 
@@ -99,6 +102,10 @@ public class EffectExecutor {
             StatsComponent stats = statsMapper.get(target);
             if (stats != null) {
                 stats.currentHealth = Math.min(stats.maxHealth, stats.currentHealth + amount);
+                PositionComponent pos = posMapper.get(target);
+                TypedEventBus.get().emit(new io.github.elderpath_crusade.events.PieceHealedEvent(
+                        EntityUtils.getId(target), EntityUtils.getAlignment(target),
+                        pos != null ? pos.row : -1, pos != null ? pos.col : -1, amount));
             }
         }
     }

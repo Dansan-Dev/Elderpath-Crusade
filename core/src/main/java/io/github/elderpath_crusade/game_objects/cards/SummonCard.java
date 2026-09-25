@@ -59,6 +59,9 @@ public class SummonCard extends UnitCard implements TargetFilter {
     public String getCardName() { return cardName; }
 
     @Override
+    public String getDisplayName() { return cardName; }
+
+    @Override
     public String getRegistryKey() { return registryKey; }
 
     /**

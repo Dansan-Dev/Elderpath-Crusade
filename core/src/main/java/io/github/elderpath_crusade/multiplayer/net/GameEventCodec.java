@@ -25,6 +25,8 @@ public final class GameEventCodec {
             Map.entry("PieceSpawnedEvent", PieceSpawnedEvent.class),
             Map.entry("PieceMovedEvent", PieceMovedEvent.class),
             Map.entry("PieceAttackedEvent", PieceAttackedEvent.class),
+            Map.entry("PieceDamagedEvent", PieceDamagedEvent.class),
+            Map.entry("PieceHealedEvent", PieceHealedEvent.class),
             Map.entry("PieceDiedEvent", PieceDiedEvent.class),
             Map.entry("PieceKilledEvent", PieceKilledEvent.class),
             Map.entry("ManaChangedEvent", ManaChangedEvent.class),

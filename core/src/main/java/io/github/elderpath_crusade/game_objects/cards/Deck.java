@@ -66,7 +66,7 @@ public class Deck extends SpriteObject{
         // Emit CARD_DRAWN
         TypedEventBus.get().emit(new CardDrawnEvent(
                 owner != null ? owner : PieceAlignment.P1,
-                c.getClass().getSimpleName(),
+                c.getDisplayName(),
                 hand.getCards().size()
         ));
     }

@@ -347,4 +347,14 @@ public class Card extends HigherOrderTexture implements Clickable {
             onClick.run(entities);
         }
     }
+
+    /**
+     * This card's identity as registered in CardFactory (e.g. "Wolf", "Fireball") — used
+     * wherever a card needs to be reconstructed from just its name (event relay, replica
+     * state). Overridden by SummonCard/SpellCard; falls back to the Java class name for
+     * anything that doesn't.
+     */
+    public String getDisplayName() {
+        return getClass().getSimpleName();
+    }
 }

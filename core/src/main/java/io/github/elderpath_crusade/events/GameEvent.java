@@ -13,6 +13,8 @@ public sealed interface GameEvent permits
         PieceSpawnedEvent,
         PieceMovedEvent,
         PieceAttackedEvent,
+        PieceDamagedEvent,
+        PieceHealedEvent,
         PieceDiedEvent,
         PieceKilledEvent,
         ManaChangedEvent,

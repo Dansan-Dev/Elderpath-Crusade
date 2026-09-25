@@ -75,6 +75,9 @@ public class SpellCard extends Card implements TargetFilter {
     }
 
     public String getSpellName() { return spellName; }
+
+    @Override
+    public String getDisplayName() { return spellName; }
     public int getManaCost() { return manaCost; }
 
     private void initUi() {

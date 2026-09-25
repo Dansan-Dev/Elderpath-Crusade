@@ -9,11 +9,13 @@ import java.util.function.Function;
 
 public final class CardFactory {
     private static final Map<String, Function<DeckManager.CardCreationParams, Card>> REGISTRY = new LinkedHashMap<>();
+    private static final Map<String, String> SUMMON_REGISTRY_KEYS = new LinkedHashMap<>();
 
     private CardFactory() {}
 
     public static void initialize() {
         REGISTRY.clear();
+        SUMMON_REGISTRY_KEYS.clear();
         registerSummon("Wolf", "Wolf");
         registerSummon("Wolf Cub", "WolfCub");
         registerSummon("Rogue", "Rogue");
@@ -41,7 +43,13 @@ public final class CardFactory {
     }
 
     private static void registerSummon(String displayName, String registryKey) {
+        SUMMON_REGISTRY_KEYS.put(displayName, registryKey);
         register(displayName, p -> new SummonCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), displayName, registryKey));
+    }
+
+    /** The pieces.yaml registry key for a summon card's display name — null if displayName isn't a registered summon. */
+    public static String getRegistryKeyForSummon(String displayName) {
+        return SUMMON_REGISTRY_KEYS.get(displayName);
     }
 
     private static void registerSpell(String name, SpellDefinition definition) {
