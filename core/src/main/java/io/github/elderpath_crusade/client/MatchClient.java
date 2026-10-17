@@ -40,6 +40,11 @@ public final class MatchClient {
         return count;
     }
 
+    /** Whether a command this client sent hasn't been acknowledged yet (its effects may still be in flight). */
+    public boolean hasUnackedCommands() {
+        return state.getLastAckedSeq() < nextSeq - 1;
+    }
+
     public boolean isConnected() {
         return connection.isOpen();
     }

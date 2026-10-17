@@ -54,6 +54,7 @@ class MessageCodecTest {
                 new ServerMessage.PickAnswered(5),
                 new ServerMessage.PickCancelled(5),
                 new ServerMessage.Rejected(9, ActionResult.Reason.NOT_YOUR_TURN),
+                new ServerMessage.Ack(9),
                 new ServerMessage.MatchEnded(PieceAlignment.P1),
                 new ServerMessage.Error(ServerMessage.Error.Code.MATCH_FULL, "full"));
         for (ServerMessage m : messages) assertEquals(m, MessageCodec.decodeServer(MessageCodec.encode(m)));

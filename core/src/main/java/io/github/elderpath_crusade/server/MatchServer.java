@@ -77,6 +77,8 @@ public final class MatchServer {
         final HiddenInfoFilter filter;
         ClientChannel channel;
         boolean taken;
+        /** Commands handled this tick, acked at its end (see sendAcks). */
+        final List<Long> unacked = new ArrayList<>();
 
         Seat(PieceAlignment side) {
             this.side = side;
@@ -128,6 +130,7 @@ public final class MatchServer {
         }
         dropClosedChannels();
         syncIfChanged();
+        sendAcks();
     }
 
     public boolean isStarted() {
@@ -292,6 +295,7 @@ public final class MatchServer {
                 seat.channel.close();
                 seat.channel = null;
             } else if (message instanceof ClientMessage.Command c) {
+                seat.unacked.add(c.seq());
                 ActionResult result = execute(seat.side, c.command());
                 if (!result.isOk()) {
                     if (seat.channel != null) seat.channel.send(new ServerMessage.Rejected(c.seq(), result.reason()));
@@ -302,6 +306,16 @@ public final class MatchServer {
             } else {
                 seat.channel.send(new ServerMessage.Error(ServerMessage.Error.Code.BAD_MESSAGE, "Already seated"));
             }
+        }
+    }
+
+    /** Acks every command handled this tick — last, so each Ack follows everything its command caused. */
+    private void sendAcks() {
+        for (Seat seat : seats.values()) {
+            if (seat.channel != null) {
+                for (long seq : seat.unacked) seat.channel.send(new ServerMessage.Ack(seq));
+            }
+            seat.unacked.clear();
         }
     }
 

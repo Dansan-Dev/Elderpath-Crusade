@@ -55,7 +55,10 @@ class MatchServerTest {
         server.tick(TICK);
         for (MatchClient c : clients) {
             c.poll();
-            if (c.getState().isWelcomed() && c.isConnected()) assertConsistent(server, c);
+            if (c.getState().isWelcomed() && c.isConnected()) {
+                assertConsistent(server, c);
+                assertFalse(c.hasUnackedCommands(), "in process, a command is handled and acked within the tick");
+            }
         }
     }
 
@@ -86,16 +89,6 @@ class MatchServerTest {
                 "playing a card is public");
         assertTrue(server.isEnded());
         assertEquals(PieceAlignment.P1, server.getWinner());
-    }
-
-    /** The opponent's card ids and names never reach this client, except when a card is played. */
-    static void assertNoForeignCardLeak(List<String> rawLines, String opponent) {
-        for (String line : rawLines) {
-            assertFalse(line.contains("\"" + opponent + "-"), "an opponent's real card id leaked: " + line);
-            if (line.contains("\"CardDrawnEvent\"") && line.contains("\"owner\":\"" + opponent + "\"")) {
-                assertTrue(line.contains("\"cardName\":null"), "an opponent's drawn card was named: " + line);
-            }
-        }
     }
 
     @Test

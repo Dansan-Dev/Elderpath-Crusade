@@ -28,6 +28,18 @@ class MatchClockTest {
     }
 
     @Test
+    void aFailingTask_doesNotDropTheOthersDueInTheSameTick() {
+        MatchClock clock = new MatchClock();
+        List<String> ran = new ArrayList<>();
+        clock.schedule(0.1f, () -> ran.add("before"));
+        clock.schedule(0.2f, () -> { throw new IllegalStateException("boom"); });
+        clock.schedule(0.3f, () -> ran.add("after")); // e.g. a bot's next step, due in the same big tick
+
+        assertDoesNotThrow(() -> clock.tick(5f));
+        assertEquals(List.of("before", "after"), ran);
+    }
+
+    @Test
     void taskScheduledByARunningTask_waitsForALaterTick() {
         MatchClock clock = new MatchClock();
         List<Integer> steps = new ArrayList<>();

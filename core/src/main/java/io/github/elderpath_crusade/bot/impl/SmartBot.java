@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.bot.Bot;
+import io.github.elderpath_crusade.bot.BotTurns;
 import io.github.elderpath_crusade.bot.eval.BotActionContext;
 import io.github.elderpath_crusade.bot.eval.BotConfig;
 import io.github.elderpath_crusade.bot.eval.BotUtils;
@@ -70,13 +71,33 @@ public class SmartBot implements Bot {
         step(0);
     }
 
+    /**
+     * One action of the bot's turn. While the turn is active, every path either schedules the
+     * next step or ends the turn — a dropped chain would leave the match waiting forever.
+     */
     private void step(int stepsDone) {
-        if (!turnActive || ended)
+        if (!turnActive || ended) {
+            Logger.log("[SmartBot]", "Step " + stepsDone + " skipped: the turn is no longer active");
             return;
-        if (GameContext.get().getGameManager().isPaused())
+        }
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != self) {
+            Logger.log("[SmartBot]", "Step " + stepsDone + " skipped: it's no longer " + self + "'s turn");
+            turnActive = false;
             return;
-        if (GameContext.get().getTurnManager().getCurrentPlayer() != self)
+        }
+        if (GameContext.get().getGameManager().isPaused()) {
+            GameContext.get().getMatchClock().schedule(STEP_DELAY, () -> step(stepsDone)); // wait out the pause
             return;
+        }
+        try {
+            takeStep(stepsDone);
+        } catch (RuntimeException e) {
+            Logger.error("[SmartBot]", "Step " + stepsDone + " failed: " + e + " — ending the turn");
+            endTurn();
+        }
+    }
+
+    private void takeStep(int stepsDone) {
         if (stepsDone >= MAX_STEPS) {
             Logger.log("[SmartBot]", "Reached step cap");
             endTurn();
@@ -105,8 +126,10 @@ public class SmartBot implements Bot {
     }
 
     private void scheduleNext(final int stepsDone) {
-        if (!turnActive || ended)
+        if (!turnActive || ended) {
+            Logger.log("[SmartBot]", "Not scheduling step " + stepsDone + ": the turn is no longer active");
             return;
+        }
         GameContext.get().getMatchClock().schedule(STEP_DELAY, () -> step(stepsDone));
     }
 
@@ -116,11 +139,7 @@ public class SmartBot implements Bot {
         ended = true;
         turnActive = false;
         PieceAlignment endingFor = self;
-        GameContext.get().getMatchClock().schedule(END_DELAY, () -> {
-            // GameServer only accepts it if it's still endingFor's turn
-            if (!GameContext.get().getGameManager().isPaused())
-                GameContext.get().getGameServer().endTurn(endingFor);
-        });
+        GameContext.get().getMatchClock().schedule(END_DELAY, () -> BotTurns.endTurn(endingFor));
     }
 
     private boolean executeBestIntent(BoardGrid board) {

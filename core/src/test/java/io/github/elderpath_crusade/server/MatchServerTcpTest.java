@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Timeout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.github.elderpath_crusade.server.MatchFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,9 +51,14 @@ class MatchServerTcpTest {
         return client;
     }
 
-    /** Ticks and polls until every client is seated and agrees with the server (twice in a row, so nothing is in flight). */
+    /**
+     * Ticks and polls until every client is seated, has every command it sent acknowledged
+     * (an Ack follows everything its command caused — quiet rounds alone can't tell a command
+     * still in flight on the socket from one that was never sent), and agrees with the server
+     * for two quiet rounds in a row.
+     */
     private void settle() {
-        long deadline = System.currentTimeMillis() + STEP_DEADLINE_MS;
+        long deadline = System.nanoTime() + STEP_DEADLINE_MS * 1_000_000L;
         int agreeingRounds = 0;
         List<String> lastDiff = List.of();
         while (agreeingRounds < 2) {
@@ -60,10 +66,9 @@ class MatchServerTcpTest {
             int received = 0;
             for (MatchClient c : clients) received += c.poll();
             lastDiff = diffs();
+            for (MatchClient c : clients) if (c.hasUnackedCommands()) lastDiff.add(c.getState().getSeat() + " has unacknowledged commands");
             agreeingRounds = lastDiff.isEmpty() && received == 0 ? agreeingRounds + 1 : 0;
-            // Only disagreement fails; a slow machine that agrees at the deadline is fine.
-            if (System.currentTimeMillis() > deadline && !lastDiff.isEmpty()) fail("replicas never settled: " + lastDiff);
-            if (System.currentTimeMillis() > deadline && agreeingRounds > 0) break;
+            if (System.nanoTime() - deadline > 0) fail("replicas never settled: " + lastDiff);
             if (agreeingRounds < 2) sleepBriefly();
         }
     }
@@ -91,15 +96,16 @@ class MatchServerTcpTest {
     @Test
     void twoHumans_scriptedMatchOverTcp() throws Exception {
         server = new MatchServer(config(deckOf("Zapper", 12), deckOf("Runner", 12), Map.of()), transport);
-        List<String> p1Raw = new ArrayList<>();
-        List<String> p2Raw = new ArrayList<>();
+        // Appended by each connection's reader thread
+        List<String> p1Raw = new CopyOnWriteArrayList<>();
+        List<String> p2Raw = new CopyOnWriteArrayList<>();
         MatchClient p1 = join(SeatRequest.P1, p1Raw);
         MatchClient p2 = join(SeatRequest.P2, p2Raw);
 
         new ScriptedMatch(p1, p2, this::settle).play();
 
-        MatchServerTest.assertNoForeignCardLeak(p2Raw, "P1");
-        MatchServerTest.assertNoForeignCardLeak(p1Raw, "P2");
+        assertNoForeignCardLeak(p2Raw, "P1");
+        assertNoForeignCardLeak(p1Raw, "P2");
         assertEquals(PieceAlignment.P1, server.getWinner());
     }
 
@@ -113,12 +119,12 @@ class MatchServerTcpTest {
         human.playSummon(firstCard(human), 0, 2);
         settle();
         human.endTurn();
-        long deadline = System.currentTimeMillis() + STEP_DEADLINE_MS;
+        long deadline = System.nanoTime() + STEP_DEADLINE_MS * 1_000_000L;
         do {
             server.tick(0.1f);
             human.poll();
             sleepBriefly();
-            assertTrue(System.currentTimeMillis() < deadline, "the bot finished its turn");
+            assertTrue(System.nanoTime() - deadline < 0, "the bot finished its turn");
         } while (human.getState().getCurrentPlayer() != PieceAlignment.P1);
         settle();
     }
@@ -134,11 +140,11 @@ class MatchServerTcpTest {
 
         p2.close(); // dropped connection, no Leave
         clients.remove(p2);
-        long deadline = System.currentTimeMillis() + STEP_DEADLINE_MS;
+        long deadline = System.nanoTime() + STEP_DEADLINE_MS * 1_000_000L;
         while (server.isConnected(PieceAlignment.P2)) {
             server.tick(TICK);
             sleepBriefly();
-            assertTrue(System.currentTimeMillis() < deadline, "the server noticed the disconnect");
+            assertTrue(System.nanoTime() - deadline < 0, "the server noticed the disconnect");
         }
 
         join(SeatRequest.P2, new ArrayList<>());

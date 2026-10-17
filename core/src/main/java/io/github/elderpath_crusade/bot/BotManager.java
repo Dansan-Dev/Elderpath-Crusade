@@ -30,16 +30,28 @@ public final class BotManager {
         TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, evt -> {
             Bot bot = slots.get(evt.player());
             if (bot == null) return;
-            if (GameContext.get().getGameManager().isPaused()) return;
-            PieceAlignment player = evt.player();
-            GameContext.get().getMatchClock().schedule(DELAY_BEFORE_ACT, () -> {
-                try {
-                    Logger.log("BotManager", "Starting " + player + " turn with bot: " + bot.getName());
-                    bot.onTurnStarted(player);
-                } catch (Exception ex) {
-                    Logger.error("BotManager", "Exception in bot.onTurnStarted: " + ex.getMessage());
-                }
-            });
+            scheduleTurnStart(bot, evt.player());
+        });
+    }
+
+    /** Starts bot's turn after a short delay — waiting out a pause rather than dropping the turn. */
+    private void scheduleTurnStart(Bot bot, PieceAlignment player) {
+        GameContext.get().getMatchClock().schedule(DELAY_BEFORE_ACT, () -> {
+            if (GameContext.get().getTurnManager().getCurrentPlayer() != player) {
+                Logger.log("BotManager", player + "'s turn already ended before its bot started");
+                return;
+            }
+            if (GameContext.get().getGameManager().isPaused()) {
+                scheduleTurnStart(bot, player);
+                return;
+            }
+            try {
+                Logger.log("BotManager", "Starting " + player + " turn with bot: " + bot.getName());
+                bot.onTurnStarted(player);
+            } catch (RuntimeException ex) {
+                Logger.error("BotManager", "Exception in bot.onTurnStarted: " + ex + " — ending its turn");
+                BotTurns.endTurn(player);
+            }
         });
     }
 

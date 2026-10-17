@@ -116,8 +116,8 @@ class GuestAbilityOverNetworkTest {
     }
 
     private void awaitTrue(BooleanSupplier condition, String description) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 2000;
-        while (System.currentTimeMillis() < deadline) {
+        long deadline = System.nanoTime() + 2_000_000_000L;
+        while (System.nanoTime() - deadline < 0) {
             if (condition.getAsBoolean()) return;
             Thread.sleep(20);
         }

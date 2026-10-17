@@ -23,6 +23,7 @@ public sealed interface ServerMessage permits
         ServerMessage.PickAnswered,
         ServerMessage.PickCancelled,
         ServerMessage.Rejected,
+        ServerMessage.Ack,
         ServerMessage.MatchEnded,
         ServerMessage.Error {
 
@@ -53,6 +54,13 @@ public sealed interface ServerMessage permits
 
     /** The client's command seq was rejected. */
     record Rejected(long seq, ActionResult.Reason reason) implements ServerMessage {}
+
+    /**
+     * The server has handled the client's command seq (accepted or rejected) and has sent
+     * everything that command caused in that tick — sent at the end of the tick, after the
+     * StateSync, so once a client has its Ack, nothing from that command is still in flight.
+     */
+    record Ack(long seq) implements ServerMessage {}
 
     record MatchEnded(PieceAlignment winner) implements ServerMessage {}
 

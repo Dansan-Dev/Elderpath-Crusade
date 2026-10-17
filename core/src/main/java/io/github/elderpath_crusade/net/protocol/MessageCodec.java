@@ -34,6 +34,7 @@ public final class MessageCodec {
             "PickAnswered", ServerMessage.PickAnswered.class,
             "PickCancelled", ServerMessage.PickCancelled.class,
             "Rejected", ServerMessage.Rejected.class,
+            "Ack", ServerMessage.Ack.class,
             "MatchEnded", ServerMessage.MatchEnded.class,
             "Error", ServerMessage.Error.class
     );

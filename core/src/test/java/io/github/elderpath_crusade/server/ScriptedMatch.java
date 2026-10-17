@@ -19,18 +19,18 @@ import static org.junit.jupiter.api.Assertions.*;
  * step() must deliver everything sent so far (server tick + client polls) and check both
  * replicas against the server — the transport decides how.
  */
-final class ScriptedMatch {
+public final class ScriptedMatch {
     private final MatchClient p1;
     private final MatchClient p2;
     private final Runnable step;
 
-    ScriptedMatch(MatchClient p1, MatchClient p2, Runnable step) {
+    public ScriptedMatch(MatchClient p1, MatchClient p2, Runnable step) {
         this.p1 = p1;
         this.p2 = p2;
         this.step = step;
     }
 
-    void play() {
+    public void play() {
         step.run(); // welcome + snapshot + match start
         assertEquals(PieceAlignment.P1, p1.getState().getSeat());
         assertEquals(PieceAlignment.P2, p2.getState().getSeat());

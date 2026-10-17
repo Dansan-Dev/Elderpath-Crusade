@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.Bot;
+import io.github.elderpath_crusade.bot.BotTurns;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
@@ -36,8 +37,25 @@ public class BasicBot implements Bot {
         chainNextAction(0);
     }
 
+    /** One action; every path either schedules the next action or ends the turn. */
     private void chainNextAction(int actionsDone) {
-        if (GameContext.get().getGameManager().isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != self) return;
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != self) {
+            Logger.log("BasicBot", "Action " + actionsDone + " skipped: it's no longer " + self + "'s turn");
+            return;
+        }
+        if (GameContext.get().getGameManager().isPaused()) {
+            GameContext.get().getMatchClock().schedule(DELAY_BETWEEN_ACTIONS, () -> chainNextAction(actionsDone)); // wait out the pause
+            return;
+        }
+        try {
+            takeAction(actionsDone);
+        } catch (RuntimeException e) {
+            Logger.error("BasicBot", "Action " + actionsDone + " failed: " + e + " — ending the turn");
+            scheduleEndTurn();
+        }
+    }
+
+    private void takeAction(int actionsDone) {
         if (actionsDone >= MAX_ACTIONS_PER_TURN) { Logger.log("BasicBot", "Max actions cap; ending turn"); scheduleEndTurn(); return; }
 
         BoardGrid board = GameContext.get().getActiveGrid();
@@ -57,11 +75,7 @@ public class BasicBot implements Bot {
 
     private void scheduleEndTurn() {
         PieceAlignment endingFor = self;
-        GameContext.get().getMatchClock().schedule(DELAY_BEFORE_END, () -> {
-            // GameServer only accepts it if it's still endingFor's turn
-            if (!GameContext.get().getGameManager().isPaused())
-                GameContext.get().getGameServer().endTurn(endingFor);
-        });
+        GameContext.get().getMatchClock().schedule(DELAY_BEFORE_END, () -> BotTurns.endTurn(endingFor));
     }
 
     private boolean tryPlayOneWolfCard(BoardGrid b) {

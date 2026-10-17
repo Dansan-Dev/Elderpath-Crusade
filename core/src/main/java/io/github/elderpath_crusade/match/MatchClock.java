@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.match;
 
+import io.github.elderpath_crusade.utils.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +33,14 @@ public class MatchClock {
             return true;
         });
         due.sort((a, b) -> Float.compare(a.dueAt(), b.dueAt()));
-        for (Task t : due) t.action().run();
+        for (Task t : due) {
+            try {
+                t.action().run();
+            } catch (RuntimeException e) {
+                // Every due task is already off the list — one failure must not drop the rest.
+                Logger.error("MatchClock", "Scheduled task failed: " + e);
+            }
+        }
     }
 
     public boolean hasPendingTasks() {

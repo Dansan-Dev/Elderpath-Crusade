@@ -44,6 +44,8 @@ public final class ClientMatchState {
     @Getter private PieceAlignment winner;
     @Getter private boolean ended;
     @Getter private ServerMessage.Rejected lastRejection;
+    /** The highest command seq the server has acknowledged (0 = none). */
+    @Getter private long lastAckedSeq;
     @Getter private ServerMessage.Error lastError;
     private Consumer<GameEvent> eventListener;
 
@@ -108,6 +110,8 @@ public final class ClientMatchState {
             clearPick(p.pickId());
         } else if (message instanceof ServerMessage.Rejected r) {
             lastRejection = r;
+        } else if (message instanceof ServerMessage.Ack a) {
+            lastAckedSeq = Math.max(lastAckedSeq, a.seq());
         } else if (message instanceof ServerMessage.MatchEnded m) {
             winner = m.winner();
             ended = true;
