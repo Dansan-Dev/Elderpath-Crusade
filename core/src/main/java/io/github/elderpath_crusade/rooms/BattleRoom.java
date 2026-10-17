@@ -18,6 +18,7 @@ import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.cards.HandSync;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
+import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.supers.Room;
@@ -51,6 +52,7 @@ public abstract class BattleRoom extends Room {
     protected final int plot_height = 40;
 
     protected static boolean LOGGER_REGISTERED = false;
+    private static final int HAND_BOTTOM_Y = -80;
 
     public BattleRoom(GameMode mode) {
         super();
@@ -95,7 +97,7 @@ public abstract class BattleRoom extends Room {
 
         // 5. Hands
         int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
-        handP1 = new Hand(centerX, -80, 125, 200, 0);
+        handP1 = new Hand(centerX, HAND_BOTTOM_Y, 125, 200, 0);
         handP1.setOwner(PieceAlignment.P1);
         addContent(handP1);
 
@@ -133,8 +135,11 @@ public abstract class BattleRoom extends Room {
             registerEventsLogger();
         }
 
-        // 11. Layout
+        // 11. Layout, oriented for this screen's viewer (re-applied whenever the turn changes,
+        // since in hotseat the viewer is whoever's turn it is)
+        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, e -> applyPerspective());
         layoutBoard();
+        applyPerspective();
     }
 
     protected abstract void onPassTurnClicked();
@@ -153,6 +158,34 @@ public abstract class BattleRoom extends Room {
     /** The match's bot-controlled slots — none by default (all human). */
     protected Map<PieceAlignment, BotKind> botSlots() {
         return Map.of();
+    }
+
+    /**
+     * The side this screen is oriented for: its home row, hand and deck sit at the bottom.
+     * P1 by default (vs bot); hotseat follows the current player, an online client its own side.
+     */
+    protected PieceAlignment viewerAlignment() {
+        return PieceAlignment.P1;
+    }
+
+    /** Flips the board view and places hands/decks so the viewer's side is at the bottom. */
+    protected void applyPerspective() {
+        PieceAlignment viewer = viewerAlignment();
+        if ((viewer == PieceAlignment.P2) != board.isFlipped()) board.flipRows();
+
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
+        placeSide(handP1, deckP1, viewer == PieceAlignment.P1, screenH, centerX);
+        placeSide(handP2, deckP2, viewer == PieceAlignment.P2, screenH, centerX);
+    }
+
+    private void placeSide(Hand hand, Deck deck, boolean atBottom, int screenH, int centerX) {
+        hand.setBottomY(atBottom ? HAND_BOTTOM_Y : screenH - hand.getHeight());
+        hand.setCenterX(centerX);
+        hand.updateBounds();
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        deck.getBounds().setX(screenW - deck.getWidth() - 10);
+        deck.getBounds().setY(atBottom ? 10 : screenH - deck.getHeight() - 10);
     }
 
     private Deck createDeckView(PieceAlignment alignment) {
@@ -208,30 +241,11 @@ public abstract class BattleRoom extends Room {
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
 
-        // Reposition hands
-        if (handP1 != null) {
-            handP1.setCenterX(centerX);
-            handP1.updateBounds();
-        }
-        if (handP2 != null) {
-            handP2.setBottomY(screenH - handP2.getHeight());
-            handP2.setCenterX(centerX);
-            handP2.updateBounds();
-        }
+        applyPerspective();
 
         if (passTurn != null) {
             passTurn.getBounds().setX(screenW - 150);
             passTurn.getBounds().setY(screenH / 2 - 20);
-        }
-
-        if (deckP1 != null) {
-            deckP1.getBounds().setX(screenW - deckP1.getWidth() - 10);
-            deckP1.getBounds().setY(10);
-        }
-
-        if (deckP2 != null) {
-            deckP2.getBounds().setX(screenW - deckP2.getWidth() - 10);
-            deckP2.getBounds().setY(screenH - deckP2.getHeight() - 10);
         }
     }
 }

@@ -38,6 +38,12 @@ public class LocalMatchRoom extends BattleRoom {
         }
     }
 
+    /** Hotseat: the screen is oriented for whoever's turn it is. */
+    @Override
+    protected PieceAlignment viewerAlignment() {
+        return GameContext.get().getTurnManager().getCurrentPlayer();
+    }
+
     @Override
     protected List<String> deckCardNames(PieceAlignment alignment) {
         return GameContext.get().getDeckManager().getDraftedDeck(alignment);
@@ -46,31 +52,12 @@ public class LocalMatchRoom extends BattleRoom {
     private void onTurnStarted(TurnStartedEvent event) {
         PieceAlignment player = event.player();
         if (passTurn != null) passTurn.updateButtonText();
-        swapHandPositionsIfNeeded(player);
         showPlayerHand(player);
     }
 
     private void onTurnEnded(TurnEndedEvent event) {
         if (passTurn != null) passTurn.updateButtonText();
         hideAllHands();
-    }
-
-    private void swapHandPositionsIfNeeded(PieceAlignment currentPlayer) {
-        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
-        int screenCenterX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
-        int p1HandBottomY = -80; // from BattleRoom init
-
-        if (currentPlayer == PieceAlignment.P2) {
-            handP1.setBottomY(screenH - handP1.getHeight());
-            handP2.setBottomY(p1HandBottomY);
-        } else {
-            handP1.setBottomY(p1HandBottomY);
-            handP2.setBottomY(screenH - handP2.getHeight());
-        }
-        handP1.setCenterX(screenCenterX);
-        handP1.updateBounds();
-        handP2.setCenterX(screenCenterX);
-        handP2.updateBounds();
     }
 
     private void hideAllHands() {
@@ -83,12 +70,6 @@ public class LocalMatchRoom extends BattleRoom {
         if (hand != null) {
             for (Card card : hand.getCards()) card.showFront();
         }
-    }
-
-    @Override
-    public void onScreenResize() {
-        super.onScreenResize();
-        swapHandPositionsIfNeeded(GameContext.get().getTurnManager().getCurrentPlayer());
     }
 
     public static LocalMatchRoom get() {

@@ -9,7 +9,6 @@ import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.enums.*;
-import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Plot;
@@ -88,15 +87,7 @@ public class Board extends HigherOrderTexture implements Updatable {
         }
         setBoardIdentifierSymbols();
 
-        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, this::onTurnStarted);
         TypedEventBus.get().registerScoped("session", TurnEndedEvent.class, this::onTurnEnded);
-    }
-
-    private void onTurnStarted(TurnStartedEvent event) {
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
-            boolean shouldBeFlipped = (event.player() == PieceAlignment.P2);
-            if (shouldBeFlipped != isFlipped()) { flipRows(); }
-        }
     }
 
     private void onTurnEnded(TurnEndedEvent event) {

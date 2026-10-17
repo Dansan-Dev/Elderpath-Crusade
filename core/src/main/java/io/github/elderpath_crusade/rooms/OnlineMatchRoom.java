@@ -93,6 +93,13 @@ public class OnlineMatchRoom extends BattleRoom {
         }
     }
 
+    /** Each online screen is oriented for its own side (the guest plays P2 from the bottom). */
+    @Override
+    protected PieceAlignment viewerAlignment() {
+        PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+        return local != null ? local : PieceAlignment.P1;
+    }
+
     @Override
     protected void onPassTurnClicked() {
         PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
