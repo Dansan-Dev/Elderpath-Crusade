@@ -5,16 +5,13 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
-import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -41,39 +38,30 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return getRemainingActions(entity) > 0;
     }
 
-    protected boolean inBounds(Board board, int row, int col) {
-        return row >= 0 && row < board.getROWS() && col >= 0 && col < board.getCOLS();
+    protected boolean inBounds(BoardGrid board, int row, int col) {
+        return row >= 0 && row < board.getRows() && col >= 0 && col < board.getCols();
     }
 
-    protected boolean moveAndVerify(Board board, int sourceRow, int sourceCol, Plot destination, Entity reference,
+    protected boolean moveAndVerify(BoardGrid board, int sourceRow, int sourceCol, Coord destination, Entity reference,
             int targetRow, int targetCol) {
-        Renderable sourceRenderable = board.getPlotAtPos(sourceRow, sourceCol);
-        if (!(sourceRenderable instanceof Plot sourcePlot))
+        if (destination == null)
             return false;
-        HashMap<Integer, CustomBox> entities = new HashMap<>();
-        entities.put(0, sourcePlot);
-        entities.put(1, destination);
-        sourcePlot.triggerClickEffect(entities);
-        Entity entityAfter = board.getEntityAtPos(targetRow, targetCol);
+        GameContext.get().getGameServer().movePlot(sourceRow, sourceCol, destination.row(), destination.col());
+        Entity entityAfter = board.getEntityAt(targetRow, targetCol);
         return entityAfter == reference;
     }
 
-    protected boolean attackAndVerify(Board board, int sourceRow, int sourceCol, int targetRow, int targetCol,
+    protected boolean attackAndVerify(BoardGrid board, int sourceRow, int sourceCol, int targetRow, int targetCol,
             Entity attacker) {
-        Renderable sourceRenderable = board.getPlotAtPos(sourceRow, sourceCol);
-        Renderable targetRenderable = board.getPlotAtPos(targetRow, targetCol);
-        if (!(sourceRenderable instanceof Plot sourcePlot) || !(targetRenderable instanceof Plot targetPlot))
+        if (!board.isInBounds(sourceRow, sourceCol) || !board.isInBounds(targetRow, targetCol))
             return false;
 
-        Entity defenderBefore = board.getEntityAtPos(targetRow, targetCol);
+        Entity defenderBefore = board.getEntityAt(targetRow, targetCol);
         int actionsBefore = getRemainingActions(attacker);
 
-        HashMap<Integer, CustomBox> entities = new HashMap<>();
-        entities.put(0, sourcePlot);
-        entities.put(1, targetPlot);
-        sourcePlot.triggerClickEffect(entities);
+        GameContext.get().getGameServer().movePlot(sourceRow, sourceCol, targetRow, targetCol);
 
-        Entity defenderAfter = board.getEntityAtPos(targetRow, targetCol);
+        Entity defenderAfter = board.getEntityAt(targetRow, targetCol);
         if (defenderBefore != null && (defenderAfter == null || defenderAfter != defenderBefore))
             return true; // killed or moved
 
@@ -81,16 +69,16 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return actionsAfter < actionsBefore; // action spent implies a hit
     }
 
-    protected boolean isLethalThreatNextTurn(Board board, Entity entity, int row, int col) {
-        int rows = board.getROWS();
-        int cols = board.getCOLS();
+    protected boolean isLethalThreatNextTurn(BoardGrid board, Entity entity, int row, int col) {
+        int rows = board.getRows();
+        int cols = board.getCols();
         int health = Math.max(0, EntityUtils.getCurrentHealth(entity));
         PieceAlignment enemyAlignment = (EntityUtils.getAlignment(entity) == PieceAlignment.P1) ? PieceAlignment.P2
                 : PieceAlignment.P1;
 
         for (int enemyRow = 0; enemyRow < rows; enemyRow++) {
             for (int enemyCol = 0; enemyCol < cols; enemyCol++) {
-                Entity enemy = board.getEntityAtPos(enemyRow, enemyCol);
+                Entity enemy = board.getEntityAt(enemyRow, enemyCol);
                 if (enemy == null || EntityUtils.getAlignment(enemy) != enemyAlignment) {
                     continue;
                 }
@@ -144,7 +132,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
                             continue;
                         }
 
-                        if (board.getEntityAtPos(nextRow, nextCol) != null) {
+                        if (board.getEntityAt(nextRow, nextCol) != null) {
                             continue; // Cannot pass through pieces
                         }
 
@@ -157,16 +145,13 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return false;
     }
 
-    protected boolean summonAndVerify(Board board, SummonCard card, Plot plot) {
+    protected boolean summonAndVerify(BoardGrid board, SummonCard card, Coord target) {
         var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (player == null || player.hand == null)
             return false;
         int beforeSize = player.hand.getCards().size();
         int beforeMana = player.getMana();
-        HashMap<Integer, CustomBox> entities = new HashMap<>();
-        entities.put(0, card);
-        entities.put(1, plot);
-        card.triggerClickEffect(entities);
+        card.executeSummon(target.row(), target.col());
         boolean consumed = !player.hand.getCards().contains(card) || player.hand.getCards().size() < beforeSize;
         boolean spentMana = player.getMana() < beforeMana;
         return consumed || spentMana;

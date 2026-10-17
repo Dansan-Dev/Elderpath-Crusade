@@ -2,17 +2,15 @@ package io.github.elderpath_crusade.bot.eval;
 
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
-import io.github.elderpath_crusade.bot.search.Coord;
+import io.github.elderpath_crusade.match.Coord;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +25,15 @@ public class SummonEvaluator extends BotEvaluatorBase {
     }
 
     @Override
-    public void build(Board board, TacticalState tactical, List<Intent> output) {
+    public void build(BoardGrid board, TacticalState tactical, List<Intent> output) {
         var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (player == null || player.hand == null) {
             return;
         }
 
         int currentMana = player.getMana();
-        int homeRow = board.getROWS() - 1;
-        int cols = board.getCOLS();
+        int homeRow = board.getHomeRow(PieceAlignment.P2);
+        int cols = board.getCols();
 
         // Determine threatened column closest to our home row
         int bestCol = -1;
@@ -50,19 +48,15 @@ public class SummonEvaluator extends BotEvaluatorBase {
         }
 
         // Collect candidate plots: preferred column first, then all home-row plots
-        List<Plot> candidates = new ArrayList<>();
-        if (bestCol != -1) {
-            Renderable r = board.getPlotAtPos(homeRow, bestCol);
-            if (r instanceof Plot plot && board.isValidSummonTarget(plot, PieceAlignment.P2)) {
-                candidates.add(plot);
-            }
+        List<Coord> candidates = new ArrayList<>();
+        if (bestCol != -1 && board.isValidSummonTarget(homeRow, bestCol, PieceAlignment.P2)) {
+            candidates.add(new Coord(homeRow, bestCol));
         }
 
         if (candidates.isEmpty()) {
             for (int col = 0; col < cols; col++) {
-                Renderable r = board.getPlotAtPos(homeRow, col);
-                if (r instanceof Plot plot && board.isValidSummonTarget(plot, PieceAlignment.P2)) {
-                    candidates.add(plot);
+                if (board.isValidSummonTarget(homeRow, col, PieceAlignment.P2)) {
+                    candidates.add(new Coord(homeRow, col));
                 }
             }
         }
@@ -90,7 +84,7 @@ public class SummonEvaluator extends BotEvaluatorBase {
         }
 
         if (bestCard != null) {
-            Plot target = candidates.get(0);
+            Coord target = candidates.get(0);
             final SummonCard sc = bestCard;
             int score = config.scoreSummonBase() + Math.min(30, bestValueScore / 2);
 

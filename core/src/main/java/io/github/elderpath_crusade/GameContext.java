@@ -27,6 +27,7 @@ import io.github.elderpath_crusade.rendering.highlight.HighlightManager;
 import io.github.elderpath_crusade.config.InfoDataManager;
 import io.github.elderpath_crusade.input.InputManager;
 import io.github.elderpath_crusade.input.InteractionManager;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
@@ -81,6 +82,8 @@ public class GameContext {
     @Getter private final GameServer gameServer;
     @Getter private final OnlineMatchSession onlineMatch;
     @Getter private Board activeBoard;
+    /** The logical board of the active match — what game logic reads; activeBoard is its view. */
+    @Getter private BoardGrid activeGrid;
     @Getter private GameSession activeSession;
 
     private GameContext() {
@@ -141,12 +144,20 @@ public class GameContext {
         return instance;
     }
 
+    /** Sets the active board view and its logical grid. */
     public void setActiveBoard(Board board) {
         this.activeBoard = board;
+        this.activeGrid = board != null ? board.getGrid() : null;
+    }
+
+    /** Sets the logical grid alone — for a headless match with no board view. */
+    public void setActiveGrid(BoardGrid grid) {
+        this.activeGrid = grid;
     }
 
     public void clearBoard() {
         this.activeBoard = null;
+        this.activeGrid = null;
     }
 
     public void setActiveSession(GameSession session) {

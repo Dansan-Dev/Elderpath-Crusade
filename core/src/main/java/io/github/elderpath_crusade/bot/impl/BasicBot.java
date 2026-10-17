@@ -6,15 +6,12 @@ import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
-import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.Renderable;
+import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.Bot;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -39,7 +36,7 @@ public class BasicBot implements Bot {
         if (GameContext.get().getGameManager().isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2) return;
         if (actionsDone >= MAX_ACTIONS_PER_TURN) { Logger.log("BasicBot", "Max actions cap; ending turn"); scheduleEndTurn(); return; }
 
-        Board board = GameContext.get().getActiveBoard();
+        BoardGrid board = GameContext.get().getActiveGrid();
         if (board == null) { Logger.log("BasicBot", "No board; end turn"); scheduleEndTurn(); return; }
 
         if (tryOneAdjacentAttack(board)) { Logger.log("BasicBot", "ATTACK"); scheduleNextAction(actionsDone+1); return; }
@@ -60,55 +57,37 @@ public class BasicBot implements Bot {
         }, DELAY_BEFORE_END);
     }
 
-    private boolean tryPlayOneWolfCard(Board b) {
+    private boolean tryPlayOneWolfCard(BoardGrid b) {
         var ps = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (ps == null || ps.hand == null) return false;
         SummonCard targetCard = null;
         for (var c : ps.hand.getCards()) { if (c instanceof SummonCard sc && "Wolf".equals(sc.getCardName())) { targetCard = sc; break; } }
         if (targetCard == null) return false;
 
-        int lastRow = b.getROWS() - 1;
-        for (int col = 0; col < b.getCOLS(); col++) {
-            Renderable r = b.getPlotAtPos(lastRow, col);
-            if (r instanceof Plot p && b.isValidSummonTarget(p, PieceAlignment.P2)) {
-                int beforeHandSize = ps.hand.getCards().size();
-                int beforeMana = ps.getMana();
-                HashMap<Integer, CustomBox> entities = new HashMap<>();
-                entities.put(0, targetCard);
-                entities.put(1, p);
-                targetCard.triggerClickEffect(entities);
-                boolean consumed = !ps.hand.getCards().contains(targetCard) || ps.hand.getCards().size() < beforeHandSize;
-                boolean spentMana = ps.getMana() < beforeMana;
-                if (consumed || spentMana) return true;
-            }
+        int homeRow = b.getHomeRow(PieceAlignment.P2);
+        for (int col = 0; col < b.getCols(); col++) {
+            if (b.isValidSummonTarget(homeRow, col, PieceAlignment.P2) && targetCard.executeSummon(homeRow, col)) return true;
         }
         return false;
     }
 
-    private boolean tryOneAdjacentAttack(Board b) {
-        int rows = b.getROWS(), cols = b.getCOLS();
+    private boolean tryOneAdjacentAttack(BoardGrid b) {
+        int rows = b.getRows(), cols = b.getCols();
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                Entity entity = b.getEntityAtPos(r, c);
+                Entity entity = b.getEntityAt(r, c);
                 if (entity != null && EntityUtils.getAlignment(entity) == PieceAlignment.P2) {
-                    List<Plot> hostile = b.getAttackableEnemyPlots(r, c, PieceAlignment.P2);
+                    List<Coord> hostile = b.getAttackableEnemies(r, c, PieceAlignment.P2);
                     if (!hostile.isEmpty()) {
-                        Renderable srcR = b.getPlotAtPos(r, c);
-                        if (srcR instanceof Plot srcPlot) {
-                            Plot dstPlot = hostile.get(0);
-                            int[] dIdx = dstPlot.getIndices();
-                            if (dIdx == null) continue;
-                            Entity defenderBefore = b.getEntityAtPos(dIdx[0], dIdx[1]);
-                            int actionsBefore = EntityUtils.getRemainingActions(entity);
-                            HashMap<Integer, CustomBox> entities = new HashMap<>();
-                            entities.put(0, srcPlot); entities.put(1, dstPlot);
-                            srcPlot.triggerClickEffect(entities);
-                            Entity defenderAfter = b.getEntityAtPos(dIdx[0], dIdx[1]);
-                            boolean defenderDied = (defenderBefore != null) && (defenderAfter == null || defenderAfter != defenderBefore);
-                            int actionsAfter = EntityUtils.getRemainingActions(entity);
-                            boolean spentAction = actionsAfter < actionsBefore;
-                            if (defenderDied || spentAction) return true;
-                        }
+                        Coord dst = hostile.get(0);
+                        Entity defenderBefore = b.getEntityAt(dst.row(), dst.col());
+                        int actionsBefore = EntityUtils.getRemainingActions(entity);
+                        GameContext.get().getGameServer().movePlot(r, c, dst.row(), dst.col());
+                        Entity defenderAfter = b.getEntityAt(dst.row(), dst.col());
+                        boolean defenderDied = (defenderBefore != null) && (defenderAfter == null || defenderAfter != defenderBefore);
+                        int actionsAfter = EntityUtils.getRemainingActions(entity);
+                        boolean spentAction = actionsAfter < actionsBefore;
+                        if (defenderDied || spentAction) return true;
                     }
                 }
             }
@@ -116,38 +95,30 @@ public class BasicBot implements Bot {
         return false;
     }
 
-    private boolean tryOneMovementTowardEnemy(Board b) {
-        int rows = b.getROWS(), cols = b.getCOLS();
+    private boolean tryOneMovementTowardEnemy(BoardGrid b) {
+        int rows = b.getRows(), cols = b.getCols();
         List<int[]> enemies = new ArrayList<>();
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
-            Entity e = b.getEntityAtPos(r, c);
+            Entity e = b.getEntityAt(r, c);
             if (e != null && EntityUtils.getAlignment(e) == PieceAlignment.P1) enemies.add(new int[]{r,c});
         }
         if (enemies.isEmpty()) return false;
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
-            Entity entity = b.getEntityAtPos(r, c);
+            Entity entity = b.getEntityAt(r, c);
             if (entity == null || EntityUtils.getAlignment(entity) != PieceAlignment.P2) continue;
             int currentDist = nearestEnemyManhattan(r,c,enemies);
             if (currentDist <= 1) continue;
             int speed = EntityUtils.getSpeed(entity);
-            List<Plot> reachable = b.getReachablePlots(entity,r,c,speed);
+            List<Coord> reachable = b.getReachable(entity,r,c,speed);
             if (reachable.isEmpty()) continue;
-            Plot best = null; int bestDist = currentDist;
-            for (Plot p : reachable) {
-                int[] idx = p.getIndices(); if (idx == null) continue;
-                int d = nearestEnemyManhattan(idx[0], idx[1], enemies);
+            Coord best = null; int bestDist = currentDist;
+            for (Coord p : reachable) {
+                int d = nearestEnemyManhattan(p.row(), p.col(), enemies);
                 if (d < bestDist) { bestDist = d; best = p; }
             }
             if (best != null) {
-                Renderable srcR = b.getPlotAtPos(r,c);
-                if (srcR instanceof Plot srcPlot) {
-                    int[] bestIdx = best.getIndices(); if (bestIdx == null) continue;
-                    HashMap<Integer, CustomBox> entities = new HashMap<>();
-                    entities.put(0, srcPlot); entities.put(1, best);
-                    srcPlot.triggerClickEffect(entities);
-                    Entity afterAtDest = b.getEntityAtPos(bestIdx[0], bestIdx[1]);
-                    if (afterAtDest == entity) return true;
-                }
+                GameContext.get().getGameServer().movePlot(r, c, best.row(), best.col());
+                if (b.getEntityAt(best.row(), best.col()) == entity) return true;
             }
         }
         return false;

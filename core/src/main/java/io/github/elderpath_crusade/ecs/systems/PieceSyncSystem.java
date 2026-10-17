@@ -12,7 +12,7 @@ import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.GameContext;
 
 import java.util.HashMap;
@@ -42,9 +42,9 @@ public class PieceSyncSystem extends EntitySystem {
         if (existing != null) return; // already tracked
 
         // Find the entity that was just added (by PieceFactory) via GridIndexSystem
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null) return;
-        Entity entity = board.getEntityAtPos(event.row(), event.col());
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return;
+        Entity entity = grid.getEntityAt(event.row(), event.col());
         if (entity == null) return;
 
         entityMap.put(event.pieceId(), entity);

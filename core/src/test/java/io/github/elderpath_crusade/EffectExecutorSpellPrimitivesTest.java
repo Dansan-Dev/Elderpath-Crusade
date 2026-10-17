@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,10 +71,11 @@ class EffectExecutorSpellPrimitivesTest {
     @Test
     void summonPiece_noEmptySlotInOwnZone_safelyNoOps() {
         Board board = mock(Board.class);
-        when(board.getROWS()).thenReturn(2);
-        when(board.getCOLS()).thenReturn(2);
-        when(board.isValidSummonTarget(any(), any())).thenReturn(false);
         GameContext.get().setActiveBoard(board);
+        BoardGrid grid = new BoardGrid(2, 2);
+        grid.addEntity(0, 0, GameContext.get().getEcsEngine().createEntity()); // P1's home row (0) full
+        grid.addEntity(0, 1, GameContext.get().getEcsEngine().createEntity());
+        GameContext.get().setActiveGrid(grid);
 
         ExpressionContext ctx = spellContext();
         assertDoesNotThrow(() -> EffectExecutor.execute(
@@ -81,6 +83,7 @@ class EffectExecutorSpellPrimitivesTest {
                 List.of(), null, ctx, new HashMap<>()));
 
         verify(board, never()).addEntityToPos(anyInt(), anyInt(), any(Entity.class), anyString());
+        assertFalse(GameContext.get().getInteractionManager().hasActiveSelection(), "no tile prompt when the zone is full");
     }
 
     @Test

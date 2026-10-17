@@ -33,6 +33,8 @@ import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.UnitCard;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
+import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.Coord;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -152,11 +154,11 @@ public class EffectExecutor {
         int pushRow = defenderPos.row + dRow;
         int pushCol = defenderPos.col + dCol;
 
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null) return;
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return;
 
-        boolean inBounds = pushRow >= 0 && pushRow < board.getROWS() && pushCol >= 0 && pushCol < board.getCOLS();
-        Entity blocker = inBounds ? board.getEntityAtPos(pushRow, pushCol) : null;
+        boolean inBounds = grid.isInBounds(pushRow, pushCol);
+        Entity blocker = inBounds ? grid.getEntityAt(pushRow, pushCol) : null;
 
         if (blocker != null && blocker.getComponent(TerrainComponent.class) != null) {
             CombatSystem combat = GameContext.get().getEcsEngine().getSystem(CombatSystem.class);
@@ -185,19 +187,19 @@ public class EffectExecutor {
         int ownerRow = ownerPos.row, ownerCol = ownerPos.col;
         int targetRow = targetPos.row, targetCol = targetPos.col;
 
-        io.github.elderpath_crusade.game_objects.board.Board board = GameContext.get().getActiveBoard();
-        if (board == null) return;
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return;
 
-        board.removeEntityAtPos(ownerRow, ownerCol);
-        board.removeEntityAtPos(targetRow, targetCol);
+        grid.removeEntity(ownerRow, ownerCol);
+        grid.removeEntity(targetRow, targetCol);
 
         ownerPos.set(targetRow, targetCol);
         targetPos.set(ownerRow, ownerCol);
 
         String ownerId = idMapper.get(owner) != null ? idMapper.get(owner).id : "";
         String targetId = idMapper.get(target) != null ? idMapper.get(target).id : "";
-        board.addEntityToPos(targetRow, targetCol, owner, ownerId);
-        board.addEntityToPos(ownerRow, ownerCol, target, targetId);
+        grid.addEntity(targetRow, targetCol, owner);
+        grid.addEntity(ownerRow, ownerCol, target);
 
         PieceAlignment ownerAlign = alignMapper.get(owner) != null ? alignMapper.get(owner).alignment : PieceAlignment.NEUTRAL;
         PieceAlignment targetAlign = alignMapper.get(target) != null ? alignMapper.get(target).alignment : PieceAlignment.NEUTRAL;
@@ -397,10 +399,17 @@ public class EffectExecutor {
         PieceDefinition def = PieceRegistry.get(registryKey);
         if (def == null) return;
 
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return;
+        List<Coord> slotCoords = findEmptySummonSlots(grid, alignment);
+        if (slotCoords.isEmpty()) return; // no empty tile in caster's zone — summon silently fizzles
+
         Board board = GameContext.get().getActiveBoard();
         if (board == null) return;
-        List<Plot> slots = findEmptySummonSlots(board, alignment);
-        if (slots.isEmpty()) return; // no empty tile in caster's zone — summon silently fizzles
+        List<Plot> slots = new ArrayList<>();
+        for (Coord c : slotCoords) {
+            if (board.getPlotAtPos(c.row(), c.col()) instanceof Plot plot) slots.add(plot);
+        }
 
         Card cardToConsume = sourceCard;
         TargetFilter filter = new TargetFilter() {
@@ -426,7 +435,7 @@ public class EffectExecutor {
                     Entity piece = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
                             alignment, idx[0], idx[1]);
                     String pieceId = EntityUtils.getId(piece);
-                    board.addEntityToPos(idx[0], idx[1], piece, pieceId);
+                    grid.addEntity(idx[0], idx[1], piece);
                     TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, idx[0], idx[1]));
 
                     if (cardToConsume != null) cardToConsume.consume();
@@ -547,15 +556,12 @@ public class EffectExecutor {
         return null;
     }
 
-    /** Every empty tile in the caster's own summon zone (mirrors Board.isValidSummonTarget, used by SummonCard). */
-    private static List<Plot> findEmptySummonSlots(Board board, PieceAlignment alignment) {
-        List<Plot> slots = new ArrayList<>();
-        for (int row = 0; row < board.getROWS(); row++) {
-            for (int col = 0; col < board.getCOLS(); col++) {
-                Object cell = board.getPlotAtPos(row, col);
-                if (cell instanceof Plot plot && board.isValidSummonTarget(plot, alignment)) {
-                    slots.add(plot);
-                }
+    /** Every empty tile in the caster's own summon zone (same rule SummonCard uses, BoardGrid.isValidSummonTarget). */
+    private static List<Coord> findEmptySummonSlots(BoardGrid grid, PieceAlignment alignment) {
+        List<Coord> slots = new ArrayList<>();
+        for (int row = 0; row < grid.getRows(); row++) {
+            for (int col = 0; col < grid.getCols(); col++) {
+                if (grid.isValidSummonTarget(row, col, alignment)) slots.add(new Coord(row, col));
             }
         }
         return slots;

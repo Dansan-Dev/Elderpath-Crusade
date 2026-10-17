@@ -7,7 +7,7 @@ import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 
 /**
  * Processes MoveIntentComponent: validates move, updates position,
@@ -42,8 +42,8 @@ public class MovementSystem extends EntitySystem {
      * Execute a move synchronously (for abilities/input that need immediate resolution).
      */
     public boolean executeMove(Entity entity, int toRow, int toCol) {
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null || !isValidMove(board, toRow, toCol)) return false;
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null || !isValidMove(grid, toRow, toCol)) return false;
 
         PositionComponent pos = posMapper.get(entity);
         if (pos == null) return false;
@@ -52,7 +52,7 @@ public class MovementSystem extends EntitySystem {
         int fromCol = pos.col;
 
         pos.set(toRow, toCol);
-        board.moveEntity(fromRow, fromCol, entity, toRow, toCol);
+        grid.moveEntity(fromRow, fromCol, entity, toRow, toCol);
 
         AlignmentComponent align = alignMapper.get(entity);
         IdentityComponent id = idMapper.get(entity);
@@ -68,8 +68,8 @@ public class MovementSystem extends EntitySystem {
      * Execute a forced move (no validation beyond bounds/occupancy, no action cost).
      */
     public boolean executeForcedMove(Entity entity, int toRow, int toCol, String cause, String abilityName) {
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null || !isValidMove(board, toRow, toCol)) return false;
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null || !isValidMove(grid, toRow, toCol)) return false;
 
         PositionComponent pos = posMapper.get(entity);
         if (pos == null) return false;
@@ -79,7 +79,7 @@ public class MovementSystem extends EntitySystem {
         if (fromRow == toRow && fromCol == toCol) return false;
 
         pos.set(toRow, toCol);
-        board.moveEntity(fromRow, fromCol, entity, toRow, toCol);
+        grid.moveEntity(fromRow, fromCol, entity, toRow, toCol);
 
         AlignmentComponent align = alignMapper.get(entity);
         IdentityComponent id = idMapper.get(entity);
@@ -103,8 +103,8 @@ public class MovementSystem extends EntitySystem {
         int toCol = intent.targetCol;
 
         // Validate
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null || !isValidMove(board, toRow, toCol)) {
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null || !isValidMove(grid, toRow, toCol)) {
             entity.remove(MoveIntentComponent.class);
             return;
         }
@@ -112,8 +112,8 @@ public class MovementSystem extends EntitySystem {
         // Update ECS position
         pos.set(toRow, toCol);
 
-        // Sync Board
-        board.moveEntity(fromRow, fromCol, entity, toRow, toCol);
+        // Sync the logical grid (its board view, if any, refreshes via its change listener)
+        grid.moveEntity(fromRow, fromCol, entity, toRow, toCol);
 
         // Emit event
         PieceAlignment owner = (align != null) ? align.alignment : PieceAlignment.NEUTRAL;
@@ -126,9 +126,7 @@ public class MovementSystem extends EntitySystem {
         entity.remove(MoveIntentComponent.class);
     }
 
-    private boolean isValidMove(Board board, int toRow, int toCol) {
-        if (toRow < 0 || toRow >= board.getROWS()) return false;
-        if (toCol < 0 || toCol >= board.getCOLS()) return false;
-        return !board.isOccupied(toRow, toCol);
+    private boolean isValidMove(BoardGrid grid, int toRow, int toCol) {
+        return grid.isInBounds(toRow, toCol) && !grid.isOccupied(toRow, toCol);
     }
 }

@@ -3,14 +3,13 @@ package io.github.elderpath_crusade.bot.eval;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.bot.command.AttackCommand;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
-import io.github.elderpath_crusade.bot.search.Coord;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 
 import java.util.List;
@@ -25,7 +24,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
     }
 
     @Override
-    public void build(Board board, TacticalState tactical, List<Intent> output) {
+    public void build(BoardGrid board, TacticalState tactical, List<Intent> output) {
         for (PieceEntry entry : tactical.allies()) {
             Entity attacker = entry.entity();
             Coord source = entry.pos();
@@ -34,14 +33,13 @@ public class AttackEvaluator extends BotEvaluatorBase {
                 continue;
             }
 
-            List<Plot> hostilePlots = board.getAttackableEnemyPlots(source.row(), source.col(), PieceAlignment.P2);
-            if (hostilePlots == null) {
+            List<Coord> hostileTargets = board.getAttackableEnemies(source.row(), source.col(), PieceAlignment.P2);
+            if (hostileTargets == null) {
                 continue;
             }
 
-            for (Plot plot : hostilePlots) {
-                Coord target = new Coord(plot.getRow(), plot.getCol());
-                Entity defender = board.getEntityAtPos(target.row(), target.col());
+            for (Coord target : hostileTargets) {
+                Entity defender = board.getEntityAt(target.row(), target.col());
 
                 int score = scoreAdjacentAttack(board, source, target, attacker, defender, tactical.threats());
                 output.add(new Intent(score,
@@ -52,7 +50,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
         }
     }
 
-    private int scoreAdjacentAttack(Board board, Coord source, Coord target, Entity attacker,
+    private int scoreAdjacentAttack(BoardGrid board, Coord source, Coord target, Entity attacker,
             Entity defender, ThreatMap threats) {
         int basePoints = config.scoreAdjAttackBase();
         boolean lethal = false;
@@ -70,7 +68,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
             basePoints += Math.min(3, Math.max(0, EntityUtils.getDamage(defender)));
 
             // Defensive Urgency: prioritize enemies closer to our home row (ROWS-1)
-            int rows = board.getROWS();
+            int rows = board.getRows();
             int homeRow = rows - 1;
             int distToHome = Math.abs(homeRow - target.row());
             int urgency = Math.max(0, rows - distToHome);

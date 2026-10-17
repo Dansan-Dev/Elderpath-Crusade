@@ -132,7 +132,7 @@ public class AbilityPopup extends HigherOrderUI {
         if (hoveredPieceId == null) {
             for (BubbleSpec spec : specs) {
                 int plotX = boardX + spec.pos.col * board.getPLOT_WIDTH();
-                int plotY = boardY + spec.pos.row * board.getPLOT_HEIGHT();
+                int plotY = boardY + board.toDisplayRow(spec.pos.row) * board.getPLOT_HEIGHT();
                 if (mx >= plotX && mx < plotX + board.getPLOT_WIDTH()
                         && my >= plotY && my < plotY + board.getPLOT_HEIGHT()) {
                     hoveredPieceId = spec.pieceId;
@@ -162,7 +162,7 @@ public class AbilityPopup extends HigherOrderUI {
             if (!desiredKeys.contains(spec.key)) continue;
             if (!activeBubbles.containsKey(spec.key)) {
                 int plotX = boardX + spec.pos.col * board.getPLOT_WIDTH();
-                int plotY = boardY + spec.pos.row * board.getPLOT_HEIGHT();
+                int plotY = boardY + board.toDisplayRow(spec.pos.row) * board.getPLOT_HEIGHT();
                 int bubX = plotX + board.getPLOT_WIDTH() / 2 - bubbleSize / 2;
                 int bubY = plotY + board.getPLOT_HEIGHT() + BUBBLE_Y_OFFSET;
 

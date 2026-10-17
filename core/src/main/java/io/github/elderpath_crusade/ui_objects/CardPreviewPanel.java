@@ -136,7 +136,7 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
         if (mouseY < baseY || mouseY >= baseY + boardH) return null;
 
         int col = (mouseX - baseX) / cellW;
-        int row = (mouseY - baseY) / cellH;
+        int row = b.toDisplayRow((mouseY - baseY) / cellH); // screen row -> logical row
 
         return b.getEntityAtPos(row, col);
     }

@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.bot.search;
 
+import io.github.elderpath_crusade.match.Coord;
+
 public class BotSearchState {
     public final Coord pos;
     public final int turnDepth, actionsLeft, threatCount;

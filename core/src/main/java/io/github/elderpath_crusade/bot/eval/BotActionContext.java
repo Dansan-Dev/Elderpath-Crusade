@@ -2,7 +2,7 @@ package io.github.elderpath_crusade.bot.eval;
 
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.bot.command.BotCommand;
-import io.github.elderpath_crusade.bot.search.Coord;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 
 import java.util.List;

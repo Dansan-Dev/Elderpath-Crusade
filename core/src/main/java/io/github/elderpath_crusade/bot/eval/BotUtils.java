@@ -3,21 +3,21 @@ package io.github.elderpath_crusade.bot.eval;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class BotUtils {
-    public static ThreatMap computeThreatMap(Board board, PieceAlignment enemySide) {
-        int rows = board.getROWS();
-        int cols = board.getCOLS();
+    public static ThreatMap computeThreatMap(BoardGrid board, PieceAlignment enemySide) {
+        int rows = board.getRows();
+        int cols = board.getCols();
         ThreatMap map = new ThreatMap(rows, cols);
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                Entity enemy = board.getEntityAtPos(row, col);
+                Entity enemy = board.getEntityAt(row, col);
                 if (enemy == null || EntityUtils.getAlignment(enemy) != enemySide) {
                     continue;
                 }
@@ -57,7 +57,7 @@ public class BotUtils {
                         int nr = cr + dir[0];
                         int nc = cc + dir[1];
                         if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc]
-                                && board.getEntityAtPos(nr, nc) == null) {
+                                && board.getEntityAt(nr, nc) == null) {
                             visited[nr][nc] = true;
                             queue.add(new int[] { nr, nc, d + 1 });
                         }

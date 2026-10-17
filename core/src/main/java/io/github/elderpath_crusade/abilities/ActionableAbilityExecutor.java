@@ -1,7 +1,6 @@
 package io.github.elderpath_crusade.abilities;
 
 import com.badlogic.ashley.core.ComponentMapper;
-import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
@@ -28,7 +27,8 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.interfaces.Renderable;
+import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.Coord;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -176,41 +176,15 @@ public class ActionableAbilityExecutor {
             @Override
             public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
                 if (!(box instanceof Plot plot)) return false;
-                int[] idx = plot.getIndices();
-                int dr = Math.abs(idx[0] - ownerPos.row);
-                int dc = Math.abs(idx[1] - ownerPos.col);
-                if (Math.max(dr, dc) > range) return false;
-                Entity entity = GameContext.get().getActiveBoard().getEntityAtPlot(plot);
-                if (entity == null || entity == owner) return false;
-                AlignmentComponent align = alignMapper.get(entity);
-                if (align == null) return false;
-                boolean isEnemy = align.alignment != ownerAlign.alignment;
-                return matchesAlignment(alignmentFilter, isEnemy);
+                BoardGrid grid = GameContext.get().getActiveGrid();
+                if (grid == null) return false;
+                Entity entity = grid.getEntityAt(plot.getRow(), plot.getCol());
+                return isSinglePickCandidate(entity, owner, ownerPos, ownerAlign, range, alignmentFilter);
             }
 
             @Override
             public List<Plot> getEligibleTargets(int targetIndex) {
-                Board board = GameContext.get().getActiveBoard();
-                if (board == null) return List.of();
-                Engine engine = GameContext.get().getEcsEngine();
-                ImmutableArray<Entity> all = engine.getEntitiesFor(
-                        Family.all(PositionComponent.class, AlignmentComponent.class).get());
-
-                List<Plot> eligible = new ArrayList<>();
-                for (int i = 0; i < all.size(); i++) {
-                    Entity entity = all.get(i);
-                    if (entity == owner) continue;
-                    PositionComponent pos = posMapper.get(entity);
-                    int dr = Math.abs(pos.row - ownerPos.row);
-                    int dc = Math.abs(pos.col - ownerPos.col);
-                    if (Math.max(dr, dc) > range) continue;
-                    AlignmentComponent align = alignMapper.get(entity);
-                    boolean isEnemy = align.alignment != ownerAlign.alignment;
-                    if (!matchesAlignment(alignmentFilter, isEnemy)) continue;
-                    Renderable cell = board.getPlotAtPos(pos.row, pos.col);
-                    if (cell instanceof Plot plot) eligible.add(plot);
-                }
-                return eligible;
+                return toPlots(singlePickCandidates(owner, ownerPos, ownerAlign, range, alignmentFilter));
             }
         };
 
@@ -248,29 +222,12 @@ public class ActionableAbilityExecutor {
             @Override
             public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
                 if (!(box instanceof Plot plot)) return false;
-                int[] idx = plot.getIndices();
-                int dr = Math.abs(idx[0] - chosenPos.row);
-                int dc = Math.abs(idx[1] - chosenPos.col);
-                if (Math.max(dr, dc) > 1) return false;
-                return GameContext.get().getActiveBoard().getEntityAtPlot(plot) == null;
+                return tilesInRange(chosenPos.row, chosenPos.col, 1, true).contains(new Coord(plot.getRow(), plot.getCol()));
             }
 
             @Override
             public List<Plot> getEligibleTargets(int targetIndex) {
-                Board board = GameContext.get().getActiveBoard();
-                if (board == null) return List.of();
-                List<Plot> eligible = new ArrayList<>();
-                for (int r = 0; r < board.getROWS(); r++) {
-                    for (int c = 0; c < board.getCOLS(); c++) {
-                        int dr = Math.abs(r - chosenPos.row);
-                        int dc = Math.abs(c - chosenPos.col);
-                        if (Math.max(dr, dc) > 1) continue;
-                        if (board.getEntityAtPos(r, c) != null) continue;
-                        Renderable cell = board.getPlotAtPos(r, c);
-                        if (cell instanceof Plot plot) eligible.add(plot);
-                    }
-                }
-                return eligible;
+                return toPlots(tilesInRange(chosenPos.row, chosenPos.col, 1, true));
             }
         };
 
@@ -307,27 +264,12 @@ public class ActionableAbilityExecutor {
             @Override
             public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
                 if (!(box instanceof Plot plot)) return false;
-                int[] idx = plot.getIndices();
-                int dr = Math.abs(idx[0] - ownerPos.row);
-                int dc = Math.abs(idx[1] - ownerPos.col);
-                return Math.max(dr, dc) <= range;
+                return chebyshev(plot.getRow(), plot.getCol(), ownerPos.row, ownerPos.col) <= range;
             }
 
             @Override
             public List<Plot> getEligibleTargets(int targetIndex) {
-                Board board = GameContext.get().getActiveBoard();
-                if (board == null) return List.of();
-                List<Plot> eligible = new ArrayList<>();
-                for (int r = 0; r < board.getROWS(); r++) {
-                    for (int c = 0; c < board.getCOLS(); c++) {
-                        int dr = Math.abs(r - ownerPos.row);
-                        int dc = Math.abs(c - ownerPos.col);
-                        if (Math.max(dr, dc) > range) continue;
-                        Renderable cell = board.getPlotAtPos(r, c);
-                        if (cell instanceof Plot plot) eligible.add(plot);
-                    }
-                }
-                return eligible;
+                return toPlots(tilesInRange(ownerPos.row, ownerPos.col, range, false));
             }
         };
 
@@ -372,5 +314,62 @@ public class ActionableAbilityExecutor {
                     deductCosts(owner, actionDef.costs());
                 }
         );
+    }
+
+    // --- Pick candidate logic (pure coordinates; the TargetFilters above only map to Plots) ---
+
+    private static boolean isSinglePickCandidate(Entity entity, Entity owner, PositionComponent ownerPos,
+            AlignmentComponent ownerAlign, int range, AlignmentFilter alignmentFilter) {
+        if (entity == null || entity == owner) return false;
+        PositionComponent pos = posMapper.get(entity);
+        AlignmentComponent align = alignMapper.get(entity);
+        if (pos == null || align == null) return false;
+        if (chebyshev(pos.row, pos.col, ownerPos.row, ownerPos.col) > range) return false;
+        boolean isEnemy = align.alignment != ownerAlign.alignment;
+        return matchesAlignment(alignmentFilter, isEnemy);
+    }
+
+    /** Positions of every piece the owner may pick for a ChooseEnemy/ChooseFriendly/ChooseAny action. */
+    private static List<Coord> singlePickCandidates(Entity owner, PositionComponent ownerPos,
+            AlignmentComponent ownerAlign, int range, AlignmentFilter alignmentFilter) {
+        ImmutableArray<Entity> all = GameContext.get().getEcsEngine().getEntitiesFor(
+                Family.all(PositionComponent.class, AlignmentComponent.class).get());
+        List<Coord> out = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            Entity entity = all.get(i);
+            if (!isSinglePickCandidate(entity, owner, ownerPos, ownerAlign, range, alignmentFilter)) continue;
+            PositionComponent pos = posMapper.get(entity);
+            out.add(new Coord(pos.row, pos.col));
+        }
+        return out;
+    }
+
+    /** In-bounds tiles within Chebyshev distance range of (row, col), optionally only empty ones. */
+    private static List<Coord> tilesInRange(int row, int col, int range, boolean emptyOnly) {
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return List.of();
+        List<Coord> out = new ArrayList<>();
+        for (int r = 0; r < grid.getRows(); r++) {
+            for (int c = 0; c < grid.getCols(); c++) {
+                if (chebyshev(r, c, row, col) > range) continue;
+                if (emptyOnly && grid.isOccupied(r, c)) continue;
+                out.add(new Coord(r, c));
+            }
+        }
+        return out;
+    }
+
+    private static int chebyshev(int r1, int c1, int r2, int c2) {
+        return Math.max(Math.abs(r1 - r2), Math.abs(c1 - c2));
+    }
+
+    private static List<Plot> toPlots(List<Coord> coords) {
+        Board board = GameContext.get().getActiveBoard();
+        if (board == null) return List.of();
+        List<Plot> out = new ArrayList<>(coords.size());
+        for (Coord c : coords) {
+            if (board.getPlotAtPos(c.row(), c.col()) instanceof Plot plot) out.add(plot);
+        }
+        return out;
     }
 }

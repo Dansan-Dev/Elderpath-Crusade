@@ -1,4 +1,4 @@
-package io.github.elderpath_crusade.bot.search;
+package io.github.elderpath_crusade.match;
 
 import java.util.Objects;
 

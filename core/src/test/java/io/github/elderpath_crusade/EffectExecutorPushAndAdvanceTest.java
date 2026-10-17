@@ -9,11 +9,9 @@ import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.TerrainComponent;
-import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.match.BoardGrid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Regression coverage for Charger's PushOnAttack rework: it must push the defender back
@@ -32,20 +29,17 @@ import static org.mockito.Mockito.*;
 class EffectExecutorPushAndAdvanceTest {
 
     private Engine engine;
-    private GridIndexSystem gridIndex;
-    private Board board;
+    private BoardGrid grid;
 
     @BeforeEach
     void setUp() {
         TypedEventBus.get().clear();
         GameContext.create();
         engine = GameContext.get().getEcsEngine();
-        gridIndex = engine.getSystem(GridIndexSystem.class);
 
-        board = mock(Board.class);
-        when(board.getROWS()).thenReturn(5);
-        when(board.getCOLS()).thenReturn(5);
-        GameContext.get().setActiveBoard(board);
+        // A real headless grid — occupancy tracks every forced move with no Board view.
+        grid = new BoardGrid(5, 5);
+        GameContext.get().setActiveGrid(grid);
     }
 
     private Entity buildPiece(PieceAlignment alignment, int row, int col) {
@@ -54,15 +48,8 @@ class EffectExecutorPushAndAdvanceTest {
         e.add(new PositionComponent().set(row, col));
         e.add(new StatsComponent().set(1, 3, 1, 1, 1));
         engine.addEntity(e);
-        gridIndex.onEntitySpawned(e, row, col);
-        when(board.getEntityAtPos(row, col)).thenReturn(e);
-        when(board.isOccupied(row, col)).thenReturn(true);
+        grid.addEntity(row, col, e);
         return e;
-    }
-
-    private void makeEmpty(int row, int col) {
-        when(board.getEntityAtPos(row, col)).thenReturn(null);
-        when(board.isOccupied(row, col)).thenReturn(false);
     }
 
     private void placeTerrain(int row, int col) {
@@ -70,34 +57,13 @@ class EffectExecutorPushAndAdvanceTest {
         terrain.add(new TerrainComponent());
         terrain.add(new PositionComponent().set(row, col));
         engine.addEntity(terrain);
-        when(board.getEntityAtPos(row, col)).thenReturn(terrain);
-        when(board.isOccupied(row, col)).thenReturn(true);
-    }
-
-    private void trackMove(Entity piece) {
-        // MovementSystem.executeForcedMove uses board.moveEntity/isValidMove; mirror the
-        // occupancy bookkeeping a real Board would do so the next check sees it correctly.
-        doAnswer(inv -> {
-            int fromRow = inv.getArgument(0);
-            int fromCol = inv.getArgument(1);
-            Entity movedEntity = inv.getArgument(2);
-            int toRow = inv.getArgument(3);
-            int toCol = inv.getArgument(4);
-            when(board.getEntityAtPos(fromRow, fromCol)).thenReturn(null);
-            when(board.isOccupied(fromRow, fromCol)).thenReturn(false);
-            when(board.getEntityAtPos(toRow, toCol)).thenReturn(movedEntity);
-            when(board.isOccupied(toRow, toCol)).thenReturn(true);
-            return null;
-        }).when(board).moveEntity(anyInt(), anyInt(), eq(piece), anyInt(), anyInt());
+        grid.addEntity(row, col, terrain);
     }
 
     @Test
     void pushIntoEmptyTile_pushesDefenderAndAdvancesAttacker() {
         Entity charger = buildPiece(PieceAlignment.P1, 2, 2);
         Entity defender = buildPiece(PieceAlignment.P2, 2, 3);
-        makeEmpty(2, 4); // push destination
-        trackMove(defender);
-        trackMove(charger);
 
         EffectExecutor.execute(new EffectNode("PushAndAdvance", Map.of()),
                 List.of(defender), charger, new ExpressionContext(), new HashMap<>());

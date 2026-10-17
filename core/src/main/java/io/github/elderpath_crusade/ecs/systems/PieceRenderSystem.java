@@ -38,8 +38,13 @@ public class PieceRenderSystem extends EntitySystem {
         entities = engine.getEntitiesFor(family);
     }
 
+    /**
+     * Draws every piece at its board position. boardRows/flipped mirror the logical row onto
+     * the screen row (hotseat view flip) — positions themselves are never flipped.
+     */
     public void render(SpriteBatch batch, int zLevel, boolean isPaused,
-                       int boardX, int boardY, int plotWidth, int plotHeight) {
+                       int boardX, int boardY, int plotWidth, int plotHeight,
+                       int boardRows, boolean flipped) {
         for (int i = 0; i < entities.size(); i++) {
             Entity entity = entities.get(i);
             SpriteComponent sprite = spriteMapper.get(entity);
@@ -48,7 +53,8 @@ public class PieceRenderSystem extends EntitySystem {
             if (sprite.renderable == null) continue;
 
             int absX = boardX + pos.col * plotWidth;
-            int absY = boardY + pos.row * plotHeight;
+            int displayRow = flipped ? boardRows - 1 - pos.row : pos.row;
+            int absY = boardY + displayRow * plotHeight;
 
             if (EntityUtils.isStunned(entity)) {
                 Color original = batch.getColor().cpy();

@@ -6,7 +6,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +39,7 @@ public class DeathSystem extends EntitySystem {
 
         if (dead == null) return;
 
-        Board board = GameContext.get().getActiveBoard();
+        BoardGrid grid = GameContext.get().getActiveGrid();
         for (Entity entity : dead) {
             PositionComponent pos = entity.getComponent(PositionComponent.class);
             IdentityComponent id = entity.getComponent(IdentityComponent.class);
@@ -49,8 +49,8 @@ public class DeathSystem extends EntitySystem {
 
             TypedEventBus.get().emit(new PieceDiedEvent(pieceId, row, col));
 
-            if (board != null && pos != null) {
-                board.removeEntityAtPos(row, col);
+            if (grid != null && pos != null) {
+                grid.removeEntity(row, col);
             }
 
             getEngine().removeEntity(entity);

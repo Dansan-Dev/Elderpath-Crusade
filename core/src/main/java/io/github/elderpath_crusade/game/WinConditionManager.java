@@ -7,7 +7,7 @@ import io.github.elderpath_crusade.events.GameWonEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.rooms.VictoryRoom;
 import io.github.elderpath_crusade.utils.Logger;
 
@@ -43,19 +43,10 @@ public final class WinConditionManager {
         if (gameWon) return;
         if (alignment == null || alignment == PieceAlignment.NEUTRAL) return;
 
-        Board activeBoard = GameContext.get().getActiveBoard();
-        if (activeBoard == null) return;
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return;
 
-        int rows = activeBoard.getROWS();
-        boolean flipped = activeBoard.isFlipped();
-        boolean won = false;
-        if (alignment == PieceAlignment.P1) {
-            won = flipped ? (destRow == 0) : (destRow == rows - 1);
-        } else if (alignment == PieceAlignment.P2) {
-            won = flipped ? (destRow == rows - 1) : (destRow == 0);
-        }
-
-        if (won) triggerWin(alignment);
+        if (destRow == grid.getGoalRow(alignment)) triggerWin(alignment);
     }
 
     private void triggerWin(PieceAlignment winner) {

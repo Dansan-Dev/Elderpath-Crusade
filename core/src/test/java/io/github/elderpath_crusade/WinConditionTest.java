@@ -4,7 +4,7 @@ import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.GameContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +15,6 @@ import static org.mockito.Mockito.*;
 
 class WinConditionTest {
 
-    private Board board;
     private GameWonEvent capturedEvent;
 
     @BeforeAll
@@ -31,10 +30,7 @@ class WinConditionTest {
         GameContext.get().getWinConditionManager().reset();
         capturedEvent = null;
         TypedEventBus.get().register(GameWonEvent.class, e -> capturedEvent = e);
-        board = mock(Board.class);
-        when(board.getROWS()).thenReturn(5);
-        when(board.isFlipped()).thenReturn(false);
-        GameContext.get().setActiveBoard(board);
+        GameContext.get().setActiveGrid(new BoardGrid(5, 5));
     }
 
     @Test

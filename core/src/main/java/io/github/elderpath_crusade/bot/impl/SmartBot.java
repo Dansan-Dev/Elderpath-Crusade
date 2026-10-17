@@ -6,7 +6,7 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.bot.Bot;
@@ -17,7 +17,7 @@ import io.github.elderpath_crusade.bot.eval.IntentGenerator;
 import io.github.elderpath_crusade.bot.eval.AttackEvaluator;
 import io.github.elderpath_crusade.bot.eval.MovementEvaluator;
 import io.github.elderpath_crusade.bot.eval.SummonEvaluator;
-import io.github.elderpath_crusade.bot.search.Coord;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 import io.github.elderpath_crusade.utils.Logger;
 
@@ -80,7 +80,7 @@ public class SmartBot implements Bot {
             endTurn();
             return;
         }
-        Board board = GameContext.get().getActiveBoard();
+        BoardGrid board = GameContext.get().getActiveGrid();
         if (board == null) {
             endTurn();
             return;
@@ -127,7 +127,7 @@ public class SmartBot implements Bot {
         }, END_DELAY);
     }
 
-    private boolean executeBestIntent(Board board) {
+    private boolean executeBestIntent(BoardGrid board) {
         BotActionContext.TacticalState tactical = buildTacticalState(board);
         List<BotActionContext.Intent> intents = new ArrayList<>();
 
@@ -155,15 +155,15 @@ public class SmartBot implements Bot {
         return false;
     }
 
-    private BotActionContext.TacticalState buildTacticalState(Board board) {
+    private BotActionContext.TacticalState buildTacticalState(BoardGrid board) {
         List<BotActionContext.PieceEntry> allies = new ArrayList<>();
         List<BotActionContext.PieceEntry> enemies = new ArrayList<>();
-        int rows = board.getROWS();
-        int cols = board.getCOLS();
+        int rows = board.getRows();
+        int cols = board.getCols();
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                Entity entity = board.getEntityAtPos(row, col);
+                Entity entity = board.getEntityAt(row, col);
                 if (entity == null)
                     continue;
 
@@ -181,14 +181,14 @@ public class SmartBot implements Bot {
         return new BotActionContext.TacticalState(allies, enemies, threats);
     }
 
-    private boolean shouldEndNow(Board board) {
+    private boolean shouldEndNow(BoardGrid board) {
         PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
         if (player == null)
             return true;
 
-        for (int row = 0; row < board.getROWS(); row++) {
-            for (int col = 0; col < board.getCOLS(); col++) {
-                Entity entity = board.getEntityAtPos(row, col);
+        for (int row = 0; row < board.getRows(); row++) {
+            for (int col = 0; col < board.getCols(); col++) {
+                Entity entity = board.getEntityAt(row, col);
                 if (entity == null || EntityUtils.getAlignment(entity) != PieceAlignment.P2)
                     continue;
                 if (EntityUtils.isStunned(entity) || EntityUtils.getRemainingActions(entity) <= 0)

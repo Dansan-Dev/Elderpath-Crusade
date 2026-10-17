@@ -13,6 +13,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.test.RequiresAssets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,8 +62,6 @@ class EffectExecutorSummonPieceInteractiveTest {
     @Test
     void multipleEmptySlots_promptsThePlayer_doesNotAutoPlace() {
         Board board = mock(Board.class);
-        when(board.getROWS()).thenReturn(1);
-        when(board.getCOLS()).thenReturn(3);
         Plot slotA = mock(Plot.class);
         when(slotA.getIndices()).thenReturn(new int[]{0, 0});
         Plot slotB = mock(Plot.class);
@@ -70,9 +69,10 @@ class EffectExecutorSummonPieceInteractiveTest {
         when(board.getPlotAtPos(0, 0)).thenReturn(slotA);
         when(board.getPlotAtPos(0, 1)).thenReturn(slotB);
         when(board.getPlotAtPos(0, 2)).thenReturn(null);
-        when(board.isValidSummonTarget(slotA, PieceAlignment.P1)).thenReturn(true);
-        when(board.isValidSummonTarget(slotB, PieceAlignment.P1)).thenReturn(true);
         GameContext.get().setActiveBoard(board);
+        // Slot logic reads the real logical grid (P1's home row is row 0); the mocked board
+        // view only maps the empty tiles to clickable Plots.
+        GameContext.get().setActiveGrid(new BoardGrid(1, 3));
 
         EffectExecutor.execute(new EffectNode("SummonPiece", Map.of("piece", "Wolf")),
                 List.of(), null, spellContext(), new HashMap<>());
@@ -85,10 +85,10 @@ class EffectExecutorSummonPieceInteractiveTest {
     @Test
     void noEmptySlots_fizzlesSilently_neverPrompts() {
         Board board = mock(Board.class);
-        when(board.getROWS()).thenReturn(1);
-        when(board.getCOLS()).thenReturn(1);
-        when(board.isValidSummonTarget(any(), any())).thenReturn(false);
         GameContext.get().setActiveBoard(board);
+        BoardGrid grid = new BoardGrid(1, 1);
+        grid.addEntity(0, 0, GameContext.get().getEcsEngine().createEntity()); // home row full
+        GameContext.get().setActiveGrid(grid);
 
         EffectExecutor.execute(new EffectNode("SummonPiece", Map.of("piece", "Wolf")),
                 List.of(), null, spellContext(), new HashMap<>());

@@ -8,13 +8,12 @@ import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
 import io.github.elderpath_crusade.bot.eval.BotConfig;
-import io.github.elderpath_crusade.bot.search.Coord;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
+import io.github.elderpath_crusade.match.BoardGrid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +27,7 @@ class BotDecisionTest {
 
     private BotConfig config;
     private AttackEvaluator evaluator;
-    private Board board;
+    private BoardGrid board;
     private ThreatMap threats;
     private Engine engine;
 
@@ -38,9 +37,8 @@ class BotDecisionTest {
         GameContext.create();
         config = BotConfig.defaultConfig();
         evaluator = new AttackEvaluator(config);
-        board = mock(Board.class);
-        when(board.getROWS()).thenReturn(3);
-        when(board.getCOLS()).thenReturn(3);
+        board = new BoardGrid(3, 3);
+        GameContext.get().setActiveGrid(board);
         threats = mock(ThreatMap.class);
         engine = new Engine();
     }
@@ -74,21 +72,16 @@ class BotDecisionTest {
         return makeEntity(PieceAlignment.P1, 2, 1, 1, 3, health);
     }
 
-    private Plot mockPlot(int row, int col) {
-        Plot plot = mock(Plot.class);
-        when(plot.getRow()).thenReturn(row);
-        when(plot.getCol()).thenReturn(col);
-        return plot;
+    /** Places the entity on the real (headless) grid — the evaluator queries it for attack targets. */
+    private Entity place(Entity entity, int row, int col) {
+        board.addEntity(row, col, entity);
+        return entity;
     }
 
     @Test
     void attackEvaluator_generatesIntentForAdjacentEnemy() {
-        Entity ally = mockAlly(1, 3);
-        Entity enemy = mockEnemy(5);
-        Plot targetPlot = mockPlot(1, 2);
-
-        when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of(targetPlot));
-        when(board.getEntityAtPos(1, 2)).thenReturn(enemy);
+        Entity ally = place(mockAlly(1, 3), 1, 1);
+        place(mockEnemy(5), 1, 2);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -105,12 +98,8 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_lethalAttackScoresHigher() {
-        Entity ally = mockAlly(1, 3);
-        Entity enemy = mockEnemy(2);
-        Plot targetPlot = mockPlot(1, 2);
-
-        when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of(targetPlot));
-        when(board.getEntityAtPos(1, 2)).thenReturn(enemy);
+        Entity ally = place(mockAlly(1, 3), 1, 1);
+        place(mockEnemy(2), 1, 2);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -159,8 +148,7 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_noTargets_emptyOutput() {
-        Entity ally = mockAlly(1, 3);
-        when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of());
+        Entity ally = place(mockAlly(1, 3), 1, 1);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
@@ -175,15 +163,9 @@ class BotDecisionTest {
 
     @Test
     void attackEvaluator_multipleTargets_generatesMultipleIntents() {
-        Entity ally = mockAlly(1, 3);
-        Entity enemy1 = mockEnemy(5);
-        Entity enemy2 = mockEnemy(4);
-        Plot plot1 = mockPlot(1, 2);
-        Plot plot2 = mockPlot(0, 1);
-
-        when(board.getAttackableEnemyPlots(1, 1, PieceAlignment.P2)).thenReturn(List.of(plot1, plot2));
-        when(board.getEntityAtPos(1, 2)).thenReturn(enemy1);
-        when(board.getEntityAtPos(0, 1)).thenReturn(enemy2);
+        Entity ally = place(mockAlly(1, 3), 1, 1);
+        place(mockEnemy(5), 1, 2);
+        place(mockEnemy(4), 0, 1);
 
         TacticalState tactical = new TacticalState(
                 List.of(new PieceEntry(new Coord(1, 1), ally)),

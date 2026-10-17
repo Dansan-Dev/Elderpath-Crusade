@@ -26,8 +26,8 @@ import io.github.elderpath_crusade.game_objects.board.components.BoardInteractio
 import io.github.elderpath_crusade.game_objects.board.components.BoardNavigator;
 import io.github.elderpath_crusade.game_objects.board.components.BoardOverlayRenderer;
 import io.github.elderpath_crusade.game_objects.board.components.BoardPerspectiveManager;
-import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.game_objects.board.components.BoardRenderer;
+import io.github.elderpath_crusade.match.BoardGrid;
 import lombok.Getter;
 
 import java.util.*;
@@ -48,14 +48,8 @@ public class Board extends HigherOrderTexture implements Updatable {
     private final BoardOverlayRenderer overlayRenderer;
     private final BoardRenderer boardRenderer;
 
-    private GridIndexSystem gridIndex;
-
-    private GridIndexSystem getGridIndex() {
-        if (gridIndex == null) {
-            gridIndex = GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class);
-        }
-        return gridIndex;
-    }
+    /** The logical board this view renders — all occupancy/navigation logic lives there. */
+    @Getter private final BoardGrid grid;
 
     @Override
     public void update(float delta) {
@@ -67,6 +61,8 @@ public class Board extends HigherOrderTexture implements Updatable {
     public Board(int x, int y, int plot_width, int plot_height, int rows, int cols) {
         ROWS = rows;
         COLS = cols;
+        grid = new BoardGrid(rows, cols);
+        grid.setChangeListener(this::markDirtyAndNotify);
         PLOT_WIDTH = plot_width;
         PLOT_HEIGHT = plot_height;
         rowIdentifierSymbols = new BoardIdentifierSymbol[ROWS];
@@ -147,7 +143,7 @@ public class Board extends HigherOrderTexture implements Updatable {
         int localX = mouseX - pos[0];
         int localY = mouseY - pos[1];
         int col = localX / PLOT_WIDTH;
-        int row = localY / PLOT_HEIGHT;
+        int row = toDisplayRow(localY / PLOT_HEIGHT); // screen row -> logical row (same mirror)
         if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
             Renderable r = layout[row][col];
             if (r instanceof Plot p)
@@ -185,13 +181,6 @@ public class Board extends HigherOrderTexture implements Updatable {
         return (char) ('A' + n);
     }
 
-    private void checkBoardPosition(int row, int col) {
-        if (row < 0 || row >= ROWS || col < 0 || col >= COLS) {
-            throw new IllegalArgumentException(
-                    "row must be in [0, " + (ROWS - 1) + "] and col must be in [0, " + (COLS - 1) + "]");
-        }
-    }
-
     public void setBoardIdentifierSymbols() {
         IntStream.iterate(0, i -> i + 1).limit(ROWS)
                 .forEach(i -> rowIdentifierSymbols[i] = new BoardIdentifierSymbol(
@@ -219,8 +208,7 @@ public class Board extends HigherOrderTexture implements Updatable {
     }
 
     public Entity getEntityAtPos(int row, int col) {
-        GridIndexSystem gi = getGridIndex();
-        return gi != null ? gi.getEntityAt(row, col) : null;
+        return grid.getEntityAt(row, col);
     }
 
     public Entity getEntityAtPlot(Plot plot) {
@@ -234,50 +222,29 @@ public class Board extends HigherOrderTexture implements Updatable {
         int[] idx = plot.getIndices();
         if (idx == null)
             return false;
-        if (getEntityAtPos(idx[0], idx[1]) != null)
-            return false;
-
-        boolean flipped = isFlipped();
-
-        return switch (alignment) {
-            case P1 -> flipped ? (idx[0] == ROWS - 1) : (idx[0] == 0);
-            case P2 -> flipped ? (idx[0] == 0) : (idx[0] == ROWS - 1);
-            default -> false;
-        };
+        return grid.isValidSummonTarget(idx[0], idx[1], alignment);
     }
 
     public void removePlotAtPos(int row, int col) {
         Renderable renderable = layout[row][col];
         getRenderables().remove(renderable);
-        layout[row][col] = EmptyTexture.get(PLOT_WIDTH * col, PLOT_HEIGHT * row, PLOT_WIDTH, PLOT_HEIGHT);
+        layout[row][col] = EmptyTexture.get(PLOT_WIDTH * col, PLOT_HEIGHT * toDisplayRow(row), PLOT_WIDTH, PLOT_HEIGHT);
     }
 
     public void removeEntityAtPos(int row, int col) {
-        checkBoardPosition(row, col);
-        GridIndexSystem gi = getGridIndex();
-        if (gi != null) gi.onEntityDied(row, col);
-        markDirtyAndNotify();
+        grid.removeEntity(row, col);
     }
 
     public void addEntityToPos(int row, int col, Entity entity, String pieceId) {
-        checkBoardPosition(row, col);
-        GridIndexSystem gi = getGridIndex();
-        if (entity != null && gi != null) {
-            gi.onEntitySpawned(entity, row, col);
-        }
-        markDirtyAndNotify();
+        grid.addEntity(row, col, entity);
     }
 
     public void moveEntity(int currentRow, int currentCol, Entity entity, int newRow, int newCol) {
-        GridIndexSystem gi = getGridIndex();
-        if (gi != null && entity != null) {
-            gi.onEntityMoved(currentRow, currentCol, entity, newRow, newCol);
-        }
-        markDirtyAndNotify();
+        grid.moveEntity(currentRow, currentCol, entity, newRow, newCol);
     }
 
     public boolean isOccupied(int row, int col) {
-        return getEntityAtPos(row, col) != null;
+        return grid.isOccupied(row, col);
     }
 
     public List<Plot> getReachablePlots(Entity mover, int row, int col, int speed) {
@@ -297,8 +264,17 @@ public class Board extends HigherOrderTexture implements Updatable {
         return interactionResolver.movePlot(srcRow, srcCol, dstRow, dstCol);
     }
 
+    /** True while the view is mirrored (hotseat, P2's turn) — never affects logical coordinates. */
     public boolean isFlipped() {
-        return perspectiveManager.isPhysicallyFlipped();
+        return perspectiveManager.isFlipped();
+    }
+
+    /**
+     * Screen row (0 = bottom) at which a logical row is drawn. Mirroring is an involution,
+     * so the same mapping also converts a screen row back to its logical row.
+     */
+    public int toDisplayRow(int row) {
+        return isFlipped() ? ROWS - 1 - row : row;
     }
 
     @Override
@@ -360,7 +336,7 @@ public class Board extends HigherOrderTexture implements Updatable {
 
         if (newRenderable.getBounds() != null) {
             newRenderable.getBounds().setX(col * PLOT_WIDTH);
-            newRenderable.getBounds().setY(row * PLOT_HEIGHT);
+            newRenderable.getBounds().setY(toDisplayRow(row) * PLOT_HEIGHT);
         }
         newRenderable.setParent(getBounds());
         layout[row][col] = newRenderable;

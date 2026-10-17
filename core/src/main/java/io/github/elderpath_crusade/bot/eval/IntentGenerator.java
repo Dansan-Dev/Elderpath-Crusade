@@ -1,6 +1,6 @@
 package io.github.elderpath_crusade.bot.eval;
 
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.TacticalState;
 
@@ -19,5 +19,5 @@ public interface IntentGenerator {
      * @param tactical Precomputed tactical state (allies, enemies, threats)
      * @param output   The list to append generated intents to
      */
-    void build(Board board, TacticalState tactical, List<Intent> output);
+    void build(BoardGrid board, TacticalState tactical, List<Intent> output);
 }

@@ -34,16 +34,16 @@ public class BoardRenderer {
         Set<String> seen = new HashSet<>();
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                layout[row][col].render(batch, zLevel, isPaused, col * pw, row * ph);
+                layout[row][col].render(batch, zLevel, isPaused, col * pw, board.toDisplayRow(row) * ph);
             }
         }
-        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, 0, 0, pw, ph);
+        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, 0, 0, pw, ph, rows, board.isFlipped());
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 Entity entity = board.getEntityAtPos(row, col);
                 if (entity != null) {
-                    overlayRenderer.renderHpOverlay(batch, zLevel, col * pw, row * ph, entity, seen);
+                    overlayRenderer.renderHpOverlay(batch, zLevel, col * pw, board.toDisplayRow(row) * ph, entity, seen);
                 }
             }
         }
@@ -66,18 +66,18 @@ public class BoardRenderer {
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 int absX = x + col * pw;
-                int absY = y + row * ph;
+                int absY = y + board.toDisplayRow(row) * ph;
                 layout[row][col].render(batch, zLevel, isPaused, absX, absY);
             }
         }
-        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, x, y, pw, ph);
+        GameContext.get().getPieceRenderSystem().render(batch, zLevel, isPaused, x, y, pw, ph, rows, board.isFlipped());
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 Entity entity = board.getEntityAtPos(row, col);
                 if (entity != null) {
                     int absX = x + col * pw;
-                    int absY = y + row * ph;
+                    int absY = y + board.toDisplayRow(row) * ph;
                     overlayRenderer.renderHpOverlay(batch, zLevel, absX, absY, entity, seen);
                 }
             }
