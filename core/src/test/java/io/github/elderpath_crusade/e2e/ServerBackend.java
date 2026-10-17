@@ -24,8 +24,8 @@ public interface ServerBackend extends AutoCloseable {
         IN_PROCESS,
         /** MatchServer in this JVM, clients over localhost TCP (ephemeral port). */
         TCP;
-        // TODO(ARCH-023): CHILD_PROCESS — the server in a ServerLauncher child JVM, clients over TCP.
-        //  Add the constant, a ChildProcessBackend (see its contract below) and a case in create().
+        // The third backend, a ServerLauncher child process (ChildProcessBackend), lives in the server
+        // module's tests: it needs that module on the classpath and the real assets.
 
         public ServerBackend create() {
             return switch (this) {
@@ -49,6 +49,15 @@ public interface ServerBackend extends AutoCloseable {
     /** Whether messages arrive asynchronously, so the harness must poll until things are quiet. */
     boolean asynchronous();
 
+    /**
+     * How long nothing may arrive before an asynchronous backend counts as quiet. A server on its
+     * own clock acts only on its ticks, so this must span several of them — otherwise a step can
+     * "settle" between two ticks, before the server has handled a handshake or a Leave.
+     */
+    default long quietMillis() {
+        return 0;
+    }
+
     /** The authoritative state as viewer may see it — empty when the server isn't in this JVM. */
     Optional<MatchView> authoritativeView(PieceAlignment viewer);
 
@@ -57,6 +66,9 @@ public interface ServerBackend extends AutoCloseable {
 
     /** Whether the match has ended, or empty when not observable from here. */
     Optional<Boolean> ended();
+
+    /** The winner once the match has ended, or empty (not ended, or not observable). */
+    Optional<PieceAlignment> winner();
 
     /** Whether a bot seat has a pick pending (bots answer synchronously, so this means a stall). False when unobservable. */
     boolean botPickPending();

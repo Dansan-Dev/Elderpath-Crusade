@@ -53,6 +53,11 @@ abstract class InJvmBackend implements ServerBackend {
     }
 
     @Override
+    public Optional<PieceAlignment> winner() {
+        return server.isEnded() ? Optional.ofNullable(server.getWinner()) : Optional.empty();
+    }
+
+    @Override
     public boolean botPickPending() {
         for (PieceAlignment side : config.bots().keySet()) {
             if (GameContext.get().getPickRouter().hasPending(side)) return true;

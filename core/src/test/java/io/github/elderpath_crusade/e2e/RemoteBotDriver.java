@@ -33,7 +33,6 @@ import java.util.List;
  * when blocked); summon onto a free home-row tile; end the turn when nothing is left.
  */
 public final class RemoteBotDriver implements ClientDriver {
-    private boolean endTurnSent;
 
     @Override
     public boolean act(TestClient testClient) {
@@ -41,17 +40,17 @@ public final class RemoteBotDriver implements ClientDriver {
         MatchClient client = testClient.client();
         PieceAlignment seat = s.getSeat();
         if (seat == null || !s.isStarted() || s.isEnded()) return false;
+        // Until the server has acked the last command, the replica may not show its effects yet
+        // (e.g. a sent end turn) — and once it has, a turn of ours is a new one, however short
+        // the opponent's turn in between was.
+        if (client.hasUnackedCommands()) return false;
 
         PickRequest pick = s.getPendingPick();
         if (pick != null) {
             client.answerPick(pick.candidates().get(0));
             return true;
         }
-        if (s.getCurrentPlayer() != seat) {
-            endTurnSent = false;
-            return false;
-        }
-        if (endTurnSent) return false; // waiting for the turn to pass
+        if (s.getCurrentPlayer() != seat) return false;
 
         List<PieceView> ready = new ArrayList<>();
         for (PieceView p : s.getPieces()) {
@@ -88,7 +87,6 @@ public final class RemoteBotDriver implements ClientDriver {
             }
         }
 
-        endTurnSent = true;
         client.endTurn();
         return true;
     }

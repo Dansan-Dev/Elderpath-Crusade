@@ -30,8 +30,12 @@ public final class MatchHarness implements AutoCloseable {
     /** Simulated seconds per server tick — bots pace their actions on the match clock. */
     static final float DELTA = 0.1f;
     private static final long SETTLE_DEADLINE_MS = 10_000;
-    /** Server ticks without a new turn before a match counts as stalled (≈ 5 simulated minutes). */
+    /**
+     * A match counts as stalled after this many steps AND this much real time without a new
+     * turn — steps for in-JVM servers ticked here, time for a server that runs on its own clock.
+     */
     private static final int STALL_TICKS = 3_000;
+    private static final long STALL_NANOS = 30_000_000_000L;
 
     private final ServerBackend backend;
     private final List<TestClient> clients = new ArrayList<>();
@@ -67,6 +71,27 @@ public final class MatchHarness implements AutoCloseable {
         }
     }
 
+    /**
+     * Joins a seat that was just left, retrying while the server still refuses it as taken — a
+     * server on its own clock (child process) may not have processed the Leave yet, the same
+     * race a reconnecting game client would retry through.
+     */
+    public TestClient rejoin(SeatRequest seat, String name, ClientDriver driver) {
+        long deadline = System.nanoTime() + SETTLE_DEADLINE_MS * 1_000_000L;
+        while (true) {
+            TestClient client = join(seat, name, driver);
+            step();
+            ServerMessage.Error error = client.state().getLastError();
+            if (client.state().isWelcomed() || error == null || error.code() != ServerMessage.Error.Code.SEAT_TAKEN) {
+                return client;
+            }
+            clients.remove(client);
+            client.client().close();
+            if (System.nanoTime() - deadline > 0) fail(backend.name() + ": " + seat + " was never freed after its client left");
+            pause();
+        }
+    }
+
     /** The client leaves (its seat stays reserved) and is no longer checked. */
     public void leave(TestClient client) {
         client.client().leave();
@@ -91,23 +116,31 @@ public final class MatchHarness implements AutoCloseable {
         }
         long begin = System.nanoTime();
         long deadline = begin + SETTLE_DEADLINE_MS * 1_000_000L;
+        long quietNanos = backend.quietMillis() * 1_000_000L;
         int quietRounds = 0;
+        long quietSince = 0;
         int rounds = 0;
         List<String> pending = List.of();
-        while (quietRounds < 2) {
+        while (true) {
             rounds++;
             int received = tickOnce();
             pending = mismatches();
             for (TestClient c : clients) {
+                if (!c.client().isConnected()) continue; // e.g. a child server that exited after MatchEnded
                 if (!c.state().isWelcomed()) pending.add(c + " isn't seated yet");
                 if (c.client().hasUnackedCommands()) pending.add(c + " has unacknowledged commands");
             }
-            quietRounds = pending.isEmpty() && received == 0 ? quietRounds + 1 : 0;
+            if (pending.isEmpty() && received == 0) {
+                if (quietRounds++ == 0) quietSince = System.nanoTime();
+            } else {
+                quietRounds = 0;
+            }
+            if (quietRounds >= 2 && System.nanoTime() - quietSince >= quietNanos) return;
             if (System.nanoTime() - deadline > 0) {
                 fail(backend.name() + ": never settled after " + rounds + " rounds / "
                         + (System.nanoTime() - begin) / 1_000_000 + " ms (last round received " + received + "): " + pending);
             }
-            if (quietRounds < 2) pause();
+            pause();
         }
     }
 
@@ -117,6 +150,7 @@ public final class MatchHarness implements AutoCloseable {
      */
     public Optional<PieceAlignment> runToEnd(int maxTurns) {
         int ticksAtLastTurn = 0;
+        long nanosAtLastTurn = System.nanoTime();
         int lastTurns = turns();
         int ticks = 0;
         while (!ended() && turns() < maxTurns) {
@@ -128,7 +162,8 @@ public final class MatchHarness implements AutoCloseable {
             if (turns() != lastTurns) {
                 lastTurns = turns();
                 ticksAtLastTurn = ticks;
-            } else if (ticks - ticksAtLastTurn > STALL_TICKS) {
+                nanosAtLastTurn = System.nanoTime();
+            } else if (ticks - ticksAtLastTurn > STALL_TICKS && System.nanoTime() - nanosAtLastTurn > STALL_NANOS) {
                 fail(backend.name() + ": the match stalled on turn " + turns());
             }
         }
@@ -146,7 +181,7 @@ public final class MatchHarness implements AutoCloseable {
 
     private PieceAlignment winner() {
         for (TestClient c : clients) if (c.state().isEnded()) return c.state().getWinner();
-        return backend.authoritativeView(PieceAlignment.P1).map(MatchView::winner).orElse(null);
+        return backend.winner().orElse(null);
     }
 
     /** One server tick, every client polls, the per-tick invariants. Returns how many messages arrived. */
@@ -218,7 +253,9 @@ public final class MatchHarness implements AutoCloseable {
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {
+            // JUnit's @Timeout interrupts the test thread — stop here instead of spinning on.
             Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted (test timeout)", e);
         }
     }
 

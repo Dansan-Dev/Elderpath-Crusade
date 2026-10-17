@@ -90,12 +90,14 @@ class ServerProcessTest {
     }
 
     private void awaitClient(BooleanSupplier condition) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + DEADLINE.toMillis();
+        // Monotonic: this machine's wall clock jumps by tens of seconds (BUG-027 — a jump made this
+        // deadline expire mid bot turn, and the teardown's server.stop() cut the bot's log short).
+        long deadline = System.nanoTime() + DEADLINE.toNanos();
         while (true) {
             client.poll();
             if (condition.getAsBoolean()) return;
             assertNull(client.getState().getLastError(), "server error");
-            if (System.currentTimeMillis() > deadline) fail("condition not reached; current player " + client.getState().getCurrentPlayer());
+            if (System.nanoTime() - deadline > 0) fail("condition not reached; current player " + client.getState().getCurrentPlayer());
             Thread.sleep(5);
         }
     }
