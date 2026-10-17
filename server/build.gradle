@@ -1,0 +1,49 @@
+plugins {
+  id "application"
+}
+
+// The headless match server (FEAT-002): one authoritative match per process, reached over TCP.
+// Launched as a child process by the game for solo/hotseat/hosted play (see core's
+// ServerProcess), or run standalone: ./gradlew :server:run --args="--port 4567"
+// Distributable: ./gradlew :server:installDist → server/build/install/server/
+// (bin/server launcher script, lib/*.jar classpath).
+
+evaluationDependsOn(':core')
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-server'
+java.sourceCompatibility = 17
+java.targetCompatibility = 17
+if (JavaVersion.current().isJava9Compatible()) {
+  compileJava.options.release.set(17)
+}
+
+application {
+  mainClass = 'io.github.elderpath_crusade.server.launcher.ServerLauncher'
+}
+
+dependencies {
+  implementation project(':core')
+  // Gdx.files without a window or GL — the registries read assets/data/*.yaml through it.
+  implementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  // @RequiresAssets / AssetsCondition, so asset-dependent tests follow the same testProfile rules as core.
+  testImplementation project(':core').sourceSets.test.output
+}
+
+run {
+  // Assets are read relative to the working directory, like the game client.
+  workingDir = rootProject.file('assets').path
+  // The launcher exits when stdin closes (orphan protection); Gradle's default stdin is empty.
+  standardInput = System.in
+}
+
+test {
+  useJUnitPlatform()
+  if (project.hasProperty('testProfile')) {
+    systemProperty 'testProfile', project.testProfile
+  }
+  systemProperty 'elderpath.assetsDir', rootProject.file('assets').absolutePath
+}
