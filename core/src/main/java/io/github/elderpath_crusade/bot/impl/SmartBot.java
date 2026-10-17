@@ -6,7 +6,6 @@ import io.github.elderpath_crusade.match.CardInstance;import io.github.elderpath
 
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.ashley.core.Entity;
-import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
@@ -53,6 +52,7 @@ public class SmartBot implements Bot {
     // Per-turn state guards to avoid runaway loops after finishing
     private boolean turnActive = false;
     private boolean ended = false;
+    private PieceAlignment self = PieceAlignment.P2;
 
     @Override
     public String getName() {
@@ -61,8 +61,9 @@ public class SmartBot implements Bot {
 
     @Override
     public void onTurnStarted(PieceAlignment player) {
-        if (player != PieceAlignment.P2)
+        if (player != PieceAlignment.P1 && player != PieceAlignment.P2)
             return;
+        this.self = player;
         this.turnActive = true;
         this.ended = false;
         Logger.log("[SmartBot]", "Turn start");
@@ -74,7 +75,7 @@ public class SmartBot implements Bot {
             return;
         if (GameContext.get().getGameManager().isPaused())
             return;
-        if (GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2)
+        if (GameContext.get().getTurnManager().getCurrentPlayer() != self)
             return;
         if (stepsDone >= MAX_STEPS) {
             Logger.log("[SmartBot]", "Reached step cap");
@@ -106,12 +107,7 @@ public class SmartBot implements Bot {
     private void scheduleNext(final int stepsDone) {
         if (!turnActive || ended)
             return;
-        Timer.schedule(new Timer.Task() {
-            @Override
-            public void run() {
-                step(stepsDone);
-            }
-        }, STEP_DELAY);
+        GameContext.get().getMatchClock().schedule(STEP_DELAY, () -> step(stepsDone));
     }
 
     private void endTurn() {
@@ -119,13 +115,12 @@ public class SmartBot implements Bot {
             return;
         ended = true;
         turnActive = false;
-        Timer.schedule(new Timer.Task() {
-            @Override
-            public void run() {
-                if (!GameContext.get().getGameManager().isPaused())
-                    GameContext.get().getTurnManager().endTurn();
-            }
-        }, END_DELAY);
+        PieceAlignment endingFor = self;
+        GameContext.get().getMatchClock().schedule(END_DELAY, () -> {
+            if (!GameContext.get().getGameManager().isPaused()
+                    && GameContext.get().getTurnManager().getCurrentPlayer() == endingFor)
+                GameContext.get().getTurnManager().endTurn();
+        });
     }
 
     private boolean executeBestIntent(BoardGrid board) {
@@ -161,6 +156,7 @@ public class SmartBot implements Bot {
         List<BotActionContext.PieceEntry> enemies = new ArrayList<>();
         int rows = board.getRows();
         int cols = board.getCols();
+        PieceAlignment enemy = BotActionContext.opponentOf(self);
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
@@ -169,28 +165,25 @@ public class SmartBot implements Bot {
                     continue;
 
                 Coord pos = new Coord(row, col);
-                switch (EntityUtils.getAlignment(entity)) {
-                    case P1 -> enemies.add(new BotActionContext.PieceEntry(pos, entity));
-                    case P2 -> allies.add(new BotActionContext.PieceEntry(pos, entity));
-                    case NEUTRAL -> {}
-                }
-
+                PieceAlignment alignment = EntityUtils.getAlignment(entity);
+                if (alignment == self) allies.add(new BotActionContext.PieceEntry(pos, entity));
+                else if (alignment == enemy) enemies.add(new BotActionContext.PieceEntry(pos, entity));
             }
         }
 
-        ThreatMap threats = BotUtils.computeThreatMap(board, PieceAlignment.P1);
-        return new BotActionContext.TacticalState(allies, enemies, threats);
+        ThreatMap threats = BotUtils.computeThreatMap(board, enemy);
+        return new BotActionContext.TacticalState(self, allies, enemies, threats);
     }
 
     private boolean shouldEndNow(BoardGrid board) {
-        PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
+        PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(self);
         if (player == null)
             return true;
 
         for (int row = 0; row < board.getRows(); row++) {
             for (int col = 0; col < board.getCols(); col++) {
                 Entity entity = board.getEntityAt(row, col);
-                if (entity == null || EntityUtils.getAlignment(entity) != PieceAlignment.P2)
+                if (entity == null || EntityUtils.getAlignment(entity) != self)
                     continue;
                 if (EntityUtils.isStunned(entity) || EntityUtils.getRemainingActions(entity) <= 0)
                     continue;

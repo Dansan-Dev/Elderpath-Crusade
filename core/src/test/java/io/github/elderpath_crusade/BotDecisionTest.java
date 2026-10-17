@@ -83,7 +83,7 @@ class BotDecisionTest {
         Entity ally = place(mockAlly(1, 3), 1, 1);
         place(mockEnemy(5), 1, 2);
 
-        TacticalState tactical = new TacticalState(
+        TacticalState tactical = new TacticalState(PieceAlignment.P2,
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
                 List.of(),
                 threats);
@@ -101,7 +101,7 @@ class BotDecisionTest {
         Entity ally = place(mockAlly(1, 3), 1, 1);
         place(mockEnemy(2), 1, 2);
 
-        TacticalState tactical = new TacticalState(
+        TacticalState tactical = new TacticalState(PieceAlignment.P2,
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
                 List.of(),
                 threats);
@@ -120,7 +120,7 @@ class BotDecisionTest {
         stun.turnsRemaining = 1;
         ally.add(stun);
 
-        TacticalState tactical = new TacticalState(
+        TacticalState tactical = new TacticalState(PieceAlignment.P2,
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
                 List.of(),
                 threats);
@@ -135,7 +135,7 @@ class BotDecisionTest {
     void attackEvaluator_skipsNoActionsPiece() {
         Entity ally = mockAlly(0, 3);
 
-        TacticalState tactical = new TacticalState(
+        TacticalState tactical = new TacticalState(PieceAlignment.P2,
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
                 List.of(),
                 threats);
@@ -150,7 +150,7 @@ class BotDecisionTest {
     void attackEvaluator_noTargets_emptyOutput() {
         Entity ally = place(mockAlly(1, 3), 1, 1);
 
-        TacticalState tactical = new TacticalState(
+        TacticalState tactical = new TacticalState(PieceAlignment.P2,
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
                 List.of(),
                 threats);
@@ -167,7 +167,7 @@ class BotDecisionTest {
         place(mockEnemy(5), 1, 2);
         place(mockEnemy(4), 0, 1);
 
-        TacticalState tactical = new TacticalState(
+        TacticalState tactical = new TacticalState(PieceAlignment.P2,
                 List.of(new PieceEntry(new Coord(1, 1), ally)),
                 List.of(),
                 threats);

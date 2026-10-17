@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.bot.eval;
 
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.bot.command.BotCommand;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.bot.search.ThreatMap;
 
@@ -33,6 +34,18 @@ public class BotActionContext {
     public record PieceEntry(Coord pos, Entity entity) {
     }
 
-    public record TacticalState(List<PieceEntry> allies, List<PieceEntry> enemies, ThreatMap threats) {
+    /**
+     * @param self the alignment the bot is playing — evaluators are alignment-agnostic and
+     *             read "my side", "forward" and home/goal rows from here
+     */
+    public record TacticalState(PieceAlignment self, List<PieceEntry> allies, List<PieceEntry> enemies,
+                                ThreatMap threats) {
+        public PieceAlignment enemy() {
+            return opponentOf(self);
+        }
+    }
+
+    public static PieceAlignment opponentOf(PieceAlignment alignment) {
+        return alignment == PieceAlignment.P1 ? PieceAlignment.P2 : PieceAlignment.P1;
     }
 }

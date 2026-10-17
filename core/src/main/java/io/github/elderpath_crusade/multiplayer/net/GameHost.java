@@ -11,7 +11,6 @@ import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.systems.PlayerSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
-import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.utils.Logger;
 
@@ -116,8 +115,7 @@ public class GameHost {
 
     private GameSnapshot buildSnapshot() {
         List<GameSnapshot.PieceState> pieces = new ArrayList<>();
-        Board board = GameContext.get().getActiveBoard();
-        if (board != null) {
+        if (GameContext.get().getActiveGrid() != null) {
             ImmutableArray<Entity> entities = GameContext.get().getEcsEngine().getEntitiesFor(
                     Family.all(IdentityComponent.class, PositionComponent.class,
                             AlignmentComponent.class, StatsComponent.class).get());

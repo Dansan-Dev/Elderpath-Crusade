@@ -24,6 +24,11 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
     private final Map<String, List<Coord>> reachableCache = new HashMap<>();
 
+    // The side being played, set per build() — this evaluator is alignment-agnostic.
+    private PieceAlignment self = PieceAlignment.P2;
+    private PieceAlignment enemy = PieceAlignment.P1;
+    private int goalRow = 0;
+
     public MovementEvaluator(BotConfig config) {
         super(config);
     }
@@ -40,6 +45,9 @@ public class MovementEvaluator extends BotEvaluatorBase {
     @Override
     public void build(BoardGrid board, TacticalState tactical, List<Intent> output) {
         clearCache();
+        self = tactical.self();
+        enemy = tactical.enemy();
+        goalRow = board.getGoalRow(self);
         buildWinPathIntents(board, tactical, output);
         buildAdvanceIntents(board, tactical, output);
         buildManeuverIntents(board, tactical, output);
@@ -53,7 +61,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 continue;
             }
 
-            WinPathResult result = estimateTurnsToRow0(board, entity, pos.row(), pos.col(), tactical.threats(),
+            WinPathResult result = estimateTurnsToGoal(board, entity, pos.row(), pos.col(), tactical.threats(),
                     getRemainingActions(entity));
             if (result == null || result.turns() > 2 || result.firstMove() == null) {
                 continue;
@@ -112,7 +120,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 Coord lethalDest = null;
                 int bestForwardBias = -9999;
                 for (Coord p : reachable) {
-                    List<Coord> attacks = board.getAttackableEnemies(p.row(), p.col(), PieceAlignment.P2);
+                    List<Coord> attacks = board.getAttackableEnemies(p.row(), p.col(), self);
                     if (attacks == null || attacks.isEmpty())
                         continue;
 
@@ -129,7 +137,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                     }
 
                     if (lethalExists) {
-                        int forwardBias = (p.row() < pos.row() ? 1 : (p.row() > pos.row() ? -1 : 0));
+                        int forwardBias = forwardness(board, self, pos.row(), p.row());
                         if (lethalDest == null || forwardBias > bestForwardBias) {
                             lethalDest = p;
                             bestForwardBias = forwardBias;
@@ -140,9 +148,9 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 if (lethalDest != null) {
                     final Coord finalLethalDest = lethalDest;
                     int score = config.scoreRogueLethalMove();
-                    if (finalLethalDest.row() < pos.row())
+                    if (forwardness(board, self, pos.row(), finalLethalDest.row()) > 0)
                         score += config.dirForwardBonus();
-                    else if (finalLethalDest.row() > pos.row())
+                    else if (forwardness(board, self, pos.row(), finalLethalDest.row()) < 0)
                         score -= config.dirBackwardPenalty();
 
                     output.add(new Intent(score,
@@ -162,7 +170,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                     boolean allowRogueThreat = false;
 
                     if (threatened && hasRogue) {
-                        List<Coord> attacks = board.getAttackableEnemies(p.row(), p.col(), PieceAlignment.P2);
+                        List<Coord> attacks = board.getAttackableEnemies(p.row(), p.col(), self);
                         allowRogueThreat = attacks != null && !attacks.isEmpty();
                     }
 
@@ -189,14 +197,14 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 final Coord finalBestPlot = bestPlot;
                 int gain = Math.max(0, currentDist - bestDist);
                 int score = config.scoreAdvanceBase() + Math.min(10, gain);
-                if (finalBestPlot.row() < pos.row())
+                if (forwardness(board, self, pos.row(), finalBestPlot.row()) > 0)
                     score += config.dirForwardBonus();
-                else if (finalBestPlot.row() > pos.row())
+                else if (forwardness(board, self, pos.row(), finalBestPlot.row()) < 0)
                     score -= config.dirBackwardPenalty();
 
                 if (isRogue(entity)) {
                     List<Coord> attacks = board.getAttackableEnemies(finalBestPlot.row(), finalBestPlot.col(),
-                            PieceAlignment.P2);
+                            self);
                     if (attacks != null && !attacks.isEmpty()) {
                         int bonus = config.bonusRogueFreeStrike();
                         boolean lethalExists = false;
@@ -250,14 +258,15 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
             // Lane decongestion scan
             int allyWeightInLane = -1;
-            for (int r = pos.row() + 1; r < rows; r++) {
+            int back = -forwardness(board, self, 0, 1); // row step toward our own home row
+            for (int r = pos.row() + back; r >= 0 && r < rows; r += back) {
                 Entity allyBehind = board.getEntityAt(r, pos.col());
-                if (allyBehind != null && EntityUtils.getAlignment(allyBehind) == PieceAlignment.P2) {
+                if (allyBehind != null && EntityUtils.getAlignment(allyBehind) == self) {
                     allyWeightInLane = EntityUtils.getDamage(allyBehind) * 2 + EntityUtils.getActions(allyBehind)
                             + EntityUtils.getSpeed(allyBehind);
-                    WinPathResult myTTW = estimateTurnsToRow0(board, entity, pos.row(), pos.col(), tactical.threats(),
+                    WinPathResult myTTW = estimateTurnsToGoal(board, entity, pos.row(), pos.col(), tactical.threats(),
                             actionsRemaining);
-                    WinPathResult allyTTW = estimateTurnsToRow0(board, allyBehind, r, pos.col(), tactical.threats(),
+                    WinPathResult allyTTW = estimateTurnsToGoal(board, allyBehind, r, pos.col(), tactical.threats(),
                             getRemainingActions(allyBehind));
                     if (myTTW != null && allyTTW != null
                             && allyTTW.turns() < (myTTW.turns() == 0 ? 0 : myTTW.turns())) {
@@ -270,7 +279,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
             int currentDist = tactical.enemies().isEmpty() ? Integer.MAX_VALUE
                     : nearestManhattan(pos.row(), pos.col(), tactical.enemies());
-            WinPathResult myTTWNow = estimateTurnsToRow0(board, entity, pos.row(), pos.col(), tactical.threats(),
+            WinPathResult myTTWNow = estimateTurnsToGoal(board, entity, pos.row(), pos.col(), tactical.threats(),
                     actionsRemaining);
 
             for (Coord p : candidates) {
@@ -285,9 +294,9 @@ public class MovementEvaluator extends BotEvaluatorBase {
                             + Math.min(15, 5 * Math.max(0, tactical.threats().getCount(dr, dc) - 1)));
                 }
 
-                if (dr < pos.row())
+                if (forwardness(board, self, pos.row(), dr) > 0)
                     score += config.dirForwardBonus();
-                else if (dr > pos.row())
+                else if (forwardness(board, self, pos.row(), dr) < 0)
                     score -= config.dirBackwardPenalty();
 
                 if (underAdjThreatNow && !(dr == pos.row() && dc == pos.col())) {
@@ -307,7 +316,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 }
 
                 int actionsAfter = actionsRemaining - ((dr == pos.row() && dc == pos.col()) ? 0 : 1);
-                WinPathResult myTTWDest = estimateTurnsToRow0(board, entity, dr, dc, tactical.threats(),
+                WinPathResult myTTWDest = estimateTurnsToGoal(board, entity, dr, dc, tactical.threats(),
                         Math.max(0, actionsAfter));
                 if (myTTWNow != null && myTTWDest != null && myTTWNow.turns() > myTTWDest.turns()) {
                     if (myTTWNow.turns() == 2 && myTTWDest.turns() == 1)
@@ -358,7 +367,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
         return penalty;
     }
 
-    private WinPathResult estimateTurnsToRow0(BoardGrid board, Entity entity, int row, int col, ThreatMap threats,
+    private WinPathResult estimateTurnsToGoal(BoardGrid board, Entity entity, int row, int col, ThreatMap threats,
             int actions) {
         int speed = EntityUtils.getSpeed(entity);
         int maxActions = EntityUtils.getActions(entity);
@@ -374,7 +383,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
         int expansions = 0;
         while (!queue.isEmpty() && expansions < config.maxWinExpansions()) {
             BotSearchState state = queue.poll();
-            if (state.pos.row() == 0) {
+            if (state.pos.row() == goalRow) {
                 return new WinPathResult(state.turnDepth, state.firstMove, state.threatCount,
                         state.endsFirstTurnInThreat);
             }
@@ -414,7 +423,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             int nc = col + dir[1];
             if (inBounds(board, nr, nc)) {
                 Entity target = board.getEntityAt(nr, nc);
-                if (target != null && EntityUtils.getAlignment(target) == PieceAlignment.P1) {
+                if (target != null && EntityUtils.getAlignment(target) == enemy) {
                     if (EntityUtils.getDamage(entity) >= EntityUtils.getCurrentHealth(target))
                         return true;
                 }

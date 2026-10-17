@@ -4,12 +4,10 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
-import io.github.elderpath_crusade.characters.sprites.checker_sprites.NamedCheckerSprite;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
 
 import java.util.UUID;
 
@@ -18,25 +16,14 @@ import java.util.UUID;
  * Returns pure ECS entities — no OOP piece classes.
  */
 public final class PieceFactory {
-    /** Plot size used for a piece's sprite when no board view is active. */
-    private static final int DEFAULT_PLOT_SIZE = 40;
-
     private PieceFactory() {}
 
-    /** createPiece sized to the active board view's plots (or a default when there is none). */
-    public static Entity createPiece(PieceDefinition def, PieceAlignment alignment, int row, int col) {
-        Board board = GameContext.get().getActiveBoard();
-        int width = board != null ? board.getPLOT_WIDTH() : DEFAULT_PLOT_SIZE;
-        int height = board != null ? board.getPLOT_HEIGHT() : DEFAULT_PLOT_SIZE;
-        return createPiece(def, 0, 0, width, height, alignment, row, col);
-    }
-
     /**
-     * Creates a fully-configured ECS entity from a PieceDefinition, adds it to the engine,
-     * and registers it in GridIndexSystem.
+     * Creates a fully-configured ECS entity from a PieceDefinition and adds it to the engine.
+     * Headless — no sprite; a client's view layer attaches one (see PieceSpriteAttacher).
+     * The caller registers it on the grid.
      */
-    public static Entity createPiece(PieceDefinition def, int x, int y, int width, int height,
-                                     PieceAlignment alignment, int row, int col) {
+    public static Entity createPiece(PieceDefinition def, PieceAlignment alignment, int row, int col) {
         Engine engine = GameContext.get().getEcsEngine();
         String pieceId = UUID.randomUUID().toString();
 
@@ -45,8 +32,6 @@ public final class PieceFactory {
         entity.add(new AlignmentComponent().set(alignment));
         entity.add(new PositionComponent().set(row, col));
         entity.add(new StatsComponent().set(def.cost(), def.health(), def.damage(), def.speed(), def.actions()));
-        entity.add(new SpriteComponent().set(def.id())
-                .setRenderable(new NamedCheckerSprite(x, y, width, height, def.id(), alignment)));
         entity.add(new ModifierComponent());
         entity.add(new ComputedStatsComponent());
 

@@ -59,9 +59,14 @@ public class Board extends HigherOrderTexture implements Updatable {
     private boolean zsDirty = true;
 
     public Board(int x, int y, int plot_width, int plot_height, int rows, int cols) {
-        ROWS = rows;
-        COLS = cols;
-        grid = new BoardGrid(rows, cols);
+        this(new BoardGrid(rows, cols), x, y, plot_width, plot_height);
+    }
+
+    /** A view of an existing logical grid (e.g. the one MatchSetup created for the match). */
+    public Board(BoardGrid grid, int x, int y, int plot_width, int plot_height) {
+        ROWS = grid.getRows();
+        COLS = grid.getCols();
+        this.grid = grid;
         grid.setChangeListener(this::markDirtyAndNotify);
         PLOT_WIDTH = plot_width;
         PLOT_HEIGHT = plot_height;

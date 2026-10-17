@@ -145,9 +145,15 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return false;
     }
 
-    protected boolean summonAndVerify(CardInstance card, Coord target) {
+    protected boolean summonAndVerify(PieceAlignment self, CardInstance card, Coord target) {
         return GameContext.get().getGameServer().playSummonCard(
-                PieceAlignment.P2, card.instanceId(), target.row(), target.col());
+                self, card.instanceId(), target.row(), target.col());
+    }
+
+    /** +1 if moving from fromRow to toRow advances toward self's goal row, -1 if it retreats, 0 if sideways. */
+    protected int forwardness(BoardGrid board, PieceAlignment self, int fromRow, int toRow) {
+        int forward = board.getGoalRow(self) > board.getHomeRow(self) ? 1 : -1;
+        return Integer.signum((toRow - fromRow) * forward);
     }
 
     protected int nearestManhattan(int row, int col, List<PieceEntry> targets) {

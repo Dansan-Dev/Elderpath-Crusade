@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade;
 
+import io.github.elderpath_crusade.match.MatchSetup;
 import com.badlogic.gdx.ApplicationAdapter;
 import io.github.elderpath_crusade.api.BackendService;
 import io.github.elderpath_crusade.api.dto.UserListResponseDto;
@@ -70,7 +71,7 @@ public class Main extends ApplicationAdapter {
 
         // UPDATE
         GameContext.get().getOnlineMatch().update();
-        GameContext.get().getEcsEngine().update(delta);
+        MatchSetup.tick(delta); // scheduled match tasks (bot pacing), then the ECS engine
         GameContext.get().getHighlightManager().update();
         GameContext.get().getGraphicsManager().update(delta);
 

@@ -437,8 +437,7 @@ public class EffectExecutor {
                     if (!(chosen instanceof Plot plot)) return;
                     int[] idx = plot.getIndices();
 
-                    Entity piece = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
-                            alignment, idx[0], idx[1]);
+                    Entity piece = PieceFactory.createPiece(def, alignment, idx[0], idx[1]);
                     String pieceId = EntityUtils.getId(piece);
                     grid.addEntity(idx[0], idx[1], piece);
                     TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, idx[0], idx[1]));

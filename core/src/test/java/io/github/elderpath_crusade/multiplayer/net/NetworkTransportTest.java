@@ -4,18 +4,21 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.ecs.components.StatsComponent;
+import io.github.elderpath_crusade.ecs.factory.PieceFactory;
+import io.github.elderpath_crusade.match.BoardGrid;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Proves the network plumbing round-trips correctly over real loopback sockets:
@@ -28,14 +31,15 @@ class NetworkTransportTest {
 
     private GameHost host;
     private GameClient client;
-    private Board board;
+    private BoardGrid grid;
 
     @BeforeEach
     void setUp() throws Exception {
         TypedEventBus.get().clear();
         GameContext.create();
-        board = mock(Board.class);
-        GameContext.get().setActiveBoard(board);
+        GameContext.get().getTurnManager().reset(); // P1 to act
+        grid = new BoardGrid(7, 5);
+        GameContext.get().setActiveGrid(grid);
 
         host = new GameHost();
         host.start(0); // ephemeral port, OS-assigned
@@ -51,18 +55,18 @@ class NetworkTransportTest {
 
     @Test
     void commandFromClientDispatchesThroughGameServerOnHost() throws InterruptedException {
-        AtomicInteger moveCalls = new AtomicInteger();
-        when(board.movePiece(1, 2, 3, 4)).thenAnswer(inv -> {
-            moveCalls.incrementAndGet();
-            return true;
-        });
+        Entity piece = PieceFactory.createFromDefinition(GameContext.get().getEcsEngine(),
+                new PieceDefinition("Wolf", 1, 3, 1, 1, 1, List.of()), PieceAlignment.P1,
+                UUID.randomUUID().toString(), 1, 2);
+        piece.getComponent(StatsComponent.class).remainingActions = 1;
+        grid.addEntity(1, 2, piece);
 
-        client.send(new NetworkCommand.MovePlot(1, 2, 3, 4));
+        client.send(new NetworkCommand.MovePlot(1, 2, 2, 2));
 
         awaitTrue(() -> {
             host.update();
-            return moveCalls.get() == 1;
-        }, "command dispatched to GameServer/Board.movePiece");
+            return grid.getEntityAt(2, 2) == piece;
+        }, "command dispatched through GameServer — the piece moved on the host's grid");
     }
 
     @Test
@@ -77,7 +81,7 @@ class NetworkTransportTest {
         }, "snapshot delivered to client on connect");
 
         assertEquals(PieceAlignment.P1, received.get(0).currentPlayer());
-        assertTrue(received.get(0).pieces().isEmpty()); // no entities exist in this test's board
+        assertTrue(received.get(0).pieces().isEmpty()); // no entities exist on this test's grid
     }
 
     @Test

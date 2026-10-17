@@ -1,6 +1,8 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.bot.BotKind;
+import io.github.elderpath_crusade.bot.BotManager;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
@@ -9,6 +11,7 @@ import io.github.elderpath_crusade.game_objects.cards.Card;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class DemoRoom extends BattleRoom {
 
@@ -43,9 +46,17 @@ public class DemoRoom extends BattleRoom {
         return names;
     }
 
+    /** P2 is a bot unless the debug setting turns it off. */
+    @Override
+    protected Map<PieceAlignment, BotKind> botSlots() {
+        return GameContext.get().getSettingsManager().debug.enableP2Bot
+                ? Map.of(PieceAlignment.P2, BotKind.SMART)
+                : Map.of();
+    }
+
     /** With the P2 bot enabled, its hand is face-down during its own turn and face-up during P1's. */
     private void applyBotHandVisibility(TurnStartedEvent event) {
-        if (!GameContext.get().getSettingsManager().debug.enableP2Bot) return;
+        if (!BotManager.isBotControlled(PieceAlignment.P2)) return;
         boolean faceUp = event.player() == PieceAlignment.P1;
         for (Card c : handP2.getCards()) {
             if (c != null && c.isFaceUp() != faceUp) {

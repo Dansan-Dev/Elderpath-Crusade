@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.bot.impl;
 import io.github.elderpath_crusade.match.CardInstance;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
-import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
@@ -23,17 +22,22 @@ public class BasicBot implements Bot {
     private static final float DELAY_BEFORE_END = 0.4f;
     private static final int MAX_ACTIONS_PER_TURN = 50;
 
+    private PieceAlignment self = PieceAlignment.P2;
+    private PieceAlignment enemy = PieceAlignment.P1;
+
     @Override
     public String getName() { return "BasicBot"; }
 
     @Override
     public void onTurnStarted(PieceAlignment player) {
-        if (player != PieceAlignment.P2) return;
+        if (player != PieceAlignment.P1 && player != PieceAlignment.P2) return;
+        self = player;
+        enemy = player == PieceAlignment.P1 ? PieceAlignment.P2 : PieceAlignment.P1;
         chainNextAction(0);
     }
 
     private void chainNextAction(int actionsDone) {
-        if (GameContext.get().getGameManager().isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != PieceAlignment.P2) return;
+        if (GameContext.get().getGameManager().isPaused() || GameContext.get().getTurnManager().getCurrentPlayer() != self) return;
         if (actionsDone >= MAX_ACTIONS_PER_TURN) { Logger.log("BasicBot", "Max actions cap; ending turn"); scheduleEndTurn(); return; }
 
         BoardGrid board = GameContext.get().getActiveGrid();
@@ -48,26 +52,29 @@ public class BasicBot implements Bot {
     }
 
     private void scheduleNextAction(final int actionsDone) {
-        Timer.schedule(new Timer.Task() { @Override public void run() { chainNextAction(actionsDone); } }, DELAY_BETWEEN_ACTIONS);
+        GameContext.get().getMatchClock().schedule(DELAY_BETWEEN_ACTIONS, () -> chainNextAction(actionsDone));
     }
 
     private void scheduleEndTurn() {
-        Timer.schedule(new Timer.Task() {
-            @Override public void run() { if (!GameContext.get().getGameManager().isPaused()) GameContext.get().getTurnManager().endTurn(); }
-        }, DELAY_BEFORE_END);
+        PieceAlignment endingFor = self;
+        GameContext.get().getMatchClock().schedule(DELAY_BEFORE_END, () -> {
+            if (!GameContext.get().getGameManager().isPaused()
+                    && GameContext.get().getTurnManager().getCurrentPlayer() == endingFor)
+                GameContext.get().getTurnManager().endTurn();
+        });
     }
 
     private boolean tryPlayOneWolfCard(BoardGrid b) {
-        var ps = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
+        var ps = GameContext.get().getPlayerManager().get(self);
         if (ps == null) return false;
         CardInstance targetCard = null;
         for (CardInstance c : ps.hand.getCards()) { if ("Wolf".equals(c.cardName())) { targetCard = c; break; } }
         if (targetCard == null) return false;
 
-        int homeRow = b.getHomeRow(PieceAlignment.P2);
+        int homeRow = b.getHomeRow(self);
         for (int col = 0; col < b.getCols(); col++) {
-            if (b.isValidSummonTarget(homeRow, col, PieceAlignment.P2)
-                    && GameContext.get().getGameServer().playSummonCard(PieceAlignment.P2, targetCard.instanceId(), homeRow, col)) return true;
+            if (b.isValidSummonTarget(homeRow, col, self)
+                    && GameContext.get().getGameServer().playSummonCard(self, targetCard.instanceId(), homeRow, col)) return true;
         }
         return false;
     }
@@ -77,8 +84,8 @@ public class BasicBot implements Bot {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 Entity entity = b.getEntityAt(r, c);
-                if (entity != null && EntityUtils.getAlignment(entity) == PieceAlignment.P2) {
-                    List<Coord> hostile = b.getAttackableEnemies(r, c, PieceAlignment.P2);
+                if (entity != null && EntityUtils.getAlignment(entity) == self) {
+                    List<Coord> hostile = b.getAttackableEnemies(r, c, self);
                     if (!hostile.isEmpty()) {
                         Coord dst = hostile.get(0);
                         Entity defenderBefore = b.getEntityAt(dst.row(), dst.col());
@@ -101,12 +108,12 @@ public class BasicBot implements Bot {
         List<int[]> enemies = new ArrayList<>();
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             Entity e = b.getEntityAt(r, c);
-            if (e != null && EntityUtils.getAlignment(e) == PieceAlignment.P1) enemies.add(new int[]{r,c});
+            if (e != null && EntityUtils.getAlignment(e) == enemy) enemies.add(new int[]{r,c});
         }
         if (enemies.isEmpty()) return false;
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             Entity entity = b.getEntityAt(r, c);
-            if (entity == null || EntityUtils.getAlignment(entity) != PieceAlignment.P2) continue;
+            if (entity == null || EntityUtils.getAlignment(entity) != self) continue;
             int currentDist = nearestEnemyManhattan(r,c,enemies);
             if (currentDist <= 1) continue;
             int speed = EntityUtils.getSpeed(entity);

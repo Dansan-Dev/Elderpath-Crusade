@@ -2,7 +2,7 @@ package io.github.elderpath_crusade.server;
 
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.match.MoveRules;
 
 /**
  * Single authoritative entry point for game actions (move/attack, card play), taking
@@ -18,9 +18,7 @@ public class GameServer {
 
     /** Moves or attacks with the piece at (srcRow, srcCol) toward (dstRow, dstCol). Returns true on success. */
     public boolean movePlot(int srcRow, int srcCol, int dstRow, int dstCol) {
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null) return false;
-        return board.movePiece(srcRow, srcCol, dstRow, dstCol);
+        return MoveRules.moveOrAttack(srcRow, srcCol, dstRow, dstCol);
     }
 
     /** Plays the summon card instanceId from alignment's hand onto (row, col). Returns true on success. */

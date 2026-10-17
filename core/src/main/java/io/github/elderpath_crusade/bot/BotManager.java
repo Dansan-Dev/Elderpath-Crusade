@@ -1,79 +1,67 @@
 package io.github.elderpath_crusade.bot;
 
-import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.bot.Bot;
-import io.github.elderpath_crusade.bot.impl.BasicBot;
-import io.github.elderpath_crusade.bot.impl.SmartBot;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.utils.Logger;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
- * Delegates P2 TURN_STARTED to a configured Bot implementation.
- * The chosen bot drives its own pacing and ends the turn when finished.
+ * Plays the match's bot-controlled slots: on TURN_STARTED for a slot that has a bot, hands
+ * the turn to that slot's Bot (one instance per slot). The bot drives its own pacing via
+ * the MatchClock and ends the turn when finished. Slots come from the MatchConfig (see
+ * MatchSetup) — any alignment can be a bot, including both (bot vs bot).
  */
 public final class BotManager {
-    private boolean initialized = false;
     private static final float DELAY_BEFORE_ACT = 0.4f;
-    private Bot bot = null;
+
+    private boolean initialized = false;
+    private final Map<PieceAlignment, Bot> slots = new EnumMap<>(PieceAlignment.class);
 
     public BotManager() {}
 
     public void initialize() {
         if (initialized) return;
         initialized = true;
-        if (bot == null) {
-            try {
-                bot = new SmartBot();
-            } catch (Throwable t) {
-                Logger.error("BotManager", "Failed to init SmartBot, falling back to BasicBot: " + t.getMessage());
-                bot = new BasicBot();
-            }
-        }
 
         TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, evt -> {
-            GameMode mode = GameContext.get().getGameModeManager().getCurrent();
-            if (mode == GameMode.LOCAL_MATCH || mode == GameMode.ONLINE_MATCH) return;
-            if (!GameContext.get().getSettingsManager().debug.enableP2Bot) return;
-            if (evt.player() != PieceAlignment.P2) return;
+            Bot bot = slots.get(evt.player());
+            if (bot == null) return;
             if (GameContext.get().getGameManager().isPaused()) return;
             if (GameContext.get().getInteractionManager().hasActiveSelection()) {
                 GameContext.get().getInteractionManager().cancelSelection();
             }
-            Timer.schedule(new Timer.Task() {
-                @Override
-                public void run() {
-                    try {
-                        if (bot == null) {
-                            Logger.error("BotManager", "No bot configured; cannot act");
-                            return;
-                        }
-                        Logger.log("BotManager", "Starting P2 turn with bot: " + bot.getName());
-                        bot.onTurnStarted(PieceAlignment.P2);
-                    } catch (Exception ex) {
-                        Logger.error("BotManager", "Exception in bot.onTurnStarted: " + ex.getMessage());
-                    }
+            PieceAlignment player = evt.player();
+            GameContext.get().getMatchClock().schedule(DELAY_BEFORE_ACT, () -> {
+                try {
+                    Logger.log("BotManager", "Starting " + player + " turn with bot: " + bot.getName());
+                    bot.onTurnStarted(player);
+                } catch (Exception ex) {
+                    Logger.error("BotManager", "Exception in bot.onTurnStarted: " + ex.getMessage());
                 }
-            }, DELAY_BEFORE_ACT);
+            });
         });
     }
 
-    public void resetSession() {
+    /** Starts a new match session with these bot-controlled slots (fresh bot instances). */
+    public void resetSession(Map<PieceAlignment, BotKind> bots) {
+        slots.clear();
+        bots.forEach((alignment, kind) -> slots.put(alignment, kind.create()));
         initialized = false;
         initialize();
     }
 
-    public void setBot(Bot bot) { this.bot = bot; }
+    /** Replaces the bot playing a slot (null makes it human-controlled). */
+    public void setBot(PieceAlignment alignment, Bot bot) {
+        if (bot == null) slots.remove(alignment);
+        else slots.put(alignment, bot);
+    }
 
-    /** True if the given alignment is currently played by the bot rather than a human. */
+    /** True if the given alignment is currently played by a bot rather than a human. */
     public static boolean isBotControlled(PieceAlignment alignment) {
-        GameMode mode = GameContext.get().getGameModeManager().getCurrent();
-        return alignment == PieceAlignment.P2
-            && GameContext.get().getSettingsManager().debug.enableP2Bot
-            && mode != GameMode.LOCAL_MATCH
-            && mode != GameMode.ONLINE_MATCH;
+        return alignment != null && GameContext.get().getBotManager().slots.containsKey(alignment);
     }
 }

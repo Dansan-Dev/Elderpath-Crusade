@@ -27,13 +27,14 @@ public class SummonEvaluator extends BotEvaluatorBase {
 
     @Override
     public void build(BoardGrid board, TacticalState tactical, List<Intent> output) {
-        var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
+        PieceAlignment self = tactical.self();
+        var player = GameContext.get().getPlayerManager().get(self);
         if (player == null) {
             return;
         }
 
         int currentMana = player.getMana();
-        int homeRow = board.getHomeRow(PieceAlignment.P2);
+        int homeRow = board.getHomeRow(self);
         int cols = board.getCols();
 
         // Determine threatened column closest to our home row
@@ -50,13 +51,13 @@ public class SummonEvaluator extends BotEvaluatorBase {
 
         // Collect candidate plots: preferred column first, then all home-row plots
         List<Coord> candidates = new ArrayList<>();
-        if (bestCol != -1 && board.isValidSummonTarget(homeRow, bestCol, PieceAlignment.P2)) {
+        if (bestCol != -1 && board.isValidSummonTarget(homeRow, bestCol, self)) {
             candidates.add(new Coord(homeRow, bestCol));
         }
 
         if (candidates.isEmpty()) {
             for (int col = 0; col < cols; col++) {
-                if (board.isValidSummonTarget(homeRow, col, PieceAlignment.P2)) {
+                if (board.isValidSummonTarget(homeRow, col, self)) {
                     candidates.add(new Coord(homeRow, col));
                 }
             }
@@ -91,7 +92,7 @@ public class SummonEvaluator extends BotEvaluatorBase {
             int score = config.scoreSummonBase() + Math.min(30, bestValueScore / 2);
 
             output.add(new Intent(score,
-                    () -> summonAndVerify(card, target),
+                    () -> summonAndVerify(self, card, target),
                     IntentType.DEF_SUMMON));
         }
     }

@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.bot.BotManager;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.enums.GameMode;
@@ -93,8 +94,8 @@ public class SummonCard extends UnitCard implements TargetFilter {
     }
 
     /**
-     * Whether this screen's player may act for alignment: online, only their own side; with
-     * the P2 bot enabled (outside hotseat), never P2.
+     * Whether this screen's player may act for alignment: online, only their own side; never
+     * for a bot-controlled side.
      */
     static boolean isLocallyControlled(PieceAlignment alignment) {
         GameMode mode = GameContext.get().getGameModeManager().getCurrent();
@@ -102,8 +103,6 @@ public class SummonCard extends UnitCard implements TargetFilter {
             PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
             return local == null || alignment == local;
         }
-        return !(alignment == PieceAlignment.P2
-                && GameContext.get().getSettingsManager().debug.enableP2Bot
-                && mode != GameMode.LOCAL_MATCH);
+        return !BotManager.isBotControlled(alignment);
     }
 }

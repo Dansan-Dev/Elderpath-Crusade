@@ -33,7 +33,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
                 continue;
             }
 
-            List<Coord> hostileTargets = board.getAttackableEnemies(source.row(), source.col(), PieceAlignment.P2);
+            List<Coord> hostileTargets = board.getAttackableEnemies(source.row(), source.col(), tactical.self());
             if (hostileTargets == null) {
                 continue;
             }
@@ -41,7 +41,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
             for (Coord target : hostileTargets) {
                 Entity defender = board.getEntityAt(target.row(), target.col());
 
-                int score = scoreAdjacentAttack(board, source, target, attacker, defender, tactical.threats());
+                int score = scoreAdjacentAttack(board, tactical.self(), source, target, attacker, defender, tactical.threats());
                 output.add(new Intent(score,
                         () -> attackAndVerify(board, source.row(), source.col(), target.row(), target.col(), attacker),
                         IntentType.ADJ_ATTACK,
@@ -50,7 +50,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
         }
     }
 
-    private int scoreAdjacentAttack(BoardGrid board, Coord source, Coord target, Entity attacker,
+    private int scoreAdjacentAttack(BoardGrid board, PieceAlignment self, Coord source, Coord target, Entity attacker,
             Entity defender, ThreatMap threats) {
         int basePoints = config.scoreAdjAttackBase();
         boolean lethal = false;
@@ -67,9 +67,9 @@ public class AttackEvaluator extends BotEvaluatorBase {
             basePoints += Math.min(10, EntityUtils.getCost(defender));
             basePoints += Math.min(3, Math.max(0, EntityUtils.getDamage(defender)));
 
-            // Defensive Urgency: prioritize enemies closer to our home row (ROWS-1)
+            // Defensive Urgency: prioritize enemies closer to our home row
             int rows = board.getRows();
-            int homeRow = rows - 1;
+            int homeRow = board.getHomeRow(self);
             int distToHome = Math.abs(homeRow - target.row());
             int urgency = Math.max(0, rows - distToHome);
             basePoints += Math.min(5, urgency / 2);

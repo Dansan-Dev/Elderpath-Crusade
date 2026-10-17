@@ -28,6 +28,7 @@ import io.github.elderpath_crusade.config.InfoDataManager;
 import io.github.elderpath_crusade.input.InputManager;
 import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.MatchClock;
 import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
@@ -83,17 +84,21 @@ public class GameContext {
     @Getter private final GameServer gameServer;
     @Getter private final CardRules cardRules;
     @Getter private final OnlineMatchSession onlineMatch;
+    @Getter private final MatchClock matchClock;
+    /** True for a headless (server/test) context: no render system, nothing that needs a GL context. */
+    @Getter private final boolean headless;
     @Getter private Board activeBoard;
     /** The logical board of the active match — what game logic reads; activeBoard is its view. */
     @Getter private BoardGrid activeGrid;
     @Getter private GameSession activeSession;
 
-    private GameContext() {
+    private GameContext(boolean headless) {
+        this.headless = headless;
         this.eventBus = TypedEventBus.get();
         this.stateMachine = new GameStateMachine(this);
         this.ecsEngine = new Engine();
         this.combatSystem = new CombatSystem();
-        this.pieceRenderSystem = new PieceRenderSystem();
+        this.pieceRenderSystem = headless ? null : new PieceRenderSystem();
         this.ecsEngine.addSystem(new TurnSystem());
         this.ecsEngine.addSystem(new PlayerSystem());
         this.ecsEngine.addSystem(new PieceSyncSystem());
@@ -105,7 +110,7 @@ public class GameContext {
         this.ecsEngine.addSystem(this.combatSystem);
         this.ecsEngine.addSystem(new DeathSystem());
         this.ecsEngine.addSystem(new HealSystem());
-        this.ecsEngine.addSystem(this.pieceRenderSystem);
+        if (!headless) this.ecsEngine.addSystem(this.pieceRenderSystem);
         this.ecsEngine.addSystem(new AbilityResolverSystem());
         this.assets = new AssetService();
         this.turnManager = new TurnManager();
@@ -132,10 +137,21 @@ public class GameContext {
         this.gameServer = new GameServer();
         this.cardRules = new CardRules();
         this.onlineMatch = new OnlineMatchSession();
+        this.matchClock = new MatchClock();
     }
 
     public static GameContext create() {
-        instance = new GameContext();
+        instance = new GameContext(false);
+        return instance;
+    }
+
+    /**
+     * A context for running a match with no window — a headless server or a test. The
+     * simulation (ECS gameplay systems, turns, players, cards, bots, win conditions) is fully
+     * functional; nothing that renders is registered.
+     */
+    public static GameContext createHeadless() {
+        instance = new GameContext(true);
         return instance;
     }
 

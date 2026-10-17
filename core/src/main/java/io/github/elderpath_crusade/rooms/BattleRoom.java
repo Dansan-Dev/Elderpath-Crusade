@@ -1,6 +1,12 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.bot.BotKind;
+import io.github.elderpath_crusade.events.GameWonEvent;
+import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.MatchConfig;
+import io.github.elderpath_crusade.match.MatchSetup;
+import io.github.elderpath_crusade.rendering.PieceSpriteAttacher;
 import com.badlogic.gdx.graphics.Color;
 
 import io.github.elderpath_crusade.enums.FontType;
@@ -21,7 +27,7 @@ import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -43,40 +49,27 @@ public abstract class BattleRoom extends Room {
 
     protected final int plot_width = 40;
     protected final int plot_height = 40;
-    protected final int board_rows = 7;
-    protected final int board_cols = 5;
 
     protected static boolean LOGGER_REGISTERED = false;
 
     public BattleRoom(GameMode mode) {
         super();
 
-        // 0. Reset previous game session: clear ECS entities and session-scoped event listeners
-        GameContext.get().getEcsEngine().removeAllEntities();
-        // removeAllEntities() doesn't notify GridIndexSystem (it's a plain map updated only via
-        // onEntitySpawned/onEntityMoved/onEntityDied, not Ashley entity-removal listeners) — without
-        // this, Board.getEntityAtPos keeps resolving dangling entities from the last match at their
-        // final positions (still rendered as "occupied" for click/move validation, just invisible
-        // since nothing re-registers their sprites).
-        GameContext.get().getEcsEngine().getSystem(io.github.elderpath_crusade.ecs.systems.GridIndexSystem.class).clear();
-        TypedEventBus.get().clearGroup("session");
-        GameContext.get().getWinConditionManager().resetSession();
-        GameContext.get().getBotManager().resetSession();
-
-        // 1. Core State & Mode
+        // 0. Simulation: reset the previous match and set up this one headlessly (board grid,
+        // terrain, decks, bot slots). The first turn starts at the end, once the views below
+        // have bound to the session's events.
         GameContext.get().getMusicManager().playLoopingMusic("Daniel_Game.mp3");
-        GameContext.get().getTurnManager().reset();
-        GameContext.get().getGameModeManager().setCurrent(mode);
+        MatchConfig config = MatchConfig.standard(mode,
+                deckCardNames(PieceAlignment.P1), deckCardNames(PieceAlignment.P2), null, botSlots());
+        BoardGrid grid = MatchSetup.prepare(config);
+        TypedEventBus.get().registerScoped("session", GameWonEvent.class, e -> VictoryTransition.show(e.winner()));
 
-        // 2. Board
-        board = new Board(0, 0, plot_width, plot_height, board_rows, board_cols);
+        // 1. Board view over the match's grid; sprites for its entities (terrain now, pieces as they spawn)
+        board = new Board(grid, 0, 0, plot_width, plot_height);
         board.initializePlots();
         GameContext.get().setActiveBoard(board);
         addContent(board);
-
-        // Terrain setup — place blocking terrain entities
-        placeTerrain(board, 2, 1);
-        placeTerrain(board, 2, 3);
+        PieceSpriteAttacher.install(GameContext.get().getEcsEngine(), board);
 
         // 3. UI: Pause Hint
         int[] pmPos = this.pauseMenuPos.get();
@@ -120,17 +113,14 @@ public abstract class BattleRoom extends Room {
             handSyncP2.bindToEventBus();
         }
 
-        // 7. Decks: pure state from each room's card list (shuffled), plus a draw-pile view
-        for (PieceAlignment alignment : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
-            GameContext.get().getPlayerManager().setDeck(alignment, deckCardNames(alignment), new Random()).shuffle();
-        }
+        // 7. Deck views (the decks themselves are pure state, built by MatchSetup)
         deckP1 = createDeckView(PieceAlignment.P1);
         deckP2 = createDeckView(PieceAlignment.P2);
         addContent(deckP1);
         addContent(deckP2);
 
         // 8. Startup
-        GameContext.get().getTurnManager().startIfNeeded();
+        MatchSetup.begin();
 
         // 9. HUDs
         addUI(new ManaHud());
@@ -158,6 +148,11 @@ public abstract class BattleRoom extends Room {
      */
     protected boolean mirrorsRemoteMatch() {
         return false;
+    }
+
+    /** The match's bot-controlled slots — none by default (all human). */
+    protected Map<PieceAlignment, BotKind> botSlots() {
+        return Map.of();
     }
 
     private Deck createDeckView(PieceAlignment alignment) {
@@ -238,18 +233,5 @@ public abstract class BattleRoom extends Room {
             deckP2.getBounds().setX(screenW - deckP2.getWidth() - 10);
             deckP2.getBounds().setY(screenH - deckP2.getHeight() - 10);
         }
-    }
-
-    private void placeTerrain(Board board, int row, int col) {
-        com.badlogic.ashley.core.Engine engine = GameContext.get().getEcsEngine();
-        com.badlogic.ashley.core.Entity terrain = engine.createEntity();
-        terrain.add(new io.github.elderpath_crusade.ecs.components.PositionComponent().set(row, col));
-        terrain.add(new io.github.elderpath_crusade.ecs.components.TerrainComponent());
-        terrain.add(new io.github.elderpath_crusade.ecs.components.SpriteComponent()
-                .set("MountainTerrain")
-                .setRenderable(new io.github.elderpath_crusade.characters.sprites.terrain_sprites.MountainSprite(
-                        0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT())));
-        engine.addEntity(terrain);
-        board.addEntityToPos(row, col, terrain, "terrain_" + row + "_" + col);
     }
 }

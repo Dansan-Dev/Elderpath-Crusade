@@ -36,6 +36,11 @@ public final class AbilityRegistry {
         }
     }
 
+    /** Adds or replaces one definition — for tests and headless matches that define abilities in code. */
+    public static void register(AbilityDefinition definition) {
+        REGISTRY.put(definition.id(), definition);
+    }
+
     public static AbilityDefinition get(String name) {
         return REGISTRY.get(name);
     }

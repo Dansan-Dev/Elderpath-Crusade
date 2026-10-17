@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.server;
 
 import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.rooms.VictoryTransition;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
@@ -68,7 +69,7 @@ public class ReplicaEventApplier {
             else if (event instanceof ActionSpentEvent e) onActionSpent(e);
             else if (event instanceof ActionsResetEvent e) onActionsReset(e);
             else if (event instanceof TurnStartedEvent e) onTurnStarted(e);
-            else if (event instanceof GameWonEvent e) GameContext.get().getWinConditionManager().onGameWon(e);
+            else if (event instanceof GameWonEvent e) VictoryTransition.show(e.winner());
             // TurnEndedEvent, PieceKilledEvent, CardShuffledEvent: no direct board/HUD
             // mutation needed on the replica side.
         } catch (Exception ex) {
@@ -93,8 +94,7 @@ public class ReplicaEventApplier {
         PieceDefinition def = PieceRegistry.get(registryKey);
         Board board = GameContext.get().getActiveBoard();
         if (def == null || board == null) return;
-        Entity entity = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
-                e.owner(), pos[0], pos[1]);
+        Entity entity = PieceFactory.createPiece(def, e.owner(), pos[0], pos[1]);
         board.addEntityToPos(pos[0], pos[1], entity, e.pieceId());
         entitiesById.put(e.pieceId(), entity);
     }
@@ -206,8 +206,7 @@ public class ReplicaEventApplier {
         for (GameSnapshot.PieceState p : snapshot.pieces()) {
             PieceDefinition def = PieceRegistry.get(p.registryKey());
             if (def == null) continue;
-            Entity entity = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
-                    p.owner(), p.row(), p.col());
+            Entity entity = PieceFactory.createPiece(def, p.owner(), p.row(), p.col());
             StatsComponent stats = entity.getComponent(StatsComponent.class);
             if (stats != null) {
                 stats.currentHealth = p.currentHealth();
