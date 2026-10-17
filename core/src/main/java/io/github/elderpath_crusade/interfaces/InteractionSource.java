@@ -40,6 +40,13 @@ public interface InteractionSource extends CustomBox, TargetFilter {
         return null;
     }
 
+    /**
+     * Invoked when this source's selection ends without triggering — cancelled by the player
+     * (right click, ESC, re-clicking the source) or replaced by another source's selection.
+     */
+    default void onSelectionCancelled() {
+    }
+
     // Default CustomBox implementation for programmatic sources that don't have
     // physical bounds
     @Override

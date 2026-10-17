@@ -12,6 +12,11 @@ import io.github.elderpath_crusade.ecs.systems.PlayerSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.match.CardInstance;
+import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.PickRequest;
+import io.github.elderpath_crusade.match.PickResponder;
+import io.github.elderpath_crusade.match.PickResponse;
+import io.github.elderpath_crusade.match.PickRouter;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.io.IOException;
@@ -41,6 +46,7 @@ public class GameHost {
     public void start(int port) throws IOException {
         serverSocket = new ServerSocket(port);
         registerEventRelay();
+        GameContext.get().getPickRouter().setRemoteResponder(GUEST_ALIGNMENT, relayPick);
         Thread acceptThread = new Thread(() -> {
             try {
                 Socket socket = serverSocket.accept();
@@ -92,8 +98,37 @@ public class GameHost {
             server.playSpellCard(GUEST_ALIGNMENT, c.instanceId(), c.targetRow(), c.targetCol());
         } else if (command instanceof NetworkCommand.EndTurn) {
             server.endTurn(GUEST_ALIGNMENT);
+        } else if (command instanceof NetworkCommand.ActivateAbility c) {
+            server.activateAbility(GUEST_ALIGNMENT, c.pieceId(), c.actionIndex());
+        } else if (command instanceof NetworkCommand.AnswerPick c) {
+            PickResponse response = c.cancelled() ? PickResponse.cancelled(c.pickId())
+                    : PickResponse.chose(c.pickId(), new Coord(c.row(), c.col()));
+            if (!server.answerPick(GUEST_ALIGNMENT, response).isOk()) {
+                // Rejected: the guest's prompt is gone but the pick is still pending — ask again.
+                PickRequest still = GameContext.get().getPickRouter().activeRequest(GUEST_ALIGNMENT);
+                if (still != null && still.pickId() == c.pickId()) relayPick.onPickRequested(still, null);
+            }
         }
     }
+
+    /** Sends the guest's picks over the connection; with no guest connected, the pick is cancelled. */
+    private final PickResponder relayPick = new PickResponder() {
+        @Override
+        public void onPickRequested(PickRequest request, PickRouter router) {
+            if (connection != null && connection.isConnected()) {
+                connection.send(PickMessageCodec.encodeRequested(request));
+            } else {
+                GameContext.get().getPickRouter().answer(request.owner(), PickResponse.cancelled(request.pickId()));
+            }
+        }
+
+        @Override
+        public void onPickCancelled(PickRequest request) {
+            if (connection != null && connection.isConnected()) {
+                connection.send(PickMessageCodec.encodeCancelled(request.pickId()));
+            }
+        }
+    };
 
     private void registerEventRelay() {
         TypedEventBus bus = TypedEventBus.get();
@@ -155,6 +190,7 @@ public class GameHost {
     }
 
     public void stop() {
+        GameContext.get().getPickRouter().setRemoteResponder(GUEST_ALIGNMENT, null);
         if (connection != null) connection.close();
         try {
             if (serverSocket != null) serverSocket.close();

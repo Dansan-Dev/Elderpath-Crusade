@@ -58,7 +58,9 @@ public class SelectionStateMachine {
             if (!typeOk && box instanceof InteractionSource newSource && box != source) {
                 ClickableEffectData newData = newSource.getClickableEffectData();
                 if (newData != null) {
+                    InteractionSource replaced = source;
                     reset();
+                    replaced.onSelectionCancelled();
                     beginFromClickable(newSource);
                     return;
                 }
@@ -108,7 +110,10 @@ public class SelectionStateMachine {
     }
 
     public void cancel() {
-        if (isActive()) reset();
+        if (!isActive()) return;
+        InteractionSource cancelled = source;
+        reset();
+        if (cancelled != null) cancelled.onSelectionCancelled();
     }
 
     public boolean isActive() {

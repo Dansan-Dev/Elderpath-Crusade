@@ -137,7 +137,13 @@ public abstract class BattleRoom extends Room {
 
         // 11. Layout, oriented for this screen's viewer (re-applied whenever the turn changes,
         // since in hotseat the viewer is whoever's turn it is)
-        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, e -> applyPerspective());
+        TypedEventBus.get().registerScoped("session", TurnStartedEvent.class, e -> {
+            // A half-made selection (e.g. a piece move) can't outlive this screen's turn.
+            if (!GameContext.get().getLocalControl().controls(e.player())) {
+                GameContext.get().getInteractionManager().cancelSelection();
+            }
+            applyPerspective();
+        });
         layoutBoard();
         applyPerspective();
     }

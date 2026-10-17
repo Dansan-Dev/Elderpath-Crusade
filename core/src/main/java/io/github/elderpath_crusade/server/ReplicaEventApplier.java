@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
+import io.github.elderpath_crusade.ecs.components.IdentityComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.ComputedStatsComponent;
 import io.github.elderpath_crusade.ecs.factory.PieceFactory;
@@ -95,6 +96,7 @@ public class ReplicaEventApplier {
         Board board = GameContext.get().getActiveBoard();
         if (def == null || board == null) return;
         Entity entity = PieceFactory.createPiece(def, e.owner(), pos[0], pos[1]);
+        adoptHostId(entity, e.pieceId());
         board.addEntityToPos(pos[0], pos[1], entity, e.pieceId());
         entitiesById.put(e.pieceId(), entity);
     }
@@ -207,6 +209,7 @@ public class ReplicaEventApplier {
             PieceDefinition def = PieceRegistry.get(p.registryKey());
             if (def == null) continue;
             Entity entity = PieceFactory.createPiece(def, p.owner(), p.row(), p.col());
+            adoptHostId(entity, p.pieceId());
             StatsComponent stats = entity.getComponent(StatsComponent.class);
             if (stats != null) {
                 stats.currentHealth = p.currentHealth();
@@ -224,5 +227,14 @@ public class ReplicaEventApplier {
         playerSystem.setMana(PieceAlignment.P2, snapshot.p2Mana());
 
         GameContext.get().getTurnManager().setCurrentPlayerForReplica(snapshot.currentPlayer());
+    }
+
+    /**
+     * The replica's piece takes the host's id, so anything the guest sends that names a piece
+     * (NetworkCommand.ActivateAbility) refers to the same piece on the host.
+     */
+    private static void adoptHostId(Entity entity, String hostPieceId) {
+        IdentityComponent id = entity.getComponent(IdentityComponent.class);
+        if (id != null && hostPieceId != null) id.id = hostPieceId;
     }
 }

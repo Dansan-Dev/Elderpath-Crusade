@@ -7,6 +7,7 @@ import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.TerrainComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 
 import java.util.Random;
@@ -29,11 +30,14 @@ public final class MatchSetup {
         ctx.getEcsEngine().getSystem(GridIndexSystem.class).clear();
         TypedEventBus.get().clearGroup("session");
         ctx.getMatchClock().clear();
+        ctx.getPickRouter().reset();
         ctx.getWinConditionManager().resetSession();
         ctx.getBotManager().resetSession(config.bots());
 
         ctx.getTurnManager().reset();
         ctx.getGameModeManager().setCurrent(config.mode());
+        // A question left unanswered when its turn ends is dropped (cancelled: no effect, no cost).
+        TypedEventBus.get().registerScoped("session", TurnEndedEvent.class, e -> ctx.getPickRouter().cancelAll());
 
         BoardGrid grid = new BoardGrid(config.rows(), config.cols());
         ctx.clearBoard(); // the previous match's view, if any; a room attaches a new one

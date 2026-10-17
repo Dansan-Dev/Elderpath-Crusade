@@ -18,7 +18,9 @@ public final class NetworkCommandCodec {
             "MovePlot", NetworkCommand.MovePlot.class,
             "PlaySummonCard", NetworkCommand.PlaySummonCard.class,
             "PlaySpellCard", NetworkCommand.PlaySpellCard.class,
-            "EndTurn", NetworkCommand.EndTurn.class
+            "EndTurn", NetworkCommand.EndTurn.class,
+            "ActivateAbility", NetworkCommand.ActivateAbility.class,
+            "AnswerPick", NetworkCommand.AnswerPick.class
     );
 
     private NetworkCommandCodec() {}

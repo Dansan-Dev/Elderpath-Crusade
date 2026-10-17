@@ -9,6 +9,8 @@ import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
+import io.github.elderpath_crusade.interaction.LocalUiPickResponder;
+import io.github.elderpath_crusade.multiplayer.net.GameClient;
 import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
 import io.github.elderpath_crusade.server.ActionDispatcher;
 import io.github.elderpath_crusade.server.ReplicaEventApplier;
@@ -38,6 +40,17 @@ public class OnlineMatchRoom extends BattleRoom {
             ReplicaEventApplier applier = new ReplicaEventApplier(handSyncP1, handSyncP2);
             GameContext.get().getOnlineMatch().getClient().addListener(applier::apply);
             GameContext.get().getOnlineMatch().getClient().addSnapshotListener(applier::applySnapshot);
+
+            // The host asks this screen's player to pick (ability/effect targets): same prompt as
+            // local play, but the answer goes back to the host.
+            GameClient client = GameContext.get().getOnlineMatch().getClient();
+            LocalUiPickResponder picks = new LocalUiPickResponder((request, response) -> {
+                client.send(new NetworkCommand.AnswerPick(response.pickId(), response.isCancelled(),
+                        response.isCancelled() ? 0 : response.choice().row(),
+                        response.isCancelled() ? 0 : response.choice().col()));
+                return true; // the host re-sends the request if it rejects the answer
+            });
+            client.setPickListeners(picks::prompt, picks::cancelPrompt);
         }
 
         layoutBoard();

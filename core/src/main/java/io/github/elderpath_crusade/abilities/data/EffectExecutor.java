@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
-import io.github.elderpath_crusade.bot.BotManager;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
@@ -24,20 +23,18 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.CardInstance;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
-import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.PickKind;
+import io.github.elderpath_crusade.match.PickRequest;
+import io.github.elderpath_crusade.match.PickRouter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -409,42 +406,21 @@ public class EffectExecutor {
         List<Coord> slotCoords = findEmptySummonSlots(grid, alignment);
         if (slotCoords.isEmpty()) return; // no empty tile in caster's zone — summon silently fizzles
 
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null) return;
-        List<Plot> slots = new ArrayList<>();
-        for (Coord c : slotCoords) {
-            if (board.getPlotAtPos(c.row(), c.col()) instanceof Plot plot) slots.add(plot);
-        }
-
         CardInstance cardToConsume = sourceCard;
-        TargetFilter filter = new TargetFilter() {
-            @Override
-            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                return box instanceof Plot plot && slots.contains(plot);
-            }
+        PickRouter router = GameContext.get().getPickRouter();
+        PickRequest request = router.newRequest(alignment, PickKind.TILE, slotCoords, "SummonPiece:" + registryKey, true);
+        router.requestPick(request, response -> {
+            if (response.isCancelled()) return; // no piece, the drawn card stays in hand
+            Coord tile = response.choice();
+            if (grid.isOccupied(tile.row(), tile.col())) return; // filled since the question was asked — fizzle
 
-            @Override
-            public List<Plot> getEligibleTargets(int targetIndex) {
-                return slots;
-            }
-        };
+            Entity piece = PieceFactory.createPiece(def, alignment, tile.row(), tile.col());
+            String pieceId = EntityUtils.getId(piece);
+            grid.addEntity(tile.row(), tile.col(), piece);
+            TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, tile.row(), tile.col()));
 
-        GameContext.get().getInteractionManager().requestPick(
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
-                filter,
-                (picks) -> {
-                    CustomBox chosen = picks.get(1);
-                    if (!(chosen instanceof Plot plot)) return;
-                    int[] idx = plot.getIndices();
-
-                    Entity piece = PieceFactory.createPiece(def, alignment, idx[0], idx[1]);
-                    String pieceId = EntityUtils.getId(piece);
-                    grid.addEntity(idx[0], idx[1], piece);
-                    TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, idx[0], idx[1]));
-
-                    if (cardToConsume != null) discardFromHand(cardToConsume, alignment);
-                }
-        );
+            if (cardToConsume != null) discardFromHand(cardToConsume, alignment);
+        });
     }
 
     private static void executeGenerateMana(EffectNode effect, Entity owner, ExpressionContext context) {
@@ -586,69 +562,27 @@ public class EffectExecutor {
         List<EffectNode> body = toEffectNodes(effect.params().get("effects"));
         if (body.isEmpty()) return;
 
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null) return;
-
-        Map<Plot, Entity> byPlot = new HashMap<>();
+        Map<Coord, Entity> byCoord = new LinkedHashMap<>(); // keeps the selector's order (bot tie-breaks)
         for (Entity candidate : candidates) {
             PositionComponent pos = posMapper.get(candidate);
-            if (pos == null) continue;
-            Object cell = board.getPlotAtPos(pos.row, pos.col);
-            if (cell instanceof Plot plot) byPlot.put(plot, candidate);
+            if (pos != null) byCoord.put(new Coord(pos.row, pos.col), candidate);
         }
-        if (byPlot.isEmpty()) return;
-        List<Plot> plots = new ArrayList<>(byPlot.keySet());
+        if (byCoord.isEmpty()) return;
 
-        if (BotManager.isBotControlled(EntityUtils.getAlignment(owner))) {
-            Entity chosen = pickBestCandidate(candidates);
+        // Asked of the owner's player — a bot slot's PickRouter responder answers at once (never
+        // stalls), a human's via its UI or connection.
+        PickRouter router = GameContext.get().getPickRouter();
+        PickRequest request = router.newRequest(EntityUtils.getAlignment(owner), PickKind.PIECE,
+                new ArrayList<>(byCoord.keySet()), "ChooseTarget", true);
+        router.requestPick(request, response -> {
+            if (response.isCancelled()) return;
+            Entity chosen = byCoord.get(response.choice());
             if (chosen == null) return;
             context.set("$chosen", chosen);
             for (EffectNode node : body) {
                 execute(node, List.of(chosen), owner, context, abilityState);
             }
-            return;
-        }
-
-        TargetFilter filter = new TargetFilter() {
-            @Override
-            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                return box instanceof Plot plot && plots.contains(plot);
-            }
-
-            @Override
-            public List<Plot> getEligibleTargets(int targetIndex) {
-                return plots;
-            }
-        };
-
-        GameContext.get().getInteractionManager().requestPick(
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
-                filter,
-                (picks) -> {
-                    CustomBox chosenBox = picks.get(1);
-                    if (!(chosenBox instanceof Plot plot)) return;
-                    Entity chosen = byPlot.get(plot);
-                    if (chosen == null) return;
-                    context.set("$chosen", chosen);
-                    for (EffectNode node : body) {
-                        execute(node, List.of(chosen), owner, context, abilityState);
-                    }
-                }
-        );
-    }
-
-    /** Bot's target pick for ChooseTarget: favor the candidate closest to dying, so the strike is most likely to secure a kill. */
-    private static Entity pickBestCandidate(List<Entity> candidates) {
-        Entity best = null;
-        int bestHealth = Integer.MAX_VALUE;
-        for (Entity candidate : candidates) {
-            int health = EntityUtils.getCurrentHealth(candidate);
-            if (best == null || health < bestHealth) {
-                best = candidate;
-                bestHealth = health;
-            }
-        }
-        return best;
+        });
     }
 
     @SuppressWarnings("unchecked")

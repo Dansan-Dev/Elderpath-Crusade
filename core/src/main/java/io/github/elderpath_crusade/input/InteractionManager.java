@@ -27,9 +27,19 @@ public class InteractionManager {
         TargetFilter filter,
         Consumer<HashMap<Integer, CustomBox>> onPicked
     ) {
+        return requestPick(data, filter, onPicked, null);
+    }
+
+    /** As above; onCancelled (may be null) runs if the selection ends without a pick. */
+    public boolean requestPick(
+        ClickableEffectData data,
+        TargetFilter filter,
+        Consumer<HashMap<Integer, CustomBox>> onPicked,
+        Runnable onCancelled
+    ) {
         if (data == null || onPicked == null) return false;
         return startProgrammaticInteraction(
-            new EphemeralSource(data, filter, onPicked)
+            new EphemeralSource(data, filter, onPicked, onCancelled)
         );
     }
 
@@ -37,11 +47,18 @@ public class InteractionManager {
         private final ClickableEffectData effectData;
         private final Consumer<HashMap<Integer, CustomBox>> callback;
         private final TargetFilter tf;
+        private final Runnable onCancelled;
 
-        EphemeralSource(ClickableEffectData d, TargetFilter f, Consumer<HashMap<Integer, CustomBox>> cb) {
+        EphemeralSource(ClickableEffectData d, TargetFilter f, Consumer<HashMap<Integer, CustomBox>> cb, Runnable onCancelled) {
             this.effectData = d;
             this.tf = f;
             this.callback = cb;
+            this.onCancelled = onCancelled;
+        }
+
+        @Override
+        public void onSelectionCancelled() {
+            if (onCancelled != null) onCancelled.run();
         }
 
         @Override

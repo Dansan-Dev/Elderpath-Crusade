@@ -13,27 +13,27 @@ import io.github.elderpath_crusade.abilities.data.EffectNode;
 import io.github.elderpath_crusade.abilities.data.ExpressionContext;
 import io.github.elderpath_crusade.abilities.data.TargetSelector;
 import io.github.elderpath_crusade.abilities.data.TargetSelectorResolver;
-import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.IdentityComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
-import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.events.ActionSpentEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game.PlayerManager;
-import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.board.Plot;
-import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.match.BoardGrid;
+import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.PickKind;
+import io.github.elderpath_crusade.match.PickRequest;
+import io.github.elderpath_crusade.match.PickRouter;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class ActionableAbilityExecutor {
 
@@ -43,8 +43,15 @@ public class ActionableAbilityExecutor {
     private static final ComponentMapper<IdentityComponent> idMapper = ComponentMapper.getFor(IdentityComponent.class);
     private static final ComponentMapper<AbilityInstanceComponent> aicMapper = ComponentMapper.getFor(AbilityInstanceComponent.class);
 
-    public static void execute(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef) {
-        if (!canAffordCosts(owner, actionDef.costs())) return;
+    /**
+     * Runs actionDef of owner's ability. Callers validate first (AbilityRules — GameServer's
+     * activateAbility); this re-checks affordability as a safety net. A targeted action asks
+     * its owner through the PickRouter and resolves in the answer; a cancelled pick runs no
+     * effect and pays no cost. Rejected with NO_VALID_TARGET (nothing started) when the action
+     * needs a target and there is none.
+     */
+    public static ActionResult execute(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef) {
+        if (!canAffordCosts(owner, actionDef.costs())) return ActionResult.rejected(ActionResult.Reason.NOT_ENOUGH_MANA);
 
         ExpressionContext ctx = buildContext(owner);
         AbilityInstanceComponent aic = aicMapper.get(owner);
@@ -55,17 +62,19 @@ public class ActionableAbilityExecutor {
         TargetSelector selector = actionDef.targetSelector();
         String selectorType = (selector != null) ? selector.type() : "Self";
 
-        switch (selectorType) {
+        return switch (selectorType) {
             case "Self" -> {
                 executeEffects(actionDef.effects(), owner, ctx, abilityState);
                 deductCosts(owner, actionDef.costs());
+                yield ActionResult.ok();
             }
             case "ChooseEnemy" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ENEMY);
             case "ChooseFriendly" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.FRIENDLY);
             case "ChooseAny" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ANY);
             case "ChooseRow" -> startRowPick(owner, abilityDef, actionDef, ctx, abilityState);
-            case "ChooseTile" -> startTilePickAnywhere(owner, actionDef, ctx, abilityState);
-        }
+            case "ChooseTile" -> startTilePickAnywhere(owner, abilityDef, actionDef, ctx, abilityState);
+            default -> ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
+        };
     }
 
     /**
@@ -162,7 +171,7 @@ public class ActionableAbilityExecutor {
         };
     }
 
-    private static void startSinglePick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
+    private static ActionResult startSinglePick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
             ExpressionContext ctx, Map<String, Object> abilityState, AlignmentFilter alignmentFilter) {
         TargetSelector selector = actionDef.targetSelector();
         int range = selector.params() != null && selector.params().containsKey("range")
@@ -170,80 +179,43 @@ public class ActionableAbilityExecutor {
 
         PositionComponent ownerPos = posMapper.get(owner);
         AlignmentComponent ownerAlign = alignMapper.get(owner);
-        if (ownerPos == null || ownerAlign == null) return;
+        if (ownerPos == null || ownerAlign == null) return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
 
-        TargetFilter filter = new TargetFilter() {
-            @Override
-            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                if (!(box instanceof Plot plot)) return false;
-                BoardGrid grid = GameContext.get().getActiveGrid();
-                if (grid == null) return false;
-                Entity entity = grid.getEntityAt(plot.getRow(), plot.getCol());
-                return isSinglePickCandidate(entity, owner, ownerPos, ownerAlign, range, alignmentFilter);
-            }
-
-            @Override
-            public List<Plot> getEligibleTargets(int targetIndex) {
-                return toPlots(singlePickCandidates(owner, ownerPos, ownerAlign, range, alignmentFilter));
-            }
-        };
+        List<Coord> candidates = singlePickCandidates(owner, ownerPos, ownerAlign, range, alignmentFilter);
+        if (candidates.isEmpty()) return ActionResult.rejected(ActionResult.Reason.NO_VALID_TARGET);
 
         boolean needsTilePick = actionDef.effects().stream().anyMatch(e -> "$chosenTile".equals(e.params().get("destination")));
 
-        GameContext.get().getInteractionManager().requestPick(
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
-                filter,
-                (picks) -> {
-                    CustomBox chosen = picks.get(1);
-                    if (!(chosen instanceof Plot plot)) return;
-                    Entity chosenEntity = GameContext.get().getActiveBoard().getEntityAtPlot(plot);
-                    if (chosenEntity != null) {
-                        int[] idx = plot.getIndices();
-                        ctx.set("$chosen", chosenEntity);
-                        ctx.set("$chosen.row", idx[0]);
-                        ctx.set("$chosen.col", idx[1]);
-                    }
-                    if (needsTilePick && chosenEntity != null) {
-                        startTilePick(owner, actionDef, ctx, abilityState, chosenEntity);
-                    } else {
-                        executeEffects(actionDef.effects(), owner, ctx, abilityState);
-                        deductCosts(owner, actionDef.costs());
-                    }
-                }
-        );
+        pick(ownerAlign.alignment, PickKind.PIECE, candidates, abilityDef, choice -> {
+            BoardGrid grid = GameContext.get().getActiveGrid();
+            Entity chosenEntity = grid == null ? null : grid.getEntityAt(choice.row(), choice.col());
+            if (chosenEntity == null) return; // the piece left since the question was asked — fizzle
+            ctx.set("$chosen", chosenEntity);
+            ctx.set("$chosen.row", choice.row());
+            ctx.set("$chosen.col", choice.col());
+            if (needsTilePick) {
+                startTilePick(owner, abilityDef, actionDef, ctx, abilityState, chosenEntity);
+            } else {
+                executeEffects(actionDef.effects(), owner, ctx, abilityState);
+                deductCosts(owner, actionDef.costs());
+            }
+        });
+        return ActionResult.ok();
     }
 
-    private static void startTilePick(Entity owner, ActionDef actionDef, ExpressionContext ctx,
+    private static void startTilePick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef, ExpressionContext ctx,
             Map<String, Object> abilityState, Entity chosenEntity) {
         PositionComponent chosenPos = posMapper.get(chosenEntity);
-        if (chosenPos == null) return;
+        AlignmentComponent ownerAlign = alignMapper.get(owner);
+        if (chosenPos == null || ownerAlign == null) return;
 
-        TargetFilter filter = new TargetFilter() {
-            @Override
-            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                if (!(box instanceof Plot plot)) return false;
-                return tilesInRange(chosenPos.row, chosenPos.col, 1, true).contains(new Coord(plot.getRow(), plot.getCol()));
-            }
-
-            @Override
-            public List<Plot> getEligibleTargets(int targetIndex) {
-                return toPlots(tilesInRange(chosenPos.row, chosenPos.col, 1, true));
-            }
-        };
-
-        GameContext.get().getInteractionManager().requestPick(
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
-                filter,
-                (picks) -> {
-                    CustomBox tile = picks.get(1);
-                    if (!(tile instanceof Plot plot)) return;
-                    int[] idx = plot.getIndices();
-                    ctx.set("$chosenTile.row", idx[0]);
-                    ctx.set("$chosenTile.col", idx[1]);
-                    executeEffects(actionDef.effects(), owner, ctx, abilityState);
-                    deductCosts(owner, actionDef.costs());
-                }
-        );
+        // A follow-up question: no empty tile next to the chosen piece → the action fizzles, unpaid.
+        pick(ownerAlign.alignment, PickKind.TILE, tilesInRange(chosenPos.row, chosenPos.col, 1, true), abilityDef, tile -> {
+            ctx.set("$chosenTile.row", tile.row());
+            ctx.set("$chosenTile.col", tile.col());
+            executeEffects(actionDef.effects(), owner, ctx, abilityState);
+            deductCosts(owner, actionDef.costs());
+        });
     }
 
     /**
@@ -251,72 +223,54 @@ public class ActionableAbilityExecutor {
      * $chosen.row / $chosen.col for use by effects. Used by area-effect abilities like
      * StormAction that target a point on the board rather than a specific unit.
      */
-    private static void startTilePickAnywhere(Entity owner, ActionDef actionDef,
+    private static ActionResult startTilePickAnywhere(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
             ExpressionContext ctx, Map<String, Object> abilityState) {
         TargetSelector selector = actionDef.targetSelector();
         int range = selector.params() != null && selector.params().containsKey("range")
                 ? ((Number) selector.params().get("range")).intValue() : 99;
 
         PositionComponent ownerPos = posMapper.get(owner);
-        if (ownerPos == null) return;
+        AlignmentComponent ownerAlign = alignMapper.get(owner);
+        if (ownerPos == null || ownerAlign == null) return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
 
-        TargetFilter filter = new TargetFilter() {
-            @Override
-            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                if (!(box instanceof Plot plot)) return false;
-                return chebyshev(plot.getRow(), plot.getCol(), ownerPos.row, ownerPos.col) <= range;
-            }
-
-            @Override
-            public List<Plot> getEligibleTargets(int targetIndex) {
-                return toPlots(tilesInRange(ownerPos.row, ownerPos.col, range, false));
-            }
-        };
-
-        GameContext.get().getInteractionManager().requestPick(
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
-                filter,
-                (picks) -> {
-                    CustomBox chosen = picks.get(1);
-                    if (!(chosen instanceof Plot plot)) return;
-                    int[] idx = plot.getIndices();
-                    ctx.set("$chosen.row", idx[0]);
-                    ctx.set("$chosen.col", idx[1]);
-                    executeEffects(actionDef.effects(), owner, ctx, abilityState);
-                    deductCosts(owner, actionDef.costs());
-                }
-        );
+        List<Coord> candidates = tilesInRange(ownerPos.row, ownerPos.col, range, false);
+        if (candidates.isEmpty()) return ActionResult.rejected(ActionResult.Reason.NO_VALID_TARGET);
+        pick(ownerAlign.alignment, PickKind.TILE, candidates, abilityDef, choice -> {
+            ctx.set("$chosen.row", choice.row());
+            ctx.set("$chosen.col", choice.col());
+            executeEffects(actionDef.effects(), owner, ctx, abilityState);
+            deductCosts(owner, actionDef.costs());
+        });
+        return ActionResult.ok();
     }
 
-    private static void startRowPick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
+    private static ActionResult startRowPick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
             ExpressionContext ctx, Map<String, Object> abilityState) {
-        TargetFilter filter = new TargetFilter() {
-            @Override
-            public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-                return box instanceof Plot;
-            }
+        AlignmentComponent ownerAlign = alignMapper.get(owner);
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (ownerAlign == null || grid == null) return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
 
-            @Override
-            public List<Plot> getEligibleTargets(int targetIndex) {
-                return null;
-            }
-        };
-
-        GameContext.get().getInteractionManager().requestPick(
-                ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1),
-                filter,
-                (picks) -> {
-                    CustomBox chosen = picks.get(1);
-                    if (!(chosen instanceof Plot plot)) return;
-                    int[] idx = plot.getIndices();
-                    ctx.set("$chosen", idx[0]);
-                    executeEffects(actionDef.effects(), owner, ctx, abilityState);
-                    deductCosts(owner, actionDef.costs());
-                }
-        );
+        // Any row may be chosen: every tile is a candidate, and the chosen tile's row counts.
+        List<Coord> candidates = tilesInRange(0, 0, Math.max(grid.getRows(), grid.getCols()), false);
+        pick(ownerAlign.alignment, PickKind.ROW, candidates, abilityDef, choice -> {
+            ctx.set("$chosen", choice.row());
+            executeEffects(actionDef.effects(), owner, ctx, abilityState);
+            deductCosts(owner, actionDef.costs());
+        });
+        return ActionResult.ok();
     }
 
-    // --- Pick candidate logic (pure coordinates; the TargetFilters above only map to Plots) ---
+    /** Asks owner to pick among candidates; onChosen runs with the validated choice (never on cancel). */
+    private static void pick(PieceAlignment owner, PickKind kind, List<Coord> candidates, AbilityDefinition abilityDef,
+            Consumer<Coord> onChosen) {
+        PickRouter router = GameContext.get().getPickRouter();
+        PickRequest request = router.newRequest(owner, kind, candidates, abilityDef.id(), true);
+        router.requestPick(request, response -> {
+            if (!response.isCancelled()) onChosen.accept(response.choice());
+        });
+    }
+
+    // --- Pick candidate logic (pure coordinates) ---
 
     private static boolean isSinglePickCandidate(Entity entity, Entity owner, PositionComponent ownerPos,
             AlignmentComponent ownerAlign, int range, AlignmentFilter alignmentFilter) {
@@ -361,15 +315,5 @@ public class ActionableAbilityExecutor {
 
     private static int chebyshev(int r1, int c1, int r2, int c2) {
         return Math.max(Math.abs(r1 - r2), Math.abs(c1 - c2));
-    }
-
-    private static List<Plot> toPlots(List<Coord> coords) {
-        Board board = GameContext.get().getActiveBoard();
-        if (board == null) return List.of();
-        List<Plot> out = new ArrayList<>(coords.size());
-        for (Coord c : coords) {
-            if (board.getPlotAtPos(c.row(), c.col()) instanceof Plot plot) out.add(plot);
-        }
-        return out;
     }
 }

@@ -46,6 +46,8 @@ import io.github.elderpath_crusade.rendering.ZIndexRegistry;
 import io.github.elderpath_crusade.session.GameSession;
 import io.github.elderpath_crusade.session.LocalControl;
 import io.github.elderpath_crusade.state.GameStateMachine;
+import io.github.elderpath_crusade.interaction.LocalUiPickResponder;
+import io.github.elderpath_crusade.match.PickRouter;
 import lombok.Getter;
 
 /**
@@ -87,6 +89,8 @@ public class GameContext {
     @Getter private final LocalControl localControl;
     @Getter private final OnlineMatchSession onlineMatch;
     @Getter private final MatchClock matchClock;
+    /** Routes the picks game logic asks players for (local UI / bot / remote client). */
+    @Getter private final PickRouter pickRouter;
     /** True for a headless (server/test) context: no render system, nothing that needs a GL context. */
     @Getter private final boolean headless;
     @Getter private Board activeBoard;
@@ -141,6 +145,9 @@ public class GameContext {
         this.localControl = new LocalControl();
         this.onlineMatch = new OnlineMatchSession();
         this.matchClock = new MatchClock();
+        this.pickRouter = new PickRouter();
+        // Headless: no screen to prompt on — a human slot's picks need a remote (or test) responder.
+        if (!headless) this.pickRouter.setLocalResponder(new LocalUiPickResponder());
     }
 
     public static GameContext create() {

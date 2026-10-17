@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.match;
 
 /**
- * Outcome of a requested game action (move/attack, card play, end turn): either accepted, or
+ * Outcome of a requested game action (move/attack, card play, ability, pick answer, end turn): either accepted, or
  * rejected with the reason — so a server can tell a client why, instead of a bare false.
  */
 public record ActionResult(Reason reason) {
@@ -25,6 +25,12 @@ public record ActionResult(Reason reason) {
         INVALID_SUMMON_TARGET,
         INVALID_SPELL_TARGET,
         NOT_ENOUGH_MANA,
+        NO_SUCH_ABILITY,
+        NO_VALID_TARGET,
+        /** The actor must first answer (or cancel) the pick it has pending. */
+        PICK_PENDING,
+        NO_PENDING_PICK,
+        INVALID_PICK,
         EXECUTION_FAILED
     }
 

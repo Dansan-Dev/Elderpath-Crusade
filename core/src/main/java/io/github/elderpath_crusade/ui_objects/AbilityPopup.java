@@ -8,9 +8,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.abilities.ActionableAbilityExecutor;
+import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
+import io.github.elderpath_crusade.server.ActionDispatcher;
 import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
-import io.github.elderpath_crusade.abilities.data.ActionDef;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
@@ -171,14 +171,13 @@ public class AbilityPopup extends HigherOrderUI {
                 int bubX = plotX + board.getPLOT_WIDTH() / 2 - bubbleSize / 2;
                 int bubY = plotY + board.getPLOT_HEIGHT() + BUBBLE_Y_OFFSET;
 
-                AbilityDefinition capturedDef = spec.def;
-                Entity capturedEntity = spec.entity;
-                ActionDef capturedAction = capturedDef.actions().get(0);
+                String pieceId = spec.pieceId;
+                int actionIndex = spec.abilityIndex;
 
                 AbilityBubble bubble = new AbilityBubble(bubX, bubY, bubbleSize, BUBBLE_Z)
                         .withIndexLabel(spec.abilityIndex + 1, Color.WHITE)
                         .withOnClick(
-                                (e) -> ActionableAbilityExecutor.execute(capturedEntity, capturedDef, capturedAction),
+                                (e) -> activate(pieceId, actionIndex),
                                 ClickableEffectData.getImmediate()
                         );
 
@@ -192,6 +191,14 @@ public class AbilityPopup extends HigherOrderUI {
         for (AbilityBubble bubble : activeBubbles.values()) {
             bubble.renderUI(batch, isPaused);
         }
+    }
+
+    /** Asks the server (in-process, or the host when this screen is the online guest) to activate the ability. */
+    private static void activate(String pieceId, int actionIndex) {
+        PieceAlignment actor = GameContext.get().getLocalControl().actingSide();
+        ActionDispatcher.dispatch(
+                () -> new NetworkCommand.ActivateAbility(pieceId, actionIndex),
+                () -> GameContext.get().getGameServer().activateAbility(actor, pieceId, actionIndex));
     }
 
     private void removeAllBubbles(InteractionManager interactionManager) {

@@ -10,6 +10,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import io.github.elderpath_crusade.match.PickRequest;
 
 /**
  * Connects to a GameHost. Sends this side's requested actions as NetworkCommands and
@@ -24,6 +26,8 @@ public class GameClient {
     private final NetworkConnection connection;
     private final List<Consumer<GameEvent>> listeners = new ArrayList<>();
     private final List<Consumer<GameSnapshot>> snapshotListeners = new ArrayList<>();
+    private Consumer<PickRequest> pickRequestedListener;
+    private LongConsumer pickCancelledListener;
 
     public GameClient(String hostAddress, int port) throws IOException {
         this.connection = new NetworkConnection(new Socket(hostAddress, port));
@@ -37,17 +41,28 @@ public class GameClient {
         snapshotListeners.add(listener);
     }
 
+    /** The host asks this client to pick (answer with NetworkCommand.AnswerPick) / dropped that pick. */
+    public void setPickListeners(Consumer<PickRequest> onRequested, LongConsumer onCancelled) {
+        this.pickRequestedListener = onRequested;
+        this.pickCancelledListener = onCancelled;
+    }
+
     public void send(NetworkCommand command) {
         connection.send(NetworkCommandCodec.encode(command));
     }
 
-    /** Poll every frame: delivers any GameEvents/GameSnapshot the host sent since the last call. */
+    /** Poll every frame: delivers any GameEvents/GameSnapshot/pick messages the host sent since the last call. */
     public void update() {
         String line;
         while ((line = connection.pollLine()) != null) {
             try {
                 JsonNode node = PEEK_MAPPER.readTree(line);
-                if (GameSnapshotCodec.TYPE.equals(node.get("type").asText())) {
+                String type = node.get("type").asText();
+                if (PickMessageCodec.REQUESTED.equals(type)) {
+                    if (pickRequestedListener != null) pickRequestedListener.accept(PickMessageCodec.decodeRequested(line));
+                } else if (PickMessageCodec.CANCELLED.equals(type)) {
+                    if (pickCancelledListener != null) pickCancelledListener.accept(PickMessageCodec.decodeCancelledPickId(line));
+                } else if (GameSnapshotCodec.TYPE.equals(type)) {
                     GameSnapshot snapshot = GameSnapshotCodec.decode(line);
                     for (Consumer<GameSnapshot> listener : snapshotListeners) {
                         listener.accept(snapshot);

@@ -31,9 +31,6 @@ public final class BotManager {
             Bot bot = slots.get(evt.player());
             if (bot == null) return;
             if (GameContext.get().getGameManager().isPaused()) return;
-            if (GameContext.get().getInteractionManager().hasActiveSelection()) {
-                GameContext.get().getInteractionManager().cancelSelection();
-            }
             PieceAlignment player = evt.player();
             GameContext.get().getMatchClock().schedule(DELAY_BEFORE_ACT, () -> {
                 try {

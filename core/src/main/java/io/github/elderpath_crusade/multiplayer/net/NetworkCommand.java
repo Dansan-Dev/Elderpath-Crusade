@@ -13,7 +13,9 @@ public sealed interface NetworkCommand permits
         NetworkCommand.MovePlot,
         NetworkCommand.PlaySummonCard,
         NetworkCommand.PlaySpellCard,
-        NetworkCommand.EndTurn {
+        NetworkCommand.EndTurn,
+        NetworkCommand.ActivateAbility,
+        NetworkCommand.AnswerPick {
 
     record MovePlot(int srcRow, int srcCol, int dstRow, int dstCol) implements NetworkCommand {}
 
@@ -22,4 +24,10 @@ public sealed interface NetworkCommand permits
     record PlaySpellCard(String instanceId, Integer targetRow, Integer targetCol) implements NetworkCommand {}
 
     record EndTurn() implements NetworkCommand {}
+
+    /** actionIndex: the ability's index among the piece's actionable abilities (bubble number - 1). */
+    record ActivateAbility(String pieceId, int actionIndex) implements NetworkCommand {}
+
+    /** The answer to a pick the host asked this client: a chosen tile, or cancelled (row/col ignored). */
+    record AnswerPick(long pickId, boolean cancelled, int row, int col) implements NetworkCommand {}
 }
