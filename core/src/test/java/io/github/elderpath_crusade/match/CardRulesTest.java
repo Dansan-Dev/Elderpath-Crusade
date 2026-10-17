@@ -103,7 +103,7 @@ class CardRulesTest {
 
         String pieceId = EntityUtils.getId(piece);
         assertEquals(List.of(
-                new PieceSpawnedEvent(pieceId, PieceAlignment.P1, 0, 2),
+                new PieceSpawnedEvent(pieceId, PieceAlignment.P1, 0, 2, EntityUtils.getName(piece)),
                 new CardPlayedEvent("Wolf", PieceAlignment.P1, 0, 2, pieceId, "P1-0")), events);
     }
 

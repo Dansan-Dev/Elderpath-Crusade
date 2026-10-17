@@ -417,7 +417,7 @@ public class EffectExecutor {
             Entity piece = PieceFactory.createPiece(def, alignment, tile.row(), tile.col());
             String pieceId = EntityUtils.getId(piece);
             grid.addEntity(tile.row(), tile.col(), piece);
-            TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, tile.row(), tile.col()));
+            TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, tile.row(), tile.col(), registryKey));
 
             if (cardToConsume != null) discardFromHand(cardToConsume, alignment);
         });

@@ -111,7 +111,7 @@ public class CardRules {
         grid.addEntity(row, col, entity);
         player.deck.playFromHand(instanceId);
 
-        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, actor, row, col));
+        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, actor, row, col, EntityUtils.getName(entity)));
         TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), actor, row, col, pieceId, instanceId));
         return ActionResult.ok();
     }

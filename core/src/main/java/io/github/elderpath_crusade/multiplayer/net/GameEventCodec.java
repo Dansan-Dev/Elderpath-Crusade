@@ -39,10 +39,7 @@ public final class GameEventCodec {
 
     public static String encode(GameEvent event) {
         try {
-            ObjectNode node = MAPPER.createObjectNode();
-            node.put("type", event.getClass().getSimpleName());
-            node.set("payload", MAPPER.valueToTree(event));
-            return MAPPER.writeValueAsString(node);
+            return MAPPER.writeValueAsString(toTree(event));
         } catch (Exception e) {
             throw new IllegalStateException("Failed to encode " + event, e);
         }
@@ -50,7 +47,24 @@ public final class GameEventCodec {
 
     public static GameEvent decode(String line) {
         try {
-            JsonNode node = MAPPER.readTree(line);
+            return fromTree(MAPPER.readTree(line));
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to decode: " + line, e);
+        }
+    }
+
+    /** The {"type", "payload"} envelope as a tree — for embedding an event in a larger message. */
+    public static ObjectNode toTree(GameEvent event) {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("type", event.getClass().getSimpleName());
+        node.set("payload", MAPPER.valueToTree(event));
+        return node;
+    }
+
+    public static GameEvent fromTree(JsonNode node) {
+        try {
             String type = node.get("type").asText();
             Class<? extends GameEvent> clazz = TYPES.get(type);
             if (clazz == null) throw new IllegalArgumentException("Unknown event type: " + type);
@@ -58,7 +72,7 @@ public final class GameEventCodec {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to decode: " + line, e);
+            throw new IllegalStateException("Failed to decode event: " + node, e);
         }
     }
 }

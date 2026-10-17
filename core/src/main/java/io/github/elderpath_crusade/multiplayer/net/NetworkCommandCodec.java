@@ -27,10 +27,7 @@ public final class NetworkCommandCodec {
 
     public static String encode(NetworkCommand command) {
         try {
-            ObjectNode node = MAPPER.createObjectNode();
-            node.put("type", command.getClass().getSimpleName());
-            node.set("payload", MAPPER.valueToTree(command));
-            return MAPPER.writeValueAsString(node);
+            return MAPPER.writeValueAsString(toTree(command));
         } catch (Exception e) {
             throw new IllegalStateException("Failed to encode " + command, e);
         }
@@ -38,7 +35,24 @@ public final class NetworkCommandCodec {
 
     public static NetworkCommand decode(String line) {
         try {
-            JsonNode node = MAPPER.readTree(line);
+            return fromTree(MAPPER.readTree(line));
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to decode: " + line, e);
+        }
+    }
+
+    /** The {"type", "payload"} envelope as a tree — for embedding a command in a larger message. */
+    public static ObjectNode toTree(NetworkCommand command) {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("type", command.getClass().getSimpleName());
+        node.set("payload", MAPPER.valueToTree(command));
+        return node;
+    }
+
+    public static NetworkCommand fromTree(JsonNode node) {
+        try {
             String type = node.get("type").asText();
             Class<? extends NetworkCommand> clazz = TYPES.get(type);
             if (clazz == null) throw new IllegalArgumentException("Unknown command type: " + type);
@@ -46,7 +60,7 @@ public final class NetworkCommandCodec {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to decode: " + line, e);
+            throw new IllegalStateException("Failed to decode command: " + node, e);
         }
     }
 }

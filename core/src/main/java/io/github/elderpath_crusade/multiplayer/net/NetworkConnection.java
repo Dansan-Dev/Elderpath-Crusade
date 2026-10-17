@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.multiplayer.net;
 
+import io.github.elderpath_crusade.net.transport.LineLink;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -17,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * TypedEventBus aren't thread-safe, so nothing from the network is ever applied directly
  * off the reader thread.
  */
-public class NetworkConnection implements Closeable {
+public class NetworkConnection implements Closeable, LineLink {
     private final Socket socket;
     private final BufferedWriter writer;
     private final BlockingQueue<String> incoming = new LinkedBlockingQueue<>();
@@ -40,8 +42,11 @@ public class NetworkConnection implements Closeable {
         } catch (IOException ignored) {
             // Socket closed/reset — pollLine() simply stops receiving new lines.
         }
+        // End of stream: the peer is gone. Lines already queued stay pollable.
+        closed = true;
     }
 
+    @Override
     public synchronized void send(String line) {
         if (closed) return;
         try {
@@ -54,12 +59,18 @@ public class NetworkConnection implements Closeable {
     }
 
     /** Non-blocking; returns null if nothing has arrived. Call every frame from the main thread. */
+    @Override
     public String pollLine() {
         return incoming.poll();
     }
 
     public boolean isConnected() {
         return !closed && !socket.isClosed();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return isConnected();
     }
 
     @Override
