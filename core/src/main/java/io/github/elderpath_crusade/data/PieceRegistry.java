@@ -54,6 +54,11 @@ public final class PieceRegistry {
         return displayName.replace(" ", "");
     }
 
+    /** Registers (or replaces) one definition — for building a registry without pieces.yaml, e.g. in tests. */
+    public static void register(PieceDefinition definition) {
+        PIECES.put(definition.id(), definition);
+    }
+
     public static PieceDefinition get(String name) {
         return PIECES.get(name);
     }

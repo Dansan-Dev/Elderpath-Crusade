@@ -1,9 +1,9 @@
 package io.github.elderpath_crusade.bot.impl;
 
+import io.github.elderpath_crusade.match.CardInstance;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.utils.Timer;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
@@ -59,14 +59,15 @@ public class BasicBot implements Bot {
 
     private boolean tryPlayOneWolfCard(BoardGrid b) {
         var ps = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
-        if (ps == null || ps.hand == null) return false;
-        SummonCard targetCard = null;
-        for (var c : ps.hand.getCards()) { if (c instanceof SummonCard sc && "Wolf".equals(sc.getCardName())) { targetCard = sc; break; } }
+        if (ps == null) return false;
+        CardInstance targetCard = null;
+        for (CardInstance c : ps.hand.getCards()) { if ("Wolf".equals(c.cardName())) { targetCard = c; break; } }
         if (targetCard == null) return false;
 
         int homeRow = b.getHomeRow(PieceAlignment.P2);
         for (int col = 0; col < b.getCols(); col++) {
-            if (b.isValidSummonTarget(homeRow, col, PieceAlignment.P2) && targetCard.executeSummon(homeRow, col)) return true;
+            if (b.isValidSummonTarget(homeRow, col, PieceAlignment.P2)
+                    && GameContext.get().getGameServer().playSummonCard(PieceAlignment.P2, targetCard.instanceId(), homeRow, col)) return true;
         }
         return false;
     }

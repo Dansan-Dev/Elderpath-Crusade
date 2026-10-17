@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.multiplayer.net;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.CardInstance;
 
 import java.util.List;
 
@@ -15,8 +16,8 @@ import java.util.List;
  */
 public record GameSnapshot(
         List<PieceState> pieces,
-        List<String> p1Hand,
-        List<String> p2Hand,
+        List<CardInstance> p1Hand,
+        List<CardInstance> p2Hand,
         int p1Mana,
         int p2Mana,
         PieceAlignment currentPlayer

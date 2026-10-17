@@ -80,6 +80,17 @@ public class Hand extends HigherOrderTexture {
         updateBounds();
     }
 
+    /** Removes the card view showing this match card, if any. */
+    public void removeByInstanceId(String instanceId) {
+        if (instanceId == null) return;
+        for (Card card : cards) {
+            if (instanceId.equals(card.getInstanceId())) {
+                removeCard(card);
+                return;
+            }
+        }
+    }
+
     @Override
     public List<Integer> getZs() {
         return List.of(z);

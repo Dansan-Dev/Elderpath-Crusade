@@ -1,36 +1,24 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
-import io.github.elderpath_crusade.events.CardDrawnEvent;
-import io.github.elderpath_crusade.events.CardShuffledEvent;
-import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.utils.SpriteCreator;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.*;
+import java.util.List;
 
-public class Deck extends SpriteObject{
-    @Getter
-    private final List<Card> cards = new ArrayList<>();
-    @Getter
-    private final List<Card> discardPile = new ArrayList<>();
-    @Getter @Setter
-    private Hand hand;
+/** The draw pile's view: a card back. The deck's cards live in DeckState. */
+public class Deck extends SpriteObject {
     // Owner of this deck (P1 or P2)
     @Getter @Setter
     private PieceAlignment owner;
 
-    private final Random rng = new Random();
-
-    public Deck(List<Card> cards, int x, int y, int width, int height, int z, SpriteBoxPos spriteBoxPos) {
+    public Deck(int x, int y, int width, int height, int z, SpriteBoxPos spriteBoxPos) {
         super(x, y, width, height, z, spriteBoxPos);
-        addNewCards(cards);
 
         Sprite sprite = SpriteCreator.makeSprite(
             ImagePathSpritesAndAnimations.CARD_BACK.getPath(),
@@ -43,48 +31,5 @@ public class Deck extends SpriteObject{
             List.of(sprite),
             0
         );
-    }
-
-    public void addNewCards(List<Card> cards) {
-        cards.forEach(card -> {
-            card.setOnConsumed(() -> {
-                hand.removeCard(card);
-                discardPile.add(card);
-            });
-        });
-        this.cards.addAll(cards);
-    }
-
-    public void draw() {
-        if (hand == null) return;
-        if (cards.isEmpty()) {
-            if (discardPile.isEmpty()) return;
-            shuffle();
-        }
-        Card c = cards.remove(0);
-        hand.addCard(c);
-        // Emit CARD_DRAWN
-        TypedEventBus.get().emit(new CardDrawnEvent(
-                owner != null ? owner : PieceAlignment.P1,
-                c.getDisplayName(),
-                hand.getCards().size()
-        ));
-    }
-
-    public void shuffle() {
-        // If discard pile is not empty, add it back to the deck
-        if (!discardPile.isEmpty()) {
-            cards.addAll(discardPile);
-            discardPile.clear();
-        }
-        // Always shuffle the cards list (both initial shuffle and reshuffle)
-        if (!cards.isEmpty()) {
-            Collections.shuffle(cards, rng);
-            // Emit CARD_SHUFFLED
-            TypedEventBus.get().emit(new CardShuffledEvent(
-                    owner != null ? owner : PieceAlignment.P1,
-                    cards.size()
-            ));
-        }
     }
 }

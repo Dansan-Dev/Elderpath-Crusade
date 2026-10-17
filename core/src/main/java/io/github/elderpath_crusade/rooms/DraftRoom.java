@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.rooms;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
@@ -37,7 +36,6 @@ public class DraftRoom extends Room {
     private int currentPick;
     private List<Card> currentOptions;
     private Hand draftOptionsHand;
-    private Board dummyBoard;
     private Random rng;
 
     // Multiplayer support
@@ -65,11 +63,6 @@ public class DraftRoom extends Room {
     }
 
     private void initializeDraft() {
-        // Create dummy board for card creation (not rendered, positioned off-screen)
-        dummyBoard = new Board(-1000, -1000, 40, 40, 7, 5);
-        dummyBoard.initializePlots();
-        // Ensure it's NOT added to room content
-
         // Initialize starting deck
         draftedDeck = new ArrayList<>(List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub"));
         currentPick = 0;
@@ -165,9 +158,9 @@ public class DraftRoom extends Room {
         for (int i = 0; i < CARDS_PER_PICK && i < available.size(); i++) {
             String cardName = available.get(i);
             DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                dummyBoard, PieceAlignment.P1, 0, 0, 187, 300, 0  // 1.5x larger for better visibility during drafting
+                PieceAlignment.P1, 0, 0, 187, 300, 0  // 1.5x larger for better visibility during drafting
             );
-            Card realCard = CardFactory.create(cardName, params);
+            Card realCard = CardFactory.create(cardName, null, params);
             realCard.showFront(); // Make sure card is face up
 
             // Wrap in DraftCard to bypass mana checks
@@ -253,14 +246,9 @@ public class DraftRoom extends Room {
     }
 
     private void transitionToDemoRoom() {
-        // Convert card names to creators for DeckManager
-        List<Function<DeckManager.CardCreationParams, Card>> cardCreators = draftedDeck.stream()
-            .map(CardFactory::getCreator)
-            .collect(Collectors.toList());
-
         if (isLocalMultiplayer) {
             // Store drafted deck in DeckManager for current drafting player
-            GameContext.get().getDeckManager().setDraftedDeck(draftingPlayer, cardCreators);
+            GameContext.get().getDeckManager().setDraftedDeck(draftingPlayer, draftedDeck);
 
             // If P1 just finished, transition to P2 draft
             if (draftingPlayer == PieceAlignment.P1) {
@@ -270,8 +258,8 @@ public class DraftRoom extends Room {
                 GameContext.get().getRoomManager().gotoRoom(LocalMatchRoom::get);
             }
         } else {
-            // Store drafted deck in DeckManager (legacy method for P1)
-            GameContext.get().getDeckManager().setDraftedDeck(cardCreators);
+            // Single player drafts P1's deck
+            GameContext.get().getDeckManager().setDraftedDeck(PieceAlignment.P1, draftedDeck);
 
             // Transition to DemoRoom
             GameContext.get().getRoomManager().gotoRoom(DemoRoom::get);

@@ -1,11 +1,8 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.game.DeckManager;
 import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
@@ -14,9 +11,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.config.SettingsManager;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 public class LocalMatchRoom extends BattleRoom {
 
@@ -44,32 +39,8 @@ public class LocalMatchRoom extends BattleRoom {
     }
 
     @Override
-    protected Deck createDeck(PieceAlignment alignment, Hand hand) {
-        List<Card> cards = new ArrayList<>();
-        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
-        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
-
-        if (GameContext.get().getDeckManager().hasDraftedDeck(alignment)) {
-            List<Function<DeckManager.CardCreationParams, Card>> draftedDeck = GameContext.get().getDeckManager().getDraftedDeck(alignment);
-            for (Function<DeckManager.CardCreationParams, Card> cardCreator : draftedDeck) {
-                DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                    board, alignment, 0, 0, 125, 200, 0
-                );
-                cards.add(cardCreator.apply(params));
-            }
-        }
-
-        Deck deck = new Deck(cards, 0, 0, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
-        deck.shuffle();
-        deck.getBounds().setX(screenW - deck.getWidth() - 10);
-        if (alignment == PieceAlignment.P1) {
-            deck.getBounds().setY(10);
-        } else {
-            deck.getBounds().setY(screenH - deck.getHeight() - 10);
-        }
-        deck.setOwner(alignment);
-        deck.setHand(hand);
-        return deck;
+    protected List<String> deckCardNames(PieceAlignment alignment) {
+        return GameContext.get().getDeckManager().getDraftedDeck(alignment);
     }
 
     private void onTurnStarted(TurnStartedEvent event) {

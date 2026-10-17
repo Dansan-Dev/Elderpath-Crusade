@@ -5,11 +5,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.enums.SpriteBoxPos;
-import io.github.elderpath_crusade.game.DeckManager;
 import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.game_objects.cards.CardFactory;
-import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
@@ -39,7 +35,7 @@ public class OnlineMatchRoom extends BattleRoom {
         super(GameMode.ONLINE_MATCH);
 
         if (GameContext.get().getOnlineMatch().isGuest()) {
-            ReplicaEventApplier applier = new ReplicaEventApplier();
+            ReplicaEventApplier applier = new ReplicaEventApplier(handSyncP1, handSyncP2);
             GameContext.get().getOnlineMatch().getClient().addListener(applier::apply);
             GameContext.get().getOnlineMatch().getClient().addSnapshotListener(applier::applySnapshot);
         }
@@ -54,8 +50,8 @@ public class OnlineMatchRoom extends BattleRoom {
      * hand is always visible, the opponent's is always hidden. This has to be enforced every
      * frame, not just once at construction — every newly created Card defaults to face-up
      * (Card's constructor sets faceUp = true), and new cards keep getting added to hands for
-     * the rest of the match (the host's own real Deck.draw() for both alignments, and the
-     * guest's own hand via ReplicaEventApplier.onCardDrawn) — a one-time pass at room
+     * the rest of the match (via HandSync, from the host's own draws for both alignments, and
+     * on the guest from relayed CardDrawnEvents) — a one-time pass at room
      * construction only ever covered the starting hand.
      */
     private static final class HandVisibilityEnforcer extends LowestOrderTexture implements Renderable, Updatable {
@@ -111,29 +107,20 @@ public class OnlineMatchRoom extends BattleRoom {
     }
 
     @Override
-    protected Deck createDeck(PieceAlignment alignment, Hand hand) {
-        List<Card> cards = new ArrayList<>();
-        // Only the host's decks are real — the guest never draws locally; its own hand is
-        // reconstructed from CardDrawnEvent (see ReplicaEventApplier), and the opponent's
-        // hand isn't rendered on the guest's screen at all.
+    protected List<String> deckCardNames(PieceAlignment alignment) {
+        List<String> names = new ArrayList<>();
+        // Only the host's decks are real — the guest never draws locally; both hands are
+        // mirrored from the host's relayed card events (see ReplicaEventApplier).
         if (GameContext.get().getOnlineMatch().isHost()) {
-            for (int i = 0; i < STARTING_WOLVES; i++) {
-                cards.add(CardFactory.create("Wolf", new DeckManager.CardCreationParams(board, alignment, 0, 0, 125, 200, 0)));
-            }
-            for (int i = 0; i < STARTING_WOLF_CUBS; i++) {
-                cards.add(CardFactory.create("Wolf Cub", new DeckManager.CardCreationParams(board, alignment, 0, 0, 125, 200, 0)));
-            }
+            for (int i = 0; i < STARTING_WOLVES; i++) names.add("Wolf");
+            for (int i = 0; i < STARTING_WOLF_CUBS; i++) names.add("Wolf Cub");
         }
+        return names;
+    }
 
-        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
-        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
-        Deck deck = new Deck(cards, 0, 0, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
-        deck.shuffle();
-        deck.getBounds().setX(screenW - deck.getWidth() - 10);
-        deck.getBounds().setY(alignment == PieceAlignment.P1 ? 10 : screenH - deck.getHeight() - 10);
-        deck.setOwner(alignment);
-        deck.setHand(hand);
-        return deck;
+    @Override
+    protected boolean mirrorsRemoteMatch() {
+        return GameContext.get().getOnlineMatch().isGuest();
     }
 
     public static OnlineMatchRoom get() {

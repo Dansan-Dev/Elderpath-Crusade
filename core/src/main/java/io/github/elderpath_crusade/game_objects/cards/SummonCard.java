@@ -1,38 +1,25 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
-import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.ecs.EntityUtils;
-import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
+import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.game.PlayerManager;
-import io.github.elderpath_crusade.config.SettingsManager;
-import io.github.elderpath_crusade.game.TurnManager;
-import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.data.PieceDefinition;
-import io.github.elderpath_crusade.data.PieceRegistry;
-import io.github.elderpath_crusade.events.CardPlayedEvent;
-import io.github.elderpath_crusade.events.PieceSpawnedEvent;
-import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
 import io.github.elderpath_crusade.server.ActionDispatcher;
-import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.HashMap;
 
 /**
- * Data-driven summon card. Handles multi-target click flow, mana cost,
- * summoning onto a Board plot, emitting events, and consuming the card.
+ * Renderable view of a summon card in a hand. Offers the play (click → pick a plot) when
+ * CardRules allows it and sends the play — by card instance id — to GameServer (or the host,
+ * via ActionDispatcher). The rules themselves live in CardRules.
  */
 public class SummonCard extends UnitCard implements TargetFilter {
-    protected final Board board;
     protected final PieceAlignment alignment;
     private final String cardName;
     private final String registryKey;
@@ -41,14 +28,13 @@ public class SummonCard extends UnitCard implements TargetFilter {
     private ClickableEffectData clickableEffectData = null;
 
     public SummonCard(
-        Board board, PieceAlignment alignment,
+        PieceAlignment alignment,
         int x, int y,
         int width, int height,
         int z,
         String cardName, String registryKey
     ) {
         super(x, y, width, height, z, registryKey, cardName);
-        this.board = board;
         this.alignment = alignment;
         this.cardName = cardName;
         this.registryKey = registryKey;
@@ -64,101 +50,27 @@ public class SummonCard extends UnitCard implements TargetFilter {
     @Override
     public String getRegistryKey() { return registryKey; }
 
-    /**
-     * Attempts to spend mana for this card based on its unified stats cost.
-     * Returns true if the player had enough mana and the cost was deducted.
-     */
-    protected boolean trySpendMana() {
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        int cost = getStatsCost();
-        if (playerState == null || playerState.getMana() < cost) {
-            Logger.log(
-                "SummonCard",
-                "Not enough mana. Need=" + cost + ", have=" + (playerState == null ? 0 : playerState.getMana())
-            );
-            return false;
-        }
-        playerState.addMana(-cost);
-        return true;
-    }
-
-    /**
-     * Creates the entity and places it on the board at the given location.
-     * Emits CARD_PLAYED and PIECE_SPAWNED events upon success.
-     */
-    protected void performSummon(int row, int col) {
-        String key = getRegistryKey();
-        PieceDefinition def = PieceRegistry.get(key);
-        if (def == null) {
-            Logger.error("SummonCard", "No PieceDefinition for " + key);
-            return;
-        }
-        Entity entity = PieceFactory.createPiece(def, 0, 0, board.getPLOT_WIDTH(), board.getPLOT_HEIGHT(),
-                alignment, row, col);
-        String pieceId = EntityUtils.getId(entity);
-        board.addEntityToPos(row, col, entity, pieceId);
-
-        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, row, col));
-        TypedEventBus.get().emit(new CardPlayedEvent(getCardName(), alignment, row, col, pieceId));
-    }
-
-    /**
-     * Resolves the selected plot from the interaction entities into board coordinates.
-     */
-    private int[] resolveSelectedPlot(HashMap<Integer, CustomBox> entities) {
-        if (board == null) return null;
-        Object secondClicked = entities == null ? null : entities.get(1);
-        if (!(secondClicked instanceof Plot plot)) {
-            return null;
-        }
-        return plot.getIndices();
-    }
-
     private void initializeClickableEffect() {
         setClickableEffect(
             (HashMap<Integer, CustomBox> entities) -> {
-                int[] pos = resolveSelectedPlot(entities);
-                if (pos == null) return;
-                int row = pos[0];
-                int col = pos[1];
+                Object secondClicked = entities == null ? null : entities.get(1);
+                if (!(secondClicked instanceof Plot plot)) return;
+                int row = plot.getRow();
+                int col = plot.getCol();
+                String instanceId = getInstanceId();
                 ActionDispatcher.dispatch(
-                        () -> new NetworkCommand.PlaySummonCard(alignment, handIndex(), row, col),
-                        () -> executeSummon(row, col)
+                        () -> new NetworkCommand.PlaySummonCard(alignment, instanceId, row, col),
+                        () -> GameContext.get().getGameServer().playSummonCard(alignment, instanceId, row, col)
                 );
             },
             ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
         );
     }
 
-    /** This card's position within its owner's hand, for a networked play request. */
-    private int handIndex() {
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        Hand hand = playerState == null ? null : playerState.hand;
-        return hand == null ? -1 : hand.getCards().indexOf(this);
-    }
-
-    /**
-     * Authoritative summon execution — validates turn/occupancy/mana, spends mana, summons,
-     * and consumes the card. Called from the local click lambda above and, identically, from
-     * GameServer for a networked play. Returns true on success.
-     */
-    public boolean executeSummon(int row, int col) {
-        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
-        if (board.getEntityAtPos(row, col) != null) {
-            Logger.log("SummonCard", "Summon aborted: occupied (" + row + "," + col + ")");
-            return false;
-        }
-        if (!trySpendMana()) return false;
-        performSummon(row, col);
-        consume();
-        return true;
-    }
-
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-        if (board == null) return false;
         if (!(box instanceof Plot plot)) return false;
-        return board.isValidSummonTarget(plot, alignment);
+        return GameContext.get().getCardRules().isValidSummonTarget(alignment, plot.getRow(), plot.getCol());
     }
 
     @Override
@@ -175,23 +87,23 @@ public class SummonCard extends UnitCard implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.ONLINE_MATCH) {
-            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-            if (local != null && alignment != local) return null;
-        } else if (
-            alignment == PieceAlignment.P2
-            && GameContext.get().getSettingsManager().debug.enableP2Bot
-            && GameContext.get().getGameModeManager().getCurrent() != GameMode.LOCAL_MATCH
-        ) {
-            return null;
-        }
-
-        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
-
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        int cost = getStatsCost();
-        if (playerState == null || playerState.getMana() < cost) return null;
-
+        if (!isLocallyControlled(alignment)) return null;
+        if (!GameContext.get().getCardRules().canPlay(alignment, cardName)) return null;
         return clickableEffectData;
+    }
+
+    /**
+     * Whether this screen's player may act for alignment: online, only their own side; with
+     * the P2 bot enabled (outside hotseat), never P2.
+     */
+    static boolean isLocallyControlled(PieceAlignment alignment) {
+        GameMode mode = GameContext.get().getGameModeManager().getCurrent();
+        if (mode == GameMode.ONLINE_MATCH) {
+            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
+            return local == null || alignment == local;
+        }
+        return !(alignment == PieceAlignment.P2
+                && GameContext.get().getSettingsManager().debug.enableP2Bot
+                && mode != GameMode.LOCAL_MATCH);
     }
 }

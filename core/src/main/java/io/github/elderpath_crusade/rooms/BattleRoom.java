@@ -9,6 +9,8 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
+import io.github.elderpath_crusade.game_objects.cards.HandSync;
+import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.events.GameEvent;
@@ -18,6 +20,8 @@ import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 
+import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -29,6 +33,8 @@ public abstract class BattleRoom extends Room {
     protected final Board board;
     protected final Hand handP1;
     protected final Hand handP2;
+    protected final HandSync handSyncP1;
+    protected final HandSync handSyncP2;
     protected final Deck deckP1;
     protected final Deck deckP2;
     protected final PassTurnButton passTurn;
@@ -105,39 +111,64 @@ public abstract class BattleRoom extends Room {
         handP2.setOwner(PieceAlignment.P2);
         addContent(handP2);
 
-        // 6. Decks (concrete rooms will populate card lists and finalize deck config)
-        deckP1 = createDeck(PieceAlignment.P1, handP1);
-        deckP2 = createDeck(PieceAlignment.P2, handP2);
+        // 6. Hand views mirror each player's hand state from the card events — from the
+        // local simulation here, or (online guest) relayed by ReplicaEventApplier instead.
+        handSyncP1 = new HandSync(handP1);
+        handSyncP2 = new HandSync(handP2);
+        if (!mirrorsRemoteMatch()) {
+            handSyncP1.bindToEventBus();
+            handSyncP2.bindToEventBus();
+        }
+
+        // 7. Decks: pure state from each room's card list (shuffled), plus a draw-pile view
+        for (PieceAlignment alignment : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
+            GameContext.get().getPlayerManager().setDeck(alignment, deckCardNames(alignment), new Random()).shuffle();
+        }
+        deckP1 = createDeckView(PieceAlignment.P1);
+        deckP2 = createDeckView(PieceAlignment.P2);
         addContent(deckP1);
         addContent(deckP2);
 
-        // 7. Wiring & Startup
-        GameContext.get().getPlayerManager().setHand(PieceAlignment.P1, handP1);
-        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P1, deckP1);
-        GameContext.get().getPlayerManager().setHand(PieceAlignment.P2, handP2);
-        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P2, deckP2);
-
+        // 8. Startup
         GameContext.get().getTurnManager().startIfNeeded();
 
-
-        // 8. HUDs
+        // 9. HUDs
         addUI(new ManaHud());
         addUI(new TurnHud());
         addUI(new AbilityPopup());
         addUI(new CardPreviewPanel());
 
-        // 9. Logger
+        // 10. Logger
         if (GameContext.get().getSettingsManager().debug.eventsLoggerInDemo && !LOGGER_REGISTERED) {
             registerEventsLogger();
         }
 
-        // 10. Layout
+        // 11. Layout
         layoutBoard();
     }
 
     protected abstract void onPassTurnClicked();
 
-    protected abstract Deck createDeck(PieceAlignment alignment, Hand hand);
+    /** The card names (CardCatalog display names) that make up this player's deck for the match. */
+    protected abstract List<String> deckCardNames(PieceAlignment alignment);
+
+    /**
+     * Whether this room only mirrors a match simulated elsewhere (the online guest): its hand
+     * views are then driven by relayed events rather than the local event bus.
+     */
+    protected boolean mirrorsRemoteMatch() {
+        return false;
+    }
+
+    private Deck createDeckView(PieceAlignment alignment) {
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        Deck deck = new Deck(0, 0, 125, 200, 1, SpriteBoxPos.BOTTOM_LEFT);
+        deck.getBounds().setX(screenW - deck.getWidth() - 10);
+        deck.getBounds().setY(alignment == PieceAlignment.P1 ? 10 : screenH - deck.getHeight() - 10);
+        deck.setOwner(alignment);
+        return deck;
+    }
 
     private void registerEventsLogger() {
         String logTag = this.getClass().getSimpleName() + "/Event";

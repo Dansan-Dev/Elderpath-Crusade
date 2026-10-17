@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.systems.PlayerSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.multiplayer.net.GameSnapshot;
@@ -36,7 +37,7 @@ class ReplicaEventApplierTest {
         GameContext.create();
         board = mock(Board.class);
         GameContext.get().setActiveBoard(board);
-        applier = new ReplicaEventApplier();
+        applier = new ReplicaEventApplier(null, null); // no hand views — mirrors pure hand state only
 
         piece = new Entity();
         piece.add(new PositionComponent().set(2, 3));
@@ -120,5 +121,34 @@ class ReplicaEventApplierTest {
         assertEquals(3, playerSystem.getMana(PieceAlignment.P1));
         assertEquals(5, playerSystem.getMana(PieceAlignment.P2));
         assertEquals(PieceAlignment.P2, GameContext.get().getTurnManager().getCurrentPlayer());
+    }
+
+    @Test
+    void cardEvents_mirrorHandStateByInstanceId() {
+        var hand = GameContext.get().getPlayerManager().get(PieceAlignment.P1).hand;
+
+        applier.apply(new CardDrawnEvent(PieceAlignment.P1, "P1-0", "Wolf", 1));
+        applier.apply(new CardDrawnEvent(PieceAlignment.P1, "P1-1", "Wolf", 2));
+        applier.apply(new CardDrawnEvent(PieceAlignment.P1, "P1-2", "Fireball", 3));
+        assertEquals(List.of("P1-0", "P1-1", "P1-2"), hand.getCards().stream().map(c -> c.instanceId()).toList());
+
+        // Playing the second copy removes exactly that instance, not the first same-named card
+        applier.apply(new CardPlayedEvent("Wolf", PieceAlignment.P1, 0, 1, null, "P1-1"));
+        assertEquals(List.of("P1-0", "P1-2"), hand.getCards().stream().map(c -> c.instanceId()).toList());
+
+        applier.apply(new CardDiscardedEvent(PieceAlignment.P1, 2, List.of("P1-0", "P1-2")));
+        assertEquals(0, hand.size());
+    }
+
+    @Test
+    void applySnapshot_bootstrapsHandsWithInstanceIds() {
+        GameSnapshot snapshot = new GameSnapshot(List.of(),
+                List.of(new CardInstance("P1-3", "Wolf")), List.of(new CardInstance("P2-0", "Wolf Cub")),
+                0, 0, PieceAlignment.P1);
+
+        applier.applySnapshot(snapshot);
+
+        assertEquals("P1-3", GameContext.get().getPlayerManager().get(PieceAlignment.P1).hand.getCards().get(0).instanceId());
+        assertEquals("P2-0", GameContext.get().getPlayerManager().get(PieceAlignment.P2).hand.getCards().get(0).instanceId());
     }
 }

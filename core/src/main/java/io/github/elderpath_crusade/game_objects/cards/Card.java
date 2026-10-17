@@ -44,9 +44,9 @@ public class Card extends HigherOrderTexture implements Clickable {
     @Getter @Setter
     private boolean faceUp;
 
-    // Set for every card inside the deck
-    @Setter
-    private Runnable onConsumed = null;
+    // The match card (CardInstance id) this view shows — null for a draft/preview card
+    @Getter @Setter
+    private String instanceId;
 
     // Optional title overlay
     private Text title;
@@ -232,14 +232,6 @@ public class Card extends HigherOrderTexture implements Clickable {
 
     public void setTitleColor(Color color) {
         this.titleColor = (color == null ? Color.WHITE : color);
-    }
-
-    /**
-     * Consume this card: triggers the configured onConsumed hook.
-     * Intended to be called by concrete cards after their effect resolves.
-     */
-    public void consume() {
-        if (onConsumed != null) onConsumed.run();
     }
 
     private Renderable activeSide() {

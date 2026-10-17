@@ -34,6 +34,7 @@ import io.github.elderpath_crusade.rendering.RenderPipeline;
 import io.github.elderpath_crusade.multiplayer.net.OnlineMatchSession;
 import io.github.elderpath_crusade.rooms.RoomManager;
 import io.github.elderpath_crusade.server.GameServer;
+import io.github.elderpath_crusade.match.CardRules;
 import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.rendering.ShaderManager;
 import io.github.elderpath_crusade.audio.SoundManager;
@@ -80,6 +81,7 @@ public class GameContext {
     @Getter private final FontManager fontManager;
     @Getter private final InfoDataManager infoDataManager;
     @Getter private final GameServer gameServer;
+    @Getter private final CardRules cardRules;
     @Getter private final OnlineMatchSession onlineMatch;
     @Getter private Board activeBoard;
     /** The logical board of the active match — what game logic reads; activeBoard is its view. */
@@ -128,6 +130,7 @@ public class GameContext {
         this.fontManager = new FontManager();
         this.infoDataManager = new InfoDataManager();
         this.gameServer = new GameServer();
+        this.cardRules = new CardRules();
         this.onlineMatch = new OnlineMatchSession();
     }
 

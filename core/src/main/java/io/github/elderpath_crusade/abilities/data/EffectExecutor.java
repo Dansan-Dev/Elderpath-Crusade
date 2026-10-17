@@ -27,10 +27,10 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.game.PlayerManager;
+import io.github.elderpath_crusade.match.CardCatalog;
+import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
-import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.game_objects.cards.UnitCard;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.match.BoardGrid;
@@ -68,7 +68,7 @@ public class EffectExecutor {
             case "SetActions" -> executeSetActions(effect, targets, context);
             case "GrantAction" -> executeGrantAction(effect, targets, context);
             case "DrawCard" -> executeDrawCard(owner, context);
-            case "DiscardCard" -> executeDiscardCard(effect, context);
+            case "DiscardCard" -> executeDiscardCard(effect, owner, context);
             case "SummonPiece" -> executeSummonPiece(effect, owner, context);
             case "GenerateMana" -> executeGenerateMana(effect, owner, context);
             case "AttachTimedModifier" -> executeAttachTimedModifier(effect, targets, context);
@@ -347,28 +347,33 @@ public class EffectExecutor {
         PieceAlignment alignment = resolveCasterAlignment(owner, context);
         if (alignment == null) return;
         PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        if (playerState == null || playerState.deck == null || playerState.hand == null) return;
+        if (playerState == null || playerState.deck == null) return;
 
-        playerState.deck.draw();
-        List<Card> cards = playerState.hand.getCards();
-        if (cards.isEmpty()) return;
-        Card drawn = cards.get(cards.size() - 1);
+        CardInstance drawn = playerState.deck.draw();
+        if (drawn == null) return;
 
         context.set("$drawn.card", drawn);
-        if (drawn instanceof UnitCard unitCard) {
+        String registryKey = CardCatalog.getRegistryKeyForSummon(drawn.cardName());
+        if (registryKey != null) {
             context.set("$drawn.isPiece", true);
-            context.set("$drawn.cost", unitCard.getStatsCost());
-            context.set("$drawn.registryKey", unitCard.getRegistryKey());
+            context.set("$drawn.cost", CardCatalog.getCost(drawn.cardName()));
+            context.set("$drawn.registryKey", registryKey);
         } else {
             context.set("$drawn.isPiece", false);
             context.set("$drawn.cost", 0);
         }
     }
 
-    private static void executeDiscardCard(EffectNode effect, ExpressionContext context) {
-        Object ref = effect.params().get("target");
-        Card card = resolveCardReference(ref, context);
-        if (card != null) card.consume();
+    private static void executeDiscardCard(EffectNode effect, Entity owner, ExpressionContext context) {
+        CardInstance card = resolveCardReference(effect.params().get("target"), context);
+        if (card != null) discardFromHand(card, resolveCasterAlignment(owner, context));
+    }
+
+    /** Moves a card from its owner's hand to their discard pile (emits CardDiscardedEvent). */
+    private static void discardFromHand(CardInstance card, PieceAlignment alignment) {
+        if (alignment == null) return;
+        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
+        if (playerState != null && playerState.deck != null) playerState.deck.discardFromHand(card.instanceId());
     }
 
     /**
@@ -382,7 +387,7 @@ public class EffectExecutor {
         if (alignment == null) return;
 
         String registryKey;
-        Card sourceCard = null;
+        CardInstance sourceCard = null;
         Object pieceParam = effect.params().get("piece");
         Object sourceParam = effect.params().get("source");
         if (pieceParam instanceof String pieceName) {
@@ -411,7 +416,7 @@ public class EffectExecutor {
             if (board.getPlotAtPos(c.row(), c.col()) instanceof Plot plot) slots.add(plot);
         }
 
-        Card cardToConsume = sourceCard;
+        CardInstance cardToConsume = sourceCard;
         TargetFilter filter = new TargetFilter() {
             @Override
             public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
@@ -438,7 +443,7 @@ public class EffectExecutor {
                     grid.addEntity(idx[0], idx[1], piece);
                     TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, idx[0], idx[1]));
 
-                    if (cardToConsume != null) cardToConsume.consume();
+                    if (cardToConsume != null) discardFromHand(cardToConsume, alignment);
                 }
         );
     }
@@ -548,10 +553,10 @@ public class EffectExecutor {
         }
     }
 
-    private static Card resolveCardReference(Object ref, ExpressionContext context) {
+    private static CardInstance resolveCardReference(Object ref, ExpressionContext context) {
         if ("$drawn".equals(ref)) {
             Object card = context.get("$drawn.card");
-            return card instanceof Card c ? c : null;
+            return card instanceof CardInstance c ? c : null;
         }
         return null;
     }

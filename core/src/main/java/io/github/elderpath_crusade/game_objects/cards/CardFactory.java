@@ -1,84 +1,46 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
-import io.github.elderpath_crusade.data.SpellDefinition;
-import io.github.elderpath_crusade.data.SpellRegistry;
 import io.github.elderpath_crusade.game.DeckManager;
+import io.github.elderpath_crusade.match.CardCatalog;
 
-import java.util.*;
-import java.util.function.Function;
+import java.util.Collection;
 
+/**
+ * Builds renderable cards (views) for the cards registered in CardCatalog. The catalog is
+ * the headless source of truth for what each card is; this class only adds rendering.
+ */
 public final class CardFactory {
-    private static final Map<String, Function<DeckManager.CardCreationParams, Card>> REGISTRY = new LinkedHashMap<>();
-    private static final Map<String, String> SUMMON_REGISTRY_KEYS = new LinkedHashMap<>();
-
     private CardFactory() {}
 
     public static void initialize() {
-        REGISTRY.clear();
-        SUMMON_REGISTRY_KEYS.clear();
-        registerSummon("Wolf", "Wolf");
-        registerSummon("Wolf Cub", "WolfCub");
-        registerSummon("Rogue", "Rogue");
-        registerSummon("Fairy", "Fairy");
-        registerSummon("Wind Spirit", "WindSpirit");
-        registerSummon("Big Toad", "BigToad");
-        registerSummon("Sniper", "Sniper");
-        registerSummon("Barbarian", "Barbarian");
-        registerSummon("King", "King");
-        registerSummon("Charger", "Charger");
-        registerSummon("Crossbowman", "Crossbowman");
-        registerSummon("Skeleton Bomber", "SkeletonBomber");
-        registerSummon("Warp Mage", "WarpMage");
-        registerSummon("Commander", "Commander");
-        registerSummon("Hero", "Hero");
-        registerSummon("Storm Mage", "StormMage");
-        registerSummon("Rifleman", "Rifleman");
-        registerSummon("Crow", "Crow");
-        registerSummon("Shockling", "Shockling");
-
-        SpellRegistry.load();
-        for (String spellName : SpellRegistry.getAllNames()) {
-            registerSpell(spellName, SpellRegistry.get(spellName));
-        }
-    }
-
-    private static void registerSummon(String displayName, String registryKey) {
-        SUMMON_REGISTRY_KEYS.put(displayName, registryKey);
-        register(displayName, p -> new SummonCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), displayName, registryKey));
+        CardCatalog.initialize();
     }
 
     /** The pieces.yaml registry key for a summon card's display name — null if displayName isn't a registered summon. */
     public static String getRegistryKeyForSummon(String displayName) {
-        return SUMMON_REGISTRY_KEYS.get(displayName);
+        return CardCatalog.getRegistryKeyForSummon(displayName);
     }
 
-    private static void registerSpell(String name, SpellDefinition definition) {
-        register(name, p -> new SpellCard(p.board(), p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(),
-                name, definition));
-    }
-
-    public static void register(String name, Function<DeckManager.CardCreationParams, Card> creator) {
-        REGISTRY.put(name, creator);
-    }
-
-    public static Card create(String name, DeckManager.CardCreationParams params) {
-        Function<DeckManager.CardCreationParams, Card> creator = REGISTRY.get(name);
-        if (creator == null) throw new IllegalArgumentException("Unknown card: " + name);
-        return creator.apply(params);
-    }
-
-    public static Function<DeckManager.CardCreationParams, Card> getCreator(String name) {
-        Function<DeckManager.CardCreationParams, Card> creator = REGISTRY.get(name);
-        if (creator == null) throw new IllegalArgumentException("Unknown card: " + name);
-        return creator;
+    /** Creates a renderable card for a card name; instanceId is the match card it shows (null for a draft preview). */
+    public static Card create(String name, String instanceId, DeckManager.CardCreationParams p) {
+        CardCatalog.Entry entry = CardCatalog.get(name);
+        Card card;
+        if (entry instanceof CardCatalog.Summon s) {
+            card = new SummonCard(p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), s.name(), s.registryKey());
+        } else if (entry instanceof CardCatalog.Spell spell) {
+            card = new SpellCard(p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), spell.name(), spell.definition());
+        } else {
+            throw new IllegalArgumentException("Unknown card: " + name);
+        }
+        card.setInstanceId(instanceId);
+        return card;
     }
 
     public static Collection<String> getAllNames() {
-        return Collections.unmodifiableSet(REGISTRY.keySet());
+        return CardCatalog.getAllNames();
     }
 
     public static Collection<String> getDraftableNames() {
-        Set<String> excluded = Set.of("Wolf", "Wolf Cub");
-        return REGISTRY.keySet().stream().filter(n -> !excluded.contains(n)).toList();
+        return CardCatalog.getDraftableNames();
     }
 }

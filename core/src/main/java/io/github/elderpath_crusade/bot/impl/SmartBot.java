@@ -1,5 +1,8 @@
 package io.github.elderpath_crusade.bot.impl;
-import io.github.elderpath_crusade.game.PlayerManager;
+
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.match.CardCatalog;
+import io.github.elderpath_crusade.match.CardInstance;import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.ashley.core.Entity;
@@ -7,8 +10,6 @@ import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
-import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.bot.Bot;
 import io.github.elderpath_crusade.bot.eval.BotActionContext;
 import io.github.elderpath_crusade.bot.eval.BotConfig;
@@ -197,13 +198,9 @@ public class SmartBot implements Bot {
             }
         }
 
-        if (player.hand == null)
-            return true;
-
-        for (Card card : player.hand.getCards()) {
-            if (!(card instanceof SummonCard summonCard))
-                continue;
-            if (summonCard.getStatsCost() > player.getMana())
+        for (CardInstance card : player.hand.getCards()) {
+            PieceDefinition def = CardCatalog.getPieceDefinition(card.cardName());
+            if (def == null || def.cost() > player.getMana())
                 continue;
             return false;
         }

@@ -24,10 +24,6 @@ class TurnFlowTest {
         GameContext.get().getTurnManager().reset();
         board = mock(Board.class);
         GameContext.get().setActiveBoard(board);
-        GameContext.get().getPlayerManager().setHand(PieceAlignment.P1, null);
-        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P1, null);
-        GameContext.get().getPlayerManager().setHand(PieceAlignment.P2, null);
-        GameContext.get().getPlayerManager().setDeck(PieceAlignment.P2, null);
     }
 
     @Test

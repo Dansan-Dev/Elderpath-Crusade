@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.game_objects.board.Board;
 
 import java.util.UUID;
 
@@ -17,7 +18,18 @@ import java.util.UUID;
  * Returns pure ECS entities — no OOP piece classes.
  */
 public final class PieceFactory {
+    /** Plot size used for a piece's sprite when no board view is active. */
+    private static final int DEFAULT_PLOT_SIZE = 40;
+
     private PieceFactory() {}
+
+    /** createPiece sized to the active board view's plots (or a default when there is none). */
+    public static Entity createPiece(PieceDefinition def, PieceAlignment alignment, int row, int col) {
+        Board board = GameContext.get().getActiveBoard();
+        int width = board != null ? board.getPLOT_WIDTH() : DEFAULT_PLOT_SIZE;
+        int height = board != null ? board.getPLOT_HEIGHT() : DEFAULT_PLOT_SIZE;
+        return createPiece(def, 0, 0, width, height, alignment, row, col);
+    }
 
     /**
      * Creates a fully-configured ECS entity from a PieceDefinition, adds it to the engine,

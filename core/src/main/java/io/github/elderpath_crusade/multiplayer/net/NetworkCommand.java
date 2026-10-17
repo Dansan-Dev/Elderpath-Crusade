@@ -15,9 +15,9 @@ public sealed interface NetworkCommand permits
 
     record MovePlot(int srcRow, int srcCol, int dstRow, int dstCol) implements NetworkCommand {}
 
-    record PlaySummonCard(PieceAlignment alignment, int handIndex, int row, int col) implements NetworkCommand {}
+    record PlaySummonCard(PieceAlignment alignment, String instanceId, int row, int col) implements NetworkCommand {}
 
-    record PlaySpellCard(PieceAlignment alignment, int handIndex, Integer targetRow, Integer targetCol) implements NetworkCommand {}
+    record PlaySpellCard(PieceAlignment alignment, String instanceId, Integer targetRow, Integer targetCol) implements NetworkCommand {}
 
     record EndTurn(PieceAlignment alignment) implements NetworkCommand {}
 }

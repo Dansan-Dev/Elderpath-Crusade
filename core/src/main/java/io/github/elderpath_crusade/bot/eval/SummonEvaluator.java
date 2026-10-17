@@ -1,10 +1,11 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.match.CardCatalog;
+import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
-import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
@@ -27,7 +28,7 @@ public class SummonEvaluator extends BotEvaluatorBase {
     @Override
     public void build(BoardGrid board, TacticalState tactical, List<Intent> output) {
         var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
-        if (player == null || player.hand == null) {
+        if (player == null) {
             return;
         }
 
@@ -66,30 +67,31 @@ public class SummonEvaluator extends BotEvaluatorBase {
         }
 
         // Choose best affordable card based on value/cost heuristic
-        SummonCard bestCard = null;
+        CardInstance bestCard = null;
         int bestValueScore = Integer.MIN_VALUE;
 
-        for (Card card : player.hand.getCards()) {
-            if (!(card instanceof SummonCard sc) || sc.getStatsCost() > currentMana) {
+        for (CardInstance card : player.hand.getCards()) {
+            PieceDefinition def = CardCatalog.getPieceDefinition(card.cardName());
+            if (def == null || def.cost() > currentMana) {
                 continue;
             }
 
-            int value = (sc.getStatsMaxHealth() * 2) + (sc.getStatsDamage() * 3) +
-                    (sc.getStatsActions()) + (sc.getStatsSpeed()) + sc.getStatsCost();
+            int value = (def.health() * 2) + (def.damage() * 3) +
+                    (def.actions()) + (def.speed()) + def.cost();
 
             if (value > bestValueScore) {
                 bestValueScore = value;
-                bestCard = sc;
+                bestCard = card;
             }
         }
 
         if (bestCard != null) {
             Coord target = candidates.get(0);
-            final SummonCard sc = bestCard;
+            final CardInstance card = bestCard;
             int score = config.scoreSummonBase() + Math.min(30, bestValueScore / 2);
 
             output.add(new Intent(score,
-                    () -> summonAndVerify(board, sc, target),
+                    () -> summonAndVerify(card, target),
                     IntentType.DEF_SUMMON));
         }
     }

@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.bot.eval;
 
+import io.github.elderpath_crusade.match.CardInstance;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.EntityUtils;
@@ -7,7 +8,6 @@ import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.match.Coord;
-import io.github.elderpath_crusade.game_objects.cards.SummonCard;
 import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
@@ -145,16 +145,9 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return false;
     }
 
-    protected boolean summonAndVerify(BoardGrid board, SummonCard card, Coord target) {
-        var player = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
-        if (player == null || player.hand == null)
-            return false;
-        int beforeSize = player.hand.getCards().size();
-        int beforeMana = player.getMana();
-        card.executeSummon(target.row(), target.col());
-        boolean consumed = !player.hand.getCards().contains(card) || player.hand.getCards().size() < beforeSize;
-        boolean spentMana = player.getMana() < beforeMana;
-        return consumed || spentMana;
+    protected boolean summonAndVerify(CardInstance card, Coord target) {
+        return GameContext.get().getGameServer().playSummonCard(
+                PieceAlignment.P2, card.instanceId(), target.row(), target.col());
     }
 
     protected int nearestManhattan(int row, int col, List<PieceEntry> targets) {

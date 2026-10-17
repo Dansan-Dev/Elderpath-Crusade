@@ -11,10 +11,8 @@ import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.systems.PlayerSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
-import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.game_objects.cards.Hand;
+import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.io.IOException;
@@ -85,9 +83,9 @@ public class GameHost {
         if (command instanceof NetworkCommand.MovePlot c) {
             server.movePlot(c.srcRow(), c.srcCol(), c.dstRow(), c.dstCol());
         } else if (command instanceof NetworkCommand.PlaySummonCard c) {
-            server.playSummonCard(c.alignment(), c.handIndex(), c.row(), c.col());
+            server.playSummonCard(c.alignment(), c.instanceId(), c.row(), c.col());
         } else if (command instanceof NetworkCommand.PlaySpellCard c) {
-            server.playSpellCard(c.alignment(), c.handIndex(), c.targetRow(), c.targetCol());
+            server.playSpellCard(c.alignment(), c.instanceId(), c.targetRow(), c.targetCol());
         } else if (command instanceof NetworkCommand.EndTurn c) {
             if (c.alignment() == GameContext.get().getTurnManager().getCurrentPlayer()) {
                 GameContext.get().getTurnManager().endTurn();
@@ -137,21 +135,16 @@ public class GameHost {
         PlayerSystem playerSystem = GameContext.get().getEcsEngine().getSystem(PlayerSystem.class);
         return new GameSnapshot(
                 pieces,
-                handNames(PieceAlignment.P1),
-                handNames(PieceAlignment.P2),
+                handOf(PieceAlignment.P1),
+                handOf(PieceAlignment.P2),
                 playerSystem.getMana(PieceAlignment.P1),
                 playerSystem.getMana(PieceAlignment.P2),
                 GameContext.get().getTurnManager().getCurrentPlayer()
         );
     }
 
-    private List<String> handNames(PieceAlignment alignment) {
-        PlayerManager.PlayerState playerState = GameContext.get().getPlayerManager().get(alignment);
-        Hand hand = playerState == null ? null : playerState.hand;
-        if (hand == null) return List.of();
-        List<String> names = new ArrayList<>();
-        for (Card c : hand.getCards()) names.add(c.getDisplayName());
-        return names;
+    private List<CardInstance> handOf(PieceAlignment alignment) {
+        return new ArrayList<>(GameContext.get().getPlayerManager().get(alignment).hand.getCards());
     }
 
     private void relay(GameEvent event) {
