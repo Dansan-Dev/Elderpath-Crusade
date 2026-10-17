@@ -73,26 +73,12 @@ public class PassTurnButton extends Button {
     // Gate clicks based on current turn or waiting state
     @Override
     public ClickableEffectData getClickableEffectData() {
-        // In LOCAL_MATCH mode, button is clickable if:
-        // - Waiting for next player (shows "Start Turn")
-        // - Current player's turn (shows "Pass Turn")
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH) {
-            if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
-                return super.getClickableEffectData(); // Always clickable when waiting
-            }
-            // During active turn, only clickable for current player
-            return (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1 ||
-                    GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P2)
-                    ? super.getClickableEffectData() : null;
+        // Hotseat handoff ("Start Turn") is always clickable; otherwise only on the turn of a
+        // side this screen controls — never during a bot's or the online opponent's turn.
+        if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
+            return super.getClickableEffectData();
         }
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.ONLINE_MATCH) {
-            // Only clickable for whichever alignment this process locally controls, and only on their turn.
-            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-            return (local != null && GameContext.get().getTurnManager().getCurrentPlayer() == local)
-                    ? super.getClickableEffectData() : null;
-        }
-        // In other modes, only P1 can click (existing behavior)
-        return (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1) ? super.getClickableEffectData() : null;
+        return GameContext.get().getLocalControl().actingSide() != null ? super.getClickableEffectData() : null;
     }
 
 }

@@ -2,11 +2,11 @@ package io.github.elderpath_crusade.game_objects.board;
 
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.match.MoveRules;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ecs.EntityUtils;
-import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.sprites.TextureObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
@@ -75,40 +75,14 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
     public void setBoard(Board board) { this.boardRef = board; }
 
+    /** A legal move/attack destination for this plot's piece — the same check GameServer enforces (MoveRules). */
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
-        if (boardRef == null || box == null) return false;
-        Plot targetPlot = null;
-        if (box instanceof Plot p) {
-            targetPlot = p;
-        }
-        if (targetPlot == null) return false;
-
+        if (boardRef == null || !(box instanceof Plot targetPlot)) return false;
         Entity entity = boardRef.getEntityAtPlot(this);
         if (entity == null) return false;
-        PieceAlignment alignment = EntityUtils.getAlignment(entity);
-        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return false;
-        if (EntityUtils.isStunned(entity)) return false;
-
-        int[] dstIdx = targetPlot.getIndices();
-        if (dstIdx == null) return false;
-        int dr = dstIdx[0], dc = dstIdx[1];
-        Entity dstEntity = boardRef.getEntityAtPos(dr, dc);
-
-        if (dstEntity != null && EntityUtils.getAlignment(dstEntity) != alignment) {
-            // Attack validation: check if target is in attackable plots
-            List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, alignment);
-            return attackable.contains(targetPlot);
-        }
-
-        if (dstEntity == null) {
-            // Move validation: check if target is reachable
-            int speed = EntityUtils.getSpeed(entity);
-            List<Plot> reachable = boardRef.getReachablePlots(entity, this.row, this.col, speed);
-            return reachable.contains(targetPlot);
-        }
-
-        return false;
+        return MoveRules.validate(EntityUtils.getAlignment(entity), this.row, this.col,
+                targetPlot.getRow(), targetPlot.getCol()).isOk();
     }
 
     @Override
@@ -165,10 +139,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         Entity entity = boardRef.getEntityAtPlot(this);
         if (entity == null) return null;
         PieceAlignment alignment = EntityUtils.getAlignment(entity);
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.ONLINE_MATCH) {
-            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-            if (local != null && alignment != local) return null;
-        }
+        if (!GameContext.get().getLocalControl().controls(alignment)) return null;
         if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
         if (EntityUtils.isStunned(entity)) return null;
         if (EntityUtils.getRemainingActions(entity) <= 0) return null;

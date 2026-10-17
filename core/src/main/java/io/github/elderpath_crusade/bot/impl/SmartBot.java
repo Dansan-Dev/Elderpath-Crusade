@@ -117,9 +117,9 @@ public class SmartBot implements Bot {
         turnActive = false;
         PieceAlignment endingFor = self;
         GameContext.get().getMatchClock().schedule(END_DELAY, () -> {
-            if (!GameContext.get().getGameManager().isPaused()
-                    && GameContext.get().getTurnManager().getCurrentPlayer() == endingFor)
-                GameContext.get().getTurnManager().endTurn();
+            // GameServer only accepts it if it's still endingFor's turn
+            if (!GameContext.get().getGameManager().isPaused())
+                GameContext.get().getGameServer().endTurn(endingFor);
         });
     }
 

@@ -29,10 +29,26 @@ class CardMessageCodecTest {
 
     @Test
     void playCommands_roundTripWithInstanceIds() {
-        NetworkCommand summon = new NetworkCommand.PlaySummonCard(PieceAlignment.P2, "P2-1", 6, 3);
-        NetworkCommand spell = new NetworkCommand.PlaySpellCard(PieceAlignment.P2, "P2-2", null, null);
+        NetworkCommand summon = new NetworkCommand.PlaySummonCard("P2-1", 6, 3);
+        NetworkCommand spell = new NetworkCommand.PlaySpellCard("P2-2", null, null);
         assertEquals(summon, NetworkCommandCodec.decode(NetworkCommandCodec.encode(summon)));
         assertEquals(spell, NetworkCommandCodec.decode(NetworkCommandCodec.encode(spell)));
+    }
+
+    @Test
+    void endTurn_roundTripsWithoutFields() {
+        NetworkCommand endTurn = new NetworkCommand.EndTurn();
+        assertEquals(endTurn, NetworkCommandCodec.decode(NetworkCommandCodec.encode(endTurn)));
+    }
+
+    @Test
+    void commandSmugglingAnActingSide_failsToDecode() {
+        // Commands carry no acting side (the host takes it from the connection); a payload
+        // that adds one is malformed, not silently honored.
+        assertThrows(IllegalStateException.class,
+                () -> NetworkCommandCodec.decode("{\"type\":\"EndTurn\",\"payload\":{\"alignment\":\"P1\"}}"));
+        assertThrows(IllegalStateException.class, () -> NetworkCommandCodec.decode(
+                "{\"type\":\"PlaySummonCard\",\"payload\":{\"alignment\":\"P1\",\"instanceId\":\"P1-0\",\"row\":0,\"col\":2}}"));
     }
 
     @Test

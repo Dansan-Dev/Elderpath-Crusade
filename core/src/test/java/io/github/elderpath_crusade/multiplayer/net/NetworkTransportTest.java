@@ -8,6 +8,7 @@ import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.factory.PieceFactory;
+import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.match.BoardGrid;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,18 +56,57 @@ class NetworkTransportTest {
 
     @Test
     void commandFromClientDispatchesThroughGameServerOnHost() throws InterruptedException {
-        Entity piece = PieceFactory.createFromDefinition(GameContext.get().getEcsEngine(),
-                new PieceDefinition("Wolf", 1, 3, 1, 1, 1, List.of()), PieceAlignment.P1,
-                UUID.randomUUID().toString(), 1, 2);
-        piece.getComponent(StatsComponent.class).remainingActions = 1;
-        grid.addEntity(1, 2, piece);
+        GameContext.get().getTurnManager().setCurrentPlayerForReplica(PieceAlignment.P2); // the guest's turn
+        Entity piece = spawn(PieceAlignment.P2, 5, 2);
 
-        client.send(new NetworkCommand.MovePlot(1, 2, 2, 2));
+        client.send(new NetworkCommand.MovePlot(5, 2, 4, 2));
 
         awaitTrue(() -> {
             host.update();
-            return grid.getEntityAt(2, 2) == piece;
+            return grid.getEntityAt(4, 2) == piece;
         }, "command dispatched through GameServer — the piece moved on the host's grid");
+    }
+
+    @Test
+    void guestCommandsActAsTheGuestsSideRegardlessOfPayload() throws InterruptedException {
+        List<ActionResult.Reason> rejections = new ArrayList<>();
+        List<PieceAlignment> actors = new ArrayList<>();
+        GameContext.get().getGameServer().setRejectionObserver((actor, result) -> {
+            actors.add(actor);
+            rejections.add(result.reason());
+        });
+        Entity hostPiece = spawn(PieceAlignment.P1, 1, 2);
+
+        // P1's (the host's) turn: the guest can neither move the host's piece nor end its turn
+        client.send(new NetworkCommand.MovePlot(1, 2, 2, 2));
+        client.send(new NetworkCommand.EndTurn());
+        awaitTrue(() -> {
+            host.update();
+            return rejections.size() == 2;
+        }, "both guest commands rejected");
+        assertEquals(List.of(ActionResult.Reason.NOT_YOUR_TURN, ActionResult.Reason.NOT_YOUR_TURN), rejections);
+        assertEquals(List.of(PieceAlignment.P2, PieceAlignment.P2), actors, "the host acts as the connection's side");
+        assertSame(hostPiece, grid.getEntityAt(1, 2));
+        assertEquals(PieceAlignment.P1, GameContext.get().getTurnManager().getCurrentPlayer());
+
+        // P2's turn: still can't move the host's piece
+        GameContext.get().getTurnManager().setCurrentPlayerForReplica(PieceAlignment.P2);
+        client.send(new NetworkCommand.MovePlot(1, 2, 2, 2));
+        awaitTrue(() -> {
+            host.update();
+            return rejections.size() == 3;
+        }, "move of the host's piece rejected");
+        assertEquals(ActionResult.Reason.NOT_YOUR_PIECE, rejections.get(2));
+        assertSame(hostPiece, grid.getEntityAt(1, 2));
+    }
+
+    private Entity spawn(PieceAlignment owner, int row, int col) {
+        Entity piece = PieceFactory.createFromDefinition(GameContext.get().getEcsEngine(),
+                new PieceDefinition("Wolf", 1, 3, 1, 1, 1, List.of()), owner,
+                UUID.randomUUID().toString(), row, col);
+        piece.getComponent(StatsComponent.class).remainingActions = 1;
+        grid.addEntity(row, col, piece);
+        return piece;
     }
 
     @Test

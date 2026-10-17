@@ -1,10 +1,10 @@
 package io.github.elderpath_crusade.server;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
 import io.github.elderpath_crusade.multiplayer.net.OnlineMatchSession;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -16,12 +16,12 @@ import java.util.function.Supplier;
 public final class ActionDispatcher {
     private ActionDispatcher() {}
 
-    public static boolean dispatch(Supplier<NetworkCommand> toCommand, BooleanSupplier localExecute) {
+    public static boolean dispatch(Supplier<NetworkCommand> toCommand, Supplier<ActionResult> localExecute) {
         OnlineMatchSession session = GameContext.get().getOnlineMatch();
         if (session.isGuest()) {
             session.getClient().send(toCommand.get());
             return true; // optimistic — the authoritative result arrives via relayed events
         }
-        return localExecute.getAsBoolean();
+        return localExecute.get().isOk();
     }
 }

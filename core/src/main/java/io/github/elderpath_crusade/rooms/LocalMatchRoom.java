@@ -34,7 +34,7 @@ public class LocalMatchRoom extends BattleRoom {
         if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
             GameContext.get().getTurnManager().startNextPlayerTurn();
         } else {
-            GameContext.get().getTurnManager().endTurn();
+            GameContext.get().getGameServer().endTurn(GameContext.get().getLocalControl().actingSide());
         }
     }
 

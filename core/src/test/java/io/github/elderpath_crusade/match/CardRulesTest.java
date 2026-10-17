@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.match;
 
+import io.github.elderpath_crusade.match.ActionResult.Reason;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.data.Condition;
@@ -92,7 +93,7 @@ class CardRulesTest {
 
     @Test
     void playSummon_success_spawnsSpendsManaAndPlaysCard() {
-        assertTrue(rules.playSummon(PieceAlignment.P1, "P1-0", 0, 2));
+        assertEquals(Reason.OK, rules.playSummon(PieceAlignment.P1, "P1-0", 0, 2).reason());
 
         Entity piece = grid.getEntityAt(0, 2);
         assertNotNull(piece);
@@ -108,21 +109,21 @@ class CardRulesTest {
 
     @Test
     void playSummon_notYourTurn_rejected() {
-        assertFalse(rules.playSummon(PieceAlignment.P2, "P2-0", 6, 2));
+        assertEquals(Reason.NOT_YOUR_TURN, rules.playSummon(PieceAlignment.P2, "P2-0", 6, 2).reason());
         assertNull(grid.getEntityAt(6, 2));
     }
 
     @Test
     void playSummon_cardNotInHand_rejected() {
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P1-3", 0, 2)); // still in the draw pile
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P2-0", 0, 2)); // the opponent's card
+        assertEquals(Reason.CARD_NOT_IN_HAND, rules.playSummon(PieceAlignment.P1, "P1-3", 0, 2).reason()); // still in the draw pile
+        assertEquals(Reason.CARD_NOT_IN_HAND, rules.playSummon(PieceAlignment.P1, "P2-0", 0, 2).reason()); // the opponent's card
         assertEquals(10, p1.getMana());
     }
 
     @Test
     void playSummon_notEnoughMana_rejectedAndKeepsCard() {
         p1.setMana(1);
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P1-0", 0, 2));
+        assertEquals(Reason.NOT_ENOUGH_MANA, rules.playSummon(PieceAlignment.P1, "P1-0", 0, 2).reason());
         assertNotNull(p1.hand.find("P1-0"));
         assertNull(grid.getEntityAt(0, 2));
         assertEquals(1, p1.getMana());
@@ -130,21 +131,21 @@ class CardRulesTest {
 
     @Test
     void playSummon_outsideHomeRow_rejected() {
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P1-0", 3, 2));
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P1-0", 6, 2)); // P2's home row
+        assertEquals(Reason.INVALID_SUMMON_TARGET, rules.playSummon(PieceAlignment.P1, "P1-0", 3, 2).reason());
+        assertEquals(Reason.INVALID_SUMMON_TARGET, rules.playSummon(PieceAlignment.P1, "P1-0", 6, 2).reason()); // P2's home row
         assertEquals(10, p1.getMana());
     }
 
     @Test
     void playSummon_occupiedTile_rejected() {
         placeEnemy(0, 2);
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P1-0", 0, 2));
+        assertEquals(Reason.INVALID_SUMMON_TARGET, rules.playSummon(PieceAlignment.P1, "P1-0", 0, 2).reason());
         assertEquals(10, p1.getMana());
     }
 
     @Test
     void playSummon_spellCard_rejected() {
-        assertFalse(rules.playSummon(PieceAlignment.P1, "P1-1", 0, 2));
+        assertEquals(Reason.WRONG_CARD_TYPE, rules.playSummon(PieceAlignment.P1, "P1-1", 0, 2).reason());
     }
 
     // --- Spells ---
@@ -153,7 +154,7 @@ class CardRulesTest {
     void playSpell_targeted_appliesEffectsSpendsManaAndPlaysCard() {
         Entity enemy = placeEnemy(4, 2);
 
-        assertTrue(rules.playSpell(PieceAlignment.P1, "P1-1", 4, 2));
+        assertEquals(Reason.OK, rules.playSpell(PieceAlignment.P1, "P1-1", 4, 2).reason());
 
         assertEquals(1, EntityUtils.getCurrentHealth(enemy));
         assertEquals(7, p1.getMana());
@@ -167,7 +168,7 @@ class CardRulesTest {
                 UUID.randomUUID().toString(), 3, 3);
         grid.addEntity(3, 3, friendly);
 
-        assertFalse(rules.playSpell(PieceAlignment.P1, "P1-1", 3, 3));
+        assertEquals(Reason.INVALID_SPELL_TARGET, rules.playSpell(PieceAlignment.P1, "P1-1", 3, 3).reason());
         assertEquals(3, EntityUtils.getCurrentHealth(friendly));
         assertEquals(10, p1.getMana());
         assertNotNull(p1.hand.find("P1-1"));
@@ -175,15 +176,15 @@ class CardRulesTest {
 
     @Test
     void playSpell_targetedWithoutTargetOrOnEmptyTile_rejected() {
-        assertFalse(rules.playSpell(PieceAlignment.P1, "P1-1", null, null));
-        assertFalse(rules.playSpell(PieceAlignment.P1, "P1-1", 4, 4));
-        assertFalse(rules.playSpell(PieceAlignment.P1, "P1-1", 99, 99));
+        assertEquals(Reason.INVALID_SPELL_TARGET, rules.playSpell(PieceAlignment.P1, "P1-1", null, null).reason());
+        assertEquals(Reason.INVALID_SPELL_TARGET, rules.playSpell(PieceAlignment.P1, "P1-1", 4, 4).reason());
+        assertEquals(Reason.INVALID_SPELL_TARGET, rules.playSpell(PieceAlignment.P1, "P1-1", 99, 99).reason());
         assertEquals(10, p1.getMana());
     }
 
     @Test
     void playSpell_untargeted_runsEffectsThenPlaysCard() {
-        assertTrue(rules.playSpell(PieceAlignment.P1, "P1-2", null, null));
+        assertEquals(Reason.OK, rules.playSpell(PieceAlignment.P1, "P1-2", null, null).reason());
 
         assertEquals(9, p1.getMana());
         assertNull(p1.hand.find("P1-2"));
@@ -195,7 +196,7 @@ class CardRulesTest {
 
     @Test
     void playSpell_summonCard_rejected() {
-        assertFalse(rules.playSpell(PieceAlignment.P1, "P1-0", null, null));
+        assertEquals(Reason.WRONG_CARD_TYPE, rules.playSpell(PieceAlignment.P1, "P1-0", null, null).reason());
     }
 
     // --- UI gating queries ---

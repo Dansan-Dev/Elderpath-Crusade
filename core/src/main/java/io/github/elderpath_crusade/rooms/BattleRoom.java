@@ -162,10 +162,13 @@ public abstract class BattleRoom extends Room {
 
     /**
      * The side this screen is oriented for: its home row, hand and deck sit at the bottom.
-     * P1 by default (vs bot); hotseat follows the current player, an online client its own side.
+     * The side this screen controls (vs bot: the human's side; online: its own side), P1 if it
+     * controls both or neither (bot vs bot). Hotseat overrides this to follow the current player.
      */
     protected PieceAlignment viewerAlignment() {
-        return PieceAlignment.P1;
+        var control = GameContext.get().getLocalControl();
+        boolean p1 = control.controls(PieceAlignment.P1);
+        return !p1 && control.controls(PieceAlignment.P2) ? PieceAlignment.P2 : PieceAlignment.P1;
     }
 
     /** Flips the board view and places hands/decks so the viewer's side is at the bottom. */

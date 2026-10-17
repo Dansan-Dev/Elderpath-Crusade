@@ -26,7 +26,7 @@ public class DemoRoom extends BattleRoom {
 
     @Override
     protected void onPassTurnClicked() {
-        GameContext.get().getTurnManager().endTurn();
+        GameContext.get().getGameServer().endTurn(GameContext.get().getLocalControl().actingSide());
     }
 
     @Override

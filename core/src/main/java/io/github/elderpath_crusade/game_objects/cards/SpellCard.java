@@ -122,9 +122,10 @@ public class SpellCard extends Card implements TargetFilter {
     /** Sends this card's play to GameServer (or the host) — targetRow/targetCol null for an untargeted spell. */
     private void play(Integer targetRow, Integer targetCol) {
         String instanceId = getInstanceId();
+        PieceAlignment actor = GameContext.get().getLocalControl().actingSide();
         ActionDispatcher.dispatch(
-                () -> new NetworkCommand.PlaySpellCard(alignment, instanceId, targetRow, targetCol),
-                () -> GameContext.get().getGameServer().playSpellCard(alignment, instanceId, targetRow, targetCol)
+                () -> new NetworkCommand.PlaySpellCard(instanceId, targetRow, targetCol),
+                () -> GameContext.get().getGameServer().playSpellCard(actor, instanceId, targetRow, targetCol)
         );
     }
 
@@ -143,7 +144,7 @@ public class SpellCard extends Card implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        if (!SummonCard.isLocallyControlled(alignment)) return null;
+        if (!GameContext.get().getLocalControl().controls(alignment)) return null;
         if (!GameContext.get().getCardRules().canPlay(alignment, spellName)) return null;
         return clickableEffectData;
     }

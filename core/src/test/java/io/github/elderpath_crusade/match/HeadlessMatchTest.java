@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.match;
 
+import io.github.elderpath_crusade.match.ActionResult.Reason;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
@@ -116,13 +117,14 @@ class HeadlessMatchTest {
         assertEquals(3, player(PieceAlignment.P1).hand.getCards().size());
         assertEquals(1, player(PieceAlignment.P1).getMana());
 
-        assertTrue(server.playSummonCard(PieceAlignment.P1, firstCardInHand(PieceAlignment.P1), 0, 4));
+        assertTrue(server.playSummonCard(PieceAlignment.P1, firstCardInHand(PieceAlignment.P1), 0, 4).isOk());
         Entity runner = grid.getEntityAt(0, 4);
         assertNotNull(runner);
         assertNull(runner.getComponent(SpriteComponent.class), "headless pieces carry no sprite");
         assertEquals(0, player(PieceAlignment.P1).getMana());
         assertEquals(2, player(PieceAlignment.P1).hand.getCards().size());
-        assertFalse(server.movePlot(0, 4, 1, 4), "summoning sickness: no actions on the turn it's summoned");
+        assertEquals(Reason.PIECE_EXHAUSTED, server.movePlot(PieceAlignment.P1, 0, 4, 1, 4).reason(),
+                "summoning sickness: no actions on the turn it's summoned");
 
         // Hotseat waits for the next player to take over the screen — the server-side flow
         // for the guest/hosted modes calls the same startNextPlayerTurn.
@@ -137,19 +139,19 @@ class HeadlessMatchTest {
         // Turns 3-7 (P1 walks the right lane; P2 passes)
         assertEquals(1, EntityUtils.getRemainingActions(runner), "actions reset at the owner's turn start");
         assertEquals(1, player(PieceAlignment.P1).getMana(), "spent 1 of turn 1's mana, +1 this turn");
-        assertTrue(server.movePlot(0, 4, 2, 4));
+        assertTrue(server.movePlot(PieceAlignment.P1, 0, 4, 2, 4).isOk());
         assertEquals(0, EntityUtils.getRemainingActions(runner));
         endTurnAndHandOver();
         endTurnAndHandOver();
-        assertTrue(server.movePlot(2, 4, 4, 4));
+        assertTrue(server.movePlot(PieceAlignment.P1, 2, 4, 4, 4).isOk());
         endTurnAndHandOver();
         endTurnAndHandOver();
-        assertTrue(server.movePlot(4, 4, 5, 4));
+        assertTrue(server.movePlot(PieceAlignment.P1, 4, 4, 5, 4).isOk());
         endTurnAndHandOver();
 
         // Turn 8 (P2): summon a Zapper next to the runner — its ON_SUMMON reaction fires
         assertEquals(3, EntityUtils.getCurrentHealth(runner));
-        assertTrue(server.playSummonCard(PieceAlignment.P2, firstCardInHand(PieceAlignment.P2), 6, 4));
+        assertTrue(server.playSummonCard(PieceAlignment.P2, firstCardInHand(PieceAlignment.P2), 6, 4).isOk());
         MatchSetup.tick(TICK); // AbilityResolverSystem resolves queued reactions on update
         assertEquals(2, EntityUtils.getCurrentHealth(runner), "ZapOnSummon hit the adjacent enemy");
         Entity zapper = grid.getEntityAt(6, 4);
@@ -157,7 +159,7 @@ class HeadlessMatchTest {
         endTurnAndHandOver();
 
         // Turn 9 (P1): attack and kill the Zapper
-        assertTrue(server.movePlot(5, 4, 6, 4), "attack the adjacent enemy");
+        assertTrue(server.movePlot(PieceAlignment.P1, 5, 4, 6, 4).isOk(), "attack the adjacent enemy");
         MatchSetup.tick(TICK); // DeathSystem removes dead pieces on update
         assertNull(grid.getEntityAt(6, 4));
         assertEquals(1, deaths.size());
@@ -167,7 +169,7 @@ class HeadlessMatchTest {
 
         // Turn 11 (P1): step onto P2's home row — P1 wins
         assertTrue(wins.isEmpty());
-        assertTrue(server.movePlot(5, 4, 6, 4));
+        assertTrue(server.movePlot(PieceAlignment.P1, 5, 4, 6, 4).isOk());
         assertEquals(1, wins.size());
         assertEquals(PieceAlignment.P1, wins.get(0).winner());
         assertEquals(PieceAlignment.P1, GameContext.get().getWinConditionManager().getWinner());
@@ -185,6 +187,9 @@ class HeadlessMatchTest {
                 start(MatchConfig.standard(GameMode.DEMO,
                         deckOf(card, 12), deckOf(card, 12), seed,
                         Map.of(PieceAlignment.P1, kind, PieceAlignment.P2, kind)));
+                List<String> botRejections = new ArrayList<>();
+                GameContext.get().getGameServer().setRejectionObserver(
+                        (actor, result) -> botRejections.add(actor + ":" + result.reason()));
 
                 int maxTurns = 60;
                 for (int i = 0; i < 200_000 && wins.isEmpty() && turnsStarted.size() < maxTurns; i++) {
@@ -198,6 +203,7 @@ class HeadlessMatchTest {
                 for (int t = 1; t < turnsStarted.size(); t++) {
                     assertNotEquals(turnsStarted.get(t - 1), turnsStarted.get(t), label + ": turns alternate");
                 }
+                assertEquals(List.of(), botRejections, label + ": bots only issue legal actions");
                 System.out.println("[botVsBot] " + label + ": " + turnsStarted.size() + " turns, winner="
                         + (wins.isEmpty() ? "none" : wins.get(0).winner()));
             }

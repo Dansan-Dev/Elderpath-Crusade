@@ -43,7 +43,7 @@ public class AttackEvaluator extends BotEvaluatorBase {
 
                 int score = scoreAdjacentAttack(board, tactical.self(), source, target, attacker, defender, tactical.threats());
                 output.add(new Intent(score,
-                        () -> attackAndVerify(board, source.row(), source.col(), target.row(), target.col(), attacker),
+                        () -> attackAndVerify(board, tactical.self(), source.row(), source.col(), target.row(), target.col(), attacker),
                         IntentType.ADJ_ATTACK,
                         new AttackCommand(EntityUtils.getId(attacker), source.row(), source.col(), target.row(), target.col())));
             }

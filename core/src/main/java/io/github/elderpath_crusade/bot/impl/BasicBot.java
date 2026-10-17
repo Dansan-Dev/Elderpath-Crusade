@@ -58,9 +58,9 @@ public class BasicBot implements Bot {
     private void scheduleEndTurn() {
         PieceAlignment endingFor = self;
         GameContext.get().getMatchClock().schedule(DELAY_BEFORE_END, () -> {
-            if (!GameContext.get().getGameManager().isPaused()
-                    && GameContext.get().getTurnManager().getCurrentPlayer() == endingFor)
-                GameContext.get().getTurnManager().endTurn();
+            // GameServer only accepts it if it's still endingFor's turn
+            if (!GameContext.get().getGameManager().isPaused())
+                GameContext.get().getGameServer().endTurn(endingFor);
         });
     }
 
@@ -70,11 +70,12 @@ public class BasicBot implements Bot {
         CardInstance targetCard = null;
         for (CardInstance c : ps.hand.getCards()) { if ("Wolf".equals(c.cardName())) { targetCard = c; break; } }
         if (targetCard == null) return false;
+        if (!GameContext.get().getCardRules().canPlay(self, targetCard.cardName())) return false;
 
         int homeRow = b.getHomeRow(self);
         for (int col = 0; col < b.getCols(); col++) {
             if (b.isValidSummonTarget(homeRow, col, self)
-                    && GameContext.get().getGameServer().playSummonCard(self, targetCard.instanceId(), homeRow, col)) return true;
+                    && GameContext.get().getGameServer().playSummonCard(self, targetCard.instanceId(), homeRow, col).isOk()) return true;
         }
         return false;
     }
@@ -84,13 +85,13 @@ public class BasicBot implements Bot {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 Entity entity = b.getEntityAt(r, c);
-                if (entity != null && EntityUtils.getAlignment(entity) == self) {
+                if (entity != null && EntityUtils.getAlignment(entity) == self && canAct(entity)) {
                     List<Coord> hostile = b.getAttackableEnemies(r, c, self);
                     if (!hostile.isEmpty()) {
                         Coord dst = hostile.get(0);
                         Entity defenderBefore = b.getEntityAt(dst.row(), dst.col());
                         int actionsBefore = EntityUtils.getRemainingActions(entity);
-                        GameContext.get().getGameServer().movePlot(r, c, dst.row(), dst.col());
+                        GameContext.get().getGameServer().movePlot(self, r, c, dst.row(), dst.col());
                         Entity defenderAfter = b.getEntityAt(dst.row(), dst.col());
                         boolean defenderDied = (defenderBefore != null) && (defenderAfter == null || defenderAfter != defenderBefore);
                         int actionsAfter = EntityUtils.getRemainingActions(entity);
@@ -113,7 +114,7 @@ public class BasicBot implements Bot {
         if (enemies.isEmpty()) return false;
         for (int r = 0; r < rows; r++) for (int c = 0; c < cols; c++) {
             Entity entity = b.getEntityAt(r, c);
-            if (entity == null || EntityUtils.getAlignment(entity) != self) continue;
+            if (entity == null || EntityUtils.getAlignment(entity) != self || !canAct(entity)) continue;
             int currentDist = nearestEnemyManhattan(r,c,enemies);
             if (currentDist <= 1) continue;
             int speed = EntityUtils.getSpeed(entity);
@@ -125,11 +126,15 @@ public class BasicBot implements Bot {
                 if (d < bestDist) { bestDist = d; best = p; }
             }
             if (best != null) {
-                GameContext.get().getGameServer().movePlot(r, c, best.row(), best.col());
+                GameContext.get().getGameServer().movePlot(self, r, c, best.row(), best.col());
                 if (b.getEntityAt(best.row(), best.col()) == entity) return true;
             }
         }
         return false;
+    }
+
+    private static boolean canAct(Entity entity) {
+        return !EntityUtils.isExhausted(entity) && !EntityUtils.isStunned(entity);
     }
 
     private int nearestEnemyManhattan(int r, int c, List<int[]> enemies) {

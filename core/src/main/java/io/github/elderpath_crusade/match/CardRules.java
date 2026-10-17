@@ -12,12 +12,14 @@ import io.github.elderpath_crusade.abilities.data.TargetSelectorResolver;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.SpellDefinition;
 import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.factory.PieceFactory;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game.PlayerManager;
+import io.github.elderpath_crusade.match.ActionResult.Reason;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.HashMap;
@@ -61,7 +63,7 @@ public class CardRules {
         BoardGrid grid = GameContext.get().getActiveGrid();
         if (grid == null || !grid.isInBounds(row, col)) return false;
         Entity candidate = grid.getEntityAt(row, col);
-        if (candidate == null) return false;
+        if (candidate == null || candidate.getComponent(StatsComponent.class) == null) return false; // pieces only, not terrain
 
         List<Condition> conditions = definition.targeting().conditions();
         if (conditions == null || conditions.isEmpty()) return true;
@@ -81,70 +83,76 @@ public class CardRules {
     }
 
     /**
-     * Plays a summon card from alignment's hand onto (row, col): validates turn, hand, summon
-     * row and mana, spawns the piece, and moves the card to the discard pile. Emits
-     * PieceSpawnedEvent then CardPlayedEvent. Returns true on success.
+     * Plays a summon card from actor's hand onto (row, col): validates turn, that the card is
+     * in actor's own hand, summon row and mana, spawns the piece, and moves the card to the
+     * discard pile. Emits PieceSpawnedEvent then CardPlayedEvent.
      */
-    public boolean playSummon(PieceAlignment alignment, String instanceId, int row, int col) {
-        PlayerManager.PlayerState player = playerToAct(alignment);
-        if (player == null) return false;
+    public ActionResult playSummon(PieceAlignment actor, String instanceId, int row, int col) {
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return ActionResult.rejected(Reason.NO_ACTIVE_MATCH);
+        PlayerManager.PlayerState player = playerToAct(actor);
+        if (player == null) return ActionResult.rejected(Reason.NOT_YOUR_TURN);
         CardInstance card = player.hand.find(instanceId);
-        if (card == null || !(CardCatalog.get(card.cardName()) instanceof CardCatalog.Summon)) return false;
+        if (card == null) return ActionResult.rejected(Reason.CARD_NOT_IN_HAND);
+        if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Summon)) return ActionResult.rejected(Reason.WRONG_CARD_TYPE);
         PieceDefinition definition = CardCatalog.getPieceDefinition(card.cardName());
         if (definition == null) {
             Logger.error("CardRules", "No PieceDefinition for " + card.cardName());
-            return false;
+            return ActionResult.rejected(Reason.UNKNOWN_CARD);
         }
-        BoardGrid grid = GameContext.get().getActiveGrid();
-        if (grid == null || !grid.isValidSummonTarget(row, col, alignment)) {
+        if (!grid.isValidSummonTarget(row, col, actor)) {
             Logger.log("CardRules", "Summon rejected: invalid target (" + row + "," + col + ")");
-            return false;
+            return ActionResult.rejected(Reason.INVALID_SUMMON_TARGET);
         }
-        if (!trySpendMana(player, definition.cost())) return false;
+        if (!trySpendMana(player, definition.cost())) return ActionResult.rejected(Reason.NOT_ENOUGH_MANA);
 
-        Entity entity = pieceSpawner.spawn(definition, alignment, row, col);
+        Entity entity = pieceSpawner.spawn(definition, actor, row, col);
         String pieceId = EntityUtils.getId(entity);
         grid.addEntity(row, col, entity);
         player.deck.playFromHand(instanceId);
 
-        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, alignment, row, col));
-        TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), alignment, row, col, pieceId, instanceId));
-        return true;
+        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, actor, row, col));
+        TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), actor, row, col, pieceId, instanceId));
+        return ActionResult.ok();
     }
 
     /**
-     * Plays a spell card from alignment's hand: validates turn, hand, target (targetRow /
-     * targetCol null for an untargeted spell) and mana, runs its effects, and moves the card
-     * to the discard pile. Emits CardPlayedEvent after the effects. Returns true on success.
+     * Plays a spell card from actor's hand: validates turn, that the card is in actor's own
+     * hand, target (targetRow / targetCol null for an untargeted spell) and mana, runs its
+     * effects, and moves the card to the discard pile. Emits CardPlayedEvent after the effects.
      */
-    public boolean playSpell(PieceAlignment alignment, String instanceId, Integer targetRow, Integer targetCol) {
-        PlayerManager.PlayerState player = playerToAct(alignment);
-        if (player == null) return false;
+    public ActionResult playSpell(PieceAlignment actor, String instanceId, Integer targetRow, Integer targetCol) {
+        if (GameContext.get().getActiveGrid() == null) return ActionResult.rejected(Reason.NO_ACTIVE_MATCH);
+        PlayerManager.PlayerState player = playerToAct(actor);
+        if (player == null) return ActionResult.rejected(Reason.NOT_YOUR_TURN);
         CardInstance card = player.hand.find(instanceId);
-        if (card == null || !(CardCatalog.get(card.cardName()) instanceof CardCatalog.Spell spell)) return false;
+        if (card == null) return ActionResult.rejected(Reason.CARD_NOT_IN_HAND);
+        if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Spell spell)) return ActionResult.rejected(Reason.WRONG_CARD_TYPE);
         SpellDefinition definition = spell.definition();
 
         Entity target = null;
         if (definition.targeting() != null) {
-            if (targetRow == null || targetCol == null) return false;
-            if (!isValidSpellTarget(alignment, card.cardName(), targetRow, targetCol)) return false;
+            if (targetRow == null || targetCol == null
+                    || !isValidSpellTarget(actor, card.cardName(), targetRow, targetCol)) {
+                return ActionResult.rejected(Reason.INVALID_SPELL_TARGET);
+            }
             target = GameContext.get().getActiveGrid().getEntityAt(targetRow, targetCol);
         }
-        if (!trySpendMana(player, definition.manaCost())) return false;
+        if (!trySpendMana(player, definition.manaCost())) return ActionResult.rejected(Reason.NOT_ENOUGH_MANA);
 
-        runSpellEffects(definition, alignment, target);
+        runSpellEffects(definition, actor, target);
         player.deck.playFromHand(instanceId);
 
         int row = definition.targeting() != null ? targetRow : -1;
         int col = definition.targeting() != null ? targetCol : -1;
-        TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), alignment, row, col, null, instanceId));
-        return true;
+        TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), actor, row, col, null, instanceId));
+        return ActionResult.ok();
     }
 
-    /** alignment's player state if it's their turn and they have a deck, else null. */
-    private PlayerManager.PlayerState playerToAct(PieceAlignment alignment) {
-        if (alignment == null || alignment != currentPlayer()) return null;
-        PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(alignment);
+    /** actor's player state if it's their turn and they have a deck, else null. */
+    private PlayerManager.PlayerState playerToAct(PieceAlignment actor) {
+        if (actor == null || actor != currentPlayer()) return null;
+        PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(actor);
         return (player == null || player.deck == null) ? null : player;
     }
 

@@ -2,13 +2,17 @@ package io.github.elderpath_crusade.multiplayer.net;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Map;
 
 /** Same envelope-based approach as GameEventCodec, for the (much smaller) NetworkCommand set. */
 public final class NetworkCommandCodec {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    // EndTurn has no fields; unknown properties stay rejected (the default), so a payload
+    // can't smuggle in e.g. an acting side.
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
     private static final Map<String, Class<? extends NetworkCommand>> TYPES = Map.of(
             "MovePlot", NetworkCommand.MovePlot.class,

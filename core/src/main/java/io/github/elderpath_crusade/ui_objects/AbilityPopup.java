@@ -77,7 +77,12 @@ public class AbilityPopup extends HigherOrderUI {
             return;
         }
 
-        PieceAlignment currentPlayer = ctx.getTurnManager().getCurrentPlayer();
+        // Bubbles only for the pieces of a side this screen controls (never a bot's or the online opponent's)
+        PieceAlignment currentPlayer = ctx.getLocalControl().actingSide();
+        if (currentPlayer == null) {
+            removeAllBubbles(interactionManager);
+            return;
+        }
         ImmutableArray<Entity> entities = ctx.getEcsEngine().getEntitiesFor(FAMILY);
 
         int boardX = board.getBounds().getX();

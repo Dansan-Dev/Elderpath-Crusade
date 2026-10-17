@@ -87,7 +87,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                     : (result.turns() == 1 ? IntentType.WIN_PATH1 : IntentType.WIN_PATH2);
             Entity reference = board.getEntityAt(pos.row(), pos.col());
             output.add(new Intent(finalScore,
-                    () -> moveAndVerify(board, pos.row(), pos.col(), finalWinPlot, reference, firstMove.row(),
+                    () -> moveAndVerify(board, tactical.self(), pos.row(), pos.col(), finalWinPlot, reference, firstMove.row(),
                             firstMove.col()),
                     kind));
         }
@@ -154,7 +154,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                         score -= config.dirBackwardPenalty();
 
                     output.add(new Intent(score,
-                            () -> moveAndVerify(board, pos.row(), pos.col(), finalLethalDest, reference,
+                            () -> moveAndVerify(board, tactical.self(), pos.row(), pos.col(), finalLethalDest, reference,
                                     finalLethalDest.row(), finalLethalDest.col()),
                             IntentType.ADVANCE));
                     continue;
@@ -225,7 +225,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
                 }
 
                 output.add(new Intent(score,
-                        () -> moveAndVerify(board, pos.row(), pos.col(), finalBestPlot, reference, finalBestPlot.row(),
+                        () -> moveAndVerify(board, tactical.self(), pos.row(), pos.col(), finalBestPlot, reference, finalBestPlot.row(),
                                 finalBestPlot.col()),
                         IntentType.ADVANCE));
             }
@@ -342,7 +342,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
             if (bestPlot != null && !(bestPlot.row() == pos.row() && bestPlot.col() == pos.col())) {
                 final Coord finalManeuverPlot = bestPlot;
                 output.add(new Intent(bestScore,
-                        () -> moveAndVerify(board, pos.row(), pos.col(), finalManeuverPlot, reference,
+                        () -> moveAndVerify(board, tactical.self(), pos.row(), pos.col(), finalManeuverPlot, reference,
                                 finalManeuverPlot.row(), finalManeuverPlot.col()),
                         IntentType.MANEUVER));
             }

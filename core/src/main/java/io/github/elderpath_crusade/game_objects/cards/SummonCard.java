@@ -1,10 +1,8 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.bot.BotManager;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
-import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -59,9 +57,10 @@ public class SummonCard extends UnitCard implements TargetFilter {
                 int row = plot.getRow();
                 int col = plot.getCol();
                 String instanceId = getInstanceId();
+                PieceAlignment actor = GameContext.get().getLocalControl().actingSide();
                 ActionDispatcher.dispatch(
-                        () -> new NetworkCommand.PlaySummonCard(alignment, instanceId, row, col),
-                        () -> GameContext.get().getGameServer().playSummonCard(alignment, instanceId, row, col)
+                        () -> new NetworkCommand.PlaySummonCard(instanceId, row, col),
+                        () -> GameContext.get().getGameServer().playSummonCard(actor, instanceId, row, col)
                 );
             },
             ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1)
@@ -88,21 +87,8 @@ public class SummonCard extends UnitCard implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        if (!isLocallyControlled(alignment)) return null;
+        if (!GameContext.get().getLocalControl().controls(alignment)) return null;
         if (!GameContext.get().getCardRules().canPlay(alignment, cardName)) return null;
         return clickableEffectData;
-    }
-
-    /**
-     * Whether this screen's player may act for alignment: online, only their own side; never
-     * for a bot-controlled side.
-     */
-    static boolean isLocallyControlled(PieceAlignment alignment) {
-        GameMode mode = GameContext.get().getGameModeManager().getCurrent();
-        if (mode == GameMode.ONLINE_MATCH) {
-            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-            return local == null || alignment == local;
-        }
-        return !BotManager.isBotControlled(alignment);
     }
 }

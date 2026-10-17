@@ -42,16 +42,16 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         return row >= 0 && row < board.getRows() && col >= 0 && col < board.getCols();
     }
 
-    protected boolean moveAndVerify(BoardGrid board, int sourceRow, int sourceCol, Coord destination, Entity reference,
+    protected boolean moveAndVerify(BoardGrid board, PieceAlignment self, int sourceRow, int sourceCol, Coord destination, Entity reference,
             int targetRow, int targetCol) {
         if (destination == null)
             return false;
-        GameContext.get().getGameServer().movePlot(sourceRow, sourceCol, destination.row(), destination.col());
+        GameContext.get().getGameServer().movePlot(self, sourceRow, sourceCol, destination.row(), destination.col());
         Entity entityAfter = board.getEntityAt(targetRow, targetCol);
         return entityAfter == reference;
     }
 
-    protected boolean attackAndVerify(BoardGrid board, int sourceRow, int sourceCol, int targetRow, int targetCol,
+    protected boolean attackAndVerify(BoardGrid board, PieceAlignment self, int sourceRow, int sourceCol, int targetRow, int targetCol,
             Entity attacker) {
         if (!board.isInBounds(sourceRow, sourceCol) || !board.isInBounds(targetRow, targetCol))
             return false;
@@ -59,7 +59,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
         Entity defenderBefore = board.getEntityAt(targetRow, targetCol);
         int actionsBefore = getRemainingActions(attacker);
 
-        GameContext.get().getGameServer().movePlot(sourceRow, sourceCol, targetRow, targetCol);
+        GameContext.get().getGameServer().movePlot(self, sourceRow, sourceCol, targetRow, targetCol);
 
         Entity defenderAfter = board.getEntityAt(targetRow, targetCol);
         if (defenderBefore != null && (defenderAfter == null || defenderAfter != defenderBefore))
@@ -147,7 +147,7 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
 
     protected boolean summonAndVerify(PieceAlignment self, CardInstance card, Coord target) {
         return GameContext.get().getGameServer().playSummonCard(
-                self, card.instanceId(), target.row(), target.col());
+                self, card.instanceId(), target.row(), target.col()).isOk();
     }
 
     /** +1 if moving from fromRow to toRow advances toward self's goal row, -1 if it retreats, 0 if sideways. */

@@ -27,6 +27,9 @@ import java.util.List;
  * simulation authority for the match.
  */
 public class GameHost {
+    /** The single guest connection always plays this side (see OnlineMatchSession.getLocalAlignment). */
+    static final PieceAlignment GUEST_ALIGNMENT = PieceAlignment.P2;
+
     private ServerSocket serverSocket;
     private volatile NetworkConnection connection;
     // Set on the background accept thread, consumed on the main thread via update() — building
@@ -78,17 +81,17 @@ public class GameHost {
     }
 
     private void dispatch(NetworkCommand command) {
+        // The acting side comes from the connection (the guest is always GUEST_ALIGNMENT),
+        // never from the command — GameServer validates everything else.
         var server = GameContext.get().getGameServer();
         if (command instanceof NetworkCommand.MovePlot c) {
-            server.movePlot(c.srcRow(), c.srcCol(), c.dstRow(), c.dstCol());
+            server.movePlot(GUEST_ALIGNMENT, c.srcRow(), c.srcCol(), c.dstRow(), c.dstCol());
         } else if (command instanceof NetworkCommand.PlaySummonCard c) {
-            server.playSummonCard(c.alignment(), c.instanceId(), c.row(), c.col());
+            server.playSummonCard(GUEST_ALIGNMENT, c.instanceId(), c.row(), c.col());
         } else if (command instanceof NetworkCommand.PlaySpellCard c) {
-            server.playSpellCard(c.alignment(), c.instanceId(), c.targetRow(), c.targetCol());
-        } else if (command instanceof NetworkCommand.EndTurn c) {
-            if (c.alignment() == GameContext.get().getTurnManager().getCurrentPlayer()) {
-                GameContext.get().getTurnManager().endTurn();
-            }
+            server.playSpellCard(GUEST_ALIGNMENT, c.instanceId(), c.targetRow(), c.targetCol());
+        } else if (command instanceof NetworkCommand.EndTurn) {
+            server.endTurn(GUEST_ALIGNMENT);
         }
     }
 

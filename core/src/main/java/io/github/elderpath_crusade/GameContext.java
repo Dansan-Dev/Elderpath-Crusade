@@ -44,6 +44,7 @@ import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.game.WinConditionManager;
 import io.github.elderpath_crusade.rendering.ZIndexRegistry;
 import io.github.elderpath_crusade.session.GameSession;
+import io.github.elderpath_crusade.session.LocalControl;
 import io.github.elderpath_crusade.state.GameStateMachine;
 import lombok.Getter;
 
@@ -83,6 +84,7 @@ public class GameContext {
     @Getter private final InfoDataManager infoDataManager;
     @Getter private final GameServer gameServer;
     @Getter private final CardRules cardRules;
+    @Getter private final LocalControl localControl;
     @Getter private final OnlineMatchSession onlineMatch;
     @Getter private final MatchClock matchClock;
     /** True for a headless (server/test) context: no render system, nothing that needs a GL context. */
@@ -136,6 +138,7 @@ public class GameContext {
         this.infoDataManager = new InfoDataManager();
         this.gameServer = new GameServer();
         this.cardRules = new CardRules();
+        this.localControl = new LocalControl();
         this.onlineMatch = new OnlineMatchSession();
         this.matchClock = new MatchClock();
     }
