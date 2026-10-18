@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public final class MessageCodec {
     /** Bumped on any incompatible change to messages, commands or events. */
-    public static final int PROTOCOL_VERSION = 1;
+    public static final int PROTOCOL_VERSION = 2;
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -26,17 +26,18 @@ public final class MessageCodec {
             "Leave", ClientMessage.Leave.class
     );
 
-    private static final Map<String, Class<? extends ServerMessage>> SERVER_TYPES = Map.of(
-            "Welcome", ServerMessage.Welcome.class,
-            "Snapshot", ServerMessage.Snapshot.class,
-            "StateSync", ServerMessage.StateSync.class,
-            "PickRequested", ServerMessage.PickRequested.class,
-            "PickAnswered", ServerMessage.PickAnswered.class,
-            "PickCancelled", ServerMessage.PickCancelled.class,
-            "Rejected", ServerMessage.Rejected.class,
-            "Ack", ServerMessage.Ack.class,
-            "MatchEnded", ServerMessage.MatchEnded.class,
-            "Error", ServerMessage.Error.class
+    private static final Map<String, Class<? extends ServerMessage>> SERVER_TYPES = Map.ofEntries(
+            Map.entry("Welcome", ServerMessage.Welcome.class),
+            Map.entry("Snapshot", ServerMessage.Snapshot.class),
+            Map.entry("StateSync", ServerMessage.StateSync.class),
+            Map.entry("LegalActionsUpdate", ServerMessage.LegalActionsUpdate.class),
+            Map.entry("PickRequested", ServerMessage.PickRequested.class),
+            Map.entry("PickAnswered", ServerMessage.PickAnswered.class),
+            Map.entry("PickCancelled", ServerMessage.PickCancelled.class),
+            Map.entry("Rejected", ServerMessage.Rejected.class),
+            Map.entry("Ack", ServerMessage.Ack.class),
+            Map.entry("MatchEnded", ServerMessage.MatchEnded.class),
+            Map.entry("Error", ServerMessage.Error.class)
     );
 
     private MessageCodec() {}

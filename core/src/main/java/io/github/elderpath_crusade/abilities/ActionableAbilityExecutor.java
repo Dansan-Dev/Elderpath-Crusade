@@ -68,13 +68,54 @@ public class ActionableAbilityExecutor {
                 deductCosts(owner, actionDef.costs());
                 yield ActionResult.ok();
             }
-            case "ChooseEnemy" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ENEMY);
-            case "ChooseFriendly" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.FRIENDLY);
-            case "ChooseAny" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState, AlignmentFilter.ANY);
+            case "ChooseEnemy", "ChooseFriendly", "ChooseAny" -> startSinglePick(owner, abilityDef, actionDef, ctx, abilityState);
             case "ChooseRow" -> startRowPick(owner, abilityDef, actionDef, ctx, abilityState);
             case "ChooseTile" -> startTilePickAnywhere(owner, abilityDef, actionDef, ctx, abilityState);
             default -> ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
         };
+    }
+
+    /**
+     * The candidates of the first pick actionDef asks its owner for — what execute would offer —
+     * or null when it asks nothing up front (Self). An empty list means execute would reject
+     * with NO_VALID_TARGET (or can't run at all); a ChooseRow always has candidates.
+     */
+    public static List<Coord> firstPickCandidates(Entity owner, ActionDef actionDef) {
+        TargetSelector selector = actionDef.targetSelector();
+        String selectorType = (selector != null) ? selector.type() : "Self";
+        PositionComponent ownerPos = posMapper.get(owner);
+        AlignmentComponent ownerAlign = alignMapper.get(owner);
+        return switch (selectorType) {
+            case "Self" -> null;
+            case "ChooseEnemy", "ChooseFriendly", "ChooseAny" -> {
+                if (ownerPos == null || ownerAlign == null) yield List.of();
+                yield singlePickCandidates(owner, ownerPos, ownerAlign, range(selector), alignmentFilter(selectorType));
+            }
+            case "ChooseTile" -> ownerPos == null || ownerAlign == null
+                    ? List.of() : tilesInRange(ownerPos.row, ownerPos.col, range(selector), false);
+            case "ChooseRow" -> rowPickCandidates();
+            default -> List.of();
+        };
+    }
+
+    private static int range(TargetSelector selector) {
+        return selector.params() != null && selector.params().containsKey("range")
+                ? ((Number) selector.params().get("range")).intValue() : 99;
+    }
+
+    private static AlignmentFilter alignmentFilter(String selectorType) {
+        return switch (selectorType) {
+            case "ChooseEnemy" -> AlignmentFilter.ENEMY;
+            case "ChooseFriendly" -> AlignmentFilter.FRIENDLY;
+            default -> AlignmentFilter.ANY;
+        };
+    }
+
+    /** Any row may be chosen: every tile is a candidate, and the chosen tile's row counts. */
+    private static List<Coord> rowPickCandidates() {
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return List.of();
+        return tilesInRange(0, 0, Math.max(grid.getRows(), grid.getCols()), false);
     }
 
     /**
@@ -172,16 +213,12 @@ public class ActionableAbilityExecutor {
     }
 
     private static ActionResult startSinglePick(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
-            ExpressionContext ctx, Map<String, Object> abilityState, AlignmentFilter alignmentFilter) {
-        TargetSelector selector = actionDef.targetSelector();
-        int range = selector.params() != null && selector.params().containsKey("range")
-                ? ((Number) selector.params().get("range")).intValue() : 99;
-
+            ExpressionContext ctx, Map<String, Object> abilityState) {
         PositionComponent ownerPos = posMapper.get(owner);
         AlignmentComponent ownerAlign = alignMapper.get(owner);
         if (ownerPos == null || ownerAlign == null) return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
 
-        List<Coord> candidates = singlePickCandidates(owner, ownerPos, ownerAlign, range, alignmentFilter);
+        List<Coord> candidates = firstPickCandidates(owner, actionDef);
         if (candidates.isEmpty()) return ActionResult.rejected(ActionResult.Reason.NO_VALID_TARGET);
 
         boolean needsTilePick = actionDef.effects().stream().anyMatch(e -> "$chosenTile".equals(e.params().get("destination")));
@@ -225,15 +262,11 @@ public class ActionableAbilityExecutor {
      */
     private static ActionResult startTilePickAnywhere(Entity owner, AbilityDefinition abilityDef, ActionDef actionDef,
             ExpressionContext ctx, Map<String, Object> abilityState) {
-        TargetSelector selector = actionDef.targetSelector();
-        int range = selector.params() != null && selector.params().containsKey("range")
-                ? ((Number) selector.params().get("range")).intValue() : 99;
-
         PositionComponent ownerPos = posMapper.get(owner);
         AlignmentComponent ownerAlign = alignMapper.get(owner);
         if (ownerPos == null || ownerAlign == null) return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
 
-        List<Coord> candidates = tilesInRange(ownerPos.row, ownerPos.col, range, false);
+        List<Coord> candidates = firstPickCandidates(owner, actionDef);
         if (candidates.isEmpty()) return ActionResult.rejected(ActionResult.Reason.NO_VALID_TARGET);
         pick(ownerAlign.alignment, PickKind.TILE, candidates, abilityDef, choice -> {
             ctx.set("$chosen.row", choice.row());
@@ -250,8 +283,7 @@ public class ActionableAbilityExecutor {
         BoardGrid grid = GameContext.get().getActiveGrid();
         if (ownerAlign == null || grid == null) return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
 
-        // Any row may be chosen: every tile is a candidate, and the chosen tile's row counts.
-        List<Coord> candidates = tilesInRange(0, 0, Math.max(grid.getRows(), grid.getCols()), false);
+        List<Coord> candidates = rowPickCandidates();
         pick(ownerAlign.alignment, PickKind.ROW, candidates, abilityDef, choice -> {
             ctx.set("$chosen", choice.row());
             executeEffects(actionDef.effects(), owner, ctx, abilityState);

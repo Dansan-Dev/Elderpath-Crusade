@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.PickRequest;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 import io.github.elderpath_crusade.net.protocol.MatchView.PieceView;
@@ -25,7 +26,8 @@ import java.util.function.Consumer;
  *
  * Events update it as they happen (so a UI can animate them); StateSync then overwrites every
  * piece's public state with the server's, covering what no event carries (auras, statuses,
- * action resets). Hands, mana, turn, picks and the winner come from events/messages alone.
+ * action resets). Hands, mana, turn, picks and the winner come from events/messages alone;
+ * what this seat may do comes from LegalActionsUpdate (never from rules of its own).
  */
 public final class ClientMatchState {
     @Getter private PieceAlignment seat;
@@ -47,6 +49,11 @@ public final class ClientMatchState {
     /** The highest command seq the server has acknowledged (0 = none). */
     @Getter private long lastAckedSeq;
     @Getter private ServerMessage.Error lastError;
+    /**
+     * What this seat may do, as the server last said (null until the first update). The UI
+     * offers exactly these — highlights, playable cards, ability bubbles, end turn.
+     */
+    @Getter private LegalActions legalActions;
     private Consumer<GameEvent> eventListener;
 
     /** Called with every event after it has been applied — e.g. for a UI to animate it. */
@@ -102,6 +109,8 @@ public final class ClientMatchState {
         } else if (message instanceof ServerMessage.StateSync s) {
             pieces.clear();
             for (PieceView p : s.pieces()) pieces.put(p.id(), p);
+        } else if (message instanceof ServerMessage.LegalActionsUpdate l) {
+            legalActions = l.actions();
         } else if (message instanceof ServerMessage.PickRequested p) {
             pendingPick = p.request();
         } else if (message instanceof ServerMessage.PickAnswered p) {

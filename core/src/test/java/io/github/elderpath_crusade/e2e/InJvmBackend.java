@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.MatchConfig;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 import io.github.elderpath_crusade.net.transport.InProcessTransport;
@@ -40,6 +41,11 @@ abstract class InJvmBackend implements ServerBackend {
     @Override
     public Optional<MatchView> authoritativeView(PieceAlignment viewer) {
         return Optional.of(server.viewFor(viewer));
+    }
+
+    @Override
+    public Optional<LegalActions> authoritativeLegalActions(PieceAlignment viewer) {
+        return Optional.of(server.legalActionsFor(viewer));
     }
 
     @Override

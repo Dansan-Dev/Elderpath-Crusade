@@ -17,6 +17,8 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.*;
 import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
+import io.github.elderpath_crusade.match.LegalActionsCalculator;
 import io.github.elderpath_crusade.match.MatchConfig;
 import io.github.elderpath_crusade.match.MatchSetup;
 import io.github.elderpath_crusade.match.PickRequest;
@@ -57,8 +59,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * Per tick: accept connections → handshake → each client's commands, executed through
  * GameServer as that client's seat (never trusting the payload) → the simulation (bots,
- * clock, ECS) → a StateSync if any piece's public state changed. Events are relayed as they
- * happen, filtered per recipient by HiddenInfoFilter.
+ * clock, ECS) → a StateSync if any piece's public state changed → each seat's LegalActions
+ * if they changed → the tick's Acks. Events are relayed as they happen, filtered per
+ * recipient by HiddenInfoFilter.
  */
 public final class MatchServer {
     private static final List<Class<? extends GameEvent>> RELAYED = List.of(
@@ -79,6 +82,8 @@ public final class MatchServer {
         boolean taken;
         /** Commands handled this tick, acked at its end (see sendAcks). */
         final List<Long> unacked = new ArrayList<>();
+        /** The LegalActions this seat's client last got — null: send them next tick. */
+        LegalActions lastLegal;
 
         Seat(PieceAlignment side) {
             this.side = side;
@@ -130,6 +135,7 @@ public final class MatchServer {
         }
         dropClosedChannels();
         syncIfChanged();
+        syncLegalActions();
         sendAcks();
     }
 
@@ -171,6 +177,15 @@ public final class MatchServer {
                 started,
                 pick != null ? pick.pickId() : null,
                 getWinner());
+    }
+
+    /**
+     * What side may do right now, exactly as this server would accept it — nothing before the
+     * match begins or after it ends (bot seats included: LegalActionsCalculator is seat-agnostic).
+     */
+    public LegalActions legalActionsFor(PieceAlignment side) {
+        if (!started || ended) return LegalActions.none(side);
+        return LegalActionsCalculator.compute(side);
     }
 
     /** Closes every client connection and transport. */
@@ -231,6 +246,7 @@ public final class MatchServer {
         }
         seat.channel = channel;
         seat.taken = true;
+        seat.lastLegal = null; // a (re)joined client gets its LegalActions at the end of this tick
         Logger.log("MatchServer", (hello.playerName() == null ? "A client" : hello.playerName()) + " took " + seat.side);
         channel.send(new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, seat.side,
                 config.rows(), config.cols(), config.terrain(), slotKinds()));
@@ -274,6 +290,7 @@ public final class MatchServer {
             if (seat.channel != null && !seat.channel.isOpen()) {
                 Logger.log("MatchServer", seat.side + " disconnected — seat reserved");
                 seat.channel = null;
+                seat.lastLegal = null;
             }
         }
     }
@@ -294,6 +311,7 @@ public final class MatchServer {
                 Logger.log("MatchServer", seat.side + " left — seat reserved");
                 seat.channel.close();
                 seat.channel = null;
+                seat.lastLegal = null;
             } else if (message instanceof ClientMessage.Command c) {
                 seat.unacked.add(c.seq());
                 ActionResult result = execute(seat.side, c.command());
@@ -386,6 +404,20 @@ public final class MatchServer {
         lastSync = pieces;
         for (Seat seat : seats.values()) {
             if (seat.channel != null) seat.channel.send(new ServerMessage.StateSync(pieces));
+        }
+    }
+
+    /**
+     * Recomputed every tick rather than on events: legality also changes inside the engine
+     * update with no command or event of its own (auras, deaths), and a 7x5 board makes it cheap.
+     */
+    private void syncLegalActions() {
+        for (Seat seat : seats.values()) {
+            if (seat.channel == null) continue;
+            LegalActions legal = legalActionsFor(seat.side);
+            if (legal.equals(seat.lastLegal)) continue;
+            seat.lastLegal = legal;
+            seat.channel.send(new ServerMessage.LegalActionsUpdate(legal));
         }
     }
 

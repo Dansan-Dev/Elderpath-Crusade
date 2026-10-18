@@ -2,11 +2,11 @@ package io.github.elderpath_crusade.server;
 
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.match.AbilityRules;
 import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.match.MoveRules;
 import io.github.elderpath_crusade.match.PickResponse;
+import io.github.elderpath_crusade.match.TurnRules;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.function.BiConsumer;
@@ -71,28 +71,23 @@ public class GameServer {
 
     /** Ends actor's turn — only the current player may, and not while a hotseat handoff is pending. */
     public ActionResult endTurn(PieceAlignment actor) {
-        TurnManager turns = GameContext.get().getTurnManager();
-        ActionResult result;
-        if (GameContext.get().getActiveGrid() == null) {
-            result = ActionResult.rejected(ActionResult.Reason.NO_ACTIVE_MATCH);
-        } else if (actor == null || actor != turns.getCurrentPlayer() || turns.isWaitingForNextPlayer()) {
-            result = ActionResult.rejected(ActionResult.Reason.NOT_YOUR_TURN);
-        } else if (hasPendingPick(actor)) {
+        ActionResult result = TurnRules.validateEndTurn(actor);
+        if (result.isOk() && hasPendingPick(actor)) {
             result = PICK_PENDING;
-        } else {
-            turns.endTurn();
-            result = ActionResult.ok();
+        } else if (result.isOk()) {
+            GameContext.get().getTurnManager().endTurn();
         }
         return report(actor, "end turn", result);
+    }
+
+    /** Whether actor has a pick pending — while it does, every action but answering it is rejected. */
+    private static boolean hasPendingPick(PieceAlignment actor) {
+        return GameContext.get().getPickRouter().hasPending(actor);
     }
 
     /** Observes every rejected action (actor, result) — for tests and, later, telling clients why. */
     public void setRejectionObserver(BiConsumer<PieceAlignment, ActionResult> rejectionObserver) {
         this.rejectionObserver = rejectionObserver;
-    }
-
-    private static boolean hasPendingPick(PieceAlignment actor) {
-        return GameContext.get().getPickRouter().hasPending(actor);
     }
 
     private ActionResult report(PieceAlignment actor, String action, ActionResult result) {

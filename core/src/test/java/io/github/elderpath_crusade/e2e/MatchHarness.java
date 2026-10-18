@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.e2e;
 
 import io.github.elderpath_crusade.client.MatchClient;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.MatchConfig;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 import io.github.elderpath_crusade.net.protocol.SeatRequest;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * end-to-end invariants after every server tick:
  * - every seated client's replica equals what the server says it may see (MatchView.diff) —
  *   or, for a backend whose server isn't in this JVM, the clients agree with each other
+ * - every seated client's LegalActions equal what the server would accept for its seat
  * - no client ever receives the opponent's real card ids or drawn card names
  * - no command a driver sent is rejected (a driver only sends what it believes is legal)
  * - a bot seat never has a pick pending (bots answer synchronously — anything else stalls)
@@ -216,6 +218,10 @@ public final class MatchHarness implements AutoCloseable {
             Optional<MatchView> truth = backend.authoritativeView(seat);
             if (truth.isPresent()) {
                 for (String d : MatchView.diff(truth.get(), c.state().toView())) out.add(c + ": " + d);
+            }
+            Optional<LegalActions> legal = backend.authoritativeLegalActions(seat);
+            if (legal.isPresent() && !legal.get().equals(c.state().getLegalActions())) {
+                out.add(c + ": LegalActions differ from what the server would accept");
             }
         }
         // Without the server's own state, the replicas' public parts must at least agree.

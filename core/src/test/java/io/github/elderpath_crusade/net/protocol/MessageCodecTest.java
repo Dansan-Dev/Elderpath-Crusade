@@ -7,6 +7,7 @@ import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.PickKind;
 import io.github.elderpath_crusade.match.PickRequest;
 import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
@@ -49,6 +50,13 @@ class MessageCodecTest {
                 new ServerMessage.Event(new PieceMovedEvent("id-1", PieceAlignment.P2, 6, 0, 4, 0,
                         PieceMovedEvent.MovementType.ACTIVE, "MovementSystem")),
                 new ServerMessage.StateSync(List.of(PIECE)),
+                new ServerMessage.LegalActionsUpdate(new LegalActions(PieceAlignment.P1, true, null, true,
+                        List.of(new LegalActions.PieceActions("id-1", new Coord(0, 1), List.of(new Coord(1, 1), new Coord(2, 1)),
+                                List.of(new Coord(1, 2)), List.of(new LegalActions.AbilityOption(0, "Zap", true)))),
+                        List.of(new LegalActions.CardActions("P1-0", false, List.of(new Coord(0, 0))),
+                                new LegalActions.CardActions("P1-4", true, List.of())))),
+                new ServerMessage.LegalActionsUpdate(new LegalActions(PieceAlignment.P2, true, 7L, false, List.of(), List.of())),
+                new ServerMessage.LegalActionsUpdate(LegalActions.none(PieceAlignment.P2)),
                 new ServerMessage.PickRequested(new PickRequest(5, PieceAlignment.P1, PickKind.PIECE,
                         List.of(new Coord(4, 0)), "Zap", true)),
                 new ServerMessage.PickAnswered(5),
