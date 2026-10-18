@@ -117,6 +117,21 @@ class ChildProcessE2eTest {
         assertOutcome(winner, first, second);
     }
 
+    @Test
+    void onlineDedicated_p2ConnectsFirst_anyGetsTheRemainingSeat() {
+        harness = start(config(STARTER, STARTER, Map.of()));
+        TestClient p2 = harness.join(SeatRequest.P2, "p2-first", new RemoteBotDriver());
+        harness.step();
+        assertFalse(p2.state().isStarted(), "the match waits for its second seat");
+        TestClient any = harness.join(SeatRequest.ANY, "any-second", new RemoteBotDriver());
+
+        Optional<PieceAlignment> winner = harness.runToEnd(MAX_TURNS);
+
+        assertEquals(PieceAlignment.P2, p2.state().getSeat());
+        assertEquals(PieceAlignment.P1, any.state().getSeat());
+        assertOutcome(winner, p2, any);
+    }
+
     @ParameterizedTest(name = "{0} first")
     @EnumSource(BotKind.class)
     void vsBots_botInTheFirstSeat(BotKind bot) {
