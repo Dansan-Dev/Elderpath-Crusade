@@ -21,6 +21,7 @@ class LaunchOptionsTest {
         assertEquals(List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub"), o.decks().get(PieceAlignment.P1));
         assertEquals(o.decks().get(PieceAlignment.P1), o.decks().get(PieceAlignment.P2));
         assertNull(o.seed());
+        assertNull(o.assetsDir(), "no --assets: working directory, else the classpath");
         assertTrue(o.watchStdin());
         assertEquals(60, o.idleTimeoutSeconds());
     }

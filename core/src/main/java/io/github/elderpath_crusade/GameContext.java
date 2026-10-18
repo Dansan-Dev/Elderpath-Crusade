@@ -93,36 +93,50 @@ public class GameContext {
     @Getter private final PickRouter pickRouter;
     /** True for a headless (server/test) context: no render system, nothing that needs a GL context. */
     @Getter private final boolean headless;
+    /**
+     * True for a game client of a match server (see createClient): it renders and sends commands
+     * but never simulates — no gameplay systems, no simulation services.
+     */
+    @Getter private final boolean client;
     @Getter private Board activeBoard;
     /** The logical board of the active match — what game logic reads; activeBoard is its view. */
     @Getter private BoardGrid activeGrid;
     @Getter private GameSession activeSession;
 
-    private GameContext(boolean headless) {
-        this.headless = headless;
+    private enum Kind { WINDOWED, HEADLESS, CLIENT }
+
+    private GameContext(Kind kind) {
+        this.headless = kind == Kind.HEADLESS;
+        this.client = kind == Kind.CLIENT;
+        boolean simulates = kind != Kind.CLIENT;
         this.eventBus = TypedEventBus.get();
         this.stateMachine = new GameStateMachine(this);
         this.ecsEngine = new Engine();
-        this.combatSystem = new CombatSystem();
+        this.combatSystem = simulates ? new CombatSystem() : null;
         this.pieceRenderSystem = headless ? null : new PieceRenderSystem();
-        this.ecsEngine.addSystem(new TurnSystem());
-        this.ecsEngine.addSystem(new PlayerSystem());
-        this.ecsEngine.addSystem(new PieceSyncSystem());
+        if (simulates) {
+            this.ecsEngine.addSystem(new TurnSystem());
+            this.ecsEngine.addSystem(new PlayerSystem());
+            this.ecsEngine.addSystem(new PieceSyncSystem());
+        }
+        // The spatial index (no rules) — board views look pieces up through it on a client too.
         this.ecsEngine.addSystem(new GridIndexSystem());
-        this.ecsEngine.addSystem(new PassiveModifierSystem());
-        this.ecsEngine.addSystem(new ModifierResolutionSystem());
-        this.ecsEngine.addSystem(new MovementSystem());
-        this.ecsEngine.addSystem(new AttackSystem());
-        this.ecsEngine.addSystem(this.combatSystem);
-        this.ecsEngine.addSystem(new DeathSystem());
-        this.ecsEngine.addSystem(new HealSystem());
+        if (simulates) {
+            this.ecsEngine.addSystem(new PassiveModifierSystem());
+            this.ecsEngine.addSystem(new ModifierResolutionSystem());
+            this.ecsEngine.addSystem(new MovementSystem());
+            this.ecsEngine.addSystem(new AttackSystem());
+            this.ecsEngine.addSystem(this.combatSystem);
+            this.ecsEngine.addSystem(new DeathSystem());
+            this.ecsEngine.addSystem(new HealSystem());
+        }
         if (!headless) this.ecsEngine.addSystem(this.pieceRenderSystem);
-        this.ecsEngine.addSystem(new AbilityResolverSystem());
+        if (simulates) this.ecsEngine.addSystem(new AbilityResolverSystem());
         this.assets = new AssetService();
-        this.turnManager = new TurnManager();
-        this.playerManager = new PlayerManager();
-        this.botManager = new BotManager();
-        this.winConditionManager = new WinConditionManager();
+        this.turnManager = simulates ? new TurnManager() : null;
+        this.playerManager = simulates ? new PlayerManager() : null;
+        this.botManager = simulates ? new BotManager() : null;
+        this.winConditionManager = simulates ? new WinConditionManager() : null;
         this.gameManager = new GameManager();
         this.graphicsManager = new GraphicsManager();
         this.inputManager = new InputManager();
@@ -140,18 +154,18 @@ public class GameContext {
         this.textureManager = new TextureManager();
         this.fontManager = new FontManager();
         this.infoDataManager = new InfoDataManager();
-        this.gameServer = new GameServer();
-        this.cardRules = new CardRules();
-        this.localControl = new LocalControl();
-        this.onlineMatch = new OnlineMatchSession();
-        this.matchClock = new MatchClock();
-        this.pickRouter = new PickRouter();
+        this.gameServer = simulates ? new GameServer() : null;
+        this.cardRules = simulates ? new CardRules() : null;
+        this.localControl = simulates ? new LocalControl() : null;
+        this.onlineMatch = simulates ? new OnlineMatchSession() : null;
+        this.matchClock = simulates ? new MatchClock() : null;
+        this.pickRouter = simulates ? new PickRouter() : null;
         // Headless: no screen to prompt on — a human slot's picks need a remote (or test) responder.
-        if (!headless) this.pickRouter.setLocalResponder(new LocalUiPickResponder());
+        if (kind == Kind.WINDOWED) this.pickRouter.setLocalResponder(new LocalUiPickResponder());
     }
 
     public static GameContext create() {
-        instance = new GameContext(false);
+        instance = new GameContext(Kind.WINDOWED);
         return instance;
     }
 
@@ -161,7 +175,21 @@ public class GameContext {
      * functional; nothing that renders is registered.
      */
     public static GameContext createHeadless() {
-        instance = new GameContext(true);
+        instance = new GameContext(Kind.HEADLESS);
+        return instance;
+    }
+
+    /**
+     * A game client's context: the match is run by a match server (see ClientMatchSession), so
+     * this context only renders and sends commands. Its ECS engine holds view entities mirrored
+     * from the server and runs no gameplay system — only the spatial index (GridIndexSystem) and
+     * PieceRenderSystem. Simulation services are absent (null): GameServer, CardRules,
+     * LocalControl, TurnManager, PlayerManager, BotManager, WinConditionManager, PickRouter,
+     * MatchClock, CombatSystem and the prototype OnlineMatchSession — so nothing on a client
+     * can ever decide a game rule.
+     */
+    public static GameContext createClient() {
+        instance = new GameContext(Kind.CLIENT);
         return instance;
     }
 

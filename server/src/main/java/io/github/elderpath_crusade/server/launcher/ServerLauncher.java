@@ -32,6 +32,7 @@ public final class ServerLauncher {
     static final int EXIT_OK = 0;
     static final int EXIT_ERROR = 1;
     static final int EXIT_USAGE = 2;
+    private static final String PIECES = "data/pieces.yaml";
 
     private final PrintStream protocol;
     private volatile String stopReason;
@@ -122,13 +123,9 @@ public final class ServerLauncher {
         }
     }
 
-    /** Points Gdx.files at the assets directory and loads pieces, abilities, spells and the card catalog. */
+    /** Points Gdx.files at the assets and loads pieces, abilities, spells and the card catalog. */
     private static void loadDefinitions(LaunchOptions options) {
-        File assets = options.assetsDir().getAbsoluteFile();
-        if (!new File(assets, "data/pieces.yaml").isFile()) {
-            throw new IllegalStateException("no data/pieces.yaml under assets directory " + assets);
-        }
-        Gdx.files = new AssetFiles(assets);
+        Gdx.files = new AssetFiles(resolveAssetsDir(options));
         PieceRegistry.load();
         AbilityRegistry.load();
         CardCatalog.initialize();
@@ -137,6 +134,27 @@ public final class ServerLauncher {
                 if (CardCatalog.get(card) == null) throw new IllegalArgumentException("unknown card in deck: " + card);
             }
         }
+    }
+
+    /**
+     * The assets directory to read from, or null to read from the classpath. An explicit --assets
+     * must hold the data; without it, the working directory is used if it does (the dev layout,
+     * where the game runs from assets/), else the classpath (a packaged game's jar).
+     */
+    private static File resolveAssetsDir(LaunchOptions options) {
+        if (options.assetsDir() != null) {
+            File assets = options.assetsDir().getAbsoluteFile();
+            if (!hasData(assets)) throw new IllegalStateException("no " + PIECES + " under assets directory " + assets);
+            return assets;
+        }
+        File workingDir = new File(".").getAbsoluteFile();
+        if (hasData(workingDir)) return workingDir;
+        if (ServerLauncher.class.getClassLoader().getResource(PIECES) != null) return null;
+        throw new IllegalStateException("no " + PIECES + " in the working directory " + workingDir + " or on the classpath");
+    }
+
+    private static boolean hasData(File assetsDir) {
+        return new File(assetsDir, PIECES).isFile();
     }
 
     private void watchStdin() {

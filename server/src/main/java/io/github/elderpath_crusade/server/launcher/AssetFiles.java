@@ -8,12 +8,14 @@ import java.io.File;
 
 /**
  * Headless Gdx.files whose internal paths resolve against an assets directory instead of the
- * process's working directory, so the server can be started from anywhere with --assets.
+ * process's working directory, so the server can be started from anywhere with --assets — or,
+ * with no directory, against the classpath (a packaged game ships its assets inside its jar).
  */
 final class AssetFiles implements Files {
     private final HeadlessFiles delegate = new HeadlessFiles();
     private final File assetsDir;
 
+    /** assetsDir null = read internal paths from the classpath. */
     AssetFiles(File assetsDir) {
         this.assetsDir = assetsDir;
     }
@@ -30,6 +32,7 @@ final class AssetFiles implements Files {
 
     @Override
     public FileHandle internal(String path) {
+        if (assetsDir == null) return delegate.classpath(path);
         return delegate.absolute(new File(assetsDir, path).getAbsolutePath());
     }
 

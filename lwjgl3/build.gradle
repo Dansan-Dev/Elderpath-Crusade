@@ -34,6 +34,9 @@ dependencies {
   implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
   implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
   implementation project(':core')
+  // The headless match server (ServerLauncher) runs as a child process of the game for solo, hotseat
+  // and hosted play; core's ServerProcess launches it with this JVM's classpath, so it must be on it.
+  implementation project(':server')
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-backend-lwjgl3:$graalHelperVersion"

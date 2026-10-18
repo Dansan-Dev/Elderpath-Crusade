@@ -18,7 +18,8 @@ import java.util.Map;
  *   --p1 / --p2 KIND    human | basic | smart (default p1 human, p2 smart)
  *   --p1-deck / --p2-deck "Card:count,Card:count"   (default Wolf:2,Wolf Cub:2)
  *   --seed N            deck shuffle seed (default random)
- *   --assets DIR        assets directory holding data/*.yaml (default: working directory)
+ *   --assets DIR        assets directory holding data/*.yaml (default: the working directory if it
+ *                       holds data/pieces.yaml, else the classpath — a packaged game's jar)
  *   --tick-ms N         server tick interval (default 16)
  *   --time-scale F      game-time multiplier, e.g. to fast-forward bot pacing (default 1)
  *   --parent-pid PID    exit once this process is gone
@@ -52,7 +53,7 @@ record LaunchOptions(
         String p1Deck = DEFAULT_DECK;
         String p2Deck = DEFAULT_DECK;
         Long seed = null;
-        File assetsDir = new File(".");
+        File assetsDir = null; // null = working directory or classpath, see ServerLauncher
         int tickMs = 16;
         float timeScale = 1f;
         Long parentPid = null;
