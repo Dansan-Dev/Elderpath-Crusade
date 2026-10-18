@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.e2e;
 
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.MatchConfig;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 import io.github.elderpath_crusade.net.transport.ServerConnection;
@@ -60,6 +61,11 @@ public interface ServerBackend extends AutoCloseable {
 
     /** The authoritative state as viewer may see it — empty when the server isn't in this JVM. */
     Optional<MatchView> authoritativeView(PieceAlignment viewer);
+
+    /** What viewer's seat may do, as the server computes it — empty when the server isn't in this JVM. */
+    default Optional<LegalActions> authoritativeLegalActions(PieceAlignment viewer) {
+        return Optional.empty();
+    }
 
     /** Turns started so far, or empty when not observable from here. */
     Optional<Integer> turnsStarted();

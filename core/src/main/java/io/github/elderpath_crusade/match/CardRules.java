@@ -82,38 +82,68 @@ public class CardRules {
         return true;
     }
 
+    /** Whether actor may play summon card instanceId onto (row, col) right now — every check playSummon makes, without playing it. */
+    public ActionResult validateSummon(PieceAlignment actor, String instanceId, int row, int col) {
+        return checkSummon(actor, instanceId, row, col).result();
+    }
+
     /**
      * Plays a summon card from actor's hand onto (row, col): validates turn, that the card is
      * in actor's own hand, summon row and mana, spawns the piece, and moves the card to the
      * discard pile. Emits PieceSpawnedEvent then CardPlayedEvent.
      */
     public ActionResult playSummon(PieceAlignment actor, String instanceId, int row, int col) {
+        SummonCheck check = checkSummon(actor, instanceId, row, col);
+        if (!check.result().isOk()) {
+            if (check.result().reason() == Reason.INVALID_SUMMON_TARGET) {
+                Logger.log("CardRules", "Summon rejected: invalid target (" + row + "," + col + ")");
+            }
+            return check.result();
+        }
+        if (!trySpendMana(check.player(), check.definition().cost())) return ActionResult.rejected(Reason.NOT_ENOUGH_MANA);
+
         BoardGrid grid = GameContext.get().getActiveGrid();
-        if (grid == null) return ActionResult.rejected(Reason.NO_ACTIVE_MATCH);
+        Entity entity = pieceSpawner.spawn(check.definition(), actor, row, col);
+        String pieceId = EntityUtils.getId(entity);
+        grid.addEntity(row, col, entity);
+        check.player().deck.playFromHand(instanceId);
+
+        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, actor, row, col, EntityUtils.getName(entity)));
+        TypedEventBus.get().emit(new CardPlayedEvent(check.card().cardName(), actor, row, col, pieceId, instanceId));
+        return ActionResult.ok();
+    }
+
+    private record SummonCheck(ActionResult result, PlayerManager.PlayerState player, CardInstance card,
+                               PieceDefinition definition) {
+        static SummonCheck rejected(Reason reason) {
+            return new SummonCheck(ActionResult.rejected(reason), null, null, null);
+        }
+    }
+
+    private SummonCheck checkSummon(PieceAlignment actor, String instanceId, int row, int col) {
+        BoardGrid grid = GameContext.get().getActiveGrid();
+        if (grid == null) return SummonCheck.rejected(Reason.NO_ACTIVE_MATCH);
         PlayerManager.PlayerState player = playerToAct(actor);
-        if (player == null) return ActionResult.rejected(Reason.NOT_YOUR_TURN);
+        if (player == null) return SummonCheck.rejected(Reason.NOT_YOUR_TURN);
         CardInstance card = player.hand.find(instanceId);
-        if (card == null) return ActionResult.rejected(Reason.CARD_NOT_IN_HAND);
-        if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Summon)) return ActionResult.rejected(Reason.WRONG_CARD_TYPE);
+        if (card == null) return SummonCheck.rejected(Reason.CARD_NOT_IN_HAND);
+        if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Summon)) return SummonCheck.rejected(Reason.WRONG_CARD_TYPE);
         PieceDefinition definition = CardCatalog.getPieceDefinition(card.cardName());
         if (definition == null) {
             Logger.error("CardRules", "No PieceDefinition for " + card.cardName());
-            return ActionResult.rejected(Reason.UNKNOWN_CARD);
+            return SummonCheck.rejected(Reason.UNKNOWN_CARD);
         }
-        if (!grid.isValidSummonTarget(row, col, actor)) {
-            Logger.log("CardRules", "Summon rejected: invalid target (" + row + "," + col + ")");
-            return ActionResult.rejected(Reason.INVALID_SUMMON_TARGET);
-        }
-        if (!trySpendMana(player, definition.cost())) return ActionResult.rejected(Reason.NOT_ENOUGH_MANA);
+        if (!grid.isValidSummonTarget(row, col, actor)) return SummonCheck.rejected(Reason.INVALID_SUMMON_TARGET);
+        if (player.getMana() < definition.cost()) return SummonCheck.rejected(Reason.NOT_ENOUGH_MANA);
+        return new SummonCheck(ActionResult.ok(), player, card, definition);
+    }
 
-        Entity entity = pieceSpawner.spawn(definition, actor, row, col);
-        String pieceId = EntityUtils.getId(entity);
-        grid.addEntity(row, col, entity);
-        player.deck.playFromHand(instanceId);
-
-        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, actor, row, col, EntityUtils.getName(entity)));
-        TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), actor, row, col, pieceId, instanceId));
-        return ActionResult.ok();
+    /**
+     * Whether actor may play spell card instanceId at (targetRow, targetCol) — null/null for an
+     * untargeted spell — right now: every check playSpell makes, without casting it.
+     */
+    public ActionResult validateSpell(PieceAlignment actor, String instanceId, Integer targetRow, Integer targetCol) {
+        return checkSpell(actor, instanceId, targetRow, targetCol).result();
     }
 
     /**
@@ -122,31 +152,49 @@ public class CardRules {
      * effects, and moves the card to the discard pile. Emits CardPlayedEvent after the effects.
      */
     public ActionResult playSpell(PieceAlignment actor, String instanceId, Integer targetRow, Integer targetCol) {
-        if (GameContext.get().getActiveGrid() == null) return ActionResult.rejected(Reason.NO_ACTIVE_MATCH);
-        PlayerManager.PlayerState player = playerToAct(actor);
-        if (player == null) return ActionResult.rejected(Reason.NOT_YOUR_TURN);
-        CardInstance card = player.hand.find(instanceId);
-        if (card == null) return ActionResult.rejected(Reason.CARD_NOT_IN_HAND);
-        if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Spell spell)) return ActionResult.rejected(Reason.WRONG_CARD_TYPE);
-        SpellDefinition definition = spell.definition();
+        SpellCheck check = checkSpell(actor, instanceId, targetRow, targetCol);
+        if (!check.result().isOk()) return check.result();
+        SpellDefinition definition = check.definition();
+        if (!trySpendMana(check.player(), definition.manaCost())) return ActionResult.rejected(Reason.NOT_ENOUGH_MANA);
 
-        Entity target = null;
-        if (definition.targeting() != null) {
-            if (targetRow == null || targetCol == null
-                    || !isValidSpellTarget(actor, card.cardName(), targetRow, targetCol)) {
-                return ActionResult.rejected(Reason.INVALID_SPELL_TARGET);
-            }
-            target = GameContext.get().getActiveGrid().getEntityAt(targetRow, targetCol);
-        }
-        if (!trySpendMana(player, definition.manaCost())) return ActionResult.rejected(Reason.NOT_ENOUGH_MANA);
-
-        runSpellEffects(definition, actor, target);
-        player.deck.playFromHand(instanceId);
+        runSpellEffects(definition, actor, check.target());
+        check.player().deck.playFromHand(instanceId);
 
         int row = definition.targeting() != null ? targetRow : -1;
         int col = definition.targeting() != null ? targetCol : -1;
-        TypedEventBus.get().emit(new CardPlayedEvent(card.cardName(), actor, row, col, null, instanceId));
+        TypedEventBus.get().emit(new CardPlayedEvent(check.card().cardName(), actor, row, col, null, instanceId));
         return ActionResult.ok();
+    }
+
+    private record SpellCheck(ActionResult result, PlayerManager.PlayerState player, CardInstance card,
+                              SpellDefinition definition, Entity target) {
+        static SpellCheck rejected(Reason reason) {
+            return new SpellCheck(ActionResult.rejected(reason), null, null, null, null);
+        }
+    }
+
+    private SpellCheck checkSpell(PieceAlignment actor, String instanceId, Integer targetRow, Integer targetCol) {
+        if (GameContext.get().getActiveGrid() == null) return SpellCheck.rejected(Reason.NO_ACTIVE_MATCH);
+        PlayerManager.PlayerState player = playerToAct(actor);
+        if (player == null) return SpellCheck.rejected(Reason.NOT_YOUR_TURN);
+        CardInstance card = player.hand.find(instanceId);
+        if (card == null) return SpellCheck.rejected(Reason.CARD_NOT_IN_HAND);
+        if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Spell spell)) return SpellCheck.rejected(Reason.WRONG_CARD_TYPE);
+        SpellDefinition definition = spell.definition();
+
+        Entity target = null;
+        if (definition.targeting() == null) {
+            // untargeted: a target given anyway isn't a legal play (LegalActions lists it as untargeted only)
+            if (targetRow != null || targetCol != null) return SpellCheck.rejected(Reason.INVALID_SPELL_TARGET);
+        } else {
+            if (targetRow == null || targetCol == null
+                    || !isValidSpellTarget(actor, card.cardName(), targetRow, targetCol)) {
+                return SpellCheck.rejected(Reason.INVALID_SPELL_TARGET);
+            }
+            target = GameContext.get().getActiveGrid().getEntityAt(targetRow, targetCol);
+        }
+        if (player.getMana() < definition.manaCost()) return SpellCheck.rejected(Reason.NOT_ENOUGH_MANA);
+        return new SpellCheck(ActionResult.ok(), player, card, definition, target);
     }
 
     /** actor's player state if it's their turn and they have a deck, else null. */

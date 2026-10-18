@@ -101,6 +101,8 @@ public final class MatchFixtures {
         PieceAlignment seat = client.getState().getSeat();
         List<String> diff = MatchView.diff(server.viewFor(seat), client.getState().toView());
         assertEquals(List.of(), diff, seat + "'s replica disagrees with the server");
+        assertEquals(server.legalActionsFor(seat), client.getState().getLegalActions(),
+                seat + "'s LegalActions disagree with what the server would accept");
     }
 
     public static String firstCard(MatchClient client) {

@@ -183,6 +183,13 @@ class CardRulesTest {
     }
 
     @Test
+    void playSpell_untargetedWithATarget_rejectedAndNothingSpent() {
+        assertEquals(Reason.INVALID_SPELL_TARGET, rules.playSpell(PieceAlignment.P1, "P1-2", 4, 2).reason());
+        assertEquals(10, p1.getMana());
+        assertNotNull(p1.hand.find("P1-2"));
+    }
+
+    @Test
     void playSpell_untargeted_runsEffectsThenPlaysCard() {
         assertEquals(Reason.OK, rules.playSpell(PieceAlignment.P1, "P1-2", null, null).reason());
 

@@ -81,6 +81,9 @@ class MatchServerTcpTest {
                 continue;
             }
             out.addAll(MatchView.diff(server.viewFor(c.getState().getSeat()), c.getState().toView()));
+            if (!server.legalActionsFor(c.getState().getSeat()).equals(c.getState().getLegalActions())) {
+                out.add(c.getState().getSeat() + " LegalActions differ from the server's");
+            }
         }
         return out;
     }

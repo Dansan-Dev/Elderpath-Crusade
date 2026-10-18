@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.match.ActionResult;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.PickRequest;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public sealed interface ServerMessage permits
         ServerMessage.Snapshot,
         ServerMessage.Event,
         ServerMessage.StateSync,
+        ServerMessage.LegalActionsUpdate,
         ServerMessage.PickRequested,
         ServerMessage.PickAnswered,
         ServerMessage.PickCancelled,
@@ -42,6 +44,13 @@ public sealed interface ServerMessage permits
      * which it changed. Covers what no event carries (auras, statuses, action resets).
      */
     record StateSync(List<MatchView.PieceView> pieces) implements ServerMessage {}
+
+    /**
+     * Everything this client's seat may do now (see match.LegalActions) — sent at the end of
+     * any tick in which it changed (after StateSync, before the tick's Acks) and on joining.
+     * Only the seat whose turn it is gets non-empty lists.
+     */
+    record LegalActionsUpdate(LegalActions actions) implements ServerMessage {}
 
     /** The server needs this client to choose (answer with NetworkCommand.AnswerPick). */
     record PickRequested(PickRequest request) implements ServerMessage {}
