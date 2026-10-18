@@ -206,7 +206,12 @@ class AllModesE2eTest {
     @ParameterizedTest(name = "{0} {1} seed {2}")
     @MethodSource("backendsBotsAndSeeds")
     void vsBots_botVsBot_withNoClients_terminates(ServerBackend.Kind kind, BotKind bot, long seed) {
-        harness = start(kind, config(seed, Map.of(PieceAlignment.P1, bot, PieceAlignment.P2, bot)));
+        // Identical SmartBots mirror each other into a stalemate on the symmetric standard map (BUG-029),
+        // so their "race to a win" runs on the lopsided map; BasicBots only have to keep the match moving.
+        Map<PieceAlignment, BotKind> bots = Map.of(PieceAlignment.P1, bot, PieceAlignment.P2, bot);
+        harness = start(kind, bot == BotKind.SMART
+                ? MatchFixtures.lopsidedConfig(mixedDeck(), mixedDeck(), seed, bots)
+                : config(seed, bots));
 
         Optional<PieceAlignment> winner = harness.runToEnd(MAX_TURNS);
 

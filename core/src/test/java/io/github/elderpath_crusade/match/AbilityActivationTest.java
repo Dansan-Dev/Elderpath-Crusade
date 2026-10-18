@@ -245,18 +245,18 @@ class AbilityActivationTest {
 
     @Test
     void displace_piecePickThenTilePick_movesTarget() {
-        Entity mage = piece(PieceAlignment.P1, 0, 0, DISPLACE);
-        Entity enemy = piece(PieceAlignment.P2, 1, 1);
+        Entity mage = piece(PieceAlignment.P1, 2, 0, DISPLACE);
+        Entity enemy = piece(PieceAlignment.P2, 2, 1);
 
         assertEquals(Reason.OK, server.activateAbility(PieceAlignment.P1, id(mage), 0).reason());
-        assertEquals(Reason.OK, answer(PieceAlignment.P1, new Coord(1, 1)));
+        assertEquals(Reason.OK, answer(PieceAlignment.P1, new Coord(2, 1)));
         assertEquals(PickKind.TILE, screen.prompted.kind(), "follow-up: where to put it");
-        assertFalse(screen.prompted.candidates().contains(new Coord(0, 0)), "occupied tiles aren't offered");
-        assertFalse(screen.prompted.candidates().contains(new Coord(2, 1)), "terrain isn't offered");
+        assertFalse(screen.prompted.candidates().contains(new Coord(2, 0)), "occupied tiles aren't offered");
+        assertFalse(screen.prompted.candidates().contains(new Coord(3, 1)), "terrain isn't offered");
         assertEquals(1, actions(mage), "paid only after the whole action resolves");
 
-        assertEquals(Reason.OK, answer(PieceAlignment.P1, new Coord(1, 2)));
-        assertSame(enemy, grid.getEntityAt(1, 2));
+        assertEquals(Reason.OK, answer(PieceAlignment.P1, new Coord(2, 2)));
+        assertSame(enemy, grid.getEntityAt(2, 2));
         assertEquals(0, actions(mage));
     }
 

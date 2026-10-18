@@ -16,6 +16,7 @@ import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.match.CardCatalog;
+import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.MatchConfig;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 
@@ -80,6 +81,19 @@ public final class MatchFixtures {
 
     public static MatchConfig config(List<String> p1Deck, List<String> p2Deck, Map<PieceAlignment, BotKind> bots) {
         return MatchConfig.standard(GameMode.ONLINE_MATCH, p1Deck, p2Deck, 7L, bots);
+    }
+
+    /**
+     * Mountains one row off center (the pre-DESIGN-001 layout). Only for tests that need two identical
+     * SmartBots to reach a winner: on the symmetric standard map they mirror each other into a
+     * stalemate (BUG-029), which says nothing about whether the server can finish a bot match.
+     */
+    public static final List<Coord> LOPSIDED_TERRAIN = List.of(new Coord(2, 1), new Coord(2, 3));
+
+    public static MatchConfig lopsidedConfig(List<String> p1Deck, List<String> p2Deck, Long seed,
+                                             Map<PieceAlignment, BotKind> bots) {
+        return new MatchConfig(MatchConfig.DEFAULT_ROWS, MatchConfig.DEFAULT_COLS, LOPSIDED_TERRAIN,
+                Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck), seed, GameMode.ONLINE_MATCH, bots);
     }
 
     /** The client's replica equals what the server says that client may see. */

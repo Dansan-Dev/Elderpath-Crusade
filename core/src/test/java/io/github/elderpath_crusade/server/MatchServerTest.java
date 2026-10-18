@@ -145,7 +145,7 @@ class MatchServerTest {
 
     @Test
     void botVsBot_withNoClients_playsToAWinner() {
-        server = new MatchServer(config(deckOf("Runner", 12), deckOf("Runner", 12),
+        server = new MatchServer(MatchFixtures.lopsidedConfig(deckOf("Runner", 12), deckOf("Runner", 12), 7L,
                 Map.of(PieceAlignment.P1, BotKind.SMART, PieceAlignment.P2, BotKind.SMART)), transport);
         int ticks = 0;
         while (!server.isEnded()) {

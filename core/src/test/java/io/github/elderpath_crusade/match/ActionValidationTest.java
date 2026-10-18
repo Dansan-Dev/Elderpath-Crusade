@@ -131,20 +131,20 @@ class ActionValidationTest {
 
     @Test
     void move_pathBlockedByTerrain_rejected() {
-        // (1,1) -> (3,1) is 2 steps straight through the mountain at (2,1); around it is 4
-        piece(PieceAlignment.P1, 1, 1);
-        assertEquals(Reason.UNREACHABLE, move(PieceAlignment.P1, 1, 1, 3, 1));
+        // (2,1) -> (4,1) is 2 steps straight through the mountain at (3,1); around it is 4
+        piece(PieceAlignment.P1, 2, 1);
+        assertEquals(Reason.UNREACHABLE, move(PieceAlignment.P1, 2, 1, 4, 1));
         // the same distance down a clear column is fine
-        piece(PieceAlignment.P1, 1, 0);
-        assertEquals(Reason.OK, move(PieceAlignment.P1, 1, 0, 3, 0));
+        piece(PieceAlignment.P1, 2, 0);
+        assertEquals(Reason.OK, move(PieceAlignment.P1, 2, 0, 4, 0));
     }
 
     @Test
     void move_ontoTerrainOrFriendly_rejected() {
-        piece(PieceAlignment.P1, 1, 1);
-        piece(PieceAlignment.P1, 1, 2);
-        assertEquals(Reason.INVALID_TARGET, move(PieceAlignment.P1, 1, 1, 2, 1), "terrain");
-        assertEquals(Reason.INVALID_TARGET, move(PieceAlignment.P1, 1, 1, 1, 2), "attack own piece");
+        piece(PieceAlignment.P1, 2, 1);
+        piece(PieceAlignment.P1, 2, 2);
+        assertEquals(Reason.INVALID_TARGET, move(PieceAlignment.P1, 2, 1, 3, 1), "terrain");
+        assertEquals(Reason.INVALID_TARGET, move(PieceAlignment.P1, 2, 1, 2, 2), "attack own piece");
     }
 
     @Test

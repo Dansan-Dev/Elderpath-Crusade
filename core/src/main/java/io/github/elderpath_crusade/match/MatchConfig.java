@@ -26,7 +26,8 @@ public record MatchConfig(
 ) {
     public static final int DEFAULT_ROWS = 7;
     public static final int DEFAULT_COLS = 5;
-    public static final List<Coord> DEFAULT_TERRAIN = List.of(new Coord(2, 1), new Coord(2, 3));
+    /** Mountains on the center row, so neither side's home row is closer to them (P1 home row 0, P2 home row ROWS-1). */
+    public static final List<Coord> DEFAULT_TERRAIN = List.of(new Coord(3, 1), new Coord(3, 3));
 
     public MatchConfig {
         terrain = List.copyOf(terrain);
