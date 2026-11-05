@@ -5,14 +5,13 @@ import io.github.elderpath_crusade.events.CardDiscardedEvent;
 import io.github.elderpath_crusade.events.CardDrawnEvent;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
 import io.github.elderpath_crusade.events.GameEvent;
-import io.github.elderpath_crusade.match.CardInstance;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Round-trips the card-identity-carrying messages (events, commands, snapshot) through their codecs. */
+/** Round-trips the card-identity-carrying events and commands through their codecs. */
 class CardMessageCodecTest {
 
     private static void assertRoundTrip(GameEvent event) {
@@ -49,13 +48,5 @@ class CardMessageCodecTest {
                 () -> NetworkCommandCodec.decode("{\"type\":\"EndTurn\",\"payload\":{\"alignment\":\"P1\"}}"));
         assertThrows(IllegalStateException.class, () -> NetworkCommandCodec.decode(
                 "{\"type\":\"PlaySummonCard\",\"payload\":{\"alignment\":\"P1\",\"instanceId\":\"P1-0\",\"row\":0,\"col\":2}}"));
-    }
-
-    @Test
-    void snapshot_roundTripsHandsAsCardInstances() {
-        GameSnapshot snapshot = new GameSnapshot(List.of(),
-                List.of(new CardInstance("P1-0", "Wolf")), List.of(new CardInstance("P2-5", "Fireball")),
-                2, 3, PieceAlignment.P2);
-        assertEquals(snapshot, GameSnapshotCodec.decode(GameSnapshotCodec.encode(snapshot)));
     }
 }

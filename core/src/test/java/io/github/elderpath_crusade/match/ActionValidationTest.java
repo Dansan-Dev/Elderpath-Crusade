@@ -13,7 +13,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.match.ActionResult.Reason;
 import io.github.elderpath_crusade.server.GameServer;
-import io.github.elderpath_crusade.session.LocalControl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -241,30 +240,4 @@ class ActionValidationTest {
         assertEquals(Reason.NOT_YOUR_TURN, server.endTurn(PieceAlignment.P2).reason(), "P2 hasn't taken over yet");
     }
 
-    // --- BUG-024: a screen never acts for a bot-controlled side ---
-
-    @Test
-    void localControl_vsBot_neverControlsTheBotsSide() {
-        grid = start(GameMode.DEMO, Map.of(PieceAlignment.P2, BotKind.BASIC));
-        LocalControl control = GameContext.get().getLocalControl();
-        assertTrue(control.controls(PieceAlignment.P1));
-        assertFalse(control.controls(PieceAlignment.P2));
-        assertEquals(PieceAlignment.P1, control.actingSide());
-
-        GameContext.get().getTurnManager().endTurn(); // the bot's turn
-        assertNull(control.actingSide(), "the human's screen can't act during the bot's turn");
-        Entity botPiece = piece(PieceAlignment.P2, 6, 0);
-        assertEquals(Reason.NOT_YOUR_TURN, move(control.actingSide(), 6, 0, 5, 0));
-        assertSame(botPiece, grid.getEntityAt(6, 0));
-    }
-
-    @Test
-    void localControl_hotseat_actsForWhoeversTurnItIs() {
-        grid = start(GameMode.LOCAL_MATCH, Map.of());
-        LocalControl control = GameContext.get().getLocalControl();
-        assertEquals(PieceAlignment.P1, control.actingSide());
-        server.endTurn(PieceAlignment.P1);
-        GameContext.get().getTurnManager().startNextPlayerTurn();
-        assertEquals(PieceAlignment.P2, control.actingSide());
-    }
 }

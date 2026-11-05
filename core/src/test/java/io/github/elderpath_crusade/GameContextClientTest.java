@@ -55,7 +55,6 @@ class GameContextClientTest {
     void simulationServices_areAbsent() {
         assertNull(context.getGameServer());
         assertNull(context.getCardRules());
-        assertNull(context.getLocalControl());
         assertNull(context.getTurnManager());
         assertNull(context.getPlayerManager());
         assertNull(context.getBotManager());
@@ -63,7 +62,6 @@ class GameContextClientTest {
         assertNull(context.getPickRouter());
         assertNull(context.getMatchClock());
         assertNull(context.getCombatSystem());
-        assertNull(context.getOnlineMatch());
         assertNotNull(context.getPieceRenderSystem(), "a client still renders pieces");
     }
 

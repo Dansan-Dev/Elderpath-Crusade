@@ -35,7 +35,6 @@ import io.github.elderpath_crusade.match.MatchClock;
 import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
-import io.github.elderpath_crusade.multiplayer.net.OnlineMatchSession;
 import io.github.elderpath_crusade.rooms.RoomManager;
 import io.github.elderpath_crusade.server.GameServer;
 import io.github.elderpath_crusade.match.CardRules;
@@ -47,7 +46,6 @@ import io.github.elderpath_crusade.game.TurnManager;
 import io.github.elderpath_crusade.game.WinConditionManager;
 import io.github.elderpath_crusade.rendering.ZIndexRegistry;
 import io.github.elderpath_crusade.session.GameSession;
-import io.github.elderpath_crusade.session.LocalControl;
 import io.github.elderpath_crusade.state.GameStateMachine;
 import io.github.elderpath_crusade.interaction.LocalUiPickResponder;
 import io.github.elderpath_crusade.match.PickRouter;
@@ -89,8 +87,6 @@ public class GameContext {
     @Getter private final InfoDataManager infoDataManager;
     @Getter private final GameServer gameServer;
     @Getter private final CardRules cardRules;
-    @Getter private final LocalControl localControl;
-    @Getter private final OnlineMatchSession onlineMatch;
     @Getter private final MatchClock matchClock;
     /** Routes the picks game logic asks players for (local UI / bot / remote client). */
     @Getter private final PickRouter pickRouter;
@@ -165,8 +161,6 @@ public class GameContext {
         this.infoDataManager = new InfoDataManager();
         this.gameServer = simulates ? new GameServer() : null;
         this.cardRules = simulates ? new CardRules() : null;
-        this.localControl = simulates ? new LocalControl() : null;
-        this.onlineMatch = simulates ? new OnlineMatchSession() : null;
         this.matchClock = simulates ? new MatchClock() : null;
         this.pickRouter = simulates ? new PickRouter() : null;
         // Headless: no screen to prompt on — a human slot's picks need a remote (or test) responder.
@@ -193,9 +187,8 @@ public class GameContext {
      * this context only renders and sends commands. Its ECS engine holds view entities mirrored
      * from the server and runs no gameplay system — only the spatial index (GridIndexSystem) and
      * PieceRenderSystem. Simulation services are absent (null): GameServer, CardRules,
-     * LocalControl, TurnManager, PlayerManager, BotManager, WinConditionManager, PickRouter,
-     * MatchClock, CombatSystem and the prototype OnlineMatchSession — so nothing on a client
-     * can ever decide a game rule.
+     * TurnManager, PlayerManager, BotManager, WinConditionManager, PickRouter, MatchClock,
+     * CombatSystem — so nothing on a client can ever decide a game rule.
      */
     public static GameContext createClient() {
         instance = new GameContext(Kind.CLIENT);

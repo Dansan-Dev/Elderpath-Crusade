@@ -18,10 +18,10 @@ import java.util.function.BiConsumer;
  * be called identically from a local click handler, a bot, or a network command handler.
  *
  * Every entry point takes the acting side explicitly. The caller derives it from who is
- * asking, never from the request's content: a local click uses LocalControl.actingSide(), a
- * bot its own slot, a network connection the alignment it was assigned. Everything is then
- * validated as if the request came from an untrusted client — the server accepts nothing the
- * UI wouldn't offer.
+ * asking, never from the request's content: a bot passes its own slot, a network connection the
+ * alignment it was assigned (a client never decides its own actor — see ClientMatchSession/
+ * ClientController). Everything is then validated as if the request came from an untrusted
+ * client — the server accepts nothing the UI wouldn't offer.
  *
  * While the actor has a pick pending (PickRouter), its other actions are rejected with
  * PICK_PENDING — it must answer or cancel the pick first. That keeps resolution strictly
