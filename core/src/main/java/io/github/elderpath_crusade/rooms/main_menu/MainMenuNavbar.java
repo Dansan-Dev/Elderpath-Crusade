@@ -13,13 +13,11 @@ import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.multiplayer.net.OnlineMatchSession;
 import io.github.elderpath_crusade.rooms.DraftRoom;
 import io.github.elderpath_crusade.rooms.InformationSelectionRoom;
 import io.github.elderpath_crusade.rooms.OnlineMatchRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
-import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.utils.SpriteCreator;
 
 import java.util.List;
@@ -70,27 +68,13 @@ public class MainMenuNavbar extends HigherOrderUI {
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         hostOnlineButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Host Online", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> {
-                try {
-                    GameContext.get().getOnlineMatch().startHosting(OnlineMatchSession.DEFAULT_PORT);
-                    GameContext.get().getRoomManager().gotoRoom(OnlineMatchRoom::get);
-                } catch (java.io.IOException ex) {
-                    Logger.error("MainMenuNavbar", "Failed to host: " + ex.getMessage());
-                }
-            }, ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(OnlineMatchRoom::host), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
         joinOnlineButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Join (localhost)", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> {
-                try {
-                    GameContext.get().getOnlineMatch().joinHost("localhost", OnlineMatchSession.DEFAULT_PORT);
-                    GameContext.get().getRoomManager().gotoRoom(OnlineMatchRoom::get);
-                } catch (java.io.IOException ex) {
-                    Logger.error("MainMenuNavbar", "Failed to join: " + ex.getMessage());
-                }
-            }, ClickableEffectData.getImmediate())
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.join("localhost")), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());

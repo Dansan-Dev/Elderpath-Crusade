@@ -1,18 +1,16 @@
 package io.github.elderpath_crusade.ui_objects;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.client.ClientController;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game.TurnManager;
-import io.github.elderpath_crusade.enums.GameMode;
 
 /**
- * PassTurnButton specialized button: clickable during current player's turn (or waiting state in LOCAL_MATCH).
- * Extends Button to reuse rendering and click plumbing directly.
- * In LOCAL_MATCH mode, shows "Start Turn" when waiting between turns.
+ * PassTurnButton specialized button: clickable during a turn this screen's acting seat may end.
+ * Extends Button to reuse rendering and click plumbing directly. LocalMatchRoom's hotseat
+ * handoff ("Start Turn" to reveal the next player's hand before actually ending a turn) sets
+ * its own label via {@link #setText(String)} directly — this class has no handoff state itself.
  */
 public class PassTurnButton extends Button {
 
@@ -41,44 +39,21 @@ public class PassTurnButton extends Button {
         return new PassTurnButton(backgroundColor, text, fontType, fontSize, x, y, width, height, z);
     }
 
-    /**
-     * Update button text based on current game state.
-     * Should be called when turn state changes.
-     */
-    public void updateButtonText() {
-        String newText;
-        if (GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH && GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
-            newText = "Start Turn";
-        } else {
-            newText = "Pass Turn";
-        }
-        setText(newText);
-        // Update the internal Text object
+    /** Sets the label directly — LocalMatchRoom's hotseat handoff calls this with "Start Turn". */
+    public void setLabel(String text) {
+        setText(text);
         if (textObj != null) {
-            textObj.setText(newText);
+            textObj.setText(text);
             textObj.update();
         }
     }
 
-    /**
-     * Override render to update button text every frame based on current game state.
-     */
-    @Override
-    public void renderUI(SpriteBatch batch, boolean isPaused) {
-        // Update button text before rendering to ensure it's always current
-        updateButtonText();
-        super.renderUI(batch, isPaused);
-    }
-
-    // Gate clicks based on current turn or waiting state
+    // Clickable only while this screen's acting seat may end its turn, and not mid-pick.
     @Override
     public ClickableEffectData getClickableEffectData() {
-        // Hotseat handoff ("Start Turn") is always clickable; otherwise only on the turn of a
-        // side this screen controls — never during a bot's or the online opponent's turn.
-        if (GameContext.get().getTurnManager().isWaitingForNextPlayer()) {
-            return super.getClickableEffectData();
-        }
-        return GameContext.get().getLocalControl().actingSide() != null ? super.getClickableEffectData() : null;
+        ClientController controller = GameContext.get().getClientController();
+        if (controller == null || controller.hasPendingPick()) return null;
+        return controller.canEndTurn() ? super.getClickableEffectData() : null;
     }
 
 }

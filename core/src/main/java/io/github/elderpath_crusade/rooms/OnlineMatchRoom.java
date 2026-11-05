@@ -1,138 +1,62 @@
 package io.github.elderpath_crusade.rooms;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.data_objects.Box;
+import io.github.elderpath_crusade.client.ClientMatchSession;
+import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.cards.Card;
-import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.interfaces.Renderable;
-import io.github.elderpath_crusade.interfaces.Updatable;
-import io.github.elderpath_crusade.interaction.LocalUiPickResponder;
-import io.github.elderpath_crusade.multiplayer.net.GameClient;
-import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
-import io.github.elderpath_crusade.server.ActionDispatcher;
-import io.github.elderpath_crusade.server.ReplicaEventApplier;
-import io.github.elderpath_crusade.supers.LowestOrderTexture;
+import io.github.elderpath_crusade.net.protocol.SeatRequest;
+import io.github.elderpath_crusade.supers.Room;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A tactical battle over the network. The host runs the real simulation exactly like local
- * play (see GameServer) — its own alignment is always P1. The guest is a thin client: its
- * clicks route to the host via ActionDispatcher/NetworkCommand, and its board/hand state is
- * mirrored from the host's relayed events via ReplicaEventApplier — its own alignment is
- * always P2. See ReplicaEventApplier's class doc for what is and isn't reconstructed.
+ * A tactical battle over the network, run entirely by a match server: hosting launches a child
+ * server bound publicly and connects as whichever seat is free (P1 for the first connection),
+ * joining connects to a host's address. Both paths now go through the exact same BattleRoom
+ * machinery as solo/hotseat (hand sync, picks, clicks, highlights) — no more host/guest-specific
+ * wiring (the old GameHost/GameClient/ActionDispatcher/ReplicaEventApplier prototype).
  *
- * Skips the draft flow for this prototype — both sides start with the same fixed deck
- * (2x Wolf + 2x Wolf Cub, matching DraftRoom's starting deck).
+ * Skips the draft flow for now — real cross-network deck sharing needs a lobby to carry a
+ * guest's draft to the host before the server even launches, which is phase 4 (FEAT-008)
+ * territory. Both sides start with the same fixed deck (2x Wolf + 2x Wolf Cub, matching
+ * DraftRoom's starting deck and the pre-ARCH-028 prototype's behavior) — not a regression.
  */
 public class OnlineMatchRoom extends BattleRoom {
     private static final int STARTING_WOLVES = 2;
     private static final int STARTING_WOLF_CUBS = 2;
+    private static final int DEFAULT_PORT = 4567;
 
-    private OnlineMatchRoom() {
-        super(GameMode.ONLINE_MATCH);
-
-        if (GameContext.get().getOnlineMatch().isGuest()) {
-            ReplicaEventApplier applier = new ReplicaEventApplier(handSyncP1, handSyncP2);
-            GameContext.get().getOnlineMatch().getClient().addListener(applier::apply);
-            GameContext.get().getOnlineMatch().getClient().addSnapshotListener(applier::applySnapshot);
-
-            // The host asks this screen's player to pick (ability/effect targets): same prompt as
-            // local play, but the answer goes back to the host.
-            GameClient client = GameContext.get().getOnlineMatch().getClient();
-            LocalUiPickResponder picks = new LocalUiPickResponder((request, response) -> {
-                client.send(new NetworkCommand.AnswerPick(response.pickId(), response.isCancelled(),
-                        response.isCancelled() ? 0 : response.choice().row(),
-                        response.isCancelled() ? 0 : response.choice().col()));
-                return true; // the host re-sends the request if it rejects the answer
-            });
-            client.setPickListeners(picks::prompt, picks::cancelPrompt);
-        }
-
+    private OnlineMatchRoom(ClientMatchSession session) {
+        super(GameMode.ONLINE_MATCH, session);
         layoutBoard();
-        addContent(new HandVisibilityEnforcer(handP1, handP2));
-    }
-
-    /**
-     * Unlike hotseat (LocalMatchRoom), each screen has exactly one local human — so hand
-     * visibility doesn't need to track whose turn it is, only whose screen this is: my own
-     * hand is always visible, the opponent's is always hidden. This has to be enforced every
-     * frame, not just once at construction — every newly created Card defaults to face-up
-     * (Card's constructor sets faceUp = true), and new cards keep getting added to hands for
-     * the rest of the match (via HandSync, from the host's own draws for both alignments, and
-     * on the guest from relayed CardDrawnEvents) — a one-time pass at room
-     * construction only ever covered the starting hand.
-     */
-    private static final class HandVisibilityEnforcer extends LowestOrderTexture implements Renderable, Updatable {
-        private final Hand handP1;
-        private final Hand handP2;
-
-        HandVisibilityEnforcer(Hand handP1, Hand handP2) {
-            this.handP1 = handP1;
-            this.handP2 = handP2;
-            setBounds(new Box(0, 0, 0, 0));
-        }
-
-        @Override
-        public List<Integer> getZs() {
-            return List.of();
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
-        }
-
-        @Override
-        public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
-        }
-
-        @Override
-        public void update(float delta) {
-            PieceAlignment local = GameContext.get().getOnlineMatch().getLocalAlignment();
-            if (local == null) return;
-            applyTo(handP1, local == PieceAlignment.P1);
-            applyTo(handP2, local == PieceAlignment.P2);
-        }
-
-        private void applyTo(Hand hand, boolean visible) {
-            for (Card c : hand.getCards()) {
-                if (visible && !c.isFaceUp()) c.showFront();
-                else if (!visible && c.isFaceUp()) c.showBack();
-            }
-        }
     }
 
     @Override
     protected void onPassTurnClicked() {
-        PieceAlignment actor = GameContext.get().getLocalControl().actingSide();
-        ActionDispatcher.dispatch(
-                NetworkCommand.EndTurn::new,
-                () -> GameContext.get().getGameServer().endTurn(actor)
-        );
+        controller.endTurn();
     }
 
-    @Override
-    protected List<String> deckCardNames(PieceAlignment alignment) {
+    public static Room host() {
+        return MatchStartingRoom.get(OnlineMatchRoom::startHosting, OnlineMatchRoom::new);
+    }
+
+    public static Room join(String address) {
+        return MatchStartingRoom.get(() -> startJoining(address), OnlineMatchRoom::new);
+    }
+
+    private static ClientMatchSession startHosting() {
+        LocalMatchSpec spec = LocalMatchSpec.twoHumans(startingDeck(), startingDeck());
+        return ClientMatchSession.host(spec, "0.0.0.0", DEFAULT_PORT);
+    }
+
+    private static ClientMatchSession startJoining(String address) {
+        return ClientMatchSession.join(address, DEFAULT_PORT, SeatRequest.ANY, "player");
+    }
+
+    private static List<String> startingDeck() {
         List<String> names = new ArrayList<>();
-        // Only the host's decks are real — the guest never draws locally; both hands are
-        // mirrored from the host's relayed card events (see ReplicaEventApplier).
-        if (GameContext.get().getOnlineMatch().isHost()) {
-            for (int i = 0; i < STARTING_WOLVES; i++) names.add("Wolf");
-            for (int i = 0; i < STARTING_WOLF_CUBS; i++) names.add("Wolf Cub");
-        }
+        for (int i = 0; i < STARTING_WOLVES; i++) names.add("Wolf");
+        for (int i = 0; i < STARTING_WOLF_CUBS; i++) names.add("Wolf Cub");
         return names;
-    }
-
-    @Override
-    protected boolean mirrorsRemoteMatch() {
-        return GameContext.get().getOnlineMatch().isGuest();
-    }
-
-    public static OnlineMatchRoom get() {
-        return new OnlineMatchRoom();
     }
 }

@@ -18,6 +18,9 @@ import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.bot.BotManager;
+import io.github.elderpath_crusade.client.ClientController;
+import io.github.elderpath_crusade.client.ClientMatchSession;
+import io.github.elderpath_crusade.client.ReplicaViewSync;
 import io.github.elderpath_crusade.game.DeckManager;
 import io.github.elderpath_crusade.rendering.FontManager;
 import io.github.elderpath_crusade.game.GameManager;
@@ -102,6 +105,12 @@ public class GameContext {
     /** The logical board of the active match — what game logic reads; activeBoard is its view. */
     @Getter private BoardGrid activeGrid;
     @Getter private GameSession activeSession;
+    /** The running match server connection for a battle room on a client context, or null outside one. */
+    @Getter private ClientMatchSession clientMatchSession;
+    /** Pairs with clientMatchSession — view gating, command translation, picks, victory. */
+    @Getter private ClientController clientController;
+    /** Mirrors clientMatchSession's replica into ECS view entities + the active grid, each frame. */
+    @Getter private ReplicaViewSync replicaViewSync;
 
     private enum Kind { WINDOWED, HEADLESS, CLIENT }
 
@@ -223,5 +232,18 @@ public class GameContext {
 
     public void clearSession() {
         this.activeSession = null;
+    }
+
+    /** A battle room on a client context installs its session/controller/view-sync triple here once built. */
+    public void setClientMatch(ClientMatchSession session, ClientController controller, ReplicaViewSync viewSync) {
+        this.clientMatchSession = session;
+        this.clientController = controller;
+        this.replicaViewSync = viewSync;
+    }
+
+    public void clearClientMatch() {
+        this.clientMatchSession = null;
+        this.clientController = null;
+        this.replicaViewSync = null;
     }
 }

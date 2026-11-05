@@ -1,9 +1,10 @@
 package io.github.elderpath_crusade;
 
-import io.github.elderpath_crusade.match.MatchSetup;
 import com.badlogic.gdx.ApplicationAdapter;
 import io.github.elderpath_crusade.api.BackendService;
 import io.github.elderpath_crusade.api.dto.UserListResponseDto;
+import io.github.elderpath_crusade.client.ClientMatchSession;
+import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.enums.settings.InputHandlerData;
 import io.github.elderpath_crusade.enums.settings.InputKey;
 import io.github.elderpath_crusade.input.InputManager;
@@ -30,7 +31,7 @@ public class Main extends ApplicationAdapter {
                 System.out.println("> " + userResponseDto.getUsername());
             });
         }
-        GameContext.create();
+        GameContext.createClient();
         GameContext.get().getGameManager().initialize();
 
         GameContext.get().getSettingsManager().sound.setMusicVolume(3);
@@ -70,8 +71,14 @@ public class Main extends ApplicationAdapter {
         }
 
         // UPDATE
-        GameContext.get().getOnlineMatch().update();
-        MatchSetup.tick(delta); // scheduled match tasks (bot pacing), then the ECS engine
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        if (session != null) {
+            session.poll();
+            ClientMatchState state = session.viewState();
+            if (state != null) GameContext.get().getReplicaViewSync().sync(state);
+            GameContext.get().getClientController().update();
+        }
+        GameContext.get().getEcsEngine().update(delta); // view entities, render system
         GameContext.get().getHighlightManager().update();
         GameContext.get().getGraphicsManager().update(delta);
 
@@ -86,7 +93,8 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void dispose() {
-        GameContext.get().getOnlineMatch().stop();
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        if (session != null) session.close();
         GameContext.get().getGraphicsManager().getBatch().dispose();
         GameContext.get().getTextureManager().dispose();
         GameContext.get().getAssets().dispose();
