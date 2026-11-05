@@ -1,26 +1,15 @@
 package io.github.elderpath_crusade.ui_objects;
 
-import com.badlogic.ashley.core.ComponentMapper;
-import com.badlogic.ashley.core.Entity;
-import com.badlogic.ashley.core.Family;
-import com.badlogic.ashley.utils.ImmutableArray;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
-import io.github.elderpath_crusade.server.ActionDispatcher;
-import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
+import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
-import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
-import io.github.elderpath_crusade.ecs.components.IdentityComponent;
-import io.github.elderpath_crusade.ecs.components.PositionComponent;
-import io.github.elderpath_crusade.ecs.components.StatsComponent;
-import io.github.elderpath_crusade.ecs.components.StunComponent;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.input.InteractionManager;
+import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 
 import java.util.ArrayList;
@@ -30,30 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Shows an activation bubble for each usable ability of this screen's hovered piece. Which
+ * abilities are usable (and their actionIndex) comes straight from LegalActions.PieceActions —
+ * the server already excludes pieces with no remaining action, a stunned piece, pieces that
+ * aren't this seat's, and a seat with a pending pick (LegalActions is all-empty then), so this
+ * class owns no eligibility logic of its own.
+ */
 public class AbilityPopup extends HigherOrderUI {
 
     private static final int BUBBLE_Z = 20;
     private static final int BUBBLE_Y_OFFSET = 8;
-
-    private static final ComponentMapper<AbilityInstanceComponent> ABILITY_M =
-            ComponentMapper.getFor(AbilityInstanceComponent.class);
-    private static final ComponentMapper<PositionComponent> POSITION_M =
-            ComponentMapper.getFor(PositionComponent.class);
-    private static final ComponentMapper<AlignmentComponent> ALIGNMENT_M =
-            ComponentMapper.getFor(AlignmentComponent.class);
-    private static final ComponentMapper<StatsComponent> STATS_M =
-            ComponentMapper.getFor(StatsComponent.class);
-    private static final ComponentMapper<StunComponent> STUN_M =
-            ComponentMapper.getFor(StunComponent.class);
-    private static final ComponentMapper<IdentityComponent> IDENTITY_M =
-            ComponentMapper.getFor(IdentityComponent.class);
-
-    private static final Family FAMILY = Family.all(
-            AbilityInstanceComponent.class,
-            PositionComponent.class,
-            AlignmentComponent.class,
-            StatsComponent.class
-    ).get();
 
     private final Map<String, AbilityBubble> activeBubbles = new HashMap<>();
     // Narrow corridor between each bubble and its piece's plot — keeps bubble alive while mouse travels upward
@@ -77,39 +53,22 @@ public class AbilityPopup extends HigherOrderUI {
             return;
         }
 
-        // Bubbles only for the pieces of a side this screen controls (never a bot's or the online opponent's)
-        PieceAlignment currentPlayer = ctx.getLocalControl().actingSide();
-        if (currentPlayer == null) {
+        ClientController controller = ctx.getClientController();
+        LegalActions actions = controller != null ? controller.legalActions() : null;
+        if (actions == null) {
             removeAllBubbles(interactionManager);
             return;
         }
-        ImmutableArray<Entity> entities = ctx.getEcsEngine().getEntitiesFor(FAMILY);
 
         int boardX = board.getBounds().getX();
         int boardY = board.getBounds().getY();
 
         List<BubbleSpec> specs = new ArrayList<>();
-        for (Entity entity : entities) {
-            AlignmentComponent alignment = ALIGNMENT_M.get(entity);
-            if (alignment.alignment != currentPlayer) continue;
-
-            StatsComponent stats = STATS_M.get(entity);
-            if (stats.remainingActions <= 0) continue;
-
-            StunComponent stun = STUN_M.get(entity);
-            if (stun != null && stun.isStunned()) continue;
-
-            AbilityInstanceComponent abilityComp = ABILITY_M.get(entity);
-            IdentityComponent identity = IDENTITY_M.get(entity);
-            if (identity == null) continue;
-
-            PositionComponent pos = POSITION_M.get(entity);
-            int abilityIndex = 0;
-            for (AbilityDefinition def : abilityComp.definitions) {
-                if (def.actions() == null || def.actions().isEmpty()) continue;
-                String key = identity.id + "_" + abilityIndex;
-                specs.add(new BubbleSpec(key, entity, def, abilityIndex, pos, identity.id));
-                abilityIndex++;
+        for (LegalActions.PieceActions pa : actions.pieces()) {
+            if (pa.abilities().isEmpty()) continue;
+            for (LegalActions.AbilityOption option : pa.abilities()) {
+                String key = pa.pieceId() + "_" + option.actionIndex();
+                specs.add(new BubbleSpec(key, pa.pieceId(), option.actionIndex(), pa.from()));
             }
         }
 
@@ -136,8 +95,8 @@ public class AbilityPopup extends HigherOrderUI {
         // Otherwise check if hovering a plot that belongs to an eligible piece
         if (hoveredPieceId == null) {
             for (BubbleSpec spec : specs) {
-                int plotX = boardX + spec.pos.col * board.getPLOT_WIDTH();
-                int plotY = boardY + board.toDisplayRow(spec.pos.row) * board.getPLOT_HEIGHT();
+                int plotX = boardX + spec.from.col() * board.getPLOT_WIDTH();
+                int plotY = boardY + board.toDisplayRow(spec.from.row()) * board.getPLOT_HEIGHT();
                 if (mx >= plotX && mx < plotX + board.getPLOT_WIDTH()
                         && my >= plotY && my < plotY + board.getPLOT_HEIGHT()) {
                     hoveredPieceId = spec.pieceId;
@@ -166,16 +125,16 @@ public class AbilityPopup extends HigherOrderUI {
         for (BubbleSpec spec : specs) {
             if (!desiredKeys.contains(spec.key)) continue;
             if (!activeBubbles.containsKey(spec.key)) {
-                int plotX = boardX + spec.pos.col * board.getPLOT_WIDTH();
-                int plotY = boardY + board.toDisplayRow(spec.pos.row) * board.getPLOT_HEIGHT();
+                int plotX = boardX + spec.from.col() * board.getPLOT_WIDTH();
+                int plotY = boardY + board.toDisplayRow(spec.from.row()) * board.getPLOT_HEIGHT();
                 int bubX = plotX + board.getPLOT_WIDTH() / 2 - bubbleSize / 2;
                 int bubY = plotY + board.getPLOT_HEIGHT() + BUBBLE_Y_OFFSET;
 
                 String pieceId = spec.pieceId;
-                int actionIndex = spec.abilityIndex;
+                int actionIndex = spec.actionIndex;
 
                 AbilityBubble bubble = new AbilityBubble(bubX, bubY, bubbleSize, BUBBLE_Z)
-                        .withIndexLabel(spec.abilityIndex + 1, Color.WHITE)
+                        .withIndexLabel(spec.actionIndex + 1, Color.WHITE)
                         .withOnClick(
                                 (e) -> activate(pieceId, actionIndex),
                                 ClickableEffectData.getImmediate()
@@ -193,12 +152,9 @@ public class AbilityPopup extends HigherOrderUI {
         }
     }
 
-    /** Asks the server (in-process, or the host when this screen is the online guest) to activate the ability. */
+    /** Asks the match server to activate the ability — it re-validates and is the sole judge of legality. */
     private static void activate(String pieceId, int actionIndex) {
-        PieceAlignment actor = GameContext.get().getLocalControl().actingSide();
-        ActionDispatcher.dispatch(
-                () -> new NetworkCommand.ActivateAbility(pieceId, actionIndex),
-                () -> GameContext.get().getGameServer().activateAbility(actor, pieceId, actionIndex));
+        GameContext.get().getClientController().activateAbility(pieceId, actionIndex);
     }
 
     private void removeAllBubbles(InteractionManager interactionManager) {
@@ -209,5 +165,5 @@ public class AbilityPopup extends HigherOrderUI {
         corridors.clear();
     }
 
-    private record BubbleSpec(String key, Entity entity, AbilityDefinition def, int abilityIndex, PositionComponent pos, String pieceId) {}
+    private record BubbleSpec(String key, String pieceId, int actionIndex, Coord from) {}
 }

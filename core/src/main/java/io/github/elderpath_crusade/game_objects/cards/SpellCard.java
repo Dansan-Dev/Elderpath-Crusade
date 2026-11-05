@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.data.SpellDefinition;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -14,8 +15,8 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.OnClick;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
-import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
-import io.github.elderpath_crusade.server.ActionDispatcher;
+import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
 import io.github.elderpath_crusade.utils.ColorSettings;
@@ -119,14 +120,9 @@ public class SpellCard extends Card implements TargetFilter {
                 ClickableEffectData.getMulti(ClickableTargetType.PLOT, 1));
     }
 
-    /** Sends this card's play to GameServer (or the host) — targetRow/targetCol null for an untargeted spell. */
+    /** Sends this card's play to the match server — targetRow/targetCol null for an untargeted spell. */
     private void play(Integer targetRow, Integer targetCol) {
-        String instanceId = getInstanceId();
-        PieceAlignment actor = GameContext.get().getLocalControl().actingSide();
-        ActionDispatcher.dispatch(
-                () -> new NetworkCommand.PlaySpellCard(instanceId, targetRow, targetCol),
-                () -> GameContext.get().getGameServer().playSpellCard(actor, instanceId, targetRow, targetCol)
-        );
+        GameContext.get().getClientController().playSpell(getInstanceId(), targetRow, targetCol);
     }
 
     @Override
@@ -144,16 +140,21 @@ public class SpellCard extends Card implements TargetFilter {
 
     @Override
     public ClickableEffectData getClickableEffectData() {
-        if (!GameContext.get().getLocalControl().controls(alignment)) return null;
-        if (!GameContext.get().getCardRules().canPlay(alignment, spellName)) return null;
-        return clickableEffectData;
+        return legalCardActions() != null ? clickableEffectData : null;
     }
 
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (definition.targeting() == null) return false;
         if (!(box instanceof Plot plot)) return false;
-        return GameContext.get().getCardRules().isValidSpellTarget(alignment, spellName, plot.getRow(), plot.getCol());
+        LegalActions.CardActions legal = legalCardActions();
+        return legal != null && legal.targets().contains(new Coord(plot.getRow(), plot.getCol()));
+    }
+
+    private LegalActions.CardActions legalCardActions() {
+        ClientController controller = GameContext.get().getClientController();
+        LegalActions actions = controller != null ? controller.legalActions() : null;
+        return actions != null ? actions.forCard(getInstanceId()) : null;
     }
 
     @Override

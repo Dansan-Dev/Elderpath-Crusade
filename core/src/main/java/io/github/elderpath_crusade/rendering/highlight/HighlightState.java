@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.rendering.highlight;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -10,6 +11,8 @@ import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
+import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 
 import java.util.*;
 
@@ -115,27 +118,35 @@ class HighlightState {
         }
     }
 
+    /** Reachable/attackable tiles come straight from LegalActions.PieceActions for this piece —
+     * the server already excludes a piece that isn't this seat's, is stunned, or has no actions
+     * left (absent from LegalActions.pieces() entirely), so this owns no eligibility logic. */
     private void updateMovementAndAttackHighlights(Plot sourcePlot) {
         Board board = sourcePlot.getBoard();
         if (board == null) return;
         int sr = sourcePlot.getRow(), sc = sourcePlot.getCol();
         Entity entity = board.getEntityAtPos(sr, sc);
         if (entity == null) return;
-        if (EntityUtils.getAlignment(entity) != GameContext.get().getTurnManager().getCurrentPlayer()) return;
-        if (EntityUtils.isStunned(entity)) return;
 
-        int speed = EntityUtils.getSpeed(entity);
-        List<Plot> reachable = board.getReachablePlots(entity, sr, sc, speed);
-        List<Plot> attackable = board.getAttackableEnemyPlots(sr, sc, EntityUtils.getAlignment(entity));
+        ClientController controller = GameContext.get().getClientController();
+        LegalActions actions = controller != null ? controller.legalActions() : null;
+        LegalActions.PieceActions pieceActions = actions != null ? actions.forPiece(EntityUtils.getId(entity)) : null;
+        if (pieceActions == null) return;
 
-        for (Plot p : attackable) {
+        for (Coord c : pieceActions.attacks()) {
+            Plot p = plotAt(board, c);
             if (p != null) attackCandidatePlots.add(p);
         }
-        for (Plot p : reachable) {
+        for (Coord c : pieceActions.moves()) {
+            Plot p = plotAt(board, c);
             if (p != null && !attackCandidatePlots.contains(p)) {
                 candidatePlots.add(p);
             }
         }
+    }
+
+    private Plot plotAt(Board board, Coord c) {
+        return board.getPlotAtPos(c.row(), c.col()) instanceof Plot p ? p : null;
     }
 
     private void updateAbilityEligibleTargetHighlights(CustomBox source) {
