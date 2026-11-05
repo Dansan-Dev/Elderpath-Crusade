@@ -7,8 +7,7 @@ import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.config.SettingsManager;
-import io.github.elderpath_crusade.game.TurnManager;
+import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
@@ -36,7 +35,7 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused) {
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
-        String turnStr = "Current: " + GameContext.get().getTurnManager().getCurrentPlayer();
+        String turnStr = "Current: " + currentPlayer();
         if (!turnStr.equals(turnText.getText())) { turnText.setText(turnStr); turnText.update(); }
         int padding = 16;
         int curX = padding;
@@ -47,7 +46,7 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
             int bgY = curY - PAD_Y;
             int bgW = turnText.getWidth() + PAD_X * 2;
             int bgH = turnText.getHeight() + PAD_Y * 2;
-            Color bg = (GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P1) ? P1_BG : P2_BG;
+            Color bg = (currentPlayer() == PieceAlignment.P1) ? P1_BG : P2_BG;
             batch.draw(GraphicUtils.getPixelTexture(bg), bgX, bgY, bgW, bgH);
         }
         // Text on top
@@ -58,5 +57,10 @@ public class TurnHud extends LowestOrderTexture implements UIRenderable {
     @Override
     public void renderUI(SpriteBatch batch, boolean isPaused, int x, int y) {
         renderUI(batch, isPaused);
+    }
+
+    private static PieceAlignment currentPlayer() {
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        return session != null ? session.currentPlayer() : null;
     }
 }

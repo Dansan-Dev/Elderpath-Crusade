@@ -7,9 +7,8 @@ import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.game.PlayerManager;
-import io.github.elderpath_crusade.config.SettingsManager;
-import io.github.elderpath_crusade.game.TurnManager;
+import io.github.elderpath_crusade.client.ClientMatchSession;
+import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.FontSize;
@@ -40,11 +39,11 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
-        PlayerManager.PlayerState p1 = GameContext.get().getPlayerManager().get(PieceAlignment.P1);
-        PlayerManager.PlayerState p2 = GameContext.get().getPlayerManager().get(PieceAlignment.P2);
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        ClientMatchState state = session != null ? session.viewState() : null;
 
-        String p1Str = "P1 Mana: " + (p1 == null ? 0 : p1.getMana());
-        String p2Str = "P2 Mana: " + (p2 == null ? 0 : p2.getMana());
+        String p1Str = "P1 Mana: " + (state == null ? 0 : state.getP1Mana());
+        String p2Str = "P2 Mana: " + (state == null ? 0 : state.getP2Mana());
 
         if (!p1Str.equals(p1Text.getText())) { p1Text.setText(p1Str); p1Text.update(); }
         if (!p2Str.equals(p2Text.getText())) { p2Text.setText(p2Str); p2Text.update(); }
@@ -53,8 +52,8 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         int paddingY = 50;
         
         // Swap positions in LOCAL_MATCH mode when P2's turn
-        boolean swapPositions = GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH && 
-                                GameContext.get().getTurnManager().getCurrentPlayer() == PieceAlignment.P2;
+        boolean swapPositions = GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH &&
+                                session != null && session.currentPlayer() == PieceAlignment.P2;
         
         int p1x = paddingX;
         int p2x = paddingX;

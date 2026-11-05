@@ -2,12 +2,13 @@ package io.github.elderpath_crusade.game_objects.board;
 
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.match.MoveRules;
+import io.github.elderpath_crusade.client.ClientController;
+import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.LegalActions;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ecs.EntityUtils;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.sprites.TextureObject;
 import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.interfaces.CustomBox;
@@ -75,14 +76,16 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
 
     public void setBoard(Board board) { this.boardRef = board; }
 
-    /** A legal move/attack destination for this plot's piece — the same check GameServer enforces (MoveRules). */
+    /** A legal move/attack destination for this plot's piece — straight from LegalActions, the server's own answer. */
     @Override
     public boolean isValidTargetForEffect(CustomBox box, int targetIndex) {
         if (boardRef == null || !(box instanceof Plot targetPlot)) return false;
         Entity entity = boardRef.getEntityAtPlot(this);
         if (entity == null) return false;
-        return MoveRules.validate(EntityUtils.getAlignment(entity), this.row, this.col,
-                targetPlot.getRow(), targetPlot.getCol()).isOk();
+        LegalActions.PieceActions pieceActions = legalActionsForPieceAt(entity);
+        if (pieceActions == null) return false;
+        Coord dest = new Coord(targetPlot.getRow(), targetPlot.getCol());
+        return pieceActions.moves().contains(dest) || pieceActions.attacks().contains(dest);
     }
 
     @Override
@@ -90,19 +93,25 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (boardRef == null) return List.of();
         Entity entity = boardRef.getEntityAtPlot(this);
         if (entity == null) return List.of();
-        PieceAlignment alignment = EntityUtils.getAlignment(entity);
-        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return List.of();
-        if (EntityUtils.isStunned(entity)) return List.of();
+        LegalActions.PieceActions pieceActions = legalActionsForPieceAt(entity);
+        if (pieceActions == null) return List.of();
 
-        int speed = EntityUtils.getSpeed(entity);
-        List<Plot> reachable = boardRef.getReachablePlots(entity, this.row, this.col, speed);
-        List<Plot> attackable = boardRef.getAttackableEnemyPlots(this.row, this.col, alignment);
-
-        List<Plot> combined = new java.util.ArrayList<>(reachable);
-        for (Plot p : attackable) {
-            if (!combined.contains(p)) combined.add(p);
-        }
+        List<Plot> combined = new java.util.ArrayList<>();
+        for (Coord c : pieceActions.moves()) addPlotAt(combined, c);
+        for (Coord c : pieceActions.attacks()) addPlotAt(combined, c);
         return combined;
+    }
+
+    private void addPlotAt(List<Plot> list, Coord c) {
+        if (boardRef.getPlotAtPos(c.row(), c.col()) instanceof Plot p && !list.contains(p)) list.add(p);
+    }
+
+    /** This piece's LegalActions entry — null if it's not this seat's turn, the piece can't act,
+     * or a pick is pending (LegalActions.pieces() is empty then); the server decides all of it. */
+    private LegalActions.PieceActions legalActionsForPieceAt(Entity entity) {
+        ClientController controller = GameContext.get().getClientController();
+        LegalActions actions = controller != null ? controller.legalActions() : null;
+        return actions != null ? actions.forPiece(EntityUtils.getId(entity)) : null;
     }
 
     private void plotConstruction(TextureObject plot, TextureObject plotDirt) {
@@ -138,11 +147,9 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         if (boardRef == null) return null;
         Entity entity = boardRef.getEntityAtPlot(this);
         if (entity == null) return null;
-        PieceAlignment alignment = EntityUtils.getAlignment(entity);
-        if (!GameContext.get().getLocalControl().controls(alignment)) return null;
-        if (alignment != GameContext.get().getTurnManager().getCurrentPlayer()) return null;
-        if (EntityUtils.isStunned(entity)) return null;
-        if (EntityUtils.getRemainingActions(entity) <= 0) return null;
+        LegalActions.PieceActions pieceActions = legalActionsForPieceAt(entity);
+        if (pieceActions == null) return null;
+        if (pieceActions.moves().isEmpty() && pieceActions.attacks().isEmpty()) return null;
         return clickableEffectData;
     }
 

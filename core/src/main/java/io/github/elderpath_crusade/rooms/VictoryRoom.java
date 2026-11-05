@@ -7,9 +7,7 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
-import io.github.elderpath_crusade.config.SettingsManager;
-import io.github.elderpath_crusade.rooms.DraftRoom;
-import io.github.elderpath_crusade.game.PlayerManager;
+import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -26,8 +24,6 @@ public class VictoryRoom extends Room {
     private final Button mainMenu;
 
     private VictoryRoom(PieceAlignment winner) {
-        // Entering the VictoryRoom should reset win/loss guard state for the next match
-        GameContext.get().getWinConditionManager().reset();
         int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
@@ -35,7 +31,7 @@ public class VictoryRoom extends Room {
         GameMode mode = GameContext.get().getGameModeManager().getCurrent();
         String titleText = switch (mode) {
             case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
-            case DEMO, ROUGELIKE_RUN -> (winner == GameContext.get().getPlayerManager().getLocalPlayer()) ? "Victory!" : "Game Over!";
+            case DEMO, ROUGELIKE_RUN -> (winner == localPlayer()) ? "Victory!" : "Game Over!";
         };
         title = new Text(titleText, FontType.SILKSCREEN, 0, 0, 5, Color.WHITE)
             .withFontSize(FontSize.TITLE_LARGE);
@@ -110,5 +106,12 @@ public class VictoryRoom extends Room {
 
     public static VictoryRoom get(PieceAlignment winner) {
         return new VictoryRoom(winner);
+    }
+
+    /** The side this screen played as — the first (only, for solo) seat its session controlled. */
+    private static PieceAlignment localPlayer() {
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        if (session == null || session.getControlledSeats().isEmpty()) return PieceAlignment.P1;
+        return session.getControlledSeats().get(0);
     }
 }
