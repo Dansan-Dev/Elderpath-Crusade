@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ReplicaViewSync;
 import io.github.elderpath_crusade.data_objects.Box;
+import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.events.CardDiscardedEvent;
 import io.github.elderpath_crusade.events.CardDrawnEvent;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
@@ -64,7 +65,14 @@ public abstract class BattleRoom extends Room {
         super();
         this.session = session;
 
-        // 0. Wire this session into the context Main polls every frame, and build the
+        // 0. A previous match's view entities (pieces, terrain) would otherwise outlive this
+        // room — a fresh ReplicaViewSync starts with an empty id map, so it has no way to know
+        // they're stale and never despawns them. Clear the shared client Engine before building
+        // the new one, same as MatchSetup.prepare() does server-side between matches.
+        GameContext.get().getEcsEngine().removeAllEntities();
+        GameContext.get().getEcsEngine().getSystem(GridIndexSystem.class).clear();
+
+        // 1. Wire this session into the context Main polls every frame, and build the
         // controller that turns its state + LegalActions into gating/commands/picks/victory.
         GameContext.get().getGameModeManager().setCurrent(mode);
         ReplicaViewSync viewSync = new ReplicaViewSync();
@@ -73,26 +81,26 @@ public abstract class BattleRoom extends Room {
         GameContext.get().setClientMatch(session, controller, viewSync);
         GameContext.get().getMusicManager().playLoopingMusic("Daniel_Game.mp3");
 
-        // 1. The loading room upstream already waited for this seat's Welcome (rows/cols/
+        // 2. The loading room upstream already waited for this seat's Welcome (rows/cols/
         // terrain known); pump once more and build the view entities + grid before the board.
         session.poll();
         var state = session.viewState();
         if (state != null) viewSync.sync(state);
 
-        // 2. Board view over the replica's grid; sprites for its entities (terrain now, pieces as they spawn)
+        // 3. Board view over the replica's grid; sprites for its entities (terrain now, pieces as they spawn)
         board = new Board(viewSync.getGrid(), 0, 0, plot_width, plot_height);
         board.initializePlots();
         GameContext.get().setActiveBoard(board);
         addContent(board);
         PieceSpriteAttacher.install(GameContext.get().getEcsEngine(), board);
 
-        // 3. UI: Pause Hint
+        // 4. UI: Pause Hint
         int[] pmPos = this.pauseMenuPos.get();
         pauseMenuHint = new Text("ESC", FontType.SILKSCREEN, pmPos[0], pmPos[1], 1, Color.WHITE)
             .withFontSize(FontSize.BODY_MEDIUM);
         addUI(pauseMenuHint);
 
-        // 4. UI: Pass Turn Button
+        // 5. UI: Pass Turn Button
         int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         passTurn = PassTurnButton.fromColor(
@@ -108,7 +116,7 @@ public abstract class BattleRoom extends Room {
         passTurn.withOnClick((e) -> onPassTurnClicked(), ClickableEffectData.getImmediate());
         addUI(passTurn);
 
-        // 5. Hands
+        // 6. Hands
         int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
         handP1 = new Hand(centerX, HAND_BOTTOM_Y, 125, 200, 0);
         handP1.setOwner(PieceAlignment.P1);
@@ -119,7 +127,7 @@ public abstract class BattleRoom extends Room {
         handP2.setOwner(PieceAlignment.P2);
         addContent(handP2);
 
-        // 6. Hand views mirror each player's hand state from the card events the replica
+        // 7. Hand views mirror each player's hand state from the card events the replica
         // delivers. One seat's connection already sees every public card event (its own hand
         // by name, the opponent's by hidden handle) — both HandSyncs listen to it and each
         // filters to its own owner, same as the old bindToEventBus() did on the local bus.
@@ -138,23 +146,23 @@ public abstract class BattleRoom extends Room {
             primaryState.setEventListener(this::routeCardEvent);
         }
 
-        // 7. Deck views (the decks themselves are pure state, owned by the match server)
+        // 8. Deck views (the decks themselves are pure state, owned by the match server)
         deckP1 = createDeckView(PieceAlignment.P1);
         deckP2 = createDeckView(PieceAlignment.P2);
         addContent(deckP1);
         addContent(deckP2);
 
-        // 8. HUDs
+        // 9. HUDs
         addUI(new ManaHud());
         addUI(new TurnHud());
         addUI(new AbilityPopup());
         addUI(new CardPreviewPanel());
 
-        // 9. Re-applies perspective (and drops a half-made selection) whenever the current
+        // 10. Re-applies perspective (and drops a half-made selection) whenever the current
         // player changes — polled every frame since there's no local TurnStartedEvent anymore.
         addContent(new PerspectiveUpdater());
 
-        // 10. Layout, oriented for this screen's viewer (hotseat follows the current player)
+        // 11. Layout, oriented for this screen's viewer (hotseat follows the current player)
         layoutBoard();
         applyPerspective();
     }
