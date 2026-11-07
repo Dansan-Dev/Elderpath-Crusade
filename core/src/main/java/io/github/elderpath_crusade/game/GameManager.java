@@ -18,8 +18,8 @@ public class GameManager {
         GameContext.get().getSettingsManager().initialize();
         GameContext.get().getShaderManager().initialize();
         GameContext.get().getInputManager().initialize();
-        GameContext.get().getBotManager().initialize();
-        GameContext.get().getWinConditionManager().initialize();
+        if (GameContext.get().getBotManager() != null) GameContext.get().getBotManager().initialize();
+        if (GameContext.get().getWinConditionManager() != null) GameContext.get().getWinConditionManager().initialize();
         PieceRegistry.load();
         AbilityRegistry.load();
         CardFactory.initialize();
