@@ -90,6 +90,11 @@ public final class ClientMatchState {
         return opponentHand.size();
     }
 
+    /** The opponent's hand as the hidden handles currently held, in draw order. */
+    public List<String> getOpponentHandIds() {
+        return Collections.unmodifiableList(opponentHand);
+    }
+
     public int getMana(PieceAlignment side) {
         return side == PieceAlignment.P1 ? p1Mana : p2Mana;
     }

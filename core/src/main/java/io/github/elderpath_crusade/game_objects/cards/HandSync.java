@@ -31,7 +31,9 @@ public class HandSync {
     }
 
     public void onCardDrawn(CardDrawnEvent e) {
-        if (e.owner() == owner()) addCard(new CardInstance(e.instanceId(), e.cardName()));
+        if (e.owner() != owner()) return;
+        if (e.cardName() == null) addHiddenCard(e.instanceId());
+        else addCard(new CardInstance(e.instanceId(), e.cardName()));
     }
 
     public void onCardPlayed(CardPlayedEvent e) {
@@ -54,6 +56,19 @@ public class HandSync {
             Logger.error("HandSync", "Unknown card: " + card.cardName());
             return null;
         }
+    }
+
+    /**
+     * Adds a face-down placeholder for an opponent's card whose name HiddenInfoFilter withheld
+     * (BUG-021) — a bare Card showing only the generic back, keyed by the card's handle so a
+     * later play/discard can still find and remove it.
+     */
+    public Card addHiddenCard(String instanceId) {
+        Card view = new Card(0, 0, hand.getCardWidth(), hand.getCardHeight(), 0, null);
+        view.setInstanceId(instanceId);
+        view.showBack();
+        hand.addCard(view);
+        return view;
     }
 
     public void clear() {

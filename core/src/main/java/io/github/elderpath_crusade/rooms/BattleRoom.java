@@ -12,6 +12,7 @@ import io.github.elderpath_crusade.events.CardPlayedEvent;
 import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
+import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.rendering.PieceSpriteAttacher;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import com.badlogic.gdx.graphics.Color;
@@ -127,7 +128,15 @@ public abstract class BattleRoom extends Room {
         PieceAlignment primarySeat = session.getControlledSeats().isEmpty()
                 ? null : session.getControlledSeats().get(0);
         var primaryState = primarySeat != null ? session.stateFor(primarySeat) : null;
-        if (primaryState != null) primaryState.setEventListener(this::routeCardEvent);
+        if (primaryState != null) {
+            // Cards already drawn (e.g. this seat's opening hand) arrived before this listener
+            // existed and are gone from the event stream — seed from the replica's own record.
+            HandSync ownSync = primaryState.getSeat() == PieceAlignment.P1 ? handSyncP1 : handSyncP2;
+            HandSync opponentSync = primaryState.getSeat() == PieceAlignment.P1 ? handSyncP2 : handSyncP1;
+            for (CardInstance card : primaryState.getOwnHand()) ownSync.addCard(card);
+            for (String handle : primaryState.getOpponentHandIds()) opponentSync.addHiddenCard(handle);
+            primaryState.setEventListener(this::routeCardEvent);
+        }
 
         // 7. Deck views (the decks themselves are pure state, owned by the match server)
         deckP1 = createDeckView(PieceAlignment.P1);
