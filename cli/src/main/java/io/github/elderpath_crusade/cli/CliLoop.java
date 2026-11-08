@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.cli;
 import io.github.elderpath_crusade.client.ClientCommands;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
+import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.PickRequest;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 
@@ -25,6 +26,7 @@ final class CliLoop {
     static void run(ClientMatchSession session, LineSource lineSource, PrintStream out) throws InterruptedException {
         MatchView lastRenderedView = null;
         Long lastPromptedPickId = null;
+        PieceAlignment lastActingSeat = null;
         boolean promptPending = false;
 
         while (true) {
@@ -34,6 +36,16 @@ final class CliLoop {
                 out.println("session ended: " + status.phase()
                         + (status.detail() == null || status.detail().isEmpty() ? "" : " (" + status.detail() + ")"));
                 return;
+            }
+
+            // Hotseat plays both seats through one session, switching which connection's state
+            // viewState() shows as the turn passes — announce it so whoever's at the keyboard
+            // knows control just passed to them. Silent going the other way (our seat loses the
+            // turn, e.g. to a bot or the other side) — nothing for this screen to announce there.
+            PieceAlignment acting = session.actingSeat();
+            if (!Objects.equals(acting, lastActingSeat)) {
+                if (acting != null) out.println("=== " + acting + "'s turn ===");
+                lastActingSeat = acting;
             }
 
             ClientMatchState state = session.viewState();
