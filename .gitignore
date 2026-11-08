@@ -19,6 +19,7 @@ gradle-app.setting
 /ios-moe/build/
 /headless/build/
 /server/build/
+/cli/build/
 /shared/build/
 
 ## Java:
@@ -120,6 +121,7 @@ www-test/
 /ios-moe/nbbuild/
 /headless/nbbuild/
 /server/nbbuild/
+/cli/nbbuild/
 /shared/nbbuild/
 
 /dist/
