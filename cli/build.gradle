@@ -1,0 +1,52 @@
+plugins {
+  id "application"
+}
+
+// The headless CLI playtest client (FEAT-009): plays a full match — solo vs bot, hotseat,
+// host/join — against a real MatchServer, using the exact ClientMatchSession/ClientController-
+// adjacent pieces the LibGDX client uses. No window, no GL, no GameContext.create()/createClient().
+// See .claude/plans/headless-cli-playtest-plan.md.
+//
+// Depends on core + server but NOT on a gdx backend: the only Gdx usage anywhere in this path
+// (ClientMatchSession.resolveAssetsDir()) is already guarded for Gdx.files being null, and this
+// CLI always resolves assets explicitly (--assets) rather than relying on auto-detection.
+
+evaluationDependsOn(':core')
+evaluationDependsOn(':server')
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-cli'
+java.sourceCompatibility = 17
+java.targetCompatibility = 17
+if (JavaVersion.current().isJava9Compatible()) {
+  compileJava.options.release.set(17)
+}
+
+application {
+  mainClass = 'io.github.elderpath_crusade.cli.Cli'
+}
+
+dependencies {
+  implementation project(':core')
+  // Not used at runtime by this module itself — ServerProcess launches the server as a child
+  // process using this JVM's own classpath, so :server's classes must be on it for solo/hotseat/
+  // host sessions to find ServerLauncher.
+  implementation project(':server')
+
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  // @RequiresAssets / AssetsCondition, so asset-dependent tests follow the same testProfile rules as core.
+  testImplementation project(':core').sourceSets.test.output
+}
+
+run {
+  standardInput = System.in
+}
+
+test {
+  useJUnitPlatform()
+  if (project.hasProperty('testProfile')) {
+    systemProperty 'testProfile', project.testProfile
+  }
+  systemProperty 'elderpath.assetsDir', rootProject.file('assets').absolutePath
+}

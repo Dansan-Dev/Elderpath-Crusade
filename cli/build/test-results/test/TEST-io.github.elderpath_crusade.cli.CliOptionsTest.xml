@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.elderpath_crusade.cli.CliOptionsTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-08T15:34:55.756Z" hostname="vm" time="0.019">
+  <properties/>
+  <testcase name="mode_isCaseInsensitiveAndRejectsUnknownValues()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.004"/>
+  <testcase name="scriptPath_isCarriedThroughForCli004()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.001"/>
+  <testcase name="aFlagWithNoValue_isRejected()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.001"/>
+  <testcase name="defaults_soloVsSmartBotWithTheStandardStartingDeck()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.0"/>
+  <testcase name="unknownFlag_isRejected()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.001"/>
+  <testcase name="parseDeck_rejectsMalformedEntries()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.001"/>
+  <testcase name="join_requiresHost()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.002"/>
+  <testcase name="port_mustBeANonNegativeNumber()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.001"/>
+  <testcase name="parseDeck_expandsCountsIntoRepeatedNames()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.002"/>
+  <testcase name="botAndSeatFlags_acceptEveryEnumValueCaseInsensitively()" classname="io.github.elderpath_crusade.cli.CliOptionsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
