@@ -1,12 +1,15 @@
 package io.github.elderpath_crusade.cli;
 
 import io.github.elderpath_crusade.client.ClientMatchSession;
-import io.github.elderpath_crusade.client.ClientMatchState;
+
+import java.io.IOException;
+import java.nio.file.Path;
 
 /**
- * Entry point. CLI-001: proves a session reaches {@code Phase.PLAYING} headlessly — no window,
- * no GL, no {@code GameContext}. The interactive/scripted render-and-dispatch loop is CLI-004's
- * job; this just starts the session this run's flags describe and reports where it landed.
+ * Entry point. Starts the session this run's flags describe (CLI-001), waits for it to reach
+ * {@code Phase.PLAYING}, then hands off to {@link CliLoop} — reading commands from stdin
+ * (interactive) or the {@code --script} file (CLI-004) — parsed and rendered by CLI-002/CLI-003.
+ * No window, no GL, no {@code GameContext}.
  */
 public final class Cli {
     private Cli() {}
@@ -28,14 +31,22 @@ public final class Cli {
                 System.exit(1);
                 return;
             }
-            System.out.println("PLAYING");
-            ClientMatchState state = session.viewState();
-            System.out.println(state != null ? state.toView() : "(no state yet)");
+            try (LineSource lineSource = lineSource(options)) {
+                CliLoop.run(session, lineSource, System.out);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            System.err.println("interrupted while waiting for the session to start");
+            System.err.println("interrupted");
             System.exit(1);
+        } catch (IOException e) {
+            System.err.println("error: couldn't read " + options.scriptPath() + ": " + e.getMessage());
+            System.exit(2);
         }
+    }
+
+    private static LineSource lineSource(CliOptions options) throws IOException {
+        String scriptPath = options.scriptPath();
+        return scriptPath != null ? LineSource.script(Path.of(scriptPath)) : LineSource.interactive(System.in);
     }
 
     private static ClientMatchSession.Status awaitReadyOrOver(ClientMatchSession session) throws InterruptedException {
