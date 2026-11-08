@@ -80,6 +80,11 @@ public class RunState {
         return map.reachableFrom(currentNodeId);
     }
 
+    /** The current node's distance from the start node — what DIFF-001's difficulty formula scales against. */
+    public int currentNodeDepth() {
+        return map.depthOf(currentNodeId);
+    }
+
     /** Whether the current node has been resolved (a battle won, or a non-battle node entered) — see {@link #markCurrentNodeCleared()}. */
     public boolean isCurrentNodeCleared() {
         return currentNodeCleared;

@@ -36,7 +36,13 @@ public class GameModeRoom extends Room {
         addContent(header);
 
         buttonList = new ButtonList();
-        addOption("Roguelike Run", () -> GameContext.get().getRoomManager().gotoRoom(RunRoom::get));
+        addOption("Roguelike Run", () -> {
+            if (GameContext.get().getRunManager().hasActiveRun()) {
+                GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+            } else {
+                GameContext.get().getRoomManager().gotoRoom(DifficultySelectRoom::get);
+            }
+        });
         addOption("Demo", () -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get));
         addOption("Local Multiplayer",
                 () -> GameContext.get().getRoomManager().gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)));

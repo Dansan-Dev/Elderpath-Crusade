@@ -1,6 +1,5 @@
 package io.github.elderpath_crusade.game;
 
-import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -19,13 +18,12 @@ import java.util.Random;
  * that battle's outcome against RunState once it's known (advance on a win, permadeath on a
  * loss). {@code GameContext}-held, like {@code DeckManager}/{@code GameModeManager}.
  *
- * <p>No relic/card-modification/difficulty plumbing yet (LAUNCH-001, Phase 3 of
- * roguelike-run-plan.md) — the opponent is still a fixed bot deck/kind regardless of node type
- * or depth. The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
+ * <p>No relic/card-modification plumbing yet (LAUNCH-001, Phase 3 of roguelike-run-plan.md) —
+ * the bot's deck is still the player's own deck, just padded out to
+ * {@link RunDifficulty#resolveForNode}'s resolved size. The map is {@link RunMap#generate}'s
+ * real seeded branching generator (MAP-001).
  */
 public final class RunManager {
-    private static final BotKind NODE_BOT_KIND = BotKind.SMART;
-
     private RunState runState;
     private ClientMatchSession activeSession;
 
@@ -60,20 +58,31 @@ public final class RunManager {
     /**
      * Builds the {@link LocalMatchSpec} for the run's current node. The player's deck is the
      * run's current deck's card names (ignoring any per-instance modification for now — see
-     * UPG-003); the opponent is a fixed bot deck/kind (DIFF-001 replaces this with the
-     * difficulty model's resolved knobs). The player always plays P1.
+     * UPG-003); the opponent's bot kind and deck size come from
+     * {@link RunDifficulty#resolveForNode} (the run's chosen level + this node's depth) — its
+     * deck is the player's own cards, cycled to pad out to the resolved size. The player always
+     * plays P1.
      */
     public LocalMatchSpec buildSpecForCurrentNode() {
         requireActiveRun();
         List<String> playerDeck = deckCardNames();
-        List<String> botDeck = List.copyOf(playerDeck);
-        return LocalMatchSpec.solo(playerDeck, botDeck, NODE_BOT_KIND);
+        RunDifficulty.ResolvedKnobs knobs = runState.difficulty().resolveForNode(
+                runState.currentNodeDepth(), runState.currentNode().type(), playerDeck.size());
+        List<String> botDeck = padDeck(playerDeck, knobs.botDeckSize());
+        return LocalMatchSpec.solo(playerDeck, botDeck, knobs.botKind());
     }
 
     private List<String> deckCardNames() {
         List<String> names = new ArrayList<>();
         for (RunCardInstance instance : runState.deck()) names.add(instance.cardName());
         return names;
+    }
+
+    /** Cycles through {@code deck} to build a deck of exactly {@code size} cards. */
+    private static List<String> padDeck(List<String> deck, int size) {
+        List<String> padded = new ArrayList<>();
+        for (int i = 0; i < size; i++) padded.add(deck.get(i % deck.size()));
+        return padded;
     }
 
     /**

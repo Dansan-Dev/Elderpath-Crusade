@@ -1,6 +1,8 @@
 package io.github.elderpath_crusade.run;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -48,6 +50,36 @@ public record RunMap(List<RunNode> nodes, int startNodeId) {
         List<RunNode> out = new ArrayList<>();
         for (int nextId : node(id).next()) out.add(node(nextId));
         return out;
+    }
+
+    /**
+     * Every node's distance (in floors) from the start node, via BFS — 0 for the start itself.
+     * Shared by DIFF-001's depth-scaling formula and MAP-002's floor-by-floor map layout, so
+     * both agree on what "depth" means for any map shape.
+     */
+    public Map<Integer, Integer> depths() {
+        Map<Integer, Integer> depthOf = new LinkedHashMap<>();
+        Deque<Integer> queue = new ArrayDeque<>();
+        depthOf.put(startNodeId, 0);
+        queue.add(startNodeId);
+        while (!queue.isEmpty()) {
+            int id = queue.poll();
+            int depth = depthOf.get(id);
+            for (int nextId : node(id).next()) {
+                if (!depthOf.containsKey(nextId)) {
+                    depthOf.put(nextId, depth + 1);
+                    queue.add(nextId);
+                }
+            }
+        }
+        return depthOf;
+    }
+
+    /** The given node's distance from the start node (see {@link #depths()}). */
+    public int depthOf(int id) {
+        Integer depth = depths().get(id);
+        if (depth == null) throw new IllegalArgumentException("node " + id + " is unreachable from the start");
+        return depth;
     }
 
     /**

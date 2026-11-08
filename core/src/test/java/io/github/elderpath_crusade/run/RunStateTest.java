@@ -36,6 +36,15 @@ class RunStateTest {
     }
 
     @Test
+    void currentNodeDepth_tracksTheCurrentNodeAsItAdvances() {
+        RunState run = freshRun(3);
+        assertEquals(0, run.currentNodeDepth());
+        run.markCurrentNodeCleared();
+        run.advanceTo(1);
+        assertEquals(1, run.currentNodeDepth());
+    }
+
+    @Test
     void advanceTo_movesToAReachableNodeOnceCleared() {
         RunState run = freshRun(3);
         run.markCurrentNodeCleared();

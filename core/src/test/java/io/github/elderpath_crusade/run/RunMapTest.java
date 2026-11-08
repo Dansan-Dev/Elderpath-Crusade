@@ -6,11 +6,40 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class RunMapTest {
+
+    @Test
+    void depths_startNodeIsZeroAndIncreasesByOnePerFloor() {
+        RunMap map = RunMap.linearChain(4);
+        assertEquals(0, map.depthOf(0));
+        assertEquals(1, map.depthOf(1));
+        assertEquals(2, map.depthOf(2));
+        assertEquals(3, map.depthOf(3));
+    }
+
+    @Test
+    void depths_agreeWithEveryNodeInTheGraphAcrossSeeds() {
+        for (long seed = 1; seed <= 10; seed++) {
+            RunMap map = RunMap.generateBranching(seed, 4, 3);
+            Map<Integer, Integer> depths = map.depths();
+            assertEquals(map.nodes().size(), depths.size(), "seed " + seed);
+            // the boss (the only terminal node) is always at the deepest floor
+            RunNode boss = map.nodes().stream().filter(RunNode::isTerminal).findFirst().orElseThrow();
+            int maxDepth = depths.values().stream().max(Integer::compareTo).orElseThrow();
+            assertEquals(maxDepth, depths.get(boss.id()), "seed " + seed);
+        }
+    }
+
+    @Test
+    void depthOf_rejectsAnUnknownNodeId() {
+        RunMap map = RunMap.linearChain(2);
+        assertThrows(IllegalArgumentException.class, () -> map.depthOf(99));
+    }
 
     @Test
     void linearChain_endsInABossNode() {
