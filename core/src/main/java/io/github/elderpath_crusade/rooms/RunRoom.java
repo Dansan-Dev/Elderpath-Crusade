@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
@@ -75,10 +76,25 @@ public class RunRoom extends Room {
                 + " | Deck size: " + state.deck().size();
     }
 
+    /**
+     * Launches the current node's battle directly, bypassing RunManager's own
+     * startCurrentNode/pollActiveNode/activeSession bookkeeping entirely: this room already
+     * manages the session's whole lifecycle itself, the same way every other battle room does
+     * (BattleRoom's own per-frame polling, VictoryRoom reporting the outcome via
+     * reportNodeOutcome once the match ends). Mixing the two — launching through
+     * RunManager.startCurrentNode() but never calling the matching pollActiveNode() to clear
+     * its activeSession field — left that field permanently set after the first node, so every
+     * later "Start Node" click failed with "a node is already in progress" (BUG-037, found via
+     * a real playtest: won the first node, the second node's Start Node click crashed the
+     * client). RunManager's startCurrentNode/pollActiveNode pair stays for a self-contained
+     * headless caller (see RunManagerSessionTest) that never touches this path.
+     */
     private void startCurrentNode() {
         RunManager runManager = GameContext.get().getRunManager();
         GameContext.get().getRoomManager().gotoRoom(() ->
-                MatchStartingRoom.get(runManager::startCurrentNode, RunBattleRoom::get));
+                MatchStartingRoom.get(
+                        () -> ClientMatchSession.startLocal(runManager.buildSpecForCurrentNode()),
+                        RunBattleRoom::get));
     }
 
     private void layoutContents() {
