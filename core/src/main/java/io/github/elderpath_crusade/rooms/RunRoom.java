@@ -1,11 +1,15 @@
 package io.github.elderpath_crusade.rooms;
 
+import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
 import io.github.elderpath_crusade.run.RunDifficulty;
+import io.github.elderpath_crusade.run.RunMap;
+import io.github.elderpath_crusade.run.RunNode;
+import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -14,25 +18,42 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Run room shell (RUN-003, roguelike-run-plan.md Phase 1) — shows the active run's status and a
- * "Start Node" action handing off into MatchStartingRoom -> RunBattleRoom for the current node's
- * fight; VictoryRoom reports the outcome back to RunManager and returns here (continuing the
- * run, already advanced to the next node) or ends it. No real branching map yet (MAP-001/002) —
- * status shows the placeholder linear chain's progress, not a clickable graph.
+ * Run room shell (RUN-003) + clickable branching map screen (MAP-002, roguelike-run-plan.md
+ * Phase 2) — shows the active run's map as one button per node (colored by type, positioned by
+ * floor/column), and status text for the current node. A node button is clickable in exactly
+ * one of two situations: it's the current node and it hasn't been fought yet ("Start Node" —
+ * hands off into MatchStartingRoom -> RunBattleRoom), or the current node is already cleared and
+ * this node is one of the reachable choices for where to go next (RunManager.advanceToNextNode).
+ * Every other node is disabled: visited nodes stay dimmed to mark progress, unvisited/
+ * unreachable ones are locked. VictoryRoom reports a battle's outcome back to RunManager and
+ * returns here — already on the next node if Rest (no fight), or cleared and awaiting a pick
+ * otherwise.
  */
 public class RunRoom extends Room {
     private static final List<String> DEFAULT_STARTING_DECK =
             List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub", "Warp Mage");
-    private static final int HEADER_TOP_OFFSET = 100;
-    private static final int STATUS_TOP_OFFSET = 180;
+    private static final int HEADER_TOP_OFFSET = 60;
+    private static final int STATUS_TOP_OFFSET = 110;
+    private static final int MAP_TOP_MARGIN = 150;
+    private static final int MAP_BOTTOM_MARGIN = 90;
+    private static final int NODE_WIDTH = 110;
+    private static final int NODE_HEIGHT = 50;
 
     private final Text header;
     private final Text status;
-    private final Button startNodeButton;
     private final Button backButton;
+    private final List<List<RunNode>> floors;
+    private final Map<Integer, Button> nodeButtons = new LinkedHashMap<>();
 
     private RunRoom() {
         super();
@@ -42,23 +63,18 @@ public class RunRoom extends Room {
         if (!runManager.hasActiveRun()) {
             runManager.startRun(RunDifficulty.DEFAULT, DEFAULT_STARTING_DECK);
         }
+        RunState state = runManager.getRunState();
+        floors = computeFloors(state.map());
 
         header = new Text("Roguelike Run", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
-        status = new Text(statusText(runManager.getRunState()), FontType.SILKSCREEN, 0, 0, 0,
-                ColorSettings.TEXT_DEFAULT.getColor())
+        status = new Text(statusText(state), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.BODY_MEDIUM);
         addContent(status);
 
-        startNodeButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Start Node", FontType.SILKSCREEN,
-                FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 220, 60, 0)
-            .withOnClick((e) -> startCurrentNode(), ClickableEffectData.getImmediate())
-            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        addContent(startNodeButton);
+        buildNodeButtons(state);
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Main Menu", FontType.SILKSCREEN,
                 FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 160, 60, 0)
@@ -71,25 +87,103 @@ public class RunRoom extends Room {
         layoutContents();
     }
 
+    private void buildNodeButtons(RunState state) {
+        boolean cleared = state.isCurrentNodeCleared();
+        int currentId = state.currentNode().id();
+        Set<Integer> visited = state.visitedNodeIds();
+        Set<Integer> reachable = new HashSet<>();
+        for (RunNode n : state.reachableNodes()) reachable.add(n.id());
+
+        for (List<RunNode> floor : floors) {
+            for (RunNode node : floor) {
+                boolean isCurrentUnfought = !cleared && node.id() == currentId;
+                boolean isPickable = cleared && reachable.contains(node.id());
+                boolean clickable = isCurrentUnfought || isPickable;
+                boolean wasVisited = visited.contains(node.id());
+
+                Button button = Button.fromColor(colorFor(node.type(), wasVisited, clickable), nodeLabel(node),
+                        FontType.SILKSCREEN, FontSize.CAPTION.getSize(), 0, 0, NODE_WIDTH, NODE_HEIGHT, 1)
+                    .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+                    .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+                    .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+                button.setDisabled(!clickable);
+                if (clickable) {
+                    button.withOnClick((e) -> onNodeClicked(node, isCurrentUnfought), ClickableEffectData.getImmediate());
+                }
+                addContent(button);
+                nodeButtons.put(node.id(), button);
+            }
+        }
+    }
+
+    private void onNodeClicked(RunNode node, boolean isCurrentUnfought) {
+        if (isCurrentUnfought) {
+            startCurrentNode();
+        } else {
+            GameContext.get().getRunManager().advanceToNextNode(node.id());
+            GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+        }
+    }
+
+    private static Color colorFor(RunNodeType type, boolean visited, boolean clickable) {
+        if (visited) return ColorSettings.RUN_NODE_VISITED.getColor();
+        if (!clickable) return ColorSettings.RUN_NODE_LOCKED.getColor();
+        return switch (type) {
+            case BATTLE -> ColorSettings.RUN_NODE_BATTLE.getColor();
+            case ELITE -> ColorSettings.RUN_NODE_ELITE.getColor();
+            case REST -> ColorSettings.RUN_NODE_REST.getColor();
+            case BOSS -> ColorSettings.RUN_NODE_BOSS.getColor();
+        };
+    }
+
+    private static String nodeLabel(RunNode node) {
+        return switch (node.type()) {
+            case BATTLE -> "Battle";
+            case ELITE -> "Elite";
+            case REST -> "Rest";
+            case BOSS -> "Boss";
+        };
+    }
+
     private static String statusText(RunState state) {
-        return "Node " + state.visitedNodeIds().size() + " of " + state.map().nodes().size()
-                + " — up next: " + state.currentNode().type()
-                + " | Deck size: " + state.deck().size();
+        if (state.isCurrentNodeCleared()) {
+            return "Node cleared — choose your next node";
+        }
+        return "Current node: " + nodeLabel(state.currentNode()) + " — click it to start";
     }
 
     /**
-     * Launches the current node's battle directly, bypassing RunManager's own
-     * startCurrentNode/pollActiveNode/activeSession bookkeeping entirely: this room already
-     * manages the session's whole lifecycle itself, the same way every other battle room does
-     * (BattleRoom's own per-frame polling, VictoryRoom reporting the outcome via
-     * reportNodeOutcome once the match ends). Mixing the two — launching through
-     * RunManager.startCurrentNode() but never calling the matching pollActiveNode() to clear
-     * its activeSession field — left that field permanently set after the first node, so every
-     * later "Start Node" click failed with "a node is already in progress" (BUG-037, found via
-     * a real playtest: won the first node, the second node's Start Node click crashed the
-     * client). RunManager's startCurrentNode/pollActiveNode pair stays for a self-contained
-     * headless caller (see RunManagerSessionTest) that never touches this path.
+     * Assigns each node a column ("floor") by BFS distance from the map's start node — works
+     * for any RunMap (the real branching generator, or a simple linearChain fixture), not just
+     * the shape MAP-001's generator happens to produce, since it only relies on the graph's
+     * edges going strictly forward (never skipping or looping back a floor, true of every
+     * generator this plan builds).
      */
+    private static List<List<RunNode>> computeFloors(RunMap map) {
+        Map<Integer, Integer> floorOf = new LinkedHashMap<>();
+        Deque<Integer> queue = new ArrayDeque<>();
+        floorOf.put(map.startNodeId(), 0);
+        queue.add(map.startNodeId());
+        while (!queue.isEmpty()) {
+            int id = queue.poll();
+            int floor = floorOf.get(id);
+            for (RunNode next : map.reachableFrom(id)) {
+                if (!floorOf.containsKey(next.id())) {
+                    floorOf.put(next.id(), floor + 1);
+                    queue.add(next.id());
+                }
+            }
+        }
+        int maxFloor = floorOf.values().stream().max(Integer::compareTo).orElse(0);
+        List<List<RunNode>> floors = new ArrayList<>();
+        for (int f = 0; f <= maxFloor; f++) floors.add(new ArrayList<>());
+        for (RunNode node : map.nodes()) {
+            Integer f = floorOf.get(node.id());
+            if (f != null) floors.get(f).add(node);
+        }
+        return floors;
+    }
+
     private void startCurrentNode() {
         RunManager runManager = GameContext.get().getRunManager();
         GameContext.get().getRoomManager().gotoRoom(() ->
@@ -99,18 +193,37 @@ public class RunRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
-        int screenCenterX = screenCenter[0];
-        int screenCenterY = screenCenter[1];
+        int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
 
         MenuLayout.centerHeader(header, HEADER_TOP_OFFSET);
         MenuLayout.centerHeader(status, STATUS_TOP_OFFSET);
+        layoutMap(screenW, screenH);
 
-        startNodeButton.getBounds().setX(screenCenterX - startNodeButton.getBounds().getWidth() / 2);
-        startNodeButton.getBounds().setY(screenCenterY - 20);
-
+        int screenCenterX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
         backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
-        backButton.getBounds().setY(screenCenterY - 100);
+        backButton.getBounds().setY(30);
+    }
+
+    private void layoutMap(int screenW, int screenH) {
+        int mapTop = screenH - MAP_TOP_MARGIN;
+        int mapBottom = MAP_BOTTOM_MARGIN;
+        int mapHeight = Math.max(1, mapTop - mapBottom);
+        int floorCount = floors.size();
+
+        for (int f = 0; f < floorCount; f++) {
+            int x = (screenW * (f + 1)) / (floorCount + 1) - NODE_WIDTH / 2;
+            List<RunNode> floorNodes = floors.get(f);
+            int rowCount = floorNodes.size();
+            for (int i = 0; i < rowCount; i++) {
+                RunNode node = floorNodes.get(i);
+                Button button = nodeButtons.get(node.id());
+                if (button == null) continue;
+                int y = mapBottom + (mapHeight * (i + 1)) / (rowCount + 1) - NODE_HEIGHT / 2;
+                button.getBounds().setX(x);
+                button.getBounds().setY(y);
+            }
+        }
     }
 
     @Override
