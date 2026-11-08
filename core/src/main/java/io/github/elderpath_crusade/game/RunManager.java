@@ -11,6 +11,7 @@ import io.github.elderpath_crusade.run.RunState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Client-side orchestrator for a roguelike run (FEAT-006) — owns the active {@link RunState},
@@ -19,13 +20,10 @@ import java.util.List;
  * loss). {@code GameContext}-held, like {@code DeckManager}/{@code GameModeManager}.
  *
  * <p>No relic/card-modification/difficulty plumbing yet (LAUNCH-001, Phase 3 of
- * roguelike-run-plan.md) — this ticket (RUN-002) proves the spine with a plain deck and a fixed
- * bot opponent. The map is {@link RunMap#linearChain}'s placeholder until MAP-001's real
- * generator exists.
+ * roguelike-run-plan.md) — the opponent is still a fixed bot deck/kind regardless of node type
+ * or depth. The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
  */
 public final class RunManager {
-    /** The placeholder map's length until MAP-001's real generator exists. */
-    public static final int PLACEHOLDER_NODE_COUNT = 5;
     private static final BotKind NODE_BOT_KIND = BotKind.SMART;
 
     private RunState runState;
@@ -34,9 +32,14 @@ public final class RunManager {
     public RunManager() {
     }
 
-    /** Starts a brand-new run: a fresh placeholder map and deck, nothing played yet. */
+    /** Starts a brand-new run with a randomly seeded map: a fresh deck, nothing played yet. */
     public void startRun(RunDifficulty difficulty, List<String> startingDeckCardNames) {
-        RunMap map = RunMap.linearChain(PLACEHOLDER_NODE_COUNT);
+        startRun(difficulty, startingDeckCardNames, new Random().nextLong());
+    }
+
+    /** Starts a brand-new run with a specific map seed (deterministic — tests, or a future "share this run" feature). */
+    public void startRun(RunDifficulty difficulty, List<String> startingDeckCardNames, long mapSeed) {
+        RunMap map = RunMap.generate(mapSeed);
         this.runState = RunState.start(map, difficulty, startingDeckCardNames);
         this.activeSession = null;
     }
@@ -110,14 +113,9 @@ public final class RunManager {
      * Resolves a node's battle outcome against RunState — ends the run as a loss (permadeath)
      * on anything but a P1 win (the player always plays P1, so a null/non-P1 winner, e.g. a
      * draw, counts as a loss); on a win, ends the run as won if the current node was the map's
-     * terminal/Boss node, otherwise advances straight to the next node. Public so a room
-     * managing its own session can report the result without going through
-     * {@link #startCurrentNode}/{@link #pollActiveNode}.
-     *
-     * <p>The placeholder linear map ({@link RunMap#linearChain}) never has more than one
-     * reachable node, so there's nothing for the player to pick — auto-advancing is both
-     * simpler and correct for it. A real branching map (MAP-001/002) will have genuine choices;
-     * {@link #advanceToNextNode} stays public for the room that lets the player make one.
+     * terminal/Boss node, otherwise marks the current node cleared so the player can pick their
+     * next one via {@link #advanceToNextNode}. Public so a room managing its own session can
+     * report the result without going through {@link #startCurrentNode}/{@link #pollActiveNode}.
      */
     public void reportNodeOutcome(PieceAlignment winner) {
         requireActiveRun();
@@ -130,13 +128,21 @@ public final class RunManager {
             runState.endRun(true);
             return;
         }
-        runState.advanceTo(runState.reachableNodes().get(0).id());
+        runState.markCurrentNodeCleared();
     }
 
-    /** Moves to the next node the player picked (only valid once the current node's battle is won). */
+    /**
+     * Moves to the node the player picked among {@link RunState#reachableNodes()} (only valid
+     * once the current node is cleared). A non-battle node (e.g. Rest) has nothing to fight, so
+     * it's immediately marked cleared on arrival — the room sees it as already resolved and the
+     * player can pick straight past it.
+     */
     public void advanceToNextNode(int nodeId) {
         requireActiveRun();
         runState.advanceTo(nodeId);
+        if (!runState.currentNode().type().isBattle()) {
+            runState.markCurrentNodeCleared();
+        }
     }
 
     private void requireActiveRun() {

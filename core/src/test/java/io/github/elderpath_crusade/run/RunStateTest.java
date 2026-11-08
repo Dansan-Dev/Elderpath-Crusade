@@ -36,16 +36,26 @@ class RunStateTest {
     }
 
     @Test
-    void advanceTo_movesToAReachableNode() {
+    void advanceTo_movesToAReachableNodeOnceCleared() {
         RunState run = freshRun(3);
+        run.markCurrentNodeCleared();
         run.advanceTo(1);
         assertEquals(1, run.currentNode().id());
         assertEquals(Set.of(0, 1), run.visitedNodeIds());
+        assertFalse(run.isCurrentNodeCleared());
+    }
+
+    @Test
+    void advanceTo_rejectsBeforeTheCurrentNodeIsCleared() {
+        RunState run = freshRun(3);
+        assertFalse(run.isCurrentNodeCleared());
+        assertThrows(IllegalStateException.class, () -> run.advanceTo(1));
     }
 
     @Test
     void advanceTo_rejectsANodeThatIsNotReachable() {
         RunState run = freshRun(3);
+        run.markCurrentNodeCleared();
         assertThrows(IllegalArgumentException.class, () -> run.advanceTo(2));
     }
 
@@ -54,6 +64,13 @@ class RunStateTest {
         RunState run = freshRun(3);
         run.endRun(false);
         assertThrows(IllegalStateException.class, () -> run.advanceTo(1));
+    }
+
+    @Test
+    void markCurrentNodeCleared_rejectsAfterTheRunHasEnded() {
+        RunState run = freshRun(2);
+        run.endRun(false);
+        assertThrows(IllegalStateException.class, run::markCurrentNodeCleared);
     }
 
     @Test
@@ -131,6 +148,7 @@ class RunStateTest {
     @Test
     void reachableNodes_isEmptyAtATerminalNode() {
         RunState run = freshRun(2);
+        run.markCurrentNodeCleared();
         run.advanceTo(1);
         assertTrue(run.reachableNodes().isEmpty());
         assertTrue(run.currentNode().isTerminal());

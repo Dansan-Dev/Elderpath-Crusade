@@ -19,6 +19,7 @@ public class RunState {
     private final RelicState relics = new RelicState();
     private final Set<Integer> visitedNodeIds = new LinkedHashSet<>();
     private int currentNodeId;
+    private boolean currentNodeCleared;
     private boolean ended;
     private boolean won;
 
@@ -79,15 +80,38 @@ public class RunState {
         return map.reachableFrom(currentNodeId);
     }
 
-    /** Moves to a node reachable from the current one (the player picked their next node after winning). */
+    /** Whether the current node has been resolved (a battle won, or a non-battle node entered) — see {@link #markCurrentNodeCleared()}. */
+    public boolean isCurrentNodeCleared() {
+        return currentNodeCleared;
+    }
+
+    /**
+     * Marks the current node as resolved, so the player may advance past it — a battle won
+     * (RunManager.reportNodeOutcome), or a non-battle node (e.g. Rest) that has nothing to
+     * fight. Required before {@link #advanceTo}.
+     */
+    public void markCurrentNodeCleared() {
+        requireNotEnded();
+        currentNodeCleared = true;
+    }
+
+    /**
+     * Moves to a node reachable from the current one — the player's pick, once the current
+     * node is cleared. A real branching map can offer more than one reachable node; which one
+     * to pick is the caller's (room's) decision, not this class's.
+     */
     public void advanceTo(int nodeId) {
         requireNotEnded();
+        if (!currentNodeCleared) {
+            throw new IllegalStateException("the current node hasn't been cleared yet");
+        }
         boolean reachable = reachableNodes().stream().anyMatch(n -> n.id() == nodeId);
         if (!reachable) {
             throw new IllegalArgumentException("node " + nodeId + " is not reachable from " + currentNodeId);
         }
         currentNodeId = nodeId;
         visitedNodeIds.add(nodeId);
+        currentNodeCleared = false;
     }
 
     /** Ends the run — a loss (permadeath, any single defeat) or a win (the boss node was cleared). */
