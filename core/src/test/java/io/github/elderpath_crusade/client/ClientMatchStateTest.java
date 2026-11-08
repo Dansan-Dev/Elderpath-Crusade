@@ -40,8 +40,11 @@ class ClientMatchStateTest {
         event(new CardPlayedEvent("Wolf", PieceAlignment.P1, 0, 0, "w", "P1-0"));
         assertEquals(List.of("Fireball"), state.getOwnHand().stream().map(c -> c.cardName()).toList());
         assertEquals(1, state.getOpponentHandSize());
+        assertEquals(List.of("hidden-1"), state.getOpponentHandIds(),
+                "the handle alone — BattleRoom.wireHandSync() seeds a hidden placeholder per id, never a name");
         event(new CardDiscardedEvent(PieceAlignment.P2, 1, List.of("hidden-1")));
         assertEquals(0, state.getOpponentHandSize());
+        assertEquals(List.of(), state.getOpponentHandIds());
         assertTrue(state.isStarted());
         assertEquals(PieceAlignment.P1, state.getCurrentPlayer());
     }

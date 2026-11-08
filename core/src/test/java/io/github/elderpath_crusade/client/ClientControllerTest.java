@@ -143,6 +143,26 @@ class ClientControllerTest {
     }
 
     @Test
+    void setHandoffGated_blocksLegalActionsButNotCanEndTurn() {
+        LegalActions actions = new LegalActions(PieceAlignment.P1, true, null, true, List.of(), List.of());
+        state.apply(new ServerMessage.LegalActionsUpdate(actions));
+        assertSame(actions, controller.legalActions());
+        assertTrue(controller.canEndTurn());
+
+        controller.setHandoffGated(true);
+
+        // Every piece/card/ability/highlight gate reads legalActions() — nulling it blocks them
+        // all at once while a hotseat room hides the next player's hand behind "Start Turn".
+        assertNull(controller.legalActions(), "nothing should be playable while a hand is hidden");
+        // canEndTurn() reads the state directly so "Start Turn"/"Pass Turn" stays the way out.
+        assertTrue(controller.canEndTurn(), "the reveal button must stay clickable while gated");
+
+        controller.setHandoffGated(false);
+
+        assertSame(actions, controller.legalActions());
+    }
+
+    @Test
     void commandMethods_delegateDirectlyToClientCommands() {
         controller.moveOrAttack(0, 0, 1, 1);
         assertEquals(List.of(0, 0, 1, 1), commands.lastMove);

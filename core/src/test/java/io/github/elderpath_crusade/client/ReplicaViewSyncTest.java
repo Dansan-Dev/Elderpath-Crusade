@@ -12,6 +12,7 @@ import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.StunComponent;
 import io.github.elderpath_crusade.ecs.components.TerrainComponent;
+import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
@@ -138,6 +139,57 @@ class ReplicaViewSyncTest {
 
         StunComponent stun = entity.getComponent(StunComponent.class);
         assertFalse(stun != null && stun.isStunned());
+    }
+
+    @Test
+    void secondMatch_leavesThePreviousOnesEntitiesIfTheEngineIsntCleared() {
+        // Pins the exact failure mode of BUG-034: a ReplicaViewSync is rebuilt fresh per
+        // BattleRoom with an empty id map, so it has no way to know a PREVIOUS ReplicaViewSync's
+        // entities are stale. Without an explicit clear between matches, they just keep existing
+        // (and rendering) on the shared Engine/GridIndexSystem — this demonstrates that, so the
+        // next test can show the fix actually depends on the clear, not on ReplicaViewSync itself.
+        welcome(List.of());
+        spawnAndSettle("a", PieceAlignment.P1, 1, 2, 3, 1, 1, false);
+        sync.sync(state);
+        assertTrue(sync.getGrid().isOccupied(1, 2));
+
+        ReplicaViewSync secondMatchSync = new ReplicaViewSync();
+        ClientMatchState secondMatchState = new ClientMatchState();
+        secondMatchState.apply(new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, PieceAlignment.P1, 7, 5,
+                List.of(), Map.of(PieceAlignment.P1, "HUMAN", PieceAlignment.P2, "HUMAN")));
+        secondMatchState.apply(new ServerMessage.Event(new PieceSpawnedEvent("b", PieceAlignment.P1, 0, 0, "Runner")));
+        secondMatchState.apply(new ServerMessage.StateSync(List.of(
+                new MatchView.PieceView("b", PieceAlignment.P1, "Runner", 0, 0, 3, 3, 1, 1, false))));
+        secondMatchSync.sync(secondMatchState);
+
+        assertEquals(2, engine.getEntitiesFor(Family.all(IdentityComponent.class).get()).size(),
+                "match 1's piece is still in the Engine — ReplicaViewSync alone can't know it's stale");
+    }
+
+    @Test
+    void secondMatch_withTheEngineClearedFirst_hasOnlyItsOwnEntities() {
+        // The actual fix: BattleRoom's constructor now does exactly this — Engine.removeAllEntities()
+        // + GridIndexSystem.clear() — before building a new ReplicaViewSync for the new match.
+        welcome(List.of());
+        spawnAndSettle("a", PieceAlignment.P1, 1, 2, 3, 1, 1, false);
+        sync.sync(state);
+
+        engine.removeAllEntities();
+        engine.getSystem(GridIndexSystem.class).clear();
+
+        ReplicaViewSync secondMatchSync = new ReplicaViewSync();
+        ClientMatchState secondMatchState = new ClientMatchState();
+        secondMatchState.apply(new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, PieceAlignment.P1, 7, 5,
+                List.of(), Map.of(PieceAlignment.P1, "HUMAN", PieceAlignment.P2, "HUMAN")));
+        secondMatchState.apply(new ServerMessage.Event(new PieceSpawnedEvent("b", PieceAlignment.P1, 0, 0, "Runner")));
+        secondMatchState.apply(new ServerMessage.StateSync(List.of(
+                new MatchView.PieceView("b", PieceAlignment.P1, "Runner", 0, 0, 3, 3, 1, 1, false))));
+        secondMatchSync.sync(secondMatchState);
+
+        assertEquals(1, engine.getEntitiesFor(Family.all(IdentityComponent.class).get()).size(),
+                "only match 2's piece should remain — match 1's is gone, not just unreachable");
+        assertFalse(secondMatchSync.getGrid().isOccupied(1, 2), "match 1's old occupied cell must not bleed into the new grid");
+        assertTrue(secondMatchSync.getGrid().isOccupied(0, 0));
     }
 
     @Test
