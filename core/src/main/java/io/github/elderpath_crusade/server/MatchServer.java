@@ -25,6 +25,7 @@ import io.github.elderpath_crusade.match.PickRequest;
 import io.github.elderpath_crusade.match.PickResponder;
 import io.github.elderpath_crusade.match.PickResponse;
 import io.github.elderpath_crusade.match.PickRouter;
+import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.multiplayer.net.NetworkCommand;
 import io.github.elderpath_crusade.net.protocol.ClientMessage;
 import io.github.elderpath_crusade.net.protocol.MatchView;
@@ -427,6 +428,10 @@ public final class MatchServer {
         for (int i = 0; i < entities.size(); i++) {
             Entity e = entities.get(i);
             if (EntityUtils.isDead(e)) continue; // DeathSystem removes it on the next engine update
+            // Invisible/off-board (UPG-001) — no PieceRegistry entry to render, and clients
+            // never need to know about it as a "piece": its abilities surface only via
+            // LegalActions (RelicHud), a separate path LegalActionsCalculator still computes.
+            if (RelicCarrierIds.isRelicCarrier(EntityUtils.getId(e))) continue;
             out.add(new MatchView.PieceView(EntityUtils.getId(e), EntityUtils.getAlignment(e), EntityUtils.getName(e),
                     EntityUtils.getRow(e), EntityUtils.getCol(e), EntityUtils.getCurrentHealth(e),
                     EntityUtils.getMaxHealth(e), EntityUtils.getDamage(e), EntityUtils.getRemainingActions(e),

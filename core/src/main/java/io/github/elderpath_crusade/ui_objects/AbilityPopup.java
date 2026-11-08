@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.LegalActions;
+import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 
 import java.util.ArrayList;
@@ -65,6 +66,9 @@ public class AbilityPopup extends HigherOrderUI {
 
         List<BubbleSpec> specs = new ArrayList<>();
         for (LegalActions.PieceActions pa : actions.pieces()) {
+            // The relic carrier (UPG-001) is off-board and has no plot to anchor a bubble to —
+            // its actionable abilities surface through RelicHud instead.
+            if (RelicCarrierIds.isRelicCarrier(pa.pieceId())) continue;
             if (pa.abilities().isEmpty()) continue;
             for (LegalActions.AbilityOption option : pa.abilities()) {
                 String key = pa.pieceId() + "_" + option.actionIndex();
