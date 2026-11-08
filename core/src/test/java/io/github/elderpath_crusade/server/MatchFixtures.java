@@ -93,7 +93,8 @@ public final class MatchFixtures {
     public static MatchConfig lopsidedConfig(List<String> p1Deck, List<String> p2Deck, Long seed,
                                              Map<PieceAlignment, BotKind> bots) {
         return new MatchConfig(MatchConfig.DEFAULT_ROWS, MatchConfig.DEFAULT_COLS, LOPSIDED_TERRAIN,
-                Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck), seed, GameMode.ONLINE_MATCH, bots);
+                Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck), seed, GameMode.ONLINE_MATCH, bots,
+                Map.of(), Map.of());
     }
 
     /** The client's replica equals what the server says that client may see. */

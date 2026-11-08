@@ -72,7 +72,9 @@ public final class ServerLauncher {
         GameContext.createHeadless();
         MatchConfig config = MatchConfig.standard(GameMode.ONLINE_MATCH,
                 options.decks().get(PieceAlignment.P1), options.decks().get(PieceAlignment.P2),
-                options.seed(), options.bots());
+                options.seed(), options.bots())
+                .withRelics(options.relics())
+                .withCardMods(options.cardMods());
 
         TcpTransport transport = new TcpTransport(options.bind(), options.port());
         MatchServer server = new MatchServer(config, transport);

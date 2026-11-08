@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.server.launcher;
 
 import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.run.RunCardModification;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -17,6 +18,9 @@ import java.util.Map;
  *   --bind ADDR         address to listen on (default 127.0.0.1; 0.0.0.0 to host for others)
  *   --p1 / --p2 KIND    human | basic | smart (default p1 human, p2 smart)
  *   --p1-deck / --p2-deck "Card:count,Card:count"   (default Wolf:2,Wolf Cub:2)
+ *   --p1-relics / --p2-relics "RelicId,RelicId"     active relic ids for a roguelike run (LAUNCH-001; default none)
+ *   --p1-card-mods / --p2-card-mods "spec"          per-instance card modifications for a roguelike run,
+ *                       RunCardModification.encodeMap's format (LAUNCH-001; default none)
  *   --seed N            deck shuffle seed (default random)
  *   --assets DIR        assets directory holding data/*.yaml (default: the working directory if it
  *                       holds data/pieces.yaml, else the classpath — a packaged game's jar)
@@ -33,6 +37,8 @@ record LaunchOptions(
         String bind,
         Map<PieceAlignment, BotKind> bots,
         Map<PieceAlignment, List<String>> decks,
+        Map<PieceAlignment, List<String>> relics,
+        Map<PieceAlignment, Map<String, RunCardModification>> cardMods,
         Long seed,
         File assetsDir,
         int tickMs,
@@ -52,6 +58,10 @@ record LaunchOptions(
         String p2 = "smart";
         String p1Deck = DEFAULT_DECK;
         String p2Deck = DEFAULT_DECK;
+        String p1Relics = "";
+        String p2Relics = "";
+        String p1CardMods = "";
+        String p2CardMods = "";
         Long seed = null;
         File assetsDir = null; // null = working directory or classpath, see ServerLauncher
         int tickMs = 16;
@@ -72,6 +82,10 @@ record LaunchOptions(
                 case "--p2" -> p2 = value;
                 case "--p1-deck" -> p1Deck = value;
                 case "--p2-deck" -> p2Deck = value;
+                case "--p1-relics" -> p1Relics = value;
+                case "--p2-relics" -> p2Relics = value;
+                case "--p1-card-mods" -> p1CardMods = value;
+                case "--p2-card-mods" -> p2CardMods = value;
                 case "--seed" -> seed = parseLong(flag, value);
                 case "--assets" -> assetsDir = new File(value);
                 case "--tick-ms" -> tickMs = parseInt(flag, value, 1, 1000);
@@ -90,8 +104,25 @@ record LaunchOptions(
         Map<PieceAlignment, List<String>> decks = new EnumMap<>(PieceAlignment.class);
         decks.put(PieceAlignment.P1, parseDeck(p1Deck));
         decks.put(PieceAlignment.P2, parseDeck(p2Deck));
-        return new LaunchOptions(port, bind, bots, decks, seed, assetsDir, tickMs, timeScale,
+        Map<PieceAlignment, List<String>> relics = new EnumMap<>(PieceAlignment.class);
+        relics.put(PieceAlignment.P1, parseRelics(p1Relics));
+        relics.put(PieceAlignment.P2, parseRelics(p2Relics));
+        Map<PieceAlignment, Map<String, RunCardModification>> cardMods = new EnumMap<>(PieceAlignment.class);
+        cardMods.put(PieceAlignment.P1, RunCardModification.decodeMap(p1CardMods));
+        cardMods.put(PieceAlignment.P2, RunCardModification.decodeMap(p2CardMods));
+        return new LaunchOptions(port, bind, bots, decks, relics, cardMods, seed, assetsDir, tickMs, timeScale,
                 parentPid, watchStdin, idleTimeout, endGrace);
+    }
+
+    /** "RelicA,RelicB" → [RelicA, RelicB]; blank input → no relics. */
+    private static List<String> parseRelics(String spec) {
+        List<String> out = new ArrayList<>();
+        if (spec == null || spec.isBlank()) return out;
+        for (String part : spec.split(",")) {
+            String name = part.trim();
+            if (!name.isEmpty()) out.add(name);
+        }
+        return out;
     }
 
     /** Sides played by humans (no bot) — the seats clients connect to. */

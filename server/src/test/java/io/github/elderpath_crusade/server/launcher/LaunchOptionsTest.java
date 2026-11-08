@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.server.launcher;
 
 import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.run.RunCardModification;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,6 +25,20 @@ class LaunchOptionsTest {
         assertNull(o.assetsDir(), "no --assets: working directory, else the classpath");
         assertTrue(o.watchStdin());
         assertEquals(60, o.idleTimeoutSeconds());
+        assertEquals(List.of(), o.relics().get(PieceAlignment.P1), "no --p1-relics: no relics");
+        assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P1), "no --p1-card-mods: no modifications");
+    }
+
+    @Test
+    void parse_relicsAndCardMods() {
+        LaunchOptions o = LaunchOptions.parse(new String[]{
+                "--p1-relics", "PackLeader,Bonfire",
+                "--p1-card-mods", "run-3@damage=2:Frenzy"});
+        assertEquals(List.of("PackLeader", "Bonfire"), o.relics().get(PieceAlignment.P1));
+        assertEquals(List.of(), o.relics().get(PieceAlignment.P2), "no --p2-relics: no relics");
+        assertEquals(Map.of("run-3", new RunCardModification(Map.of("damage", 2), List.of("Frenzy"))),
+                o.cardMods().get(PieceAlignment.P1));
+        assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P2), "no --p2-card-mods: no modifications");
     }
 
     @Test

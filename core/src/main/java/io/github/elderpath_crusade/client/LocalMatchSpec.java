@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.client;
 
 import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.run.RunCardModification;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,6 +15,12 @@ import java.util.Map;
  * (the rest are human seats), an optional shuffle seed, the player name, and where the server
  * reads its assets (null = resolve it — see ClientMatchSession). serverArgs are extra
  * ServerLauncher flags (e.g. --time-scale in tests).
+ *
+ * <p>{@code relics} and {@code cardMods} (LAUNCH-001) carry a roguelike run's per-side active
+ * relic ids and per-instance card modifications into the child process, so it can register the
+ * relic carrier piece and any synthetic piece/card variants before the match begins — see
+ * roguelike-run-plan.md's "Relic System"/"Card Modification System". Empty for every mode but
+ * the roguelike run.
  */
 public record LocalMatchSpec(
         Map<PieceAlignment, List<String>> decks,
@@ -21,7 +28,9 @@ public record LocalMatchSpec(
         Long seed,
         String playerName,
         File assetsDir,
-        List<String> serverArgs
+        List<String> serverArgs,
+        Map<PieceAlignment, List<String>> relics,
+        Map<PieceAlignment, Map<String, RunCardModification>> cardMods
 ) {
     private static final PieceAlignment[] SIDES = {PieceAlignment.P1, PieceAlignment.P2};
 
@@ -33,35 +42,51 @@ public record LocalMatchSpec(
         decks = Map.copyOf(decks);
         bots = Map.copyOf(bots);
         serverArgs = List.copyOf(serverArgs);
+        relics = Map.copyOf(relics);
+        cardMods = Map.copyOf(cardMods);
         if (playerName == null || playerName.isBlank()) playerName = "player";
     }
 
     /** A human (P1) against a bot (P2). */
     public static LocalMatchSpec solo(List<String> humanDeck, List<String> botDeck, BotKind bot) {
         return new LocalMatchSpec(Map.of(PieceAlignment.P1, humanDeck, PieceAlignment.P2, botDeck),
-                Map.of(PieceAlignment.P2, bot), null, "player", null, List.of());
+                Map.of(PieceAlignment.P2, bot), null, "player", null, List.of(), Map.of(), Map.of());
     }
 
     /** Two humans — hotseat on one machine, or a host and a remote guest. */
     public static LocalMatchSpec twoHumans(List<String> p1Deck, List<String> p2Deck) {
         return new LocalMatchSpec(Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck),
-                Map.of(), null, "player", null, List.of());
+                Map.of(), null, "player", null, List.of(), Map.of(), Map.of());
     }
 
     public LocalMatchSpec withSeed(Long value) {
-        return new LocalMatchSpec(decks, bots, value, playerName, assetsDir, serverArgs);
+        return new LocalMatchSpec(decks, bots, value, playerName, assetsDir, serverArgs, relics, cardMods);
     }
 
     public LocalMatchSpec withPlayerName(String value) {
-        return new LocalMatchSpec(decks, bots, seed, value, assetsDir, serverArgs);
+        return new LocalMatchSpec(decks, bots, seed, value, assetsDir, serverArgs, relics, cardMods);
     }
 
     public LocalMatchSpec withAssetsDir(File value) {
-        return new LocalMatchSpec(decks, bots, seed, playerName, value, serverArgs);
+        return new LocalMatchSpec(decks, bots, seed, playerName, value, serverArgs, relics, cardMods);
     }
 
     public LocalMatchSpec withServerArgs(String... args) {
-        return new LocalMatchSpec(decks, bots, seed, playerName, assetsDir, List.of(args));
+        return new LocalMatchSpec(decks, bots, seed, playerName, assetsDir, List.of(args), relics, cardMods);
+    }
+
+    /** Sets one side's active relic ids (replacing any it already had). */
+    public LocalMatchSpec withRelics(PieceAlignment side, List<String> relicIds) {
+        Map<PieceAlignment, List<String>> updated = new LinkedHashMap<>(relics);
+        updated.put(side, List.copyOf(relicIds));
+        return new LocalMatchSpec(decks, bots, seed, playerName, assetsDir, serverArgs, updated, cardMods);
+    }
+
+    /** Sets one side's per-instance card modifications (replacing any it already had). */
+    public LocalMatchSpec withCardMods(PieceAlignment side, Map<String, RunCardModification> modifications) {
+        Map<PieceAlignment, Map<String, RunCardModification>> updated = new LinkedHashMap<>(cardMods);
+        updated.put(side, Map.copyOf(modifications));
+        return new LocalMatchSpec(decks, bots, seed, playerName, assetsDir, serverArgs, relics, updated);
     }
 
     /** Sides with no bot — the human seats. */
@@ -81,6 +106,17 @@ public record LocalMatchSpec(
             args.add(bot == null ? "human" : bot.name().toLowerCase());
             args.add(flag + "-deck");
             args.add(deckSpec(decks.get(side)));
+
+            List<String> sideRelics = relics.get(side);
+            if (sideRelics != null && !sideRelics.isEmpty()) {
+                args.add(flag + "-relics");
+                args.add(String.join(",", sideRelics));
+            }
+            Map<String, RunCardModification> sideCardMods = cardMods.get(side);
+            if (sideCardMods != null && !sideCardMods.isEmpty()) {
+                args.add(flag + "-card-mods");
+                args.add(RunCardModification.encodeMap(sideCardMods));
+            }
         }
         if (seed != null) {
             args.add("--seed");

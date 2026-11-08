@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.match;
 import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.run.RunCardModification;
 
 import java.util.List;
 import java.util.Map;
@@ -11,9 +12,15 @@ import java.util.Map;
  * Everything needed to start a match's simulation (see MatchSetup) — plain data, so the
  * same config can drive a local room or a headless server.
  *
- * @param decks card names (CardCatalog display names) per alignment, before shuffling
- * @param seed  RNG seed for deck shuffles/draws; null for a random match
- * @param bots  bot-controlled slots; an alignment missing from the map is played by a human
+ * @param decks    card names (CardCatalog display names) per alignment, before shuffling
+ * @param seed     RNG seed for deck shuffles/draws; null for a random match
+ * @param bots     bot-controlled slots; an alignment missing from the map is played by a human
+ * @param relics   active relic ids per alignment (LAUNCH-001) — empty outside a roguelike run.
+ *                 A relic's in-battle behavior is curated in {@code abilities.yaml}; this is
+ *                 only which ids are active, for whatever spawns the relic carrier (UPG-001).
+ * @param cardMods per-instance card modifications per alignment (LAUNCH-001) — empty outside a
+ *                 roguelike run. Registering the synthetic piece/card variants these need is
+ *                 UPG-003's job; this only carries the data.
  */
 public record MatchConfig(
         int rows,
@@ -22,7 +29,9 @@ public record MatchConfig(
         Map<PieceAlignment, List<String>> decks,
         Long seed,
         GameMode mode,
-        Map<PieceAlignment, BotKind> bots
+        Map<PieceAlignment, BotKind> bots,
+        Map<PieceAlignment, List<String>> relics,
+        Map<PieceAlignment, Map<String, RunCardModification>> cardMods
 ) {
     public static final int DEFAULT_ROWS = 7;
     public static final int DEFAULT_COLS = 5;
@@ -33,16 +42,34 @@ public record MatchConfig(
         terrain = List.copyOf(terrain);
         decks = Map.copyOf(decks);
         bots = Map.copyOf(bots);
+        relics = Map.copyOf(relics);
+        cardMods = Map.copyOf(cardMods);
     }
 
-    /** The standard 7x5 board with its two mountains. */
+    /** The standard 7x5 board with its two mountains. No relics/card mods — see {@link #withRelics}/{@link #withCardMods}. */
     public static MatchConfig standard(GameMode mode, List<String> p1Deck, List<String> p2Deck,
                                        Long seed, Map<PieceAlignment, BotKind> bots) {
         return new MatchConfig(DEFAULT_ROWS, DEFAULT_COLS, DEFAULT_TERRAIN,
-                Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck), seed, mode, bots);
+                Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck), seed, mode, bots, Map.of(), Map.of());
     }
 
     public List<String> deck(PieceAlignment alignment) {
         return decks.getOrDefault(alignment, List.of());
+    }
+
+    public List<String> relics(PieceAlignment alignment) {
+        return relics.getOrDefault(alignment, List.of());
+    }
+
+    public Map<String, RunCardModification> cardMods(PieceAlignment alignment) {
+        return cardMods.getOrDefault(alignment, Map.of());
+    }
+
+    public MatchConfig withRelics(Map<PieceAlignment, List<String>> value) {
+        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, value, cardMods);
+    }
+
+    public MatchConfig withCardMods(Map<PieceAlignment, Map<String, RunCardModification>> value) {
+        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, relics, value);
     }
 }
