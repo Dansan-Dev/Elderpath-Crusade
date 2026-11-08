@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
+import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
@@ -156,7 +157,8 @@ class HighlightState {
         List<Plot> eligiblePlots = filter.getEligibleTargets(selectedCount);
         if (eligiblePlots == null || eligiblePlots.isEmpty()) return;
 
-        PieceAlignment currentPlayer = GameContext.get().getTurnManager().getCurrentPlayer();
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        PieceAlignment currentPlayer = session != null ? session.currentPlayer() : null;
         if (currentPlayer == null) return;
 
         for (Plot plot : eligiblePlots) {
