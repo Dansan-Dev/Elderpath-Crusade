@@ -38,6 +38,7 @@ public final class ClientController {
 
     private Long lastSeenPickId;
     private boolean victoryShown;
+    private boolean handoffGated;
 
     public ClientController(Supplier<ClientMatchState> stateSupplier, ClientCommands commands,
             PickPrompter pickPrompter, Consumer<PieceAlignment> victoryPresenter) {
@@ -92,20 +93,34 @@ public final class ClientController {
         }
     }
 
-    /** What this screen's acting seat may currently do, or null before the first update from the server. */
+    /**
+     * Blocks every gate that reads {@link #legalActions()} (pieces, cards, abilities, move/
+     * attack highlights) without touching {@link #canEndTurn()} — set by a hotseat room while
+     * the next player's hand is hidden behind a "Start Turn" click, so the turn that's already
+     * genuinely active server-side can't be played blind through the previous player's screen.
+     */
+    public void setHandoffGated(boolean gated) {
+        this.handoffGated = gated;
+    }
+
+    /** What this screen's acting seat may currently do, or null before the first update from the server, or while {@link #setHandoffGated} is up. */
     public LegalActions legalActions() {
-        ClientMatchState state = stateSupplier.get();
-        return state == null ? null : state.getLegalActions();
+        return handoffGated ? null : rawLegalActions();
     }
 
     public boolean canEndTurn() {
-        LegalActions actions = legalActions();
+        LegalActions actions = rawLegalActions();
         return actions != null && actions.canEndTurn();
     }
 
     /** True while this screen's acting seat has a pick outstanding — nothing else should be clickable. */
     public boolean hasPendingPick() {
         return lastSeenPickId != null;
+    }
+
+    private LegalActions rawLegalActions() {
+        ClientMatchState state = stateSupplier.get();
+        return state == null ? null : state.getLegalActions();
     }
 
     public long moveOrAttack(int srcRow, int srcCol, int dstRow, int dstCol) {

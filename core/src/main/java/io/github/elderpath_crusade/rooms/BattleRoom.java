@@ -4,13 +4,13 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.client.ClientMatchSession;
+import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.client.ReplicaViewSync;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.events.CardDiscardedEvent;
 import io.github.elderpath_crusade.events.CardDrawnEvent;
 import io.github.elderpath_crusade.events.CardPlayedEvent;
-import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.match.CardInstance;
@@ -128,22 +128,17 @@ public abstract class BattleRoom extends Room {
         addContent(handP2);
 
         // 7. Hand views mirror each player's hand state from the card events the replica
-        // delivers. One seat's connection already sees every public card event (its own hand
-        // by name, the opponent's by hidden handle) — both HandSyncs listen to it and each
-        // filters to its own owner, same as the old bindToEventBus() did on the local bus.
+        // delivers. Each controlled seat's own connection always sees its own cards by real
+        // name (never filtered) — wire it to that side's HandSync directly, which matters for
+        // hotseat (both seats controlled, each with its own connection: neither should ever
+        // show the other as a hidden-handle placeholder). A side this session doesn't control
+        // has no connection of its own, so it's shown via the one connection we do have's
+        // filtered (hidden-handle) view of it — solo vs bot and online both have exactly one
+        // controlled seat, so this is the only source for the opponent's hand there.
         handSyncP1 = new HandSync(handP1);
         handSyncP2 = new HandSync(handP2);
-        PieceAlignment primarySeat = session.getControlledSeats().isEmpty()
-                ? null : session.getControlledSeats().get(0);
-        var primaryState = primarySeat != null ? session.stateFor(primarySeat) : null;
-        if (primaryState != null) {
-            // Cards already drawn (e.g. this seat's opening hand) arrived before this listener
-            // existed and are gone from the event stream — seed from the replica's own record.
-            HandSync ownSync = primaryState.getSeat() == PieceAlignment.P1 ? handSyncP1 : handSyncP2;
-            HandSync opponentSync = primaryState.getSeat() == PieceAlignment.P1 ? handSyncP2 : handSyncP1;
-            for (CardInstance card : primaryState.getOwnHand()) ownSync.addCard(card);
-            for (String handle : primaryState.getOpponentHandIds()) opponentSync.addHiddenCard(handle);
-            primaryState.setEventListener(this::routeCardEvent);
+        for (PieceAlignment seat : session.getControlledSeats()) {
+            wireHandSync(session.stateFor(seat), seat);
         }
 
         // 8. Deck views (the decks themselves are pure state, owned by the match server)
@@ -167,17 +162,35 @@ public abstract class BattleRoom extends Room {
         applyPerspective();
     }
 
-    private void routeCardEvent(GameEvent e) {
-        if (e instanceof CardDrawnEvent ev) {
-            handSyncP1.onCardDrawn(ev);
-            handSyncP2.onCardDrawn(ev);
-        } else if (e instanceof CardPlayedEvent ev) {
-            handSyncP1.onCardPlayed(ev);
-            handSyncP2.onCardPlayed(ev);
-        } else if (e instanceof CardDiscardedEvent ev) {
-            handSyncP1.onCardDiscarded(ev);
-            handSyncP2.onCardDiscarded(ev);
-        }
+    /**
+     * Wires one controlled seat's connection to its own HandSync (real names — this seat's own
+     * cards are never filtered from its own viewpoint). If this session doesn't also control
+     * the other side, this connection's filtered view of it is the only one available, so this
+     * same connection additionally feeds that side's HandSync as hidden placeholders.
+     */
+    private void wireHandSync(ClientMatchState state, PieceAlignment ownSeat) {
+        HandSync ownSync = ownSeat == PieceAlignment.P1 ? handSyncP1 : handSyncP2;
+        PieceAlignment otherSeat = ownSeat == PieceAlignment.P1 ? PieceAlignment.P2 : PieceAlignment.P1;
+        boolean coversOther = !session.controls(otherSeat);
+        HandSync otherSync = otherSeat == PieceAlignment.P1 ? handSyncP1 : handSyncP2;
+
+        // Cards already drawn (e.g. this seat's opening hand) arrived before this listener
+        // existed and are gone from the event stream — seed from the replica's own record.
+        for (CardInstance card : state.getOwnHand()) ownSync.addCard(card);
+        if (coversOther) for (String handle : state.getOpponentHandIds()) otherSync.addHiddenCard(handle);
+
+        state.setEventListener(e -> {
+            if (e instanceof CardDrawnEvent ev) {
+                if (ev.owner() == ownSeat) ownSync.onCardDrawn(ev);
+                else if (coversOther) otherSync.onCardDrawn(ev);
+            } else if (e instanceof CardPlayedEvent ev) {
+                if (ev.owner() == ownSeat) ownSync.onCardPlayed(ev);
+                else if (coversOther) otherSync.onCardPlayed(ev);
+            } else if (e instanceof CardDiscardedEvent ev) {
+                if (ev.player() == ownSeat) ownSync.onCardDiscarded(ev);
+                else if (coversOther) otherSync.onCardDiscarded(ev);
+            }
+        });
     }
 
     protected abstract void onPassTurnClicked();
@@ -267,6 +280,11 @@ public abstract class BattleRoom extends Room {
 
         PerspectiveUpdater() {
             setBounds(new Box(0, 0, 0, 0));
+            // The constructor above already oriented for whoever's turn it already is (if
+            // known) — without this, the first update() tick treats "current player becomes
+            // known" as a turn *change* and re-fires onTurnChanged for a turn that already
+            // started (e.g. LocalMatchRoom re-hiding the hand it just revealed).
+            lastPlayer = session.currentPlayer();
         }
 
         @Override

@@ -32,6 +32,7 @@ public class LocalMatchRoom extends BattleRoom {
     protected void onPassTurnClicked() {
         if (!revealed) {
             revealed = true;
+            controller.setHandoffGated(false);
             PieceAlignment current = session.currentPlayer();
             if (current != null) showPlayerHand(current);
             passTurn.setLabel("Pass Turn");
@@ -51,6 +52,7 @@ public class LocalMatchRoom extends BattleRoom {
     @Override
     protected void onTurnChanged(PieceAlignment newPlayer) {
         revealed = false;
+        controller.setHandoffGated(true);
         hideAllHands();
         passTurn.setLabel("Start Turn");
     }
