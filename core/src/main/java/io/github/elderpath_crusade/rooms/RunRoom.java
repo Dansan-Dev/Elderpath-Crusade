@@ -24,7 +24,8 @@ import java.util.List;
  * status shows the placeholder linear chain's progress, not a clickable graph.
  */
 public class RunRoom extends Room {
-    private static final List<String> DEFAULT_STARTING_DECK = List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub");
+    private static final List<String> DEFAULT_STARTING_DECK =
+            List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub", "Warp Mage");
     private static final int HEADER_TOP_OFFSET = 100;
     private static final int STATUS_TOP_OFFSET = 180;
 
