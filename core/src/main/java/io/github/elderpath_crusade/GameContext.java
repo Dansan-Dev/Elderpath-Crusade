@@ -34,6 +34,7 @@ import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.match.MatchClock;
 import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
+import io.github.elderpath_crusade.game.RunManager;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
 import io.github.elderpath_crusade.rooms.RoomManager;
 import io.github.elderpath_crusade.server.GameServer;
@@ -75,6 +76,8 @@ public class GameContext {
     @Getter private final InteractionManager interactionManager;
     @Getter private final GameModeManager gameModeManager;
     @Getter private final DeckManager deckManager;
+    /** Client-side orchestrator for a roguelike run (FEAT-006) — see run/ and roguelike-run-plan.md. */
+    @Getter private final RunManager runManager;
     @Getter private final RoomManager roomManager;
     @Getter private final SettingsManager settingsManager;
     @Getter private final MusicManager musicManager;
@@ -149,6 +152,7 @@ public class GameContext {
         this.interactionManager = new InteractionManager();
         this.gameModeManager = new GameModeManager();
         this.deckManager = new DeckManager();
+        this.runManager = new RunManager();
         this.roomManager = new RoomManager();
         this.settingsManager = new SettingsManager();
         this.musicManager = new MusicManager();
