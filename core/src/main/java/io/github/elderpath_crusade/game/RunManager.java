@@ -107,11 +107,17 @@ public final class RunManager {
     }
 
     /**
-     * Resolves a node's battle outcome against RunState — advances toward the next pick on a
-     * win (or ends the run as won, if the current node was the map's terminal/Boss node), ends
-     * the run as a loss (permadeath) otherwise. The player always plays P1, so any other winner
-     * (including null, a draw) counts as a loss. Public so a room managing its own session can
-     * report the result without going through {@link #startCurrentNode}/{@link #pollActiveNode}.
+     * Resolves a node's battle outcome against RunState — ends the run as a loss (permadeath)
+     * on anything but a P1 win (the player always plays P1, so a null/non-P1 winner, e.g. a
+     * draw, counts as a loss); on a win, ends the run as won if the current node was the map's
+     * terminal/Boss node, otherwise advances straight to the next node. Public so a room
+     * managing its own session can report the result without going through
+     * {@link #startCurrentNode}/{@link #pollActiveNode}.
+     *
+     * <p>The placeholder linear map ({@link RunMap#linearChain}) never has more than one
+     * reachable node, so there's nothing for the player to pick — auto-advancing is both
+     * simpler and correct for it. A real branching map (MAP-001/002) will have genuine choices;
+     * {@link #advanceToNextNode} stays public for the room that lets the player make one.
      */
     public void reportNodeOutcome(PieceAlignment winner) {
         requireActiveRun();
@@ -122,7 +128,9 @@ public final class RunManager {
         }
         if (runState.currentNode().isTerminal()) {
             runState.endRun(true);
+            return;
         }
+        runState.advanceTo(runState.reachableNodes().get(0).id());
     }
 
     /** Moves to the next node the player picked (only valid once the current node's battle is won). */

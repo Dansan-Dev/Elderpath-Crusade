@@ -13,9 +13,9 @@ import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
 /**
- * Lists the ways to play, one level below the main menu's "Game Mode" button — Demo, Local
- * Multiplayer, Host/Join Online today; Roguelike Run joins this list once FEAT-006 exists,
- * intended as the primary way to play once it does (see .claude/plans/roguelike-run-plan.md).
+ * Lists the ways to play, one level below the main menu's "Game Mode" button — Roguelike Run,
+ * Demo, Local Multiplayer, Host/Join Online. Roguelike Run is intended to become the primary way
+ * to play (see .claude/plans/roguelike-run-plan.md); the others stay exactly as they are.
  */
 public class GameModeRoom extends Room {
     private static final int BUTTON_WIDTH = 220;
@@ -36,6 +36,7 @@ public class GameModeRoom extends Room {
         addContent(header);
 
         buttonList = new ButtonList();
+        addOption("Roguelike Run", () -> GameContext.get().getRoomManager().gotoRoom(RunRoom::get));
         addOption("Demo", () -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get));
         addOption("Local Multiplayer",
                 () -> GameContext.get().getRoomManager().gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)));

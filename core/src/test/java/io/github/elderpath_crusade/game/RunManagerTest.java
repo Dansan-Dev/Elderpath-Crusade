@@ -74,7 +74,7 @@ class RunManagerTest {
     }
 
     @Test
-    void reportNodeOutcome_winOnANonTerminalNode_leavesTheRunGoing() {
+    void reportNodeOutcome_winOnANonTerminalNode_autoAdvancesToTheNextNode() {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK);
 
@@ -82,8 +82,8 @@ class RunManagerTest {
 
         RunState state = manager.getRunState();
         assertFalse(state.isEnded());
-        assertEquals(0, state.currentNode().id());
-        assertFalse(state.currentNode().isTerminal());
+        assertEquals(1, state.currentNode().id());
+        assertTrue(state.visitedNodeIds().contains(1));
     }
 
     @Test
@@ -104,9 +104,11 @@ class RunManagerTest {
 
     @Test
     void advanceToNextNode_delegatesToRunState() {
+        // reportNodeOutcome already auto-advances the placeholder linear map's single reachable
+        // node (see above) — exercised directly here for its own sake, as the hook a future
+        // branching-map room (MAP-002) will call when there's a real choice among several.
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK);
-        manager.reportNodeOutcome(PieceAlignment.P1); // win the first node, stay put
 
         manager.advanceToNextNode(1);
 
