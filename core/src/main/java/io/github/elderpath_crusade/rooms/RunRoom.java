@@ -18,9 +18,7 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -153,32 +151,17 @@ public class RunRoom extends Room {
     }
 
     /**
-     * Assigns each node a column ("floor") by BFS distance from the map's start node — works
-     * for any RunMap (the real branching generator, or a simple linearChain fixture), not just
-     * the shape MAP-001's generator happens to produce, since it only relies on the graph's
-     * edges going strictly forward (never skipping or looping back a floor, true of every
-     * generator this plan builds).
+     * Assigns each node a column ("floor") via {@link RunMap#depths()} — the same notion of
+     * depth DIFF-001's difficulty formula scales against, so the map's layout and its actual
+     * difficulty always agree on what "deeper" means.
      */
     private static List<List<RunNode>> computeFloors(RunMap map) {
-        Map<Integer, Integer> floorOf = new LinkedHashMap<>();
-        Deque<Integer> queue = new ArrayDeque<>();
-        floorOf.put(map.startNodeId(), 0);
-        queue.add(map.startNodeId());
-        while (!queue.isEmpty()) {
-            int id = queue.poll();
-            int floor = floorOf.get(id);
-            for (RunNode next : map.reachableFrom(id)) {
-                if (!floorOf.containsKey(next.id())) {
-                    floorOf.put(next.id(), floor + 1);
-                    queue.add(next.id());
-                }
-            }
-        }
-        int maxFloor = floorOf.values().stream().max(Integer::compareTo).orElse(0);
+        Map<Integer, Integer> depths = map.depths();
+        int maxFloor = depths.values().stream().max(Integer::compareTo).orElse(0);
         List<List<RunNode>> floors = new ArrayList<>();
         for (int f = 0; f <= maxFloor; f++) floors.add(new ArrayList<>());
         for (RunNode node : map.nodes()) {
-            Integer f = floorOf.get(node.id());
+            Integer f = depths.get(node.id());
             if (f != null) floors.get(f).add(node);
         }
         return floors;
