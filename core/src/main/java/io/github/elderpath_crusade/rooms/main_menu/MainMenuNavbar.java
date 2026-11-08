@@ -11,11 +11,9 @@ import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.rooms.DraftRoom;
+import io.github.elderpath_crusade.rooms.GameModeRoom;
 import io.github.elderpath_crusade.rooms.InformationSelectionRoom;
-import io.github.elderpath_crusade.rooms.OnlineMatchRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 import io.github.elderpath_crusade.utils.SpriteCreator;
@@ -27,10 +25,7 @@ public class MainMenuNavbar extends HigherOrderUI {
 
     private SpriteObject navbarBg;
     private ButtonList buttonList;
-    private Button playButton;
-    private Button localMultiplayerButton;
-    private Button hostOnlineButton;
-    private Button joinOnlineButton;
+    private Button gameModeButton;
     private Button settingsButton;
 //    private Button infoButton;
     private Button exitButton;
@@ -55,26 +50,8 @@ public class MainMenuNavbar extends HigherOrderUI {
 
         // Build buttons (width increased from 100 to 120 for better appearance)
         int buttonWidth = 140;
-        playButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Demo", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get), ClickableEffectData.getImmediate())
-            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-
-        localMultiplayerButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Local", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)), ClickableEffectData.getImmediate())
-            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-
-        hostOnlineButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Host Online", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(OnlineMatchRoom::host), ClickableEffectData.getImmediate())
-            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-
-        joinOnlineButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Join (localhost)", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.join("localhost")), ClickableEffectData.getImmediate())
+        gameModeButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Game Mode", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(GameModeRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
@@ -102,10 +79,7 @@ public class MainMenuNavbar extends HigherOrderUI {
 
         // Create ButtonList and add buttons
         buttonList = new ButtonList();
-        buttonList.addButton(playButton);
-        buttonList.addButton(localMultiplayerButton);
-        buttonList.addButton(hostOnlineButton);
-        buttonList.addButton(joinOnlineButton);
+        buttonList.addButton(gameModeButton);
         buttonList.addButton(settingsButton);
 //        buttonList.addButton(infoButton);
         buttonList.addButton(exitButton);
