@@ -6,14 +6,25 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A single roguelike run's state between battles — current position in the map, the run's deck
- * (as modifiable card instances), the deck instances retired into Elder status (ELDER-001),
- * active relics, chosen difficulty, and whether the run has ended. Pure logic/data, no LibGDX —
- * headlessly testable like {@code match/}. {@code RunManager} (client-side, {@code GameContext}-
- * held) is the only thing that drives this; nothing here talks to a battle server.
+ * A single roguelike run's state between battles — current position in the current floor's map,
+ * the run's deck (as modifiable card instances), the deck instances retired into Elder status
+ * (ELDER-001), active relics, chosen difficulty, and whether the run has ended. Pure logic/data,
+ * no LibGDX — headlessly testable like {@code match/}. {@code RunManager} (client-side, {@code
+ * GameContext}-held) is the only thing that drives this; nothing here talks to a battle server.
+ *
+ * <p>A run is {@code totalFloors} sequential floors (MULTI-001), each its own freshly generated
+ * {@link RunMap} ending in its own Boss node — not one single map with one final boss. {@link
+ * #map()}/{@link #currentNode()}/{@link #reachableNodes()}/{@link #currentNodeDepth()} all
+ * operate on the <em>current</em> floor's map only; {@link #advanceToNextFloor} replaces it with
+ * a freshly generated one once that floor's boss is cleared, resetting position but leaving the
+ * deck/elders/relics untouched. {@link #isLastFloor()} is what tells the caller (RunManager)
+ * whether clearing the current floor's boss should end the run instead.
  */
 public class RunState {
-    private final RunMap map;
+    /** {@link #globalDepth()}'s per-floor offset — comfortably covers {@link RunMap#generate}'s default depth range (0..5). */
+    private static final int FLOOR_DEPTH_SPAN = 6;
+
+    private RunMap map;
     private final RunDifficulty difficulty;
     private final List<RunCardInstance> deck = new ArrayList<>();
     private final List<RunCardInstance> elders = new ArrayList<>();
@@ -22,33 +33,52 @@ public class RunState {
     private final Set<Integer> visitedNodeIds = new LinkedHashSet<>();
     private int currentNodeId;
     private boolean currentNodeCleared;
+    private int floorIndex; // 0-based
+    private final int totalFloors;
     private boolean ended;
     private boolean won;
 
-    public RunState(RunMap map, RunDifficulty difficulty, List<RunCardInstance> startingDeck) {
-        if (map == null || difficulty == null) throw new IllegalArgumentException("map and difficulty are required");
+    public RunState(RunMap firstFloorMap, RunDifficulty difficulty, List<RunCardInstance> startingDeck, int totalFloors) {
+        if (firstFloorMap == null || difficulty == null) throw new IllegalArgumentException("map and difficulty are required");
         if (startingDeck == null || startingDeck.isEmpty()) throw new IllegalArgumentException("a run needs a starting deck");
-        this.map = map;
+        if (totalFloors < 1) throw new IllegalArgumentException("a run needs at least 1 floor");
+        this.map = firstFloorMap;
         this.difficulty = difficulty;
         this.deck.addAll(startingDeck);
         this.startingDeckSize = startingDeck.size();
+        this.totalFloors = totalFloors;
+        this.floorIndex = 0;
         this.currentNodeId = map.startNodeId();
         this.visitedNodeIds.add(currentNodeId);
     }
 
     /** Builds a fresh run's starting deck as unmodified instances, ids "run-0", "run-1", ... in order. */
-    public static RunState start(RunMap map, RunDifficulty difficulty, List<String> startingDeckCardNames) {
+    public static RunState start(RunMap firstFloorMap, RunDifficulty difficulty, List<String> startingDeckCardNames, int totalFloors) {
         List<RunCardInstance> startingDeck = new ArrayList<>();
         if (startingDeckCardNames != null) {
             for (String cardName : startingDeckCardNames) {
                 startingDeck.add(RunCardInstance.unmodified("run-" + startingDeck.size(), cardName));
             }
         }
-        return new RunState(map, difficulty, startingDeck);
+        return new RunState(firstFloorMap, difficulty, startingDeck, totalFloors);
     }
 
+    /** The current floor's map — see the class doc. */
     public RunMap map() {
         return map;
+    }
+
+    /** 0-based: 0 on the first floor. */
+    public int floorIndex() {
+        return floorIndex;
+    }
+
+    public int totalFloors() {
+        return totalFloors;
+    }
+
+    public boolean isLastFloor() {
+        return floorIndex >= totalFloors - 1;
     }
 
     public RunDifficulty difficulty() {
@@ -98,9 +128,18 @@ public class RunState {
         return map.reachableFrom(currentNodeId);
     }
 
-    /** The current node's distance from the start node — what DIFF-001's difficulty formula scales against. */
+    /** The current node's distance from the current floor's start node. */
     public int currentNodeDepth() {
         return map.depthOf(currentNodeId);
+    }
+
+    /**
+     * {@link #currentNodeDepth()} plus a per-floor offset (MULTI-002), so floor 2/3 play harder
+     * than floor 1 at an equivalent in-floor position — what {@link RunDifficulty#resolveForNode}
+     * actually scales against now, instead of the floor-local depth alone.
+     */
+    public int globalDepth() {
+        return floorIndex * FLOOR_DEPTH_SPAN + currentNodeDepth();
     }
 
     /** Whether the current node has been resolved (a battle won, or a non-battle node entered) — see {@link #markCurrentNodeCleared()}. */
@@ -135,6 +174,33 @@ public class RunState {
         currentNodeId = nodeId;
         visitedNodeIds.add(nodeId);
         currentNodeCleared = false;
+    }
+
+    /**
+     * Replaces the current floor's map with a freshly generated next one (MULTI-001) — the
+     * player's position resets to the new map's start, but the deck/elders/relics carry over
+     * unchanged. Requires the current node to be this floor's (cleared) boss, and that this
+     * isn't already the last floor — {@code RunManager.reportNodeOutcome} ends the run instead
+     * of calling this once {@link #isLastFloor()} is true.
+     */
+    public void advanceToNextFloor(RunMap nextFloorMap) {
+        requireNotEnded();
+        if (nextFloorMap == null) throw new IllegalArgumentException("nextFloorMap required");
+        if (!currentNodeCleared) {
+            throw new IllegalStateException("the current floor's boss hasn't been cleared yet");
+        }
+        if (!currentNode().isTerminal()) {
+            throw new IllegalStateException("not at this floor's boss");
+        }
+        if (isLastFloor()) {
+            throw new IllegalStateException("already on the last floor — the run should end instead");
+        }
+        this.map = nextFloorMap;
+        this.floorIndex++;
+        this.currentNodeId = map.startNodeId();
+        this.visitedNodeIds.clear();
+        this.visitedNodeIds.add(currentNodeId);
+        this.currentNodeCleared = false;
     }
 
     /** Ends the run — a loss (permadeath, any single defeat) or a win (the boss node was cleared). */

@@ -11,8 +11,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class RunStateTest {
 
     private static RunState freshRun(int battleCount) {
+        return freshRun(battleCount, 1);
+    }
+
+    private static RunState freshRun(int battleCount, int totalFloors) {
         return RunState.start(RunMap.linearChain(battleCount), RunDifficulty.DEFAULT,
-                List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub"));
+                List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub"), totalFloors);
     }
 
     @Test
@@ -186,7 +190,7 @@ class RunStateTest {
     @Test
     void addElder_rejectsShrinkingTheDeckToEmpty() {
         RunState run = new RunState(RunMap.linearChain(1), RunDifficulty.DEFAULT,
-                List.of(RunCardInstance.unmodified("run-0", "Wolf")));
+                List.of(RunCardInstance.unmodified("run-0", "Wolf")), 1);
         assertThrows(IllegalStateException.class, () -> run.addElder("run-0"));
     }
 
@@ -207,7 +211,7 @@ class RunStateTest {
     @Test
     void start_rejectsAnEmptyStartingDeck() {
         assertThrows(IllegalArgumentException.class,
-                () -> RunState.start(RunMap.linearChain(1), RunDifficulty.DEFAULT, List.of()));
+                () -> RunState.start(RunMap.linearChain(1), RunDifficulty.DEFAULT, List.of(), 1));
     }
 
     @Test
@@ -217,5 +221,97 @@ class RunStateTest {
         run.advanceTo(1);
         assertTrue(run.reachableNodes().isEmpty());
         assertTrue(run.currentNode().isTerminal());
+    }
+
+    // --- Multi-floor structure (MULTI-001) ---
+
+    @Test
+    void floorIndex_startsAtZero() {
+        assertEquals(0, freshRun(2, 3).floorIndex());
+    }
+
+    @Test
+    void isLastFloor_trueOnlyOnTheFinalFloor() {
+        RunState run = freshRun(2, 3);
+        assertFalse(run.isLastFloor()); // floor 0 of 3
+
+        clearCurrentFloorBoss(run);
+        run.advanceToNextFloor(RunMap.linearChain(2));
+        assertFalse(run.isLastFloor()); // floor 1 of 3
+
+        clearCurrentFloorBoss(run);
+        run.advanceToNextFloor(RunMap.linearChain(2));
+        assertTrue(run.isLastFloor()); // floor 2 of 3 — the last
+    }
+
+    @Test
+    void globalDepth_addsAPerFloorOffsetToTheLocalDepth() {
+        RunState run = freshRun(2, 3);
+        int floorOneDepth = run.globalDepth();
+
+        clearCurrentFloorBoss(run);
+        run.advanceToNextFloor(RunMap.linearChain(2));
+
+        assertTrue(run.globalDepth() > floorOneDepth,
+                "floor 2's start should read as a deeper global depth than floor 1's start");
+        assertEquals(0, run.currentNodeDepth(), "local depth resets even though global depth doesn't");
+    }
+
+    @Test
+    void advanceToNextFloor_movesToTheNewMapsStartAndIncrementsFloorIndex() {
+        RunState run = freshRun(2, 3);
+        clearCurrentFloorBoss(run);
+        RunMap nextFloor = RunMap.linearChain(3);
+
+        run.advanceToNextFloor(nextFloor);
+
+        assertEquals(1, run.floorIndex());
+        assertSame(nextFloor, run.map());
+        assertEquals(nextFloor.startNodeId(), run.currentNode().id());
+        assertFalse(run.isCurrentNodeCleared());
+        assertEquals(Set.of(nextFloor.startNodeId()), run.visitedNodeIds(), "visited ids reset for the new floor");
+    }
+
+    @Test
+    void advanceToNextFloor_rejectsBeforeTheBossIsCleared() {
+        RunState run = freshRun(2, 3);
+        assertThrows(IllegalStateException.class, () -> run.advanceToNextFloor(RunMap.linearChain(2)));
+    }
+
+    @Test
+    void advanceToNextFloor_rejectsWhenNotAtTheBoss() {
+        RunState run = freshRun(2, 3);
+        run.markCurrentNodeCleared(); // the start node, not the boss
+        assertThrows(IllegalStateException.class, () -> run.advanceToNextFloor(RunMap.linearChain(2)));
+    }
+
+    @Test
+    void advanceToNextFloor_rejectsOnTheLastFloor() {
+        RunState run = freshRun(2, 1); // only 1 total floor
+        clearCurrentFloorBoss(run);
+        assertThrows(IllegalStateException.class, () -> run.advanceToNextFloor(RunMap.linearChain(2)));
+    }
+
+    @Test
+    void advanceToNextFloor_rejectsAfterTheRunHasEnded() {
+        RunState run = freshRun(2, 3);
+        run.endRun(false);
+        assertThrows(IllegalStateException.class, () -> run.advanceToNextFloor(RunMap.linearChain(2)));
+    }
+
+    @Test
+    void advanceToNextFloor_rejectsNullMap() {
+        RunState run = freshRun(2, 3);
+        clearCurrentFloorBoss(run);
+        assertThrows(IllegalArgumentException.class, () -> run.advanceToNextFloor(null));
+    }
+
+    /** Wins/advances the given run to its current floor's (terminal) boss node and marks it cleared. */
+    private static void clearCurrentFloorBoss(RunState run) {
+        while (!run.currentNode().isTerminal()) {
+            run.markCurrentNodeCleared();
+            run.advanceTo(run.reachableNodes().get(0).id());
+        }
+        run.markCurrentNodeCleared();
     }
 }

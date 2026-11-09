@@ -167,20 +167,41 @@ class RunManagerTest {
     }
 
     @Test
-    void reportNodeOutcome_winOnTheBossNode_endsTheRunAsWon() {
+    void reportNodeOutcome_winOnAnEarlyFloorsBoss_marksClearedButDoesNotEndTheRun() {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        winCurrentFloorToBoss(manager);
+
+        assertFalse(manager.getRunState().isEnded());
+        assertTrue(manager.getRunState().isCurrentNodeCleared());
+        assertTrue(manager.getRunState().currentNode().isTerminal());
+    }
+
+    @Test
+    void reportNodeOutcome_winOnTheLastFloorsBoss_endsTheRunAsWon() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        for (int floor = 0; floor < RunManager.TOTAL_FLOORS - 1; floor++) {
+            winCurrentFloorToBoss(manager);
+            manager.promoteToElder(manager.getRunState().deck().get(0).instanceId());
+            manager.advanceToNextFloor();
+        }
+        winCurrentFloorToBoss(manager);
+
+        assertTrue(manager.getRunState().isEnded());
+        assertTrue(manager.getRunState().isWon());
+    }
+
+    /** Wins/advances through every node up to and including the current floor's boss. */
+    private static void winCurrentFloorToBoss(RunManager manager) {
         RunState state = manager.getRunState();
-        // win/advance through every node up to (not including) the Boss
         while (!state.currentNode().isTerminal()) {
             if (!state.isCurrentNodeCleared()) manager.reportNodeOutcome(PieceAlignment.P1);
             manager.advanceToNextNode(state.reachableNodes().get(0).id());
         }
-
         manager.reportNodeOutcome(PieceAlignment.P1);
-
-        assertTrue(state.isEnded());
-        assertTrue(state.isWon());
     }
 
     @Test
@@ -523,6 +544,62 @@ class RunManagerTest {
         int after = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P1).size();
         assertEquals(before - 1, after,
                 "an Elder is retired out of the deck — it spawns on the board, not played from hand");
+    }
+
+    // --- Multi-floor structure (MULTI-001) ---
+
+    @Test
+    void advanceToNextFloor_movesIntoAFreshFloorAtTheNewMapsStart() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        winCurrentFloorToBoss(manager);
+
+        manager.advanceToNextFloor();
+
+        RunState state = manager.getRunState();
+        assertEquals(1, state.floorIndex());
+        assertEquals(state.map().startNodeId(), state.currentNode().id());
+        assertFalse(state.isCurrentNodeCleared());
+        assertFalse(state.isEnded());
+    }
+
+    @Test
+    void advanceToNextFloor_keepsTheDeckEldersAndRelicsUnchanged() {
+        RelicRegistry.register(RelicDefinition.battleOnly("TestRelic", "desc", List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.addRelic("TestRelic");
+        winCurrentFloorToBoss(manager);
+        manager.promoteToElder(manager.getRunState().deck().get(0).instanceId());
+        List<RunCardInstance> deckBefore = manager.getRunState().deck();
+        List<RunCardInstance> eldersBefore = manager.getRunState().elders();
+
+        manager.advanceToNextFloor();
+
+        assertEquals(deckBefore, manager.getRunState().deck());
+        assertEquals(eldersBefore, manager.getRunState().elders());
+        assertEquals(List.of("TestRelic"), manager.getRunState().activeRelicIds());
+    }
+
+    @Test
+    void advanceToNextFloor_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, manager::advanceToNextFloor);
+    }
+
+    @Test
+    void buildSpecForCurrentNode_onALaterFloor_scalesDifficultyHigherThanFloorOne() {
+        RunManager manager = new RunManager();
+        manager.startRun(new RunDifficulty(RunDifficulty.MIN_LEVEL), STARTING_DECK, SEED);
+        int floorOneBotDeckSize = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P2).size();
+
+        winCurrentFloorToBoss(manager);
+        manager.promoteToElder(manager.getRunState().deck().get(0).instanceId());
+        manager.advanceToNextFloor();
+        int floorTwoBotDeckSize = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P2).size();
+
+        assertTrue(floorTwoBotDeckSize > floorOneBotDeckSize,
+                "floor 2's start should scale harder than floor 1's start: " + floorTwoBotDeckSize + " vs " + floorOneBotDeckSize);
     }
 
     // --- RelicRunHook plumbing (UPG-002) ---

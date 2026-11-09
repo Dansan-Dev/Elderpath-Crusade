@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BuiltinRelicHooksTest {
 
     private static RunState freshState() {
-        return RunState.start(RunMap.linearChain(2), RunDifficulty.DEFAULT, List.of("Wolf"));
+        return RunState.start(RunMap.linearChain(2), RunDifficulty.DEFAULT, List.of("Wolf"), 1);
     }
 
     @Test

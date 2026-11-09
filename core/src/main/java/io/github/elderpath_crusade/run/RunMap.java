@@ -110,7 +110,10 @@ public record RunMap(List<RunNode> nodes, int startNodeId) {
      * on a single terminal Boss node. Each node connects to 1-2 nodes in the next floor; every
      * node in a floor is guaranteed at least one incoming edge from the previous floor (nothing
      * is ever unreachable) and every non-Boss node at least one outgoing edge to the next
-     * (nothing is ever a dead end before the boss).
+     * (nothing is ever a dead end before the boss). Guarantees at least one Elite node among the
+     * middle floors (Phase 3.6) — the 60/20/20 weighting alone leaves a real chance of none at
+     * all (~41% per floor), which would make a multi-floor run's Elite reward unreachable on an
+     * unlucky seed; a map that already rolled one naturally is untouched.
      */
     public static RunMap generateBranching(long seed, int middleFloors, int width) {
         if (middleFloors < 1) throw new IllegalArgumentException("middleFloors must be >= 1");
@@ -133,6 +136,13 @@ public record RunMap(List<RunNode> nodes, int startNodeId) {
                 nextId++;
             }
             floors.add(floor);
+        }
+
+        if (types.values().stream().noneMatch(t -> t == RunNodeType.ELITE)) {
+            List<Integer> middleNodeIds = new ArrayList<>();
+            for (int f = 1; f < floors.size(); f++) middleNodeIds.addAll(floors.get(f));
+            int forced = middleNodeIds.get(rng.nextInt(middleNodeIds.size()));
+            types.put(forced, RunNodeType.ELITE);
         }
 
         int bossId = nextId;

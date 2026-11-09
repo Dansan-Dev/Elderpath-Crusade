@@ -173,6 +173,27 @@ class RunMapTest {
     }
 
     @Test
+    void generateBranching_guaranteesAtLeastOneEliteOnEverySeed() {
+        for (long seed = 1; seed <= 200; seed++) {
+            RunMap map = RunMap.generateBranching(seed, 4, 3);
+            boolean hasElite = map.nodes().stream().anyMatch(n -> n.type() == RunNodeType.ELITE);
+            assertTrue(hasElite, "seed " + seed + " has no Elite node");
+        }
+    }
+
+    @Test
+    void generateBranching_eliteGuarantee_stillKeepsEveryNodeReachableAndNoDeadEnds() {
+        for (long seed = 1; seed <= 50; seed++) {
+            RunMap map = RunMap.generateBranching(seed, 4, 3);
+            Set<Integer> allIds = map.nodes().stream().map(RunNode::id).collect(java.util.stream.Collectors.toSet());
+            assertEquals(allIds, reachableFromStart(map), "seed " + seed);
+            for (RunNode node : map.nodes()) {
+                if (!node.isTerminal()) assertFalse(node.next().isEmpty(), "seed " + seed + " node " + node.id());
+            }
+        }
+    }
+
+    @Test
     void generateBranching_rejectsInvalidShape() {
         assertThrows(IllegalArgumentException.class, () -> RunMap.generateBranching(1, 0, 3));
         assertThrows(IllegalArgumentException.class, () -> RunMap.generateBranching(1, 4, 0));

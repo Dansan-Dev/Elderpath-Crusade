@@ -37,9 +37,10 @@ import java.util.function.BiConsumer;
  * <p>A modified deck instance (UPG-003) is passed to the battle under a synthetic card name
  * ({@link SyntheticCardNames}) plus its {@link RunCardModification}, keyed by instance id, via
  * {@link LocalMatchSpec#withCardMods}; the run's active relics (UPG-002) go the same way via
- * {@link LocalMatchSpec#withRelics}. The bot's deck is still the player's own deck (synthetic
- * names included), just padded out to {@link RunDifficulty#resolveForNode}'s resolved size.
- * The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
+ * {@link LocalMatchSpec#withRelics}. The bot's deck is its own designed {@link
+ * EnemyDeckCatalog} entry for the node's type (found via playtest: it used to just mirror the
+ * player's own deck, cards and size both), padded out to {@link RunDifficulty#resolveForNode}'s
+ * resolved size. The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
  *
  * <p>Elders (ELDER-001 through 003, superseding UPG-004/005's reward flow): {@link
  * #promoteToElder} retires a deck card into {@link RunState#elders()}; {@link
@@ -50,23 +51,31 @@ import java.util.function.BiConsumer;
  * each one spawns on the player's home row from turn 1 via {@link LocalMatchSpec#withElders} —
  * using the card's own stats/abilities, same synthetic-name scheme as a modified deck card
  * (UPG-003) when the Elder itself carries a modification.
+ *
+ * <p>A run is {@link #TOTAL_FLOORS} sequential floors (MULTI-001) — {@link #advanceToNextFloor}
+ * generates the next one once an earlier floor's boss is cleared; only the last floor's boss
+ * ends the run (see {@link #reportNodeOutcome}). An Elder pick happens only at run start and
+ * after each non-final floor's boss now, never after an ordinary Battle/Elite win.
  */
 public final class RunManager {
+    /** How many sequential floors a run has (MULTI-001) — each its own map, ending in its own boss. */
+    public static final int TOTAL_FLOORS = 3;
+
     private RunState runState;
     private ClientMatchSession activeSession;
 
     public RunManager() {
     }
 
-    /** Starts a brand-new run with a randomly seeded map: a fresh deck, nothing played yet. */
+    /** Starts a brand-new run with a randomly seeded first floor: a fresh deck, nothing played yet. */
     public void startRun(RunDifficulty difficulty, List<String> startingDeckCardNames) {
         startRun(difficulty, startingDeckCardNames, new Random().nextLong());
     }
 
-    /** Starts a brand-new run with a specific map seed (deterministic — tests, or a future "share this run" feature). */
+    /** Starts a brand-new run with a specific first-floor map seed (deterministic — tests, or a future "share this run" feature). */
     public void startRun(RunDifficulty difficulty, List<String> startingDeckCardNames, long mapSeed) {
-        RunMap map = RunMap.generate(mapSeed);
-        this.runState = RunState.start(map, difficulty, startingDeckCardNames);
+        RunMap firstFloor = RunMap.generate(mapSeed);
+        this.runState = RunState.start(firstFloor, difficulty, startingDeckCardNames, TOTAL_FLOORS);
         this.activeSession = null;
     }
 
@@ -89,19 +98,20 @@ public final class RunManager {
      * its base card + instance id (UPG-003), with its {@link RunCardModification} carried
      * alongside via {@link LocalMatchSpec#withCardMods} so the battle can register and summon
      * it; the run's active relics go the same way via {@link LocalMatchSpec#withRelics}. The
-     * opponent's bot kind and deck size come from {@link RunDifficulty#resolveForNode} (the
-     * run's chosen level + this node's depth + {@link RunState#startingDeckSize()} — the run's
-     * fixed starting size, not the player's current, possibly Elder-shrunk one, so the
-     * opponent doesn't quietly get weaker over the run just because cards keep getting
-     * promoted); its actual cards come from {@link EnemyDeckCatalog} for this node's type,
-     * cycled to pad out to the resolved size — not the player's own deck (found via playtest:
-     * the opponent used to just mirror it, cards and size both). The player always plays P1.
+     * opponent's bot kind and deck size come from {@link RunDifficulty#resolveForNode}, fed
+     * {@link RunState#globalDepth()} (MULTI-002 — floor index + in-floor depth, so later floors
+     * play harder) and {@link RunState#startingDeckSize()} (the run's fixed starting size, not
+     * the player's current, possibly Elder-shrunk one, so the opponent doesn't quietly get
+     * weaker over the run just because cards keep getting promoted). Its actual cards come
+     * from {@link EnemyDeckCatalog} for this node's type, cycled to pad out to the resolved
+     * size — not the player's own deck (found via playtest: the opponent used to just mirror
+     * it, cards and size both). The player always plays P1.
      */
     public LocalMatchSpec buildSpecForCurrentNode() {
         requireActiveRun();
         List<String> playerDeck = deckCardNames();
         RunDifficulty.ResolvedKnobs knobs = runState.difficulty().resolveForNode(
-                runState.currentNodeDepth(), runState.currentNode().type(), runState.startingDeckSize());
+                runState.globalDepth(), runState.currentNode().type(), runState.startingDeckSize());
         List<String> botDeck = padDeck(EnemyDeckCatalog.forNodeType(runState.currentNode().type()), knobs.botDeckSize());
 
         LocalMatchSpec spec = LocalMatchSpec.solo(playerDeck, botDeck, knobs.botKind());
@@ -207,10 +217,11 @@ public final class RunManager {
     /**
      * Resolves a node's battle outcome against RunState — ends the run as a loss (permadeath)
      * on anything but a P1 win (the player always plays P1, so a null/non-P1 winner, e.g. a
-     * draw, counts as a loss); on a win, ends the run as won if the current node was the map's
-     * terminal/Boss node, otherwise marks the current node cleared so the player can pick their
-     * next one via {@link #advanceToNextNode}. Public so a room managing its own session can
-     * report the result without going through {@link #startCurrentNode}/{@link #pollActiveNode}.
+     * draw, counts as a loss); on a win, ends the run as won if the current node was the *last*
+     * floor's Boss (MULTI-001 — an earlier floor's Boss doesn't end the run, see {@link
+     * #advanceToNextFloor}), otherwise marks the current node cleared so the player can pick
+     * their next one via {@link #advanceToNextNode}. Public so a room managing its own session
+     * can report the result without going through {@link #startCurrentNode}/{@link #pollActiveNode}.
      */
     public void reportNodeOutcome(PieceAlignment winner) {
         requireActiveRun();
@@ -219,11 +230,23 @@ public final class RunManager {
             runState.endRun(false);
             return;
         }
-        if (runState.currentNode().isTerminal()) {
+        if (runState.currentNode().isTerminal() && runState.isLastFloor()) {
             runState.endRun(true);
             return;
         }
         runState.markCurrentNodeCleared();
+    }
+
+    /**
+     * Generates a fresh next floor and moves into it (MULTI-001) — called once a non-final
+     * floor's (cleared) Boss has been resolved via {@link #reportNodeOutcome}, typically right
+     * after the player's post-boss Elder pick. The room is responsible for calling this at the
+     * right moment; {@code RunState.advanceToNextFloor} itself enforces the preconditions
+     * (current node is this floor's cleared boss, not already the last floor).
+     */
+    public void advanceToNextFloor() {
+        requireActiveRun();
+        runState.advanceToNextFloor(RunMap.generate(new Random().nextLong()));
     }
 
     /**
