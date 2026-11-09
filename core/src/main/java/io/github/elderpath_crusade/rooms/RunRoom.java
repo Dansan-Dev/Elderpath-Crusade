@@ -59,7 +59,11 @@ public class RunRoom extends Room {
 
         RunManager runManager = GameContext.get().getRunManager();
         if (!runManager.hasActiveRun()) {
+            // Defensive fallback only — the real flow always goes through DifficultySelectRoom
+            // -> RunDraftRoom -> ElderPickRoom (ELDER-004) before ever reaching here. Still
+            // promotes a first Elder so this degenerate path doesn't leave the run with none.
             runManager.startRun(RunDifficulty.DEFAULT, DEFAULT_STARTING_DECK);
+            runManager.promoteToElder(runManager.getRunState().deck().get(0).instanceId());
         }
         RunState state = runManager.getRunState();
         floors = computeFloors(state.map());

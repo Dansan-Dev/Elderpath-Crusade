@@ -13,17 +13,14 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
-import java.util.List;
-
 /**
- * Shown once, before a fresh roguelike run's map is generated — the player picks a difficulty
- * level (DIFF-001), fixed for the whole run, then {@link RunManager#startRun} is called and the
- * run begins. Only reached from {@code GameModeRoom} when no run is already active; a run in
+ * Shown once, before a fresh roguelike run's deck is drafted — the player picks a difficulty
+ * level (DIFF-001), fixed for the whole run, then hands off to {@link RunDraftRoom} to build
+ * the starting deck (ELDER-004; {@link RunManager#startRun} is called there, once the draft
+ * completes). Only reached from {@code GameModeRoom} when no run is already active; a run in
  * progress goes straight back to {@code RunRoom} instead, since its difficulty is already set.
  */
 public class DifficultySelectRoom extends Room {
-    private static final List<String> STARTING_DECK =
-            List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub", "Warp Mage");
     private static final int BUTTON_WIDTH = 220;
     private static final int BUTTON_HEIGHT = 60;
     private static final int BUTTON_SPACING = 70;
@@ -69,8 +66,7 @@ public class DifficultySelectRoom extends Room {
     }
 
     private void startRunAtLevel(int level) {
-        GameContext.get().getRunManager().startRun(new RunDifficulty(level), STARTING_DECK);
-        GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+        GameContext.get().getRoomManager().gotoRoom(() -> RunDraftRoom.get(new RunDifficulty(level)));
     }
 
     private void layoutContents() {
