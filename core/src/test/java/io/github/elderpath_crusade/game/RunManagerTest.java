@@ -473,6 +473,58 @@ class RunManagerTest {
         assertTrue(spec.cardLockTurns().isEmpty());
     }
 
+    // --- Elders spawn as real pieces (ELDER-006) ---
+
+    @Test
+    void buildSpecForCurrentNode_withElders_passesTheirNamesForP1Only() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.promoteToElder("run-0"); // Wolf
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertEquals(List.of("Wolf"), spec.elders().get(PieceAlignment.P1));
+        assertFalse(spec.elders().containsKey(PieceAlignment.P2));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withNoElders_hasNoElderEntries() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertTrue(spec.elders().isEmpty());
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withAModifiedElder_usesItsSyntheticNameAndCarriesTheModification() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        RunCardModification mod = new RunCardModification(Map.of("damage", 3), List.of());
+        manager.getRunState().modifyCard("run-0", mod); // STARTING_DECK.get(0) == "Wolf"
+        manager.promoteToElder("run-0");
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        String expectedName = SyntheticCardNames.encode("Wolf", "run-0");
+        assertEquals(List.of(expectedName), spec.elders().get(PieceAlignment.P1));
+        assertEquals(mod, spec.cardMods().get(PieceAlignment.P1).get("run-0"));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_promotingAnElder_shrinksThePlayersDeckByOne() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        int before = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P1).size();
+
+        manager.promoteToElder("run-0"); // Wolf
+
+        int after = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P1).size();
+        assertEquals(before - 1, after,
+                "an Elder is retired out of the deck — it spawns on the board, not played from hand");
+    }
+
     // --- RelicRunHook plumbing (UPG-002) ---
 
     @Test

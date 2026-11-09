@@ -28,6 +28,7 @@ class LaunchOptionsTest {
         assertEquals(List.of(), o.relics().get(PieceAlignment.P1), "no --p1-relics: no relics");
         assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P1), "no --p1-card-mods: no modifications");
         assertEquals(0, o.cardLockTurns().get(PieceAlignment.P1), "no --p1-card-lock-turns: never locked");
+        assertEquals(List.of(), o.elders().get(PieceAlignment.P1), "no --p1-elders: no elder pieces");
     }
 
     @Test
@@ -47,6 +48,13 @@ class LaunchOptionsTest {
         LaunchOptions o = LaunchOptions.parse(new String[]{"--p1-card-lock-turns", "3"});
         assertEquals(3, o.cardLockTurns().get(PieceAlignment.P1));
         assertEquals(0, o.cardLockTurns().get(PieceAlignment.P2), "no --p2-card-lock-turns: never locked");
+    }
+
+    @Test
+    void parse_elders() {
+        LaunchOptions o = LaunchOptions.parse(new String[]{"--p1-elders", "Warp Mage,Wolf Cub#run-3"});
+        assertEquals(List.of("Warp Mage", "Wolf Cub#run-3"), o.elders().get(PieceAlignment.P1));
+        assertEquals(List.of(), o.elders().get(PieceAlignment.P2), "no --p2-elders: no elder pieces");
     }
 
     @Test

@@ -18,6 +18,17 @@ class MatchConfigTest {
         assertEquals(List.of(), config.relics(PieceAlignment.P1));
         assertEquals(Map.of(), config.cardMods(PieceAlignment.P1));
         assertEquals(0, config.cardLockTurns(PieceAlignment.P1));
+        assertEquals(List.of(), config.elders(PieceAlignment.P1));
+    }
+
+    @Test
+    void withElders_isAnIndependentWither() {
+        MatchConfig config = MatchConfig.standard(GameMode.DEMO, List.of("Wolf"), List.of("Wolf"), null, Map.of())
+                .withElders(Map.of(PieceAlignment.P1, List.of("Warp Mage")));
+
+        assertEquals(List.of("Warp Mage"), config.elders(PieceAlignment.P1));
+        assertEquals(List.of(), config.elders(PieceAlignment.P2));
+        assertEquals(0, config.cardLockTurns(PieceAlignment.P1), "independent of card-lock-turns/relics/cardMods");
     }
 
     @Test

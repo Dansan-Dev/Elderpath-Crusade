@@ -23,6 +23,9 @@ import java.util.Map;
  *                       RunCardModification.encodeMap's format (LAUNCH-001; default none)
  *   --p1-card-lock-turns / --p2-card-lock-turns N   turns before mana/cards unlock for a roguelike run's
  *                       Elder mechanic (ELDER-002; default 0, never locked)
+ *   --p1-elders / --p2-elders "Name,Name"           card names (plain or synthetic UPG-003 names) to
+ *                       spawn as real, on-board pieces on that side's home row before the match begins —
+ *                       the other half of the Elder mechanic (ELDER-006; default none)
  *   --seed N            deck shuffle seed (default random)
  *   --assets DIR        assets directory holding data/*.yaml (default: the working directory if it
  *                       holds data/pieces.yaml, else the classpath — a packaged game's jar)
@@ -42,6 +45,7 @@ record LaunchOptions(
         Map<PieceAlignment, List<String>> relics,
         Map<PieceAlignment, Map<String, RunCardModification>> cardMods,
         Map<PieceAlignment, Integer> cardLockTurns,
+        Map<PieceAlignment, List<String>> elders,
         Long seed,
         File assetsDir,
         int tickMs,
@@ -67,6 +71,8 @@ record LaunchOptions(
         String p2CardMods = "";
         int p1CardLockTurns = 0;
         int p2CardLockTurns = 0;
+        String p1Elders = "";
+        String p2Elders = "";
         Long seed = null;
         File assetsDir = null; // null = working directory or classpath, see ServerLauncher
         int tickMs = 16;
@@ -93,6 +99,8 @@ record LaunchOptions(
                 case "--p2-card-mods" -> p2CardMods = value;
                 case "--p1-card-lock-turns" -> p1CardLockTurns = parseInt(flag, value, 0, Integer.MAX_VALUE);
                 case "--p2-card-lock-turns" -> p2CardLockTurns = parseInt(flag, value, 0, Integer.MAX_VALUE);
+                case "--p1-elders" -> p1Elders = value;
+                case "--p2-elders" -> p2Elders = value;
                 case "--seed" -> seed = parseLong(flag, value);
                 case "--assets" -> assetsDir = new File(value);
                 case "--tick-ms" -> tickMs = parseInt(flag, value, 1, 1000);
@@ -120,12 +128,20 @@ record LaunchOptions(
         Map<PieceAlignment, Integer> cardLockTurns = new EnumMap<>(PieceAlignment.class);
         cardLockTurns.put(PieceAlignment.P1, p1CardLockTurns);
         cardLockTurns.put(PieceAlignment.P2, p2CardLockTurns);
-        return new LaunchOptions(port, bind, bots, decks, relics, cardMods, cardLockTurns, seed, assetsDir, tickMs,
+        Map<PieceAlignment, List<String>> elders = new EnumMap<>(PieceAlignment.class);
+        elders.put(PieceAlignment.P1, parseNameList(p1Elders));
+        elders.put(PieceAlignment.P2, parseNameList(p2Elders));
+        return new LaunchOptions(port, bind, bots, decks, relics, cardMods, cardLockTurns, elders, seed, assetsDir, tickMs,
                 timeScale, parentPid, watchStdin, idleTimeout, endGrace);
     }
 
     /** "RelicA,RelicB" → [RelicA, RelicB]; blank input → no relics. */
     private static List<String> parseRelics(String spec) {
+        return parseNameList(spec);
+    }
+
+    /** "NameA,NameB" → [NameA, NameB]; blank input → an empty list. Shared by --*-relics/--*-elders. */
+    private static List<String> parseNameList(String spec) {
         List<String> out = new ArrayList<>();
         if (spec == null || spec.isBlank()) return out;
         for (String part : spec.split(",")) {

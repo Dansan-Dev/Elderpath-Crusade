@@ -92,7 +92,7 @@ class BotSideSymmetryTest {
         List<String> deck = new ArrayList<>(Collections.nCopies(12, "Wolf"));
         BoardGrid grid = MatchSetup.prepare(new MatchConfig(ROWS, 5, SYMMETRIC_TERRAIN,
                 Map.of(PieceAlignment.P1, deck, PieceAlignment.P2, new ArrayList<>(deck)), 1L, GameMode.DEMO,
-                Map.of(side, kind), Map.of(), Map.of(), Map.of()));
+                Map.of(side, kind), Map.of(), Map.of(), Map.of(), Map.of()));
         for (Placed p : position) {
             int row = side == PieceAlignment.P1 ? p.row() : ROWS - 1 - p.row();
             Entity e = PieceFactory.createPiece(RUNNER, p.own() ? side : other, row, p.col());

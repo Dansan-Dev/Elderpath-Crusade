@@ -24,6 +24,12 @@ import java.util.Map;
  * @param cardLockTurns how many of that side's own turns must pass before mana gain/card play
  *                      unlock (ELDER-002) — 0 (the default, via {@link #cardLockTurns}) outside a
  *                      roguelike run. Enforced by {@code PlayerManager}/{@code CardRules}.
+ * @param elders        card names (CardCatalog display names, or a synthetic UPG-003 name for a
+ *                      modified one) to spawn as real, on-board pieces on that side's home row
+ *                      before the match begins (ELDER-006) — empty outside a roguelike run.
+ *                      {@code MatchSetup.prepare} spawns them; a modified Elder's delta rides
+ *                      alongside in {@link #cardMods}, keyed by the same instance id encoded
+ *                      into its synthetic name.
  */
 public record MatchConfig(
         int rows,
@@ -35,7 +41,8 @@ public record MatchConfig(
         Map<PieceAlignment, BotKind> bots,
         Map<PieceAlignment, List<String>> relics,
         Map<PieceAlignment, Map<String, RunCardModification>> cardMods,
-        Map<PieceAlignment, Integer> cardLockTurns
+        Map<PieceAlignment, Integer> cardLockTurns,
+        Map<PieceAlignment, List<String>> elders
 ) {
     public static final int DEFAULT_ROWS = 7;
     public static final int DEFAULT_COLS = 5;
@@ -49,14 +56,15 @@ public record MatchConfig(
         relics = Map.copyOf(relics);
         cardMods = Map.copyOf(cardMods);
         cardLockTurns = Map.copyOf(cardLockTurns);
+        elders = Map.copyOf(elders);
     }
 
-    /** The standard 7x5 board with its two mountains. No relics/card mods/card-lock — see the {@code with*} methods. */
+    /** The standard 7x5 board with its two mountains. No relics/card mods/card-lock/elders — see the {@code with*} methods. */
     public static MatchConfig standard(GameMode mode, List<String> p1Deck, List<String> p2Deck,
                                        Long seed, Map<PieceAlignment, BotKind> bots) {
         return new MatchConfig(DEFAULT_ROWS, DEFAULT_COLS, DEFAULT_TERRAIN,
                 Map.of(PieceAlignment.P1, p1Deck, PieceAlignment.P2, p2Deck), seed, mode, bots,
-                Map.of(), Map.of(), Map.of());
+                Map.of(), Map.of(), Map.of(), Map.of());
     }
 
     public List<String> deck(PieceAlignment alignment) {
@@ -75,15 +83,23 @@ public record MatchConfig(
         return cardLockTurns.getOrDefault(alignment, 0);
     }
 
+    public List<String> elders(PieceAlignment alignment) {
+        return elders.getOrDefault(alignment, List.of());
+    }
+
     public MatchConfig withRelics(Map<PieceAlignment, List<String>> value) {
-        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, value, cardMods, cardLockTurns);
+        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, value, cardMods, cardLockTurns, elders);
     }
 
     public MatchConfig withCardMods(Map<PieceAlignment, Map<String, RunCardModification>> value) {
-        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, relics, value, cardLockTurns);
+        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, relics, value, cardLockTurns, elders);
     }
 
     public MatchConfig withCardLockTurns(Map<PieceAlignment, Integer> value) {
-        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, relics, cardMods, value);
+        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, relics, cardMods, value, elders);
+    }
+
+    public MatchConfig withElders(Map<PieceAlignment, List<String>> value) {
+        return new MatchConfig(rows, cols, terrain, decks, seed, mode, bots, relics, cardMods, cardLockTurns, value);
     }
 }

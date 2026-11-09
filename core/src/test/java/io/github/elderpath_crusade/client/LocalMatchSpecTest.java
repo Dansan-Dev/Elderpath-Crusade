@@ -19,9 +19,29 @@ class LocalMatchSpecTest {
         assertEquals(Map.of(), spec.relics());
         assertEquals(Map.of(), spec.cardMods());
         assertEquals(Map.of(), spec.cardLockTurns());
+        assertEquals(Map.of(), spec.elders());
         assertFalse(String.join(" ", spec.launcherArgs()).contains("relics"));
         assertFalse(String.join(" ", spec.launcherArgs()).contains("card-mods"));
         assertFalse(String.join(" ", spec.launcherArgs()).contains("card-lock-turns"));
+        assertFalse(String.join(" ", spec.launcherArgs()).contains("elders"));
+    }
+
+    @Test
+    void withElders_addsThePNEldersFlagForThatSideOnly() {
+        LocalMatchSpec spec = LocalMatchSpec.solo(List.of("Wolf"), List.of("Wolf"), BotKind.SMART)
+                .withElders(PieceAlignment.P1, List.of("Warp Mage", "Wolf Cub#run-3"));
+
+        List<String> args = spec.launcherArgs();
+        assertEquals("Warp Mage,Wolf Cub#run-3", valueAfter(args, "--p1-elders"));
+        assertFalse(args.contains("--p2-elders"));
+    }
+
+    @Test
+    void withElders_ofAnEmptyList_addsNoFlag() {
+        LocalMatchSpec spec = LocalMatchSpec.solo(List.of("Wolf"), List.of("Wolf"), BotKind.SMART)
+                .withElders(PieceAlignment.P1, List.of());
+
+        assertFalse(String.join(" ", spec.launcherArgs()).contains("elders"));
     }
 
     @Test

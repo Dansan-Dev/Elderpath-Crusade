@@ -19,6 +19,7 @@ import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.components.TerrainComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game.PlayerManager;
@@ -30,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * Starts a match's simulation from a MatchConfig — headless, no rendering. A local room
@@ -77,6 +79,7 @@ public final class MatchSetup {
         }
 
         spawnRelicCarriers(config);
+        spawnElderPieces(config, grid);
         return grid;
     }
 
@@ -99,6 +102,11 @@ public final class MatchSetup {
         allMods.putAll(config.cardMods(PieceAlignment.P2));
         for (PieceAlignment side : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
             for (String cardName : config.deck(side)) {
+                if (SyntheticCardNames.isSynthetic(cardName)) registerSyntheticCard(cardName, allMods);
+            }
+            // An Elder (ELDER-006) is never in the deck — it's retired out of it — so its own
+            // synthetic name (if its modification makes it one) needs its own registration pass.
+            for (String cardName : config.elders(side)) {
                 if (SyntheticCardNames.isSynthetic(cardName)) registerSyntheticCard(cardName, allMods);
             }
         }
@@ -204,6 +212,76 @@ public final class MatchSetup {
         entity.add(aic);
 
         engine.addEntity(entity);
+    }
+
+    /**
+     * Spawns every Elder (ELDER-006) as a real, visible piece on its owner's home row, before
+     * the match begins — using the Elder's own {@link PieceDefinition} (stats + abilities), not
+     * a hand/summon flow: it's on the board from turn 1, counts against that row's summon tiles,
+     * can act, be attacked, and be killed like any other piece. Centered among the home row's
+     * columns, in {@link MatchConfig#elders} order; if a side somehow has more Elders than the
+     * board has columns, the excess are silently skipped rather than thrown out of bounds. Must
+     * run after {@link #registerSyntheticCards} so a modified Elder's synthetic name already
+     * resolves via {@link CardCatalog#getPieceDefinition}.
+     */
+    private static void spawnElderPieces(MatchConfig config, BoardGrid grid) {
+        for (PieceAlignment side : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
+            List<String> elderNames = config.elders(side);
+            if (elderNames.isEmpty()) continue;
+            int homeRow = grid.getHomeRow(side);
+            int startCol = Math.max(0, (grid.getCols() - elderNames.size()) / 2);
+            for (int i = 0; i < elderNames.size(); i++) {
+                int col = startCol + i;
+                if (col >= grid.getCols()) break;
+                PieceDefinition def = CardCatalog.getPieceDefinition(elderNames.get(i));
+                if (def == null) continue;
+                spawnElderPiece(grid, side, def, homeRow, col);
+            }
+        }
+    }
+
+    /**
+     * Builds one Elder's board entity by hand, the same way {@link #spawnCarrier} does rather
+     * than through {@link io.github.elderpath_crusade.ecs.factory.PieceFactory} — it must seed
+     * {@link ComputedStatsComponent} from the definition's own base stats up front, matching
+     * {@code spawnCarrier}'s own comment on why: this piece exists before turn 1's {@code
+     * TurnSystem.resetActionsForPlayer} ever runs, which reads {@code ComputedStatsComponent
+     * .actions} (falling back to base only when the component is entirely absent) — a bare
+     * default-constructed one here would read as 0 actions on the very first turn, with no
+     * {@code PassiveModifierSystem}/{@code ModifierResolutionSystem} tick having run yet to fix
+     * it. A piece summoned mid-match never hits this: by its owner's next turn, at least one
+     * engine tick has already computed it correctly.
+     */
+    private static void spawnElderPiece(BoardGrid grid, PieceAlignment side, PieceDefinition def, int row, int col) {
+        Engine engine = GameContext.get().getEcsEngine();
+        Entity entity = engine.createEntity();
+        String pieceId = UUID.randomUUID().toString();
+        entity.add(new IdentityComponent().set(pieceId, def.id()));
+        entity.add(new AlignmentComponent().set(side));
+        entity.add(new PositionComponent().set(row, col));
+        entity.add(new StatsComponent().set(def.cost(), def.health(), def.damage(), def.speed(), def.actions()));
+        entity.add(new ModifierComponent());
+
+        ComputedStatsComponent computed = new ComputedStatsComponent();
+        computed.cost = def.cost();
+        computed.maxHealth = def.health();
+        computed.damage = def.damage();
+        computed.speed = def.speed();
+        computed.actions = def.actions();
+        entity.add(computed);
+
+        AbilityInstanceComponent aic = new AbilityInstanceComponent();
+        for (AbilityRef ref : def.abilities()) {
+            AbilityDefinition abDef = ref.params().isEmpty()
+                    ? AbilityRegistry.get(ref.name())
+                    : AbilityRegistry.specialize(ref.name(), ref.params());
+            if (abDef != null) aic.addAbility(abDef);
+        }
+        if (!aic.definitions.isEmpty()) entity.add(aic);
+
+        engine.addEntity(entity);
+        grid.addEntity(row, col, entity);
+        TypedEventBus.get().emit(new PieceSpawnedEvent(pieceId, side, row, col, def.id()));
     }
 
     /** Starts the first turn (P1). */

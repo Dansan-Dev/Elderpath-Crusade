@@ -46,7 +46,10 @@ import java.util.function.BiConsumer;
  * #elderCardLockTurns()} (the highest mana cost among them) is passed to every future battle
  * via {@link LocalMatchSpec#withCardLockTurns} — the player's own side gains no mana and can't
  * play any card for that many of its own turns, each battle (enforced in {@code
- * PlayerManager}/{@code CardRules}).
+ * PlayerManager}/{@code CardRules}). An Elder is also a real piece (ELDER-006): every battle,
+ * each one spawns on the player's home row from turn 1 via {@link LocalMatchSpec#withElders} —
+ * using the card's own stats/abilities, same synthetic-name scheme as a modified deck card
+ * (UPG-003) when the Elder itself carries a modification.
  */
 public final class RunManager {
     private RunState runState;
@@ -105,9 +108,14 @@ public final class RunManager {
         if (!runState.activeRelicIds().isEmpty()) {
             spec = spec.withRelics(PieceAlignment.P1, runState.activeRelicIds());
         }
-        Map<String, RunCardModification> cardMods = deckCardModifications();
+        Map<String, RunCardModification> cardMods = new LinkedHashMap<>(deckCardModifications());
+        cardMods.putAll(elderCardModifications());
         if (!cardMods.isEmpty()) {
             spec = spec.withCardMods(PieceAlignment.P1, cardMods);
+        }
+        List<String> elderNames = elderCardNames();
+        if (!elderNames.isEmpty()) {
+            spec = spec.withElders(PieceAlignment.P1, elderNames);
         }
         int lockTurns = elderCardLockTurns();
         if (lockTurns > 0) {
@@ -132,6 +140,26 @@ public final class RunManager {
         Map<String, RunCardModification> mods = new LinkedHashMap<>();
         for (RunCardInstance instance : runState.deck()) {
             if (instance.isModified()) mods.put(instance.instanceId(), instance.modification());
+        }
+        return mods;
+    }
+
+    /** An Elder's board-spawn name — synthetic (UPG-003 scheme) if modified, else its plain card name. */
+    private List<String> elderCardNames() {
+        List<String> names = new ArrayList<>();
+        for (RunCardInstance elder : runState.elders()) {
+            names.add(elder.isModified()
+                    ? SyntheticCardNames.encode(elder.cardName(), elder.instanceId())
+                    : elder.cardName());
+        }
+        return names;
+    }
+
+    /** Every modified Elder's modification, keyed by instance id — merged into the battle's card mods (ELDER-006). */
+    private Map<String, RunCardModification> elderCardModifications() {
+        Map<String, RunCardModification> mods = new LinkedHashMap<>();
+        for (RunCardInstance elder : runState.elders()) {
+            if (elder.isModified()) mods.put(elder.instanceId(), elder.modification());
         }
         return mods;
     }
