@@ -4,7 +4,10 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
+import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.data.AbilityRegistry;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
@@ -19,9 +22,12 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.run.RelicDefinition;
+import io.github.elderpath_crusade.run.RunCardModification;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -56,6 +62,8 @@ public final class MatchSetup {
         ctx.setActiveGrid(grid);
         for (Coord c : config.terrain()) placeTerrain(grid, c.row(), c.col());
 
+        registerSyntheticCards(config);
+
         Random rng = config.seed() == null ? new Random() : new Random(config.seed());
         for (PieceAlignment alignment : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
             ctx.getPlayerManager().setDeck(alignment, config.deck(alignment), rng).shuffle();
@@ -63,6 +71,64 @@ public final class MatchSetup {
 
         spawnRelicCarriers(config);
         return grid;
+    }
+
+    /**
+     * Registers a one-off PieceDefinition/CardCatalog.Summon entry for every synthetic card
+     * name (UPG-003) in either side's deck, so CardRules.playSummon's by-name lookup works on
+     * a run-modified card exactly like any other. Must run before decks are handed to
+     * PlayerManager so the first draw already resolves — nothing about deck shuffling/dealing
+     * cares about a card's name beyond that CardCatalog.get(name) succeeds.
+     *
+     * <p>Modifications are looked up by instance id across BOTH sides' cardMods, not just the
+     * side whose deck the name was found in — a bot's deck can be padded out with cycled
+     * copies of the player's own card names (RunManager/RunDifficulty), synthetic ones
+     * included, and the registration a given instance id resolves to must stay the same no
+     * matter which side's deck is scanned first.
+     */
+    private static void registerSyntheticCards(MatchConfig config) {
+        Map<String, RunCardModification> allMods = new LinkedHashMap<>();
+        allMods.putAll(config.cardMods(PieceAlignment.P1));
+        allMods.putAll(config.cardMods(PieceAlignment.P2));
+        for (PieceAlignment side : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
+            for (String cardName : config.deck(side)) {
+                if (SyntheticCardNames.isSynthetic(cardName)) registerSyntheticCard(cardName, allMods);
+            }
+        }
+    }
+
+    /**
+     * Always (re-)registers, overwriting any entry from an earlier prepare() in this same
+     * process (tests only — a real battle launches a fresh server process per match, see
+     * elderpath-architecture.md's "Client Layer") — a run instance id's modification can grow
+     * between battles, so a stale definition left from a previous match must never win.
+     */
+    private static void registerSyntheticCard(String syntheticName, Map<String, RunCardModification> modsByInstanceId) {
+        String baseCardName = SyntheticCardNames.baseCardName(syntheticName);
+        String instanceId = SyntheticCardNames.instanceId(syntheticName);
+        String baseKey = CardCatalog.getRegistryKeyForSummon(baseCardName);
+        PieceDefinition base = baseKey == null ? null : PieceRegistry.get(baseKey);
+        if (base == null) throw new IllegalStateException("unknown base card for modification: " + baseCardName);
+
+        RunCardModification mod = modsByInstanceId.getOrDefault(instanceId, RunCardModification.NONE);
+        String syntheticKey = PieceRegistry.toRegistryKey(syntheticName);
+        PieceRegistry.register(applyModification(base, syntheticKey, mod));
+        CardCatalog.registerSummon(syntheticName, syntheticKey);
+    }
+
+    /** base's stats plus mod's additive deltas (clamped to 0), base's abilities plus mod's added ones. */
+    private static PieceDefinition applyModification(PieceDefinition base, String newId, RunCardModification mod) {
+        Map<String, Integer> deltas = mod.statDeltas();
+        int cost = Math.max(0, base.cost() + deltas.getOrDefault("cost", 0));
+        int health = Math.max(0, base.health() + deltas.getOrDefault("health", 0));
+        int damage = Math.max(0, base.damage() + deltas.getOrDefault("damage", 0));
+        int speed = Math.max(0, base.speed() + deltas.getOrDefault("speed", 0));
+        int actions = Math.max(0, base.actions() + deltas.getOrDefault("actions", 0));
+
+        List<AbilityRef> abilities = new ArrayList<>(base.abilities());
+        for (String abilityName : mod.addedAbilities()) abilities.add(new AbilityRef(abilityName));
+
+        return new PieceDefinition(newId, cost, health, damage, speed, actions, abilities);
     }
 
     /**

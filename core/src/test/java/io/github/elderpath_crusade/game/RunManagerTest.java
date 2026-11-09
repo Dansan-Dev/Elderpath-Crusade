@@ -3,8 +3,10 @@ package io.github.elderpath_crusade.game;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RelicRunHook;
+import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.run.RunMap;
 import io.github.elderpath_crusade.run.RunNode;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -166,6 +169,56 @@ class RunManagerTest {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
         assertThrows(IllegalStateException.class, manager::pollActiveNode);
+    }
+
+    // --- Card modifications / relics plumbing into the battle spec (UPG-003) ---
+
+    @Test
+    void buildSpecForCurrentNode_modifiedDeckInstance_usesASyntheticNameAndCarriesTheModification() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of("Frenzy"));
+        manager.getRunState().modifyCard("run-0", mod); // STARTING_DECK.get(0) == "Wolf"
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        String expectedName = SyntheticCardNames.encode("Wolf", "run-0");
+        assertTrue(spec.decks().get(PieceAlignment.P1).contains(expectedName));
+        assertEquals(mod, spec.cardMods().get(PieceAlignment.P1).get("run-0"));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withNoModifiedCards_hasNoCardMods() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertTrue(spec.cardMods().isEmpty());
+        assertEquals(STARTING_DECK, spec.decks().get(PieceAlignment.P1));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withActiveRelics_passesThemForP1Only() {
+        RelicRegistry.register(RelicDefinition.battleOnly("TestRelic", "desc", List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.addRelic("TestRelic");
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertEquals(List.of("TestRelic"), spec.relics().get(PieceAlignment.P1));
+        assertFalse(spec.relics().containsKey(PieceAlignment.P2));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withNoActiveRelics_hasNoRelics() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertTrue(spec.relics().isEmpty());
     }
 
     // --- RelicRunHook plumbing (UPG-002) ---

@@ -4,16 +4,20 @@ import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RelicRunHook;
 import io.github.elderpath_crusade.run.RunCardInstance;
+import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.run.RunMap;
 import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
 
@@ -26,8 +30,11 @@ import java.util.function.BiConsumer;
  * sole authority for them. {@code GameContext}-held, like {@code DeckManager}/{@code
  * GameModeManager}.
  *
- * <p>Card-modification plumbing (UPG-003) doesn't exist yet — the bot's deck is still the
- * player's own deck, just padded out to {@link RunDifficulty#resolveForNode}'s resolved size.
+ * <p>A modified deck instance (UPG-003) is passed to the battle under a synthetic card name
+ * ({@link SyntheticCardNames}) plus its {@link RunCardModification}, keyed by instance id, via
+ * {@link LocalMatchSpec#withCardMods}; the run's active relics (UPG-002) go the same way via
+ * {@link LocalMatchSpec#withRelics}. The bot's deck is still the player's own deck (synthetic
+ * names included), just padded out to {@link RunDifficulty#resolveForNode}'s resolved size.
  * The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
  */
 public final class RunManager {
@@ -64,11 +71,13 @@ public final class RunManager {
 
     /**
      * Builds the {@link LocalMatchSpec} for the run's current node. The player's deck is the
-     * run's current deck's card names (ignoring any per-instance modification for now — see
-     * UPG-003); the opponent's bot kind and deck size come from
-     * {@link RunDifficulty#resolveForNode} (the run's chosen level + this node's depth) — its
-     * deck is the player's own cards, cycled to pad out to the resolved size. The player always
-     * plays P1.
+     * run's current deck's card names — a modified instance's name is a synthetic one encoding
+     * its base card + instance id (UPG-003), with its {@link RunCardModification} carried
+     * alongside via {@link LocalMatchSpec#withCardMods} so the battle can register and summon
+     * it; the run's active relics go the same way via {@link LocalMatchSpec#withRelics}. The
+     * opponent's bot kind and deck size come from {@link RunDifficulty#resolveForNode} (the
+     * run's chosen level + this node's depth) — its deck is the player's own cards, cycled to
+     * pad out to the resolved size. The player always plays P1.
      */
     public LocalMatchSpec buildSpecForCurrentNode() {
         requireActiveRun();
@@ -76,13 +85,36 @@ public final class RunManager {
         RunDifficulty.ResolvedKnobs knobs = runState.difficulty().resolveForNode(
                 runState.currentNodeDepth(), runState.currentNode().type(), playerDeck.size());
         List<String> botDeck = padDeck(playerDeck, knobs.botDeckSize());
-        return LocalMatchSpec.solo(playerDeck, botDeck, knobs.botKind());
+
+        LocalMatchSpec spec = LocalMatchSpec.solo(playerDeck, botDeck, knobs.botKind());
+        if (!runState.activeRelicIds().isEmpty()) {
+            spec = spec.withRelics(PieceAlignment.P1, runState.activeRelicIds());
+        }
+        Map<String, RunCardModification> cardMods = deckCardModifications();
+        if (!cardMods.isEmpty()) {
+            spec = spec.withCardMods(PieceAlignment.P1, cardMods);
+        }
+        return spec;
     }
 
+    /** A modified instance's name is synthetic (UPG-003); an unmodified one is its plain card name. */
     private List<String> deckCardNames() {
         List<String> names = new ArrayList<>();
-        for (RunCardInstance instance : runState.deck()) names.add(instance.cardName());
+        for (RunCardInstance instance : runState.deck()) {
+            names.add(instance.isModified()
+                    ? SyntheticCardNames.encode(instance.cardName(), instance.instanceId())
+                    : instance.cardName());
+        }
         return names;
+    }
+
+    /** Every modified deck instance's modification, keyed by instance id — see {@link LocalMatchSpec#withCardMods}. */
+    private Map<String, RunCardModification> deckCardModifications() {
+        Map<String, RunCardModification> mods = new LinkedHashMap<>();
+        for (RunCardInstance instance : runState.deck()) {
+            if (instance.isModified()) mods.put(instance.instanceId(), instance.modification());
+        }
+        return mods;
     }
 
     /** Cycles through {@code deck} to build a deck of exactly {@code size} cards. */
