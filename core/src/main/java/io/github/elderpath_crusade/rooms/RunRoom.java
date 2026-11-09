@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
+import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.run.RunMap;
 import io.github.elderpath_crusade.run.RunNode;
@@ -24,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Run room shell (RUN-003) + clickable branching map screen (MAP-002, roguelike-run-plan.md
@@ -42,13 +44,15 @@ public class RunRoom extends Room {
             List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub", "Warp Mage");
     private static final int HEADER_TOP_OFFSET = 60;
     private static final int STATUS_TOP_OFFSET = 110;
-    private static final int MAP_TOP_MARGIN = 150;
+    private static final int ELDERS_TOP_OFFSET = 145;
+    private static final int MAP_TOP_MARGIN = 180;
     private static final int MAP_BOTTOM_MARGIN = 90;
     private static final int NODE_WIDTH = 110;
     private static final int NODE_HEIGHT = 50;
 
     private final Text header;
     private final Text status;
+    private final Text elders;
     private final Button backButton;
     private final List<List<RunNode>> floors;
     private final Map<Integer, Button> nodeButtons = new LinkedHashMap<>();
@@ -75,6 +79,10 @@ public class RunRoom extends Room {
         status = new Text(statusText(state), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.BODY_MEDIUM);
         addContent(status);
+
+        elders = new Text(eldersText(runManager), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+            .withFontSize(FontSize.CAPTION);
+        addContent(elders);
 
         buildNodeButtons(state);
 
@@ -154,6 +162,15 @@ public class RunRoom extends Room {
         return "Current node: " + nodeLabel(state.currentNode()) + " — click it to start";
     }
 
+    /** The run's current Elders and the card-lock wait they add up to — otherwise invisible once picked. */
+    private static String eldersText(RunManager runManager) {
+        List<RunCardInstance> currentElders = runManager.getRunState().elders();
+        if (currentElders.isEmpty()) return "Elders: none";
+        String names = currentElders.stream().map(RunCardInstance::cardName).collect(Collectors.joining(", "));
+        int lockTurns = runManager.elderCardLockTurns();
+        return "Elders: " + names + " (cards locked " + lockTurns + " turn" + (lockTurns == 1 ? "" : "s") + " each battle)";
+    }
+
     /**
      * Assigns each node a column ("floor") via {@link RunMap#depths()} — the same notion of
      * depth DIFF-001's difficulty formula scales against, so the map's layout and its actual
@@ -185,6 +202,7 @@ public class RunRoom extends Room {
 
         MenuLayout.centerHeader(header, HEADER_TOP_OFFSET);
         MenuLayout.centerHeader(status, STATUS_TOP_OFFSET);
+        MenuLayout.centerHeader(elders, ELDERS_TOP_OFFSET);
         layoutMap(screenW, screenH);
 
         int screenCenterX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
