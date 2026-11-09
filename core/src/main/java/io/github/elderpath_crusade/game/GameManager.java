@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.game;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.settings.PauseScreenPage;
 import io.github.elderpath_crusade.game_objects.cards.CardFactory;
 import io.github.elderpath_crusade.game_objects.pause.PauseScreen;
@@ -22,6 +23,7 @@ public class GameManager {
         if (GameContext.get().getWinConditionManager() != null) GameContext.get().getWinConditionManager().initialize();
         PieceRegistry.load();
         AbilityRegistry.load();
+        RelicRegistry.load();
         CardFactory.initialize();
     }
 
