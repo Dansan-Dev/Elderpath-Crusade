@@ -1,6 +1,8 @@
 package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.client.LocalMatchSpec;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.CardCatalog;
@@ -40,6 +42,11 @@ class RunManagerTest {
 
     @BeforeEach
     void setUp() {
+        PieceRegistry.register(new PieceDefinition("Wolf", 2, 3, 1, 1, 1, List.of()));
+        PieceRegistry.register(new PieceDefinition("WolfCub", 1, 1, 1, 1, 1, List.of()));
+        PieceRegistry.register(new PieceDefinition("Rogue", 3, 2, 2, 2, 1, List.of()));
+        PieceRegistry.register(new PieceDefinition("Fairy", 2, 1, 1, 1, 1, List.of()));
+        PieceRegistry.register(new PieceDefinition("Hero", 5, 5, 3, 1, 2, List.of()));
         CardCatalog.clear();
         CardCatalog.registerSummon("Wolf", "Wolf");
         CardCatalog.registerSummon("Wolf Cub", "WolfCub");
@@ -349,6 +356,98 @@ class RunManagerTest {
         RunManager manager = new RunManager();
         assertThrows(IllegalStateException.class,
                 () -> manager.upgradeCard("run-0", new RunCardModification(Map.of("damage", 1), List.of())));
+    }
+
+    // --- Elders (ELDER-003) ---
+
+    @Test
+    void elderCardLockTurns_withNoElders_isZero() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        assertEquals(0, manager.elderCardLockTurns());
+    }
+
+    @Test
+    void promoteToElder_movesTheCardOutOfTheDeckIntoElders() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        manager.promoteToElder("run-0");
+
+        assertEquals(3, manager.getRunState().deck().size());
+        assertEquals(1, manager.getRunState().elders().size());
+        assertEquals("run-0", manager.getRunState().elders().get(0).instanceId());
+    }
+
+    @Test
+    void elderCardLockTurns_isTheHighestCostAmongElders() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        manager.promoteToElder("run-0"); // Wolf, cost 2
+        manager.promoteToElder("run-2"); // Wolf Cub, cost 1
+
+        assertEquals(2, manager.elderCardLockTurns());
+    }
+
+    @Test
+    void elderCardLockTurns_risesOnlyWhenANewElderCostsMore() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        manager.promoteToElder("run-2"); // Wolf Cub, cost 1
+        assertEquals(1, manager.elderCardLockTurns());
+
+        manager.promoteToElder("run-3"); // Wolf Cub, cost 1 — no higher, lock unchanged
+        assertEquals(1, manager.elderCardLockTurns());
+
+        manager.promoteToElder("run-0"); // Wolf, cost 2 — now the highest
+        assertEquals(2, manager.elderCardLockTurns());
+    }
+
+    @Test
+    void elderCardLockTurns_accountsForAModifiedEldersCostDelta() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.getRunState().modifyCard("run-0", new RunCardModification(Map.of("cost", 3), List.of()));
+
+        manager.promoteToElder("run-0"); // Wolf base cost 2 + mod's +3
+
+        assertEquals(5, manager.elderCardLockTurns());
+    }
+
+    @Test
+    void promoteToElder_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.promoteToElder("run-0"));
+    }
+
+    @Test
+    void elderCardLockTurns_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, manager::elderCardLockTurns);
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withElders_passesCardLockTurnsForP1Only() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.promoteToElder("run-0"); // Wolf, cost 2
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertEquals(2, spec.cardLockTurns().get(PieceAlignment.P1));
+        assertFalse(spec.cardLockTurns().containsKey(PieceAlignment.P2));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_withNoElders_hasNoCardLockTurns() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertTrue(spec.cardLockTurns().isEmpty());
     }
 
     // --- RelicRunHook plumbing (UPG-002) ---

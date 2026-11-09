@@ -39,6 +39,13 @@ import java.util.function.BiConsumer;
  * {@link LocalMatchSpec#withRelics}. The bot's deck is still the player's own deck (synthetic
  * names included), just padded out to {@link RunDifficulty#resolveForNode}'s resolved size.
  * The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
+ *
+ * <p>Elders (ELDER-001 through 003, superseding UPG-004/005's reward flow): {@link
+ * #promoteToElder} retires a deck card into {@link RunState#elders()}; {@link
+ * #elderCardLockTurns()} (the highest mana cost among them) is passed to every future battle
+ * via {@link LocalMatchSpec#withCardLockTurns} — the player's own side gains no mana and can't
+ * play any card for that many of its own turns, each battle (enforced in {@code
+ * PlayerManager}/{@code CardRules}).
  */
 public final class RunManager {
     private RunState runState;
@@ -96,6 +103,10 @@ public final class RunManager {
         Map<String, RunCardModification> cardMods = deckCardModifications();
         if (!cardMods.isEmpty()) {
             spec = spec.withCardMods(PieceAlignment.P1, cardMods);
+        }
+        int lockTurns = elderCardLockTurns();
+        if (lockTurns > 0) {
+            spec = spec.withCardLockTurns(PieceAlignment.P1, lockTurns);
         }
         return spec;
     }
@@ -256,6 +267,37 @@ public final class RunManager {
             if (instance.instanceId().equals(instanceId)) return instance;
         }
         throw new IllegalArgumentException("no deck instance with id " + instanceId);
+    }
+
+    /**
+     * Moves a deck instance to Elder status (ELDER-003) — see {@link RunState#addElder}.
+     * Retiring a card raises (or leaves unchanged) {@link #elderCardLockTurns()} for every
+     * future battle, so promoting a cheap card is "free" while an expensive one costs turns.
+     */
+    public void promoteToElder(String instanceId) {
+        requireActiveRun();
+        runState.addElder(instanceId);
+    }
+
+    /**
+     * How many of the player's own turns must pass, each battle, before mana/cards unlock —
+     * the highest mana cost among the run's current Elders (ELDER-003), 0 with no Elders. A
+     * modified Elder's own cost delta counts too, clamped the same way MatchSetup's synthetic
+     * registration clamps a modified piece's stats.
+     */
+    public int elderCardLockTurns() {
+        requireActiveRun();
+        int max = 0;
+        for (RunCardInstance elder : runState.elders()) {
+            max = Math.max(max, elderCost(elder));
+        }
+        return max;
+    }
+
+    private static int elderCost(RunCardInstance elder) {
+        int baseCost = CardCatalog.getCost(elder.cardName());
+        int delta = elder.modification().statDeltas().getOrDefault("cost", 0);
+        return Math.max(0, baseCost + delta);
     }
 
     /** Adds a relic to the run and fires its {@link RelicRunHook#onAcquired} (UPG-002), if any. */
