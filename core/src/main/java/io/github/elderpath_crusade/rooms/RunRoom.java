@@ -37,7 +37,9 @@ import java.util.stream.Collectors;
  * Every other node is disabled: visited nodes stay dimmed to mark progress, unvisited/
  * unreachable ones are locked. VictoryRoom reports a battle's outcome back to RunManager and
  * returns here — already on the next node if Rest (no fight), or cleared and awaiting a pick
- * otherwise.
+ * otherwise. {@link RunMapEdgeRenderer} (BUG-041) draws the graph's actual connections between
+ * node buttons, behind them, so the branching structure is visible rather than just each node's
+ * own clickable/locked color.
  */
 public class RunRoom extends Room {
     private static final List<String> DEFAULT_STARTING_DECK =
@@ -85,6 +87,7 @@ public class RunRoom extends Room {
         addContent(elders);
 
         buildNodeButtons(state);
+        addContent(new RunMapEdgeRenderer(state.map(), nodeButtons, state.visitedNodeIds()));
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Main Menu", FontType.SILKSCREEN,
                 FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 160, 60, 0)
