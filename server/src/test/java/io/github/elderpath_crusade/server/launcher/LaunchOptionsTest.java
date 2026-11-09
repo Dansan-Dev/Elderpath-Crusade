@@ -27,6 +27,7 @@ class LaunchOptionsTest {
         assertEquals(60, o.idleTimeoutSeconds());
         assertEquals(List.of(), o.relics().get(PieceAlignment.P1), "no --p1-relics: no relics");
         assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P1), "no --p1-card-mods: no modifications");
+        assertEquals(0, o.cardLockTurns().get(PieceAlignment.P1), "no --p1-card-lock-turns: never locked");
     }
 
     @Test
@@ -39,6 +40,13 @@ class LaunchOptionsTest {
         assertEquals(Map.of("run-3", new RunCardModification(Map.of("damage", 2), List.of("Frenzy"))),
                 o.cardMods().get(PieceAlignment.P1));
         assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P2), "no --p2-card-mods: no modifications");
+    }
+
+    @Test
+    void parse_cardLockTurns() {
+        LaunchOptions o = LaunchOptions.parse(new String[]{"--p1-card-lock-turns", "3"});
+        assertEquals(3, o.cardLockTurns().get(PieceAlignment.P1));
+        assertEquals(0, o.cardLockTurns().get(PieceAlignment.P2), "no --p2-card-lock-turns: never locked");
     }
 
     @Test

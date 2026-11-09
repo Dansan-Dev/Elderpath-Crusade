@@ -27,11 +27,20 @@ public class PlayerManager {
         public final PieceAlignment id;
         public final HandState hand = new HandState();
         public DeckState deck;
+        /** How many of this side's own turns must pass before mana/cards unlock (ELDER-002) — 0 = never locked. Set at MatchSetup.prepare time from MatchConfig.cardLockTurns. */
+        public int cardLockTurns = 0;
+        /** How many of this side's own turns have started so far this match. */
+        public int turnsTaken = 0;
         public PlayerState(PieceAlignment id) { this.id = id; }
 
         public int getMana() { return playerSystem().getMana(id); }
         public void setMana(int value) { playerSystem().setMana(id, value); }
         public void addMana(int delta) { playerSystem().addMana(id, delta); }
+
+        /** Whether this side is still waiting out its card lock (ELDER-002) — no mana gain, no card play. */
+        public boolean isCardLocked() {
+            return cardLockTurns > 0 && turnsTaken <= cardLockTurns;
+        }
 
         private PlayerSystem playerSystem() {
             return GameContext.get().getEcsEngine().getSystem(PlayerSystem.class);
@@ -81,8 +90,11 @@ public class PlayerManager {
 
     public void onStartTurn(PieceAlignment id) {
         PlayerState ps = get(id);
-        ps.addMana(1); // PlayerSystem.setMana emits ManaChangedEvent itself
-        draw(ps, 3);
+        ps.turnsTaken++;
+        if (!ps.isCardLocked()) {
+            ps.addMana(1); // PlayerSystem.setMana emits ManaChangedEvent itself
+        }
+        draw(ps, 3); // drawing continues during the lock (ELDER-002) — only mana/play are gated
         // Action reset handled by TurnSystem via ECS
         TypedEventBus.get().emit(new ActionsResetEvent(id));
     }

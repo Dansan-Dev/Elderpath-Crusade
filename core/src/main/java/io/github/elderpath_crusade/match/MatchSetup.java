@@ -21,6 +21,7 @@ import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TurnEndedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RunCardModification;
 
@@ -67,6 +68,12 @@ public final class MatchSetup {
         Random rng = config.seed() == null ? new Random() : new Random(config.seed());
         for (PieceAlignment alignment : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
             ctx.getPlayerManager().setDeck(alignment, config.deck(alignment), rng).shuffle();
+            // Explicit every prepare(), not just a reset default — a run instance id's lock
+            // value changes between battles (ELDER-002), and PlayerManager/PlayerState persist
+            // across matches in the same process (tests only — a real battle is a fresh process).
+            PlayerManager.PlayerState player = ctx.getPlayerManager().get(alignment);
+            player.cardLockTurns = config.cardLockTurns(alignment);
+            player.turnsTaken = 0;
         }
 
         spawnRelicCarriers(config);

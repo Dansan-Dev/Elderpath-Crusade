@@ -74,7 +74,8 @@ public final class ServerLauncher {
                 options.decks().get(PieceAlignment.P1), options.decks().get(PieceAlignment.P2),
                 options.seed(), options.bots())
                 .withRelics(options.relics())
-                .withCardMods(options.cardMods());
+                .withCardMods(options.cardMods())
+                .withCardLockTurns(options.cardLockTurns());
 
         TcpTransport transport = new TcpTransport(options.bind(), options.port());
         MatchServer server = new MatchServer(config, transport);

@@ -25,6 +25,8 @@ public record ActionResult(Reason reason) {
         INVALID_SUMMON_TARGET,
         INVALID_SPELL_TARGET,
         NOT_ENOUGH_MANA,
+        /** The actor's side is still waiting out its run's Elder card-lock (ELDER-002). */
+        CARDS_LOCKED,
         NO_SUCH_ABILITY,
         NO_VALID_TARGET,
         /** The actor must first answer (or cancel) the pick it has pending. */

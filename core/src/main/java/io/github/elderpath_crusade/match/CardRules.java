@@ -47,7 +47,7 @@ public class CardRules {
         if (alignment == null || alignment != currentPlayer()) return false;
         int cost = CardCatalog.getCost(cardName);
         PlayerManager.PlayerState player = GameContext.get().getPlayerManager().get(alignment);
-        return cost >= 0 && player != null && player.getMana() >= cost;
+        return cost >= 0 && player != null && !player.isCardLocked() && player.getMana() >= cost;
     }
 
     public boolean isValidSummonTarget(PieceAlignment alignment, int row, int col) {
@@ -125,6 +125,7 @@ public class CardRules {
         if (grid == null) return SummonCheck.rejected(Reason.NO_ACTIVE_MATCH);
         PlayerManager.PlayerState player = playerToAct(actor);
         if (player == null) return SummonCheck.rejected(Reason.NOT_YOUR_TURN);
+        if (player.isCardLocked()) return SummonCheck.rejected(Reason.CARDS_LOCKED);
         CardInstance card = player.hand.find(instanceId);
         if (card == null) return SummonCheck.rejected(Reason.CARD_NOT_IN_HAND);
         if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Summon)) return SummonCheck.rejected(Reason.WRONG_CARD_TYPE);
@@ -177,6 +178,7 @@ public class CardRules {
         if (GameContext.get().getActiveGrid() == null) return SpellCheck.rejected(Reason.NO_ACTIVE_MATCH);
         PlayerManager.PlayerState player = playerToAct(actor);
         if (player == null) return SpellCheck.rejected(Reason.NOT_YOUR_TURN);
+        if (player.isCardLocked()) return SpellCheck.rejected(Reason.CARDS_LOCKED);
         CardInstance card = player.hand.find(instanceId);
         if (card == null) return SpellCheck.rejected(Reason.CARD_NOT_IN_HAND);
         if (!(CardCatalog.get(card.cardName()) instanceof CardCatalog.Spell spell)) return SpellCheck.rejected(Reason.WRONG_CARD_TYPE);

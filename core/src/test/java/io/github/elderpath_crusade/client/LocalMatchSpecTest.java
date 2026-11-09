@@ -14,12 +14,32 @@ import static org.junit.jupiter.api.Assertions.*;
 class LocalMatchSpecTest {
 
     @Test
-    void solo_hasNoRelicsOrCardModsByDefault() {
+    void solo_hasNoRelicsOrCardModsOrCardLockTurnsByDefault() {
         LocalMatchSpec spec = LocalMatchSpec.solo(List.of("Wolf"), List.of("Wolf"), BotKind.SMART);
         assertEquals(Map.of(), spec.relics());
         assertEquals(Map.of(), spec.cardMods());
+        assertEquals(Map.of(), spec.cardLockTurns());
         assertFalse(String.join(" ", spec.launcherArgs()).contains("relics"));
         assertFalse(String.join(" ", spec.launcherArgs()).contains("card-mods"));
+        assertFalse(String.join(" ", spec.launcherArgs()).contains("card-lock-turns"));
+    }
+
+    @Test
+    void withCardLockTurns_addsThePNCardLockTurnsFlagForThatSideOnly() {
+        LocalMatchSpec spec = LocalMatchSpec.solo(List.of("Wolf"), List.of("Wolf"), BotKind.SMART)
+                .withCardLockTurns(PieceAlignment.P1, 3);
+
+        List<String> args = spec.launcherArgs();
+        assertEquals("3", valueAfter(args, "--p1-card-lock-turns"));
+        assertFalse(args.contains("--p2-card-lock-turns"));
+    }
+
+    @Test
+    void withCardLockTurns_ofZero_addsNoFlag() {
+        LocalMatchSpec spec = LocalMatchSpec.solo(List.of("Wolf"), List.of("Wolf"), BotKind.SMART)
+                .withCardLockTurns(PieceAlignment.P1, 0);
+
+        assertFalse(String.join(" ", spec.launcherArgs()).contains("card-lock-turns"));
     }
 
     @Test
