@@ -17,6 +17,7 @@ public class RunState {
     private final RunDifficulty difficulty;
     private final List<RunCardInstance> deck = new ArrayList<>();
     private final List<RunCardInstance> elders = new ArrayList<>();
+    private final int startingDeckSize;
     private final RelicState relics = new RelicState();
     private final Set<Integer> visitedNodeIds = new LinkedHashSet<>();
     private int currentNodeId;
@@ -30,6 +31,7 @@ public class RunState {
         this.map = map;
         this.difficulty = difficulty;
         this.deck.addAll(startingDeck);
+        this.startingDeckSize = startingDeck.size();
         this.currentNodeId = map.startNodeId();
         this.visitedNodeIds.add(currentNodeId);
     }
@@ -55,6 +57,16 @@ public class RunState {
 
     public List<RunCardInstance> deck() {
         return List.copyOf(deck);
+    }
+
+    /**
+     * The run's starting deck size, fixed for the whole run — what {@link
+     * RunDifficulty#resolveForNode}'s bot-deck-size scaling actually uses, instead of {@link
+     * #deck()}'s current (shrinking, as cards are promoted to Elder) size. Found via playtest:
+     * the opponent's deck size was silently dropping over the run as more cards became Elders.
+     */
+    public int startingDeckSize() {
+        return startingDeckSize;
     }
 
     /** Cards retired from the deck into Elder status (ELDER-001) — see {@link #addElder}. */

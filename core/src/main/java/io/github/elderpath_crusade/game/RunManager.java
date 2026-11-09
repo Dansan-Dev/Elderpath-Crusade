@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
+import io.github.elderpath_crusade.run.EnemyDeckCatalog;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RelicRunHook;
 import io.github.elderpath_crusade.run.RunCardInstance;
@@ -86,15 +87,19 @@ public final class RunManager {
      * alongside via {@link LocalMatchSpec#withCardMods} so the battle can register and summon
      * it; the run's active relics go the same way via {@link LocalMatchSpec#withRelics}. The
      * opponent's bot kind and deck size come from {@link RunDifficulty#resolveForNode} (the
-     * run's chosen level + this node's depth) — its deck is the player's own cards, cycled to
-     * pad out to the resolved size. The player always plays P1.
+     * run's chosen level + this node's depth + {@link RunState#startingDeckSize()} — the run's
+     * fixed starting size, not the player's current, possibly Elder-shrunk one, so the
+     * opponent doesn't quietly get weaker over the run just because cards keep getting
+     * promoted); its actual cards come from {@link EnemyDeckCatalog} for this node's type,
+     * cycled to pad out to the resolved size — not the player's own deck (found via playtest:
+     * the opponent used to just mirror it, cards and size both). The player always plays P1.
      */
     public LocalMatchSpec buildSpecForCurrentNode() {
         requireActiveRun();
         List<String> playerDeck = deckCardNames();
         RunDifficulty.ResolvedKnobs knobs = runState.difficulty().resolveForNode(
-                runState.currentNodeDepth(), runState.currentNode().type(), playerDeck.size());
-        List<String> botDeck = padDeck(playerDeck, knobs.botDeckSize());
+                runState.currentNodeDepth(), runState.currentNode().type(), runState.startingDeckSize());
+        List<String> botDeck = padDeck(EnemyDeckCatalog.forNodeType(runState.currentNode().type()), knobs.botDeckSize());
 
         LocalMatchSpec spec = LocalMatchSpec.solo(playerDeck, botDeck, knobs.botKind());
         if (!runState.activeRelicIds().isEmpty()) {

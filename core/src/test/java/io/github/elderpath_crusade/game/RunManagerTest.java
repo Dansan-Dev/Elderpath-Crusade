@@ -7,6 +7,7 @@ import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
+import io.github.elderpath_crusade.run.EnemyDeckCatalog;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RelicRunHook;
 import io.github.elderpath_crusade.run.RunCardInstance;
@@ -88,15 +89,37 @@ class RunManagerTest {
     }
 
     @Test
-    void buildSpecForCurrentNode_mirrorsTheRunsDeckWithThePlayerAsP1() {
+    void buildSpecForCurrentNode_playerDeckIsTheRunsDeckWithThePlayerAsP1() {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
 
         LocalMatchSpec spec = manager.buildSpecForCurrentNode();
         assertEquals(STARTING_DECK, spec.decks().get(PieceAlignment.P1));
-        assertEquals(STARTING_DECK, spec.decks().get(PieceAlignment.P2));
         assertTrue(spec.bots().containsKey(PieceAlignment.P2));
         assertFalse(spec.bots().containsKey(PieceAlignment.P1));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_opponentUsesItsOwnDesignedDeck_notThePlayers() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        LocalMatchSpec spec = manager.buildSpecForCurrentNode();
+
+        assertNotEquals(STARTING_DECK, spec.decks().get(PieceAlignment.P2));
+        assertEquals(EnemyDeckCatalog.forNodeType(RunNodeType.BATTLE).get(0), spec.decks().get(PieceAlignment.P2).get(0));
+    }
+
+    @Test
+    void buildSpecForCurrentNode_promotingEldersDoesNotShrinkOrChangeTheOpponentsDeck() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        List<String> botDeckBefore = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P2);
+
+        manager.promoteToElder(manager.getRunState().deck().get(0).instanceId());
+        List<String> botDeckAfter = manager.buildSpecForCurrentNode().decks().get(PieceAlignment.P2);
+
+        assertEquals(botDeckBefore, botDeckAfter);
     }
 
     @Test

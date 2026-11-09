@@ -154,6 +154,18 @@ class RunStateTest {
     }
 
     @Test
+    void startingDeckSize_isFixedAndUnaffectedByPromotingElders() {
+        RunState run = freshRun(2); // 4-card deck
+        assertEquals(4, run.startingDeckSize());
+
+        run.addElder("run-1");
+        run.addElder("run-2");
+
+        assertEquals(4, run.startingDeckSize(), "a run's starting deck size never changes");
+        assertEquals(2, run.deck().size(), "only the current, drawable deck shrinks");
+    }
+
+    @Test
     void addElder_eachPromotionAccumulates() {
         RunState run = freshRun(2);
 
