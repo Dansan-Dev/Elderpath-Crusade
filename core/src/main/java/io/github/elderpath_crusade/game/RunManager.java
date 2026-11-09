@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.game;
 
+import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.data.RelicRegistry;
@@ -105,16 +106,20 @@ public final class RunManager {
      * weaker over the run just because cards keep getting promoted). Its actual cards come
      * from {@link EnemyDeckCatalog} for this node's type, cycled to pad out to the resolved
      * size — not the player's own deck (found via playtest: the opponent used to just mirror
-     * it, cards and size both). The player always plays P1.
+     * it, cards and size both). {@link EnemyDeckCatalog#personalityFor} (BOT-004) flavors the
+     * resolved kind further by node type (Elite/Boss play more aggressively). The player always
+     * plays P1.
      */
     public LocalMatchSpec buildSpecForCurrentNode() {
         requireActiveRun();
         List<String> playerDeck = deckCardNames();
+        RunNodeType nodeType = runState.currentNode().type();
         RunDifficulty.ResolvedKnobs knobs = runState.difficulty().resolveForNode(
-                runState.globalDepth(), runState.currentNode().type(), runState.startingDeckSize());
-        List<String> botDeck = padDeck(EnemyDeckCatalog.forNodeType(runState.currentNode().type()), knobs.botDeckSize());
+                runState.globalDepth(), nodeType, runState.startingDeckSize());
+        List<String> botDeck = padDeck(EnemyDeckCatalog.forNodeType(nodeType), knobs.botDeckSize());
+        BotKind botKind = EnemyDeckCatalog.personalityFor(nodeType, knobs.botKind());
 
-        LocalMatchSpec spec = LocalMatchSpec.solo(playerDeck, botDeck, knobs.botKind());
+        LocalMatchSpec spec = LocalMatchSpec.solo(playerDeck, botDeck, botKind);
         if (!runState.activeRelicIds().isEmpty()) {
             spec = spec.withRelics(PieceAlignment.P1, runState.activeRelicIds());
         }

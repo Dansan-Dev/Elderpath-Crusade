@@ -35,7 +35,7 @@ class ServerProcessTest {
     @Test
     void badArguments_failToStartWithTheServersMessage() {
         IOException e = assertThrows(IOException.class, () -> ServerProcess.start(ServerProcess.Options.of("--p1", "god")));
-        assertTrue(e.getMessage().contains("--p1 must be human, basic or smart"), e.getMessage());
+        assertTrue(e.getMessage().contains("--p1 must be human, basic, smart, smart_aggressive or smart_defensive"), e.getMessage());
     }
 
     @Test

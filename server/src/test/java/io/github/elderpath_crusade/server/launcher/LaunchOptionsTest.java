@@ -51,6 +51,13 @@ class LaunchOptionsTest {
     }
 
     @Test
+    void parse_personalityFlavoredSmartBotKinds() {
+        LaunchOptions o = LaunchOptions.parse(new String[]{"--p1", "smart_aggressive", "--p2", "smart_defensive"});
+        assertEquals(BotKind.SMART_AGGRESSIVE, o.bots().get(PieceAlignment.P1));
+        assertEquals(BotKind.SMART_DEFENSIVE, o.bots().get(PieceAlignment.P2));
+    }
+
+    @Test
     void parse_elders() {
         LaunchOptions o = LaunchOptions.parse(new String[]{"--p1-elders", "Warp Mage,Wolf Cub#run-3"});
         assertEquals(List.of("Warp Mage", "Wolf Cub#run-3"), o.elders().get(PieceAlignment.P1));

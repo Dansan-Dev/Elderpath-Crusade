@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.bot.impl;
 
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.CardInstance;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
@@ -16,7 +18,7 @@ import java.util.List;
 
 /**
  * Straight port of the previous simple bot.
- * Priority: ATTACK > MOVE > SUMMON (WolfCard). Repeats until no action then ends turn.
+ * Priority: ATTACK > MOVE > SUMMON (best affordable card in hand). Repeats until no action then ends turn.
  */
 public class BasicBot implements Bot {
     private static final float DELAY_BETWEEN_ACTIONS = 0.35f;
@@ -63,7 +65,7 @@ public class BasicBot implements Bot {
 
         if (tryOneAdjacentAttack(board)) { Logger.log("BasicBot", "ATTACK"); scheduleNextAction(actionsDone+1); return; }
         if (tryOneMovementTowardEnemy(board)) { Logger.log("BasicBot", "MOVE"); scheduleNextAction(actionsDone+1); return; }
-        if (tryPlayOneWolfCard(board)) { Logger.log("BasicBot", "SUMMON"); scheduleNextAction(actionsDone+1); return; }
+        if (tryPlayBestAffordableCard(board)) { Logger.log("BasicBot", "SUMMON"); scheduleNextAction(actionsDone+1); return; }
 
         Logger.log("BasicBot", "No more actions; end turn");
         scheduleEndTurn();
@@ -78,18 +80,37 @@ public class BasicBot implements Bot {
         GameContext.get().getMatchClock().schedule(DELAY_BEFORE_END, () -> BotTurns.endTurn(endingFor));
     }
 
-    private boolean tryPlayOneWolfCard(BoardGrid b) {
+    /**
+     * BUG-028: used to only ever recognize a card literally named "Wolf" — harmless against the
+     * old placeholder decks, but left BasicBot unable to summon a single card from any of
+     * EnemyDeckCatalog's real decks (none of them are named "Wolf"), making it do nothing but
+     * attack/move with whatever happened to already be on the board. Picks the highest-value
+     * affordable card in hand instead, by the same stat-value heuristic SummonEvaluator (the
+     * smart bot's summon logic) already uses, so "basic" means a simpler move/attack/summon
+     * loop, not "can only ever play one specific card name."
+     */
+    private boolean tryPlayBestAffordableCard(BoardGrid b) {
         var ps = GameContext.get().getPlayerManager().get(self);
         if (ps == null) return false;
-        CardInstance targetCard = null;
-        for (CardInstance c : ps.hand.getCards()) { if ("Wolf".equals(c.cardName())) { targetCard = c; break; } }
-        if (targetCard == null) return false;
-        if (!GameContext.get().getCardRules().canPlay(self, targetCard.cardName())) return false;
+
+        CardInstance bestCard = null;
+        int bestValue = Integer.MIN_VALUE;
+        for (CardInstance c : ps.hand.getCards()) {
+            PieceDefinition def = CardCatalog.getPieceDefinition(c.cardName());
+            if (def == null || def.cost() > ps.getMana()) continue;
+            if (!GameContext.get().getCardRules().canPlay(self, c.cardName())) continue;
+            int value = (def.health() * 2) + (def.damage() * 3) + def.actions() + def.speed() + def.cost();
+            if (value > bestValue) {
+                bestValue = value;
+                bestCard = c;
+            }
+        }
+        if (bestCard == null) return false;
 
         int homeRow = b.getHomeRow(self);
         for (int col = 0; col < b.getCols(); col++) {
             if (b.isValidSummonTarget(homeRow, col, self)
-                    && GameContext.get().getGameServer().playSummonCard(self, targetCard.instanceId(), homeRow, col).isOk()) return true;
+                    && GameContext.get().getGameServer().playSummonCard(self, bestCard.instanceId(), homeRow, col).isOk()) return true;
         }
         return false;
     }

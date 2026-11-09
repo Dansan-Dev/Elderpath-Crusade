@@ -16,7 +16,8 @@ import java.util.Map;
  * <pre>
  *   --port N            TCP port, 0 = any free port (default 0)
  *   --bind ADDR         address to listen on (default 127.0.0.1; 0.0.0.0 to host for others)
- *   --p1 / --p2 KIND    human | basic | smart (default p1 human, p2 smart)
+ *   --p1 / --p2 KIND    human | basic | smart | smart_aggressive | smart_defensive (default p1 human, p2 smart;
+ *                       the smart_* variants are the smart tier with a non-default BotPersonality, BOT-004)
  *   --p1-deck / --p2-deck "Card:count,Card:count"   (default Wolf:2,Wolf Cub:2)
  *   --p1-relics / --p2-relics "RelicId,RelicId"     active relic ids for a roguelike run (LAUNCH-001; default none)
  *   --p1-card-mods / --p2-card-mods "spec"          per-instance card modifications for a roguelike run,
@@ -165,8 +166,10 @@ record LaunchOptions(
             case "human" -> { }
             case "basic" -> bots.put(side, BotKind.BASIC);
             case "smart" -> bots.put(side, BotKind.SMART);
+            case "smart_aggressive" -> bots.put(side, BotKind.SMART_AGGRESSIVE);
+            case "smart_defensive" -> bots.put(side, BotKind.SMART_DEFENSIVE);
             default -> throw new IllegalArgumentException("--" + side.name().toLowerCase()
-                    + " must be human, basic or smart, not " + kind);
+                    + " must be human, basic, smart, smart_aggressive or smart_defensive, not " + kind);
         }
     }
 

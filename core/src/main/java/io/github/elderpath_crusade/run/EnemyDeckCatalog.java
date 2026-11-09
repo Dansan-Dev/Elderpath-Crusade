@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.run;
 
+import io.github.elderpath_crusade.bot.BotKind;
+
 import java.util.List;
 
 /**
@@ -11,9 +13,14 @@ import java.util.List;
  *
  * <p>Reuses {@code CardCatalog}'s existing real roster, picked by name/theme — not verified
  * stats, since {@code pieces.yaml} (the actual numbers) is gitignored and not visible in this
- * sandbox; real balance will need the user's own local playtesting/tuning. "Personalities"
- * (distinct opponent playstyles) are explicitly future work per the user, not attempted here —
- * this only varies the *cards*, by node type, not how the bot plays them.
+ * sandbox; real balance will need the user's own local playtesting/tuning.
+ *
+ * <p>{@link #personalityFor} (BOT-004) is the "distinct opponent playstyles" this class's own
+ * doc used to flag as future work — Elite and Boss nodes now play more aggressively than an
+ * ordinary Battle, whenever the difficulty formula already resolved the smart tier (a Battle
+ * node resolved to {@code BASIC} is untouched — a personality only means anything on the smart
+ * bot). This only decides *which* personality applies where; {@code BotConfig.forPersonality}
+ * is what actually makes one feel different from another.
  */
 public final class EnemyDeckCatalog {
     private static final List<String> BATTLE_DECK = List.of("Rogue", "Rogue", "Fairy", "Fairy", "Wind Spirit");
@@ -28,6 +35,20 @@ public final class EnemyDeckCatalog {
             case ELITE -> ELITE_DECK;
             case BOSS -> BOSS_DECK;
             default -> BATTLE_DECK;
+        };
+    }
+
+    /**
+     * Flavors {@code resolvedKind} (whatever {@link RunDifficulty#resolveForNode} already
+     * decided) by node type — Elite/Boss upgrade a plain {@code SMART} to
+     * {@code SMART_AGGRESSIVE}; every other case (including {@code BASIC}, which has no
+     * personality to flavor) passes through unchanged.
+     */
+    public static BotKind personalityFor(RunNodeType type, BotKind resolvedKind) {
+        if (resolvedKind != BotKind.SMART) return resolvedKind;
+        return switch (type) {
+            case ELITE, BOSS -> BotKind.SMART_AGGRESSIVE;
+            default -> resolvedKind;
         };
     }
 }

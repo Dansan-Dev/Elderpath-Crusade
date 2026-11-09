@@ -55,10 +55,15 @@ public final class BotManager {
         });
     }
 
-    /** Starts a new match session with these bot-controlled slots (fresh bot instances). */
-    public void resetSession(Map<PieceAlignment, BotKind> bots) {
+    /**
+     * Starts a new match session with these bot-controlled slots (fresh bot instances).
+     * {@code matchSeed} (the match's own {@code MatchConfig.seed}) seeds the smart tier's
+     * tie-breaking RNG (BOT-002) — same seed, same bot behavior, like every other seeded part
+     * of a match.
+     */
+    public void resetSession(Map<PieceAlignment, BotKind> bots, Long matchSeed) {
         slots.clear();
-        bots.forEach((alignment, kind) -> slots.put(alignment, kind.create()));
+        bots.forEach((alignment, kind) -> slots.put(alignment, kind.create(matchSeed, alignment)));
         initialized = false;
         initialize();
     }

@@ -36,18 +36,36 @@ public class SmartBot implements Bot {
     private static final float STEP_DELAY = 0.35f;
     private static final float END_DELAY = 0.4f;
     private static final int MAX_STEPS = 60;
+    /**
+     * Intents scored within this many points of the step's best are "equally good" and tried in
+     * a random order rather than always the evaluator-insertion-order winner (BOT-002). A
+     * perfectly mirrored position (two identical bots, symmetric board) scores every mirrored
+     * option identically — picking the same deterministic "first" one every time is exactly why
+     * two SmartBots could stalemate indefinitely (BUG-029): neither side's choice ever diverges
+     * from the other's. Zero (an exact tie) would already fix that; a small band also adds
+     * variety among near-equally-good moves more generally, without weakening judgment — ties
+     * are only ever broken among moves this bot already rated as equally good.
+     */
+    private static final int TIE_BAND = 5;
 
     private final List<IntentGenerator> evaluators;
+    private final Random random;
 
     public SmartBot() {
         this(BotConfig.defaultConfig());
     }
 
     public SmartBot(BotConfig config) {
+        this(config, new Random());
+    }
+
+    /** For tests that need deterministic tie-breaking. */
+    public SmartBot(BotConfig config, Random random) {
         this.evaluators = List.of(
                 new AttackEvaluator(config),
                 new MovementEvaluator(config),
                 new SummonEvaluator(config));
+        this.random = random;
     }
 
     // Per-turn state guards to avoid runaway loops after finishing
@@ -160,12 +178,30 @@ public class SmartBot implements Bot {
                         .comparingInt(BotActionContext.Intent::score)
                         .reversed());
 
+        // Among the top tier (within TIE_BAND of the best), try a random order instead of
+        // always the same evaluator-insertion-order winner — see TIE_BAND's javadoc.
+        int bestScore = intents.get(0).score();
+        List<BotActionContext.Intent> topTier = new ArrayList<>();
+        List<BotActionContext.Intent> rest = new ArrayList<>();
         for (BotActionContext.Intent intent : intents) {
-            Supplier<Boolean> exec = intent.execute();
-            if (exec != null && exec.get()) {
-                Logger.log("[SmartBot]", "Intent executed: " + intent.kind() + " (score=" + intent.score() + ")");
-                return true;
-            }
+            (intent.score() >= bestScore - TIE_BAND ? topTier : rest).add(intent);
+        }
+        Collections.shuffle(topTier, random);
+
+        for (BotActionContext.Intent intent : topTier) {
+            if (tryExecute(intent)) return true;
+        }
+        for (BotActionContext.Intent intent : rest) {
+            if (tryExecute(intent)) return true;
+        }
+        return false;
+    }
+
+    private boolean tryExecute(BotActionContext.Intent intent) {
+        Supplier<Boolean> exec = intent.execute();
+        if (exec != null && exec.get()) {
+            Logger.log("[SmartBot]", "Intent executed: " + intent.kind() + " (score=" + intent.score() + ")");
+            return true;
         }
         return false;
     }

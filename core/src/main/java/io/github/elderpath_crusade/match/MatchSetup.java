@@ -53,7 +53,7 @@ public final class MatchSetup {
         ctx.getMatchClock().clear();
         ctx.getPickRouter().reset();
         ctx.getWinConditionManager().resetSession();
-        ctx.getBotManager().resetSession(config.bots());
+        ctx.getBotManager().resetSession(config.bots(), config.seed());
 
         ctx.getTurnManager().reset();
         ctx.getGameModeManager().setCurrent(config.mode());
