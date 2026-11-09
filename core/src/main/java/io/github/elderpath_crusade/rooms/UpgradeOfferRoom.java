@@ -20,12 +20,18 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Shown after winning a non-terminal battle node, before returning to the map (UPG-005) —
- * offers one reward, kind decided by which node type was just cleared, applies the pick to the
- * active run via {@link RunManager}, then continues to {@link RunRoom}. Always skippable.
- * GUI-only; no headless test is possible here (see elderpath-testing.md) — the reward-building
- * logic it calls into (RunManager.offerNewCardChoices/offerRelicChoices/grantNewCard/addRelic/
- * upgradeCard) is covered by RunManagerTest instead.
+ * UPG-005's original post-battle reward screen — relic/new-card/stat-boost, kind decided by
+ * which node type was just cleared. <strong>Currently unused</strong> (ELDER-005): the user
+ * decided picking a new Elder ({@link ElderPickRoom}) replaces this entirely as the floor's
+ * reward. Left in place, still compiling and still covered by its own RunManagerTest-level
+ * coverage (offerNewCardChoices/offerRelicChoices/grantNewCard/addRelic/upgradeCard all stay
+ * wired and tested), in case a future design brings a reward layer back alongside Elders —
+ * nothing currently calls {@link #get}.
+ *
+ * <p>Shown after winning a non-terminal battle node, before returning to the map — offers one
+ * reward, applies the pick to the active run via {@link RunManager}, then continues to
+ * {@link RunRoom}. Always skippable. GUI-only; no headless test is possible here (see
+ * elderpath-testing.md).
  *
  * <p>An Elite node offers a relic (2 choices, if any are registered and not already active);
  * otherwise (Elite with none available, or an ordinary Battle) offers a card reward: 3 new

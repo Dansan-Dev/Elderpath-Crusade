@@ -9,7 +9,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.game.RunManager;
-import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -22,8 +21,9 @@ import io.github.elderpath_crusade.utils.FontSize;
  *
  * <p>For a roguelike run (ROUGELIKE_RUN): reports the outcome to RunManager first (the only
  * place this happens — nothing else observes a run's battles ending), then shows a single
- * action instead — "Continue Run" (back to RunRoom, already advanced to the next node) while
- * the run goes on, or "Main Menu" once it has ended (permadeath, or the boss was cleared).
+ * action instead — "Continue" into {@link ElderPickRoom} (choosing a new Elder is the floor's
+ * reward now, ELDER-005, replacing the old relic/new-card/stat-boost offer) while the run goes
+ * on, or "Main Menu" once it has ended (permadeath, or the boss was cleared).
  */
 public class VictoryRoom extends Room {
     private final Text title;
@@ -36,10 +36,8 @@ public class VictoryRoom extends Room {
 
         GameMode mode = GameContext.get().getGameModeManager().getCurrent();
         boolean runEnded = true;
-        RunNodeType clearedNodeType = null;
         if (mode == GameMode.ROUGELIKE_RUN) {
             RunManager runManager = GameContext.get().getRunManager();
-            clearedNodeType = runManager.getRunState().currentNode().type();
             runManager.reportNodeOutcome(winner);
             runEnded = runManager.getRunState().isEnded();
         }
@@ -55,9 +53,8 @@ public class VictoryRoom extends Room {
 
         if (mode == GameMode.ROUGELIKE_RUN) {
             playAgain = null;
-            RunNodeType finalClearedNodeType = clearedNodeType;
             mainMenu = runEnded ? mainMenuButton(screenW, screenH, "Main Menu", MainMenuRoom::get)
-                    : mainMenuButton(screenW, screenH, "Continue", () -> UpgradeOfferRoom.get(finalClearedNodeType));
+                    : mainMenuButton(screenW, screenH, "Continue", ElderPickRoom::get);
             addUI(mainMenu);
             layout();
             return;
