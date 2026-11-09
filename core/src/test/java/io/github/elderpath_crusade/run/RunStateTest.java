@@ -142,6 +142,50 @@ class RunStateTest {
     }
 
     @Test
+    void addElder_movesTheInstanceFromDeckToElders() {
+        RunState run = freshRun(2); // 4-card deck: run-0..run-3
+
+        run.addElder("run-1");
+
+        assertEquals(3, run.deck().size());
+        assertTrue(run.deck().stream().noneMatch(c -> c.instanceId().equals("run-1")));
+        assertEquals(1, run.elders().size());
+        assertEquals("run-1", run.elders().get(0).instanceId());
+    }
+
+    @Test
+    void addElder_eachPromotionAccumulates() {
+        RunState run = freshRun(2);
+
+        run.addElder("run-0");
+        run.addElder("run-1");
+
+        assertEquals(2, run.deck().size());
+        assertEquals(List.of("run-0", "run-1"),
+                run.elders().stream().map(RunCardInstance::instanceId).toList());
+    }
+
+    @Test
+    void addElder_rejectsAnUnknownInstanceId() {
+        RunState run = freshRun(2);
+        assertThrows(IllegalArgumentException.class, () -> run.addElder("no-such-id"));
+    }
+
+    @Test
+    void addElder_rejectsShrinkingTheDeckToEmpty() {
+        RunState run = new RunState(RunMap.linearChain(1), RunDifficulty.DEFAULT,
+                List.of(RunCardInstance.unmodified("run-0", "Wolf")));
+        assertThrows(IllegalStateException.class, () -> run.addElder("run-0"));
+    }
+
+    @Test
+    void addElder_rejectsAfterTheRunHasEnded() {
+        RunState run = freshRun(2);
+        run.endRun(false);
+        assertThrows(IllegalStateException.class, () -> run.addElder("run-0"));
+    }
+
+    @Test
     void addRelic_tracksActiveRelicIds() {
         RunState run = freshRun(2);
         run.addRelic("PackLeader");

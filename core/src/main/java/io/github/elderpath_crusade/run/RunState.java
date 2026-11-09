@@ -7,15 +7,16 @@ import java.util.Set;
 
 /**
  * A single roguelike run's state between battles — current position in the map, the run's deck
- * (as modifiable card instances), active relics, chosen difficulty, and whether the run has
- * ended. Pure logic/data, no LibGDX — headlessly testable like {@code match/}. {@code RunManager}
- * (client-side, {@code GameContext}-held) is the only thing that drives this; nothing here talks
- * to a battle server.
+ * (as modifiable card instances), the deck instances retired into Elder status (ELDER-001),
+ * active relics, chosen difficulty, and whether the run has ended. Pure logic/data, no LibGDX —
+ * headlessly testable like {@code match/}. {@code RunManager} (client-side, {@code GameContext}-
+ * held) is the only thing that drives this; nothing here talks to a battle server.
  */
 public class RunState {
     private final RunMap map;
     private final RunDifficulty difficulty;
     private final List<RunCardInstance> deck = new ArrayList<>();
+    private final List<RunCardInstance> elders = new ArrayList<>();
     private final RelicState relics = new RelicState();
     private final Set<Integer> visitedNodeIds = new LinkedHashSet<>();
     private int currentNodeId;
@@ -54,6 +55,11 @@ public class RunState {
 
     public List<RunCardInstance> deck() {
         return List.copyOf(deck);
+    }
+
+    /** Cards retired from the deck into Elder status (ELDER-001) — see {@link #addElder}. */
+    public List<RunCardInstance> elders() {
+        return List.copyOf(elders);
     }
 
     public List<String> activeRelicIds() {
@@ -149,6 +155,26 @@ public class RunState {
 
     public void addRelic(String relicId) {
         relics.add(relicId);
+    }
+
+    /**
+     * Moves a deck instance to Elder status (ELDER-001) — removed from the drawable deck, kept
+     * in {@link #elders()}. A run's deck must never go empty, so the last remaining deck card
+     * can't be promoted. The card's own mana cost (RunManager's job to read, via CardCatalog —
+     * this class stays pure data) is what drives the run's card-lock mechanic.
+     */
+    public void addElder(String instanceId) {
+        requireNotEnded();
+        if (deck.size() <= 1) {
+            throw new IllegalStateException("can't promote the last card in the deck to Elder status");
+        }
+        for (int i = 0; i < deck.size(); i++) {
+            if (deck.get(i).instanceId().equals(instanceId)) {
+                elders.add(deck.remove(i));
+                return;
+            }
+        }
+        throw new IllegalArgumentException("no deck instance with id " + instanceId);
     }
 
     private void requireNotEnded() {
