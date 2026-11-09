@@ -3,9 +3,11 @@ package io.github.elderpath_crusade.game;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RelicRunHook;
+import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.run.RunMap;
@@ -13,10 +15,13 @@ import io.github.elderpath_crusade.run.RunNode;
 import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -33,9 +38,20 @@ class RunManagerTest {
     private static final List<String> STARTING_DECK = List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub");
     private static final long SEED = 42L;
 
+    @BeforeEach
+    void setUp() {
+        CardCatalog.clear();
+        CardCatalog.registerSummon("Wolf", "Wolf");
+        CardCatalog.registerSummon("Wolf Cub", "WolfCub");
+        CardCatalog.registerSummon("Rogue", "Rogue");
+        CardCatalog.registerSummon("Fairy", "Fairy");
+        CardCatalog.registerSummon("Hero", "Hero");
+    }
+
     @AfterEach
     void tearDown() {
         RelicRegistry.clear();
+        CardCatalog.clear();
     }
 
     /** The real generator can branch — finds a seed whose start node can reach a Rest node. */
@@ -219,6 +235,71 @@ class RunManagerTest {
         LocalMatchSpec spec = manager.buildSpecForCurrentNode();
 
         assertTrue(spec.relics().isEmpty());
+    }
+
+    // --- New-card rewards (UPG-004) ---
+
+    @Test
+    void offerNewCardChoices_returnsTheRequestedCountOfDistinctDraftableNames() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        List<String> choices = manager.offerNewCardChoices(2, new Random(7));
+
+        assertEquals(2, choices.size());
+        assertEquals(Set.copyOf(choices).size(), choices.size(), "must be distinct");
+        for (String choice : choices) {
+            assertTrue(CardCatalog.getDraftableNames().contains(choice));
+        }
+    }
+
+    @Test
+    void offerNewCardChoices_neverExceedsTheDraftablePoolSize() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        List<String> choices = manager.offerNewCardChoices(100, new Random(7));
+
+        assertEquals(CardCatalog.getDraftableNames().size(), choices.size());
+    }
+
+    @Test
+    void offerNewCardChoices_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.offerNewCardChoices(2));
+    }
+
+    @Test
+    void grantNewCard_addsAFreshUnmodifiedInstanceToTheDeck() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        int before = manager.getRunState().deck().size();
+
+        manager.grantNewCard("Hero");
+
+        List<RunCardInstance> deck = manager.getRunState().deck();
+        assertEquals(before + 1, deck.size());
+        RunCardInstance granted = deck.get(deck.size() - 1);
+        assertEquals("Hero", granted.cardName());
+        assertFalse(granted.isModified());
+    }
+
+    @Test
+    void grantNewCard_eachGrantGetsAUniqueInstanceId() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        // addCardToDeck throws on a duplicate instance id — reaching here twice proves uniqueness
+        assertDoesNotThrow(() -> {
+            manager.grantNewCard("Hero");
+            manager.grantNewCard("Hero");
+        });
+    }
+
+    @Test
+    void grantNewCard_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.grantNewCard("Hero"));
     }
 
     // --- RelicRunHook plumbing (UPG-002) ---

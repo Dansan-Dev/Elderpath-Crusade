@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RelicRunHook;
@@ -15,10 +16,12 @@ import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
@@ -195,6 +198,29 @@ public final class RunManager {
         if (runState.currentNode().type() == RunNodeType.REST) {
             forEachRunHook(RelicRunHook::onEnterRestNode);
         }
+    }
+
+    /**
+     * Up to {@code count} distinct card names drawn from {@link CardCatalog}'s draftable pool
+     * (UPG-004) — a post-battle reward offer's choices. Picking one is {@link #grantNewCard};
+     * which node types offer this, and how many choices, is the room's decision (UPG-005).
+     */
+    public List<String> offerNewCardChoices(int count) {
+        return offerNewCardChoices(count, new Random());
+    }
+
+    /** Deterministic overload for tests. */
+    public List<String> offerNewCardChoices(int count, Random rng) {
+        requireActiveRun();
+        List<String> pool = new ArrayList<>(CardCatalog.getDraftableNames());
+        Collections.shuffle(pool, rng);
+        return pool.subList(0, Math.min(count, pool.size()));
+    }
+
+    /** Adds a fresh unmodified copy of {@code cardName} to the run's deck (a chosen UPG-004 reward). */
+    public void grantNewCard(String cardName) {
+        requireActiveRun();
+        runState.addCardToDeck(RunCardInstance.unmodified("card-reward-" + UUID.randomUUID(), cardName));
     }
 
     /** Adds a relic to the run and fires its {@link RelicRunHook#onAcquired} (UPG-002), if any. */
