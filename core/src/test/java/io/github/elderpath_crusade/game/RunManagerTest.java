@@ -302,6 +302,55 @@ class RunManagerTest {
         assertThrows(IllegalStateException.class, () -> manager.grantNewCard("Hero"));
     }
 
+    // --- Relic offer + card upgrade (UPG-005) ---
+
+    @Test
+    void offerRelicChoices_excludesAlreadyActiveRelics() {
+        RelicRegistry.register(RelicDefinition.battleOnly("Already", "desc", List.of()));
+        RelicRegistry.register(RelicDefinition.battleOnly("NotYet", "desc", List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.addRelic("Already");
+
+        List<String> choices = manager.offerRelicChoices(5, new Random(3));
+
+        assertEquals(List.of("NotYet"), choices);
+    }
+
+    @Test
+    void offerRelicChoices_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.offerRelicChoices(2));
+    }
+
+    @Test
+    void upgradeCard_mergesWithAnyExistingModification() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.getRunState().modifyCard("run-0", new RunCardModification(Map.of("damage", 1), List.of()));
+
+        manager.upgradeCard("run-0", new RunCardModification(Map.of("damage", 2, "health", 1), List.of()));
+
+        RunCardInstance updated = manager.getRunState().deck().get(0);
+        assertEquals(Map.of("damage", 3, "health", 1), updated.modification().statDeltas());
+    }
+
+    @Test
+    void upgradeCard_rejectsAnUnknownInstanceId() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> manager.upgradeCard("no-such-id", new RunCardModification(Map.of("damage", 1), List.of())));
+    }
+
+    @Test
+    void upgradeCard_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class,
+                () -> manager.upgradeCard("run-0", new RunCardModification(Map.of("damage", 1), List.of())));
+    }
+
     // --- RelicRunHook plumbing (UPG-002) ---
 
     @Test

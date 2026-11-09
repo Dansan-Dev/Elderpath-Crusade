@@ -5,6 +5,8 @@ import io.github.elderpath_crusade.run.RelicDefinition;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +62,10 @@ public final class RelicRegistry {
 
     public static void clear() {
         REGISTRY.clear();
+    }
+
+    public static Collection<String> getAllIds() {
+        return Collections.unmodifiableSet(REGISTRY.keySet());
     }
 
     private static RelicDefinition parseDefinition(String id, Map<?, ?> map) {

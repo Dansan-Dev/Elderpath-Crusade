@@ -84,6 +84,23 @@ class RunCardModificationTest {
     }
 
     @Test
+    void plus_sumsOverlappingStatDeltasAndConcatenatesAbilities() {
+        RunCardModification base = new RunCardModification(Map.of("damage", 1, "health", -1), List.of("Frenzy"));
+        RunCardModification extra = new RunCardModification(Map.of("damage", 2, "speed", 1), List.of("Tough"));
+
+        RunCardModification combined = base.plus(extra);
+
+        assertEquals(Map.of("damage", 3, "health", -1, "speed", 1), combined.statDeltas());
+        assertEquals(List.of("Frenzy", "Tough"), combined.addedAbilities());
+    }
+
+    @Test
+    void plus_withNone_isUnchanged() {
+        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of("Frenzy"));
+        assertEquals(mod, mod.plus(RunCardModification.NONE));
+    }
+
+    @Test
     void encodeMap_rejectsInstanceIdContainingDelimiters() {
         assertThrows(IllegalArgumentException.class,
                 () -> RunCardModification.encodeMap(Map.of("run@3", RunCardModification.NONE)));

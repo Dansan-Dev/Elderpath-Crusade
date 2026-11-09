@@ -223,6 +223,41 @@ public final class RunManager {
         runState.addCardToDeck(RunCardInstance.unmodified("card-reward-" + UUID.randomUUID(), cardName));
     }
 
+    /**
+     * Up to {@code count} registered relic ids the run doesn't already have active (UPG-005's
+     * Elite reward). Picking one is {@link #addRelic}.
+     */
+    public List<String> offerRelicChoices(int count) {
+        return offerRelicChoices(count, new Random());
+    }
+
+    /** Deterministic overload for tests. */
+    public List<String> offerRelicChoices(int count, Random rng) {
+        requireActiveRun();
+        List<String> pool = new ArrayList<>(RelicRegistry.getAllIds());
+        pool.removeAll(runState.activeRelicIds());
+        Collections.shuffle(pool, rng);
+        return pool.subList(0, Math.min(count, pool.size()));
+    }
+
+    /**
+     * Merges {@code delta} into {@code instanceId}'s existing modification (additive — an
+     * upgrade stacks with any earlier one rather than replacing it) and applies the result
+     * (UPG-005's stat-boost reward, the fallback when nothing new is left to offer).
+     */
+    public void upgradeCard(String instanceId, RunCardModification delta) {
+        requireActiveRun();
+        RunCardInstance existing = findDeckInstance(instanceId);
+        runState.modifyCard(instanceId, existing.modification().plus(delta));
+    }
+
+    private RunCardInstance findDeckInstance(String instanceId) {
+        for (RunCardInstance instance : runState.deck()) {
+            if (instance.instanceId().equals(instanceId)) return instance;
+        }
+        throw new IllegalArgumentException("no deck instance with id " + instanceId);
+    }
+
     /** Adds a relic to the run and fires its {@link RelicRunHook#onAcquired} (UPG-002), if any. */
     public void addRelic(String relicId) {
         requireActiveRun();

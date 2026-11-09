@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.run;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,17 @@ public record RunCardModification(Map<String, Integer> statDeltas, List<String> 
 
     public boolean isEmpty() {
         return statDeltas.isEmpty() && addedAbilities.isEmpty();
+    }
+
+    /** Combines this modification with another applied on top — same-stat deltas add, ability lists concatenate. */
+    public RunCardModification plus(RunCardModification other) {
+        Map<String, Integer> merged = new LinkedHashMap<>(statDeltas);
+        for (Map.Entry<String, Integer> entry : other.statDeltas.entrySet()) {
+            merged.merge(entry.getKey(), entry.getValue(), Integer::sum);
+        }
+        List<String> abilities = new ArrayList<>(addedAbilities);
+        abilities.addAll(other.addedAbilities);
+        return new RunCardModification(merged, abilities);
     }
 
     /** "damage=2,health=-1:Frenzy|Tough" — stat deltas, then ':', then '|'-separated ability names. */
