@@ -2,26 +2,33 @@ package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
+import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.run.RelicDefinition;
+import io.github.elderpath_crusade.run.RelicRunHook;
 import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.run.RunMap;
+import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiConsumer;
 
 /**
  * Client-side orchestrator for a roguelike run (FEAT-006) — owns the active {@link RunState},
- * builds and launches each node's battle via {@link ClientMatchSession#startLocal}, and resolves
+ * builds and launches each node's battle via {@link ClientMatchSession#startLocal}, resolves
  * that battle's outcome against RunState once it's known (advance on a win, permadeath on a
- * loss). {@code GameContext}-held, like {@code DeckManager}/{@code GameModeManager}.
+ * loss), and fires each active relic's non-battle {@link RelicRunHook}s at the right moments
+ * (UPG-002) — there's no board/server concern between battles, so this class is already the
+ * sole authority for them. {@code GameContext}-held, like {@code DeckManager}/{@code
+ * GameModeManager}.
  *
- * <p>No relic/card-modification plumbing yet (LAUNCH-001, Phase 3 of roguelike-run-plan.md) —
- * the bot's deck is still the player's own deck, just padded out to
- * {@link RunDifficulty#resolveForNode}'s resolved size. The map is {@link RunMap#generate}'s
- * real seeded branching generator (MAP-001).
+ * <p>Card-modification plumbing (UPG-003) doesn't exist yet — the bot's deck is still the
+ * player's own deck, just padded out to {@link RunDifficulty#resolveForNode}'s resolved size.
+ * The map is {@link RunMap#generate}'s real seeded branching generator (MAP-001).
  */
 public final class RunManager {
     private RunState runState;
@@ -144,13 +151,35 @@ public final class RunManager {
      * Moves to the node the player picked among {@link RunState#reachableNodes()} (only valid
      * once the current node is cleared). A non-battle node (e.g. Rest) has nothing to fight, so
      * it's immediately marked cleared on arrival — the room sees it as already resolved and the
-     * player can pick straight past it.
+     * player can pick straight past it. Entering a Rest node also fires every active relic's
+     * {@link RelicRunHook#onEnterRestNode} (UPG-002).
      */
     public void advanceToNextNode(int nodeId) {
         requireActiveRun();
         runState.advanceTo(nodeId);
         if (!runState.currentNode().type().isBattle()) {
             runState.markCurrentNodeCleared();
+        }
+        if (runState.currentNode().type() == RunNodeType.REST) {
+            forEachRunHook(RelicRunHook::onEnterRestNode);
+        }
+    }
+
+    /** Adds a relic to the run and fires its {@link RelicRunHook#onAcquired} (UPG-002), if any. */
+    public void addRelic(String relicId) {
+        requireActiveRun();
+        runState.addRelic(relicId);
+        RelicDefinition relic = RelicRegistry.get(relicId);
+        if (relic != null) {
+            for (RelicRunHook hook : relic.runHooks()) hook.onAcquired(runState);
+        }
+    }
+
+    private void forEachRunHook(BiConsumer<RelicRunHook, RunState> call) {
+        for (String relicId : runState.activeRelicIds()) {
+            RelicDefinition relic = RelicRegistry.get(relicId);
+            if (relic == null) continue;
+            for (RelicRunHook hook : relic.runHooks()) call.accept(hook, runState);
         }
     }
 

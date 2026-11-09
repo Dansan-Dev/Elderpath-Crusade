@@ -1,13 +1,21 @@
 package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.client.LocalMatchSpec;
+import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.run.RelicDefinition;
+import io.github.elderpath_crusade.run.RelicRunHook;
 import io.github.elderpath_crusade.run.RunDifficulty;
+import io.github.elderpath_crusade.run.RunMap;
+import io.github.elderpath_crusade.run.RunNode;
 import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,6 +29,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class RunManagerTest {
     private static final List<String> STARTING_DECK = List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub");
     private static final long SEED = 42L;
+
+    @AfterEach
+    void tearDown() {
+        RelicRegistry.clear();
+    }
+
+    /** The real generator can branch — finds a seed whose start node can reach a Rest node. */
+    private static long seedWithReachableRestNode() {
+        for (long seed = 1; seed <= 200; seed++) {
+            RunMap map = RunMap.generate(seed);
+            for (RunNode node : map.reachableFrom(map.startNodeId())) {
+                if (node.type() == RunNodeType.REST) return seed;
+            }
+        }
+        throw new IllegalStateException("no seed (1-200) found with a Rest node reachable from the start");
+    }
 
     @Test
     void startRun_createsARunStateAtTheMapsStartNode() {
@@ -142,5 +166,86 @@ class RunManagerTest {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
         assertThrows(IllegalStateException.class, manager::pollActiveNode);
+    }
+
+    // --- RelicRunHook plumbing (UPG-002) ---
+
+    @Test
+    void addRelic_tracksItAndFiresOnAcquiredImmediately() {
+        AtomicBoolean fired = new AtomicBoolean(false);
+        RelicRegistry.register(new RelicDefinition("TestRelic", "desc", List.of(), List.of(
+                hookOnAcquired(state -> fired.set(true)))));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        manager.addRelic("TestRelic");
+
+        assertTrue(fired.get());
+        assertEquals(List.of("TestRelic"), manager.getRunState().activeRelicIds());
+    }
+
+    @Test
+    void addRelic_withNoRunHooks_isFine() {
+        RelicRegistry.register(RelicDefinition.battleOnly("BattleOnlyRelic", "desc", List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        assertDoesNotThrow(() -> manager.addRelic("BattleOnlyRelic"));
+        assertEquals(List.of("BattleOnlyRelic"), manager.getRunState().activeRelicIds());
+    }
+
+    @Test
+    void advanceToNextNode_enteringARestNode_firesOnEnterRestNodeHooks() {
+        long seed = seedWithReachableRestNode();
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, seed);
+        manager.reportNodeOutcome(PieceAlignment.P1); // clears the start node
+
+        RunNode restNode = manager.getRunState().reachableNodes().stream()
+                .filter(n -> n.type() == RunNodeType.REST).findFirst().orElseThrow();
+        AtomicBoolean fired = new AtomicBoolean(false);
+        RelicRegistry.register(new RelicDefinition("TestRelic", "desc", List.of(), List.of(
+                hookOnEnterRestNode(state -> fired.set(true)))));
+        manager.addRelic("TestRelic");
+
+        manager.advanceToNextNode(restNode.id());
+
+        assertTrue(fired.get());
+    }
+
+    @Test
+    void advanceToNextNode_enteringANonRestNode_doesNotFireOnEnterRestNodeHooks() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.reportNodeOutcome(PieceAlignment.P1);
+
+        RunNode nonRest = manager.getRunState().reachableNodes().stream()
+                .filter(n -> n.type() != RunNodeType.REST).findFirst().orElseThrow();
+        AtomicBoolean fired = new AtomicBoolean(false);
+        RelicRegistry.register(new RelicDefinition("TestRelic", "desc", List.of(), List.of(
+                hookOnEnterRestNode(state -> fired.set(true)))));
+        manager.addRelic("TestRelic");
+
+        manager.advanceToNextNode(nonRest.id());
+
+        assertFalse(fired.get());
+    }
+
+    private static RelicRunHook hookOnAcquired(Consumer<RunState> onAcquired) {
+        return new RelicRunHook() {
+            @Override
+            public void onAcquired(RunState state) {
+                onAcquired.accept(state);
+            }
+        };
+    }
+
+    private static RelicRunHook hookOnEnterRestNode(Consumer<RunState> onEnterRestNode) {
+        return new RelicRunHook() {
+            @Override
+            public void onEnterRestNode(RunState state) {
+                onEnterRestNode.accept(state);
+            }
+        };
     }
 }

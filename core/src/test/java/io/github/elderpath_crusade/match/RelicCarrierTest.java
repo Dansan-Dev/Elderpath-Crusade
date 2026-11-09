@@ -83,7 +83,7 @@ class RelicCarrierTest {
     void passiveRelic_buffsAllFriendlyUnits() {
         AbilityRegistry.register(new AbilityDefinition("PackLeaderAura", "desc", null, List.of(), List.of(),
                 List.of(new ModifierDef(new TargetSelector("AllFriendlyUnits"), Map.of("addDamage", 1)))));
-        RelicRegistry.register(new RelicDefinition("PackLeader", "desc", List.of("PackLeaderAura")));
+        RelicRegistry.register(RelicDefinition.battleOnly("PackLeader", "desc", List.of("PackLeaderAura")));
 
         grid = prepare(Map.of(PieceAlignment.P1, List.of("PackLeader")));
         Entity friendly = placePiece(PieceAlignment.P1, 5, 4); // far from the carrier — AllFriendlyUnits ignores position
@@ -97,7 +97,7 @@ class RelicCarrierTest {
     void passiveRelic_doesNotAffectTheOtherSide() {
         AbilityRegistry.register(new AbilityDefinition("PackLeaderAura", "desc", null, List.of(), List.of(),
                 List.of(new ModifierDef(new TargetSelector("AllFriendlyUnits"), Map.of("addDamage", 1)))));
-        RelicRegistry.register(new RelicDefinition("PackLeader", "desc", List.of("PackLeaderAura")));
+        RelicRegistry.register(RelicDefinition.battleOnly("PackLeader", "desc", List.of("PackLeaderAura")));
 
         grid = prepare(Map.of(PieceAlignment.P1, List.of("PackLeader")));
         Entity enemy = placePiece(PieceAlignment.P2, 5, 4);
@@ -113,7 +113,7 @@ class RelicCarrierTest {
                 List.of(new Reaction(TriggerType.ON_TURN_START, List.of(),
                         List.of(new EffectNode("Heal", Map.of("target", "AllFriendlyUnits", "amount", 1))))),
                 List.of(), List.of()));
-        RelicRegistry.register(new RelicDefinition("Bonfire", "desc", List.of("BonfireWarmth")));
+        RelicRegistry.register(RelicDefinition.battleOnly("Bonfire", "desc", List.of("BonfireWarmth")));
 
         grid = prepare(Map.of(PieceAlignment.P1, List.of("Bonfire")));
         Entity friendly = placePiece(PieceAlignment.P1, 5, 4);
@@ -131,7 +131,7 @@ class RelicCarrierTest {
                 List.of(new Reaction(TriggerType.ON_TURN_START, List.of(),
                         List.of(new EffectNode("Heal", Map.of("target", "AllFriendlyUnits", "amount", 1))))),
                 List.of(), List.of()));
-        RelicRegistry.register(new RelicDefinition("Bonfire", "desc", List.of("BonfireWarmth")));
+        RelicRegistry.register(RelicDefinition.battleOnly("Bonfire", "desc", List.of("BonfireWarmth")));
 
         // P2 owns the relic, but P1 goes first — P2's carrier shouldn't fire on P1's turn start.
         grid = prepare(Map.of(PieceAlignment.P2, List.of("Bonfire")));
@@ -153,7 +153,7 @@ class RelicCarrierTest {
                                 "do", List.of(Map.of("type", "Damage", "params", Map.of("target", "$target", "amount", 1)))))))),
                 List.of());
         AbilityRegistry.register(hornBlast);
-        RelicRegistry.register(new RelicDefinition("Horn", "desc", List.of("HornBlast")));
+        RelicRegistry.register(RelicDefinition.battleOnly("Horn", "desc", List.of("HornBlast")));
 
         grid = prepare(Map.of(PieceAlignment.P1, List.of("Horn")));
         Entity enemy = placePiece(PieceAlignment.P2, 5, 4);

@@ -65,7 +65,9 @@ public final class RelicRegistry {
     private static RelicDefinition parseDefinition(String id, Map<?, ?> map) {
         String description = map.containsKey("description") ? map.get("description").toString() : "";
         List<String> battleAbilities = toStringList(map.get("battleAbilities"));
-        return new RelicDefinition(id, description, battleAbilities);
+        // runHooks is behavior, not data — a yaml-authored relic is always battle-only; a
+        // relic with a non-battle effect must be registered in code (see BuiltinRelicHooks).
+        return RelicDefinition.battleOnly(id, description, battleAbilities);
     }
 
     private static List<String> toStringList(Object obj) {
