@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.game.RunManager;
+import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -21,9 +22,12 @@ import io.github.elderpath_crusade.utils.FontSize;
  *
  * <p>For a roguelike run (ROUGELIKE_RUN): reports the outcome to RunManager first (the only
  * place this happens — nothing else observes a run's battles ending), then shows a single
- * action instead — "Continue" into {@link ElderPickRoom} (choosing a new Elder is the floor's
- * reward now, ELDER-005, replacing the old relic/new-card/stat-boost offer) while the run goes
- * on, or "Main Menu" once it has ended (permadeath, or the boss was cleared).
+ * action — "Main Menu" once the run has ended (permadeath, or the *last* floor's boss was
+ * cleared), otherwise "Continue" into whichever reward (if any) this node type grants (Phase
+ * 3.6): a Boss win (not the last floor) continues into {@link ElderPickRoom} (which also
+ * advances to the next floor once a pick is made); an Elite win continues into {@link
+ * EliteRewardRoom} (a relic or a card modification, randomly); an ordinary Battle win grants
+ * nothing and continues straight back to {@link RunRoom}.
  */
 public class VictoryRoom extends Room {
     private final Text title;
@@ -36,8 +40,10 @@ public class VictoryRoom extends Room {
 
         GameMode mode = GameContext.get().getGameModeManager().getCurrent();
         boolean runEnded = true;
+        RunNodeType wonNodeType = null;
         if (mode == GameMode.ROUGELIKE_RUN) {
             RunManager runManager = GameContext.get().getRunManager();
+            wonNodeType = runManager.getRunState().currentNode().type();
             runManager.reportNodeOutcome(winner);
             runEnded = runManager.getRunState().isEnded();
         }
@@ -53,8 +59,16 @@ public class VictoryRoom extends Room {
 
         if (mode == GameMode.ROUGELIKE_RUN) {
             playAgain = null;
-            mainMenu = runEnded ? mainMenuButton(screenW, screenH, "Main Menu", MainMenuRoom::get)
-                    : mainMenuButton(screenW, screenH, "Continue", ElderPickRoom::get);
+            if (runEnded) {
+                mainMenu = mainMenuButton(screenW, screenH, "Main Menu", MainMenuRoom::get);
+            } else {
+                java.util.function.Supplier<Room> next = switch (wonNodeType) {
+                    case BOSS -> () -> ElderPickRoom.get(true);
+                    case ELITE -> EliteRewardRoom::get;
+                    default -> RunRoom::get; // BATTLE — no reward
+                };
+                mainMenu = mainMenuButton(screenW, screenH, "Continue", next);
+            }
             addUI(mainMenu);
             layout();
             return;

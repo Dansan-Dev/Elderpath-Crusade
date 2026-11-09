@@ -14,16 +14,22 @@ import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
 /**
- * Choose a new Elder (ELDER-004/005) — shared by both the very first pick, right after a fresh
- * run's deck is drafted ({@link RunDraftRoom}), and every later pick, after winning a
- * non-terminal floor ({@code VictoryRoom}, replacing the old relic/new-card/stat-boost reward
- * screen entirely per the user's design). Lists every card currently in the deck as a
- * candidate; picking one calls {@link RunManager#promoteToElder}, which retires it from the
- * deck into Elder status and raises (or leaves unchanged) every future battle's card-lock wait —
- * see {@code RunManager}'s class doc. Always continues to {@link RunRoom} afterward.
+ * Choose a new Elder (ELDER-004/005, re-triggered by Phase 3.6) — shared by both the very first
+ * pick, right after a fresh run's deck is drafted ({@link RunDraftRoom}), and every later pick,
+ * after clearing a non-final floor's boss ({@code VictoryRoom}; Phase 3.6 moved this off *every*
+ * non-terminal win, which is what ELDER-005 originally wired it to). Lists every card currently
+ * in the deck as a candidate; picking one calls {@link RunManager#promoteToElder}, which
+ * retires it from the deck into Elder status and raises (or leaves unchanged) every future
+ * battle's card-lock wait — see {@code RunManager}'s class doc.
+ *
+ * <p>{@code advanceFloorAfterPick} is true only for the post-boss case — after promoting (or
+ * skipping, if the deck has nothing eligible), it also calls {@link RunManager#advanceToNextFloor}
+ * before continuing to {@link RunRoom}. The very first pick (from {@link RunDraftRoom}) passes
+ * false: the run just started, already on floor 0, nothing to advance from.
  *
  * <p>A deck with only one card left has nothing eligible to promote without emptying it
- * (RunState.addElder's own guard) — skips straight to RunRoom rather than show an empty choice.
+ * (RunState.addElder's own guard) — skips straight to the usual continuation rather than show
+ * an empty choice.
  */
 public class ElderPickRoom extends Room {
     private static final int BUTTON_WIDTH = 260;
@@ -33,7 +39,7 @@ public class ElderPickRoom extends Room {
     private final Text header;
     private final ButtonList buttonList;
 
-    private ElderPickRoom() {
+    private ElderPickRoom(boolean advanceFloorAfterPick) {
         super();
         RunManager runManager = GameContext.get().getRunManager();
 
@@ -47,7 +53,7 @@ public class ElderPickRoom extends Room {
             String label = instance.cardName() + (instance.isModified() ? " (modified)" : "");
             addOption(label, () -> {
                 runManager.promoteToElder(instanceId);
-                continueRun();
+                continueRun(runManager, advanceFloorAfterPick);
             });
         }
 
@@ -65,7 +71,8 @@ public class ElderPickRoom extends Room {
         addContent(button);
     }
 
-    private static void continueRun() {
+    private static void continueRun(RunManager runManager, boolean advanceFloorAfterPick) {
+        if (advanceFloorAfterPick) runManager.advanceToNextFloor();
         GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
     }
 
@@ -80,11 +87,13 @@ public class ElderPickRoom extends Room {
         layoutContents();
     }
 
-    public static Room get() {
+    public static Room get(boolean advanceFloorAfterPick) {
         RunManager runManager = GameContext.get().getRunManager();
         if (runManager.getRunState().deck().size() <= 1) {
-            return RunRoom.get(); // nothing eligible to promote without emptying the deck
+            // nothing eligible to promote without emptying the deck — still advance if due
+            if (advanceFloorAfterPick) runManager.advanceToNextFloor();
+            return RunRoom.get();
         }
-        return new ElderPickRoom();
+        return new ElderPickRoom(advanceFloorAfterPick);
     }
 }

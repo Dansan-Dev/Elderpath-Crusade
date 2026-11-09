@@ -68,7 +68,7 @@ public class RunDraftRoom extends Room {
         int nextPick = picksSoFar + 1;
         if (nextPick >= DRAFT_PICKS) {
             GameContext.get().getRunManager().startRun(difficulty, updated);
-            GameContext.get().getRoomManager().gotoRoom(ElderPickRoom::get);
+            GameContext.get().getRoomManager().gotoRoom(() -> ElderPickRoom.get(false));
         } else {
             GameContext.get().getRoomManager().gotoRoom(() -> new RunDraftRoom(difficulty, updated, nextPick));
         }
