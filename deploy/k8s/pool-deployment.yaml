@@ -8,6 +8,14 @@
 # pairing-free case). It does NOT support two specific humans finding each other — see
 # ../README.md and job-template.yaml for why, and FEAT-008's remaining phases for the
 # matchmaking/lobby/reconnect layer that would add that.
+#
+# Sized for Oracle Cloud's "Always Free" tier (OKE Basic cluster + Ampere A1 ARM compute) — see
+# ../README.md's "Deploying to Oracle Cloud (OKE, Always Free)" section before applying this.
+# The whole tenancy's free ARM allocation is 2 OCPU / 12 GB RAM (cut down from 4/24 in 2026),
+# shared across however many worker-node VMs the free node pool is split into, and the control
+# plane/CNI/kube-proxy/etc. already use some of that before any workload runs — the numbers
+# below (minReplicas/maxReplicas/resources) are deliberately conservative so a 2-replica steady
+# state plus some burst room actually fits, not a guess at real production traffic.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +24,7 @@ metadata:
   labels:
     app: elderpath-server
 spec:
-  replicas: 2
+  replicas: 1 # the HPA below takes over from here; matches its minReplicas
   selector:
     matchLabels:
       app: elderpath-server
@@ -25,10 +33,22 @@ spec:
       labels:
         app: elderpath-server
     spec:
+      # Always Free worker nodes are Ampere A1 (aarch64) — pin pods to arm64 explicitly so a
+      # scheduling mistake fails loudly instead of landing on some other node's wrong-arch image
+      # pull. Build/push the image for linux/arm64 (see ../README.md) or this never schedules.
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      # Only needed for a private OCIR repository — a public one (Container Registry > repo >
+      # Repository Visibility in the OCI console) needs no secret at all. See ../README.md.
+      # imagePullSecrets:
+      #   - name: ocir-pull-secret
       containers:
         - name: elderpath-server
-          # Build with deploy/server/Dockerfile and push to a registry this cluster can pull
-          # from; replace this placeholder before applying.
+          # Build with deploy/server/Dockerfile for linux/arm64 and push to OCIR (Oracle's
+          # container registry) or any registry this cluster can pull from — replace this
+          # placeholder first. OCIR format: <region-key>.ocir.io/<tenancy-namespace>/<repo>:<tag>
+          # (e.g. iad.ocir.io/axxxxxxxxxxxx/elderpath-server:latest). A public OCIR repo needs no
+          # imagePullSecrets; a private one does — see ../README.md.
           image: your-registry/elderpath-server:latest
           ports:
             - name: game
@@ -71,22 +91,39 @@ spec:
               port: health
             periodSeconds: 5
             failureThreshold: 2
+          # Trimmed for the Always Free ARM allocation (2 OCPU / 12 GB total, minus whatever the
+          # node pool's own system pods use) rather than the earlier, more generous guess —
+          # scaled up to the HPA's maxReplicas (4) below, that's ~800m CPU / ~768Mi memory total,
+          # leaving headroom under 2 OCPU/12GB even accounting for cluster system pods.
+          # No -Xmx is set anywhere (see server/launcher/ServerLauncher) — the JVM sizes its heap
+          # from this container's own memory limit automatically (container-aware default
+          # MaxRAMPercentage since Java 10+), so raising/lowering `limits.memory` directly changes
+          # how much heap each match server gets.
           resources:
             requests:
-              cpu: 250m
-              memory: 384Mi
+              cpu: 200m
+              memory: 192Mi
             limits:
-              cpu: 1
-              memory: 512Mi
+              cpu: 500m
+              memory: 384Mi
 ---
 # Game-port only — health checks are read directly from each Pod's IP by kubelet, not routed
-# through the Service. ClusterIP by default; switch to LoadBalancer (or add a cloud-specific
-# Ingress/Gateway in front) once this is meant to take real internet connections directly.
+# through the Service. LoadBalancer, since the whole point of this pool is to take real internet
+# connections directly (no matchmaking layer in front of it) — the annotations below pin OCI's
+# load balancer to the flexible shape at its lowest bandwidth (10 Mbps), which is what Always
+# Free's one included load balancer covers; **verify that bandwidth figure against your own OCI
+# console/billing before relying on it** — it's a long-standing, stable Always Free detail, but
+# this manifest can't see your tenancy's actual entitlements, and a wrong shape here is the one
+# part of this whole deployment that could actually cost money if it defaulted to something else.
 apiVersion: v1
 kind: Service
 metadata:
   name: elderpath-server-pool
   namespace: elderpath
+  annotations:
+    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
 spec:
   selector:
     app: elderpath-server
@@ -94,10 +131,11 @@ spec:
     - name: game
       port: 4567
       targetPort: game
-  type: ClusterIP
+  type: LoadBalancer
 ---
-# Scales on CPU — this workload is bursty but light per match; tune targetCPUUtilizationPercentage
-# and min/max against real measured load before trusting these numbers in production.
+# Scales on CPU — trimmed to fit the Always Free ARM allocation rather than a real measured
+# load (2 OCPU/12GB total for the whole tenancy; see the Deployment's own comment above for the
+# arithmetic). Raise these once this runs on anything bigger than the free tier.
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -108,8 +146,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: elderpath-server-pool
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:

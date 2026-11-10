@@ -4,6 +4,13 @@
 #
 #   docker build -f deploy/server/Dockerfile -t elderpath-server .
 #
+# For Oracle Cloud's Always Free OKE (Ampere A1, aarch64 — Sprint 65) build for arm64 instead,
+# via buildx (needs no changes to this file: eclipse-temurin's images are multi-arch, and
+# nothing the server module depends on pulls in an architecture-specific native library — only
+# lwjgl3's build.gradle does that, and lwjgl3 isn't part of this image):
+#
+#   docker buildx build --platform linux/arm64 -f deploy/server/Dockerfile -t elderpath-server:arm64 --load .
+#
 # assets/ (data/pieces.yaml, abilities.yaml, spells.yaml, relics.yaml, images, fonts, ...) is
 # gitignored and NOT checked into this repo — it must already exist on disk wherever this image
 # is built (a developer machine or CI with the real assets, never this cloud sandbox). See

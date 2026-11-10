@@ -40,6 +40,68 @@ it (`./gradlew :server:installDist`) was verified directly, outside Docker, with
 project's normal test suite. Build and smoke-test the image yourself on a machine (or
 CI) that has the real assets before trusting it in a cluster.
 
+## Deploying to Oracle Cloud (OKE, Always Free) — Sprint 65
+
+The target for this deployment: Oracle's Always Free tier is the one combination of
+free Kubernetes *and* free compute that doesn't just mean "free control plane, pay for
+the nodes" — an OKE Basic cluster has no control-plane fee, and Ampere A1 (**arm64**)
+worker nodes are free up to the tenancy's Always Free allocation (2 OCPU / 12 GB total
+as of the 2026 reduction — down from 4/24, still enough for this workload). Both
+manifests here already assume this: `nodeSelector: kubernetes.io/arch: arm64`, trimmed
+resource requests/limits and HPA bounds sized to fit that allocation (see
+`pool-deployment.yaml`'s own comments for the arithmetic), and the pool's `Service` set
+to `LoadBalancer` with annotations pinning OCI's load balancer to the flexible shape at
+10 Mbps — the bandwidth Always Free's one included load balancer has historically
+covered. **Verify that bandwidth figure yourself** (OCI console → Governance →
+Limits, Quotas and Usage, or just check your bill after a day) before trusting it —
+this doc can't see your tenancy's actual entitlements, and it's the one part of this
+whole setup that could cost real money if Oracle's free allowance differs from what's
+documented here.
+
+1. **Create the cluster.** OCI Console → Developer Services → Kubernetes Clusters
+   (OKE) → Create Cluster → **Quick Create**. Pick **Basic** cluster type (no
+   control-plane fee) and, for the node pool, shape `VM.Standard.A1.Flex` with OCPUs/
+   memory inside your Always Free allowance (e.g. 2 OCPU / 12 GB across 1–2 nodes —
+   check the console's own Always Free badge/warning on the shape picker, it flags
+   this directly). The quick-create wizard also provisions the VCN/subnets for you.
+2. **Point `kubectl` at it.** Install the `oci` CLI, run `oci setup config` once
+   (API signing key), then:
+   ```sh
+   oci ce cluster create-kubeconfig --cluster-id <cluster-ocid> \
+       --file $HOME/.kube/config --region <region> --token-version 2.0.0
+   kubectl get nodes   # should list your arm64 node(s)
+   ```
+3. **Build and push the image for arm64** (see the Dockerfile's own header comment
+   for the exact `docker buildx` command) to OCIR, Oracle's container registry:
+   ```sh
+   docker buildx build --platform linux/arm64 -f deploy/server/Dockerfile \
+       -t <region-key>.ocir.io/<tenancy-namespace>/elderpath-server:latest --load .
+   docker login <region-key>.ocir.io -u '<tenancy-namespace>/<your-username>'
+       # password: an Auth Token from OCI Console → Profile → Auth Tokens (NOT your
+       # console password — OCIR never accepts that)
+   docker push <region-key>.ocir.io/<tenancy-namespace>/elderpath-server:latest
+   ```
+   Either mark the OCIR repository **Public** (Developer Services → Container
+   Registry → the repo → Repository Visibility — then no pull secret is needed at
+   all) or create one and reference it via the commented-out `imagePullSecrets` in
+   both manifests:
+   ```sh
+   kubectl create secret docker-registry ocir-pull-secret -n elderpath \
+       --docker-server=<region-key>.ocir.io \
+       --docker-username='<tenancy-namespace>/<your-username>' \
+       --docker-password='<the same auth token>'
+   ```
+4. **Fill in the image placeholder** in `pool-deployment.yaml` (`your-registry/
+   elderpath-server:latest` → the OCIR path above) and apply:
+   ```sh
+   kubectl apply -f deploy/k8s/namespace.yaml -f deploy/k8s/pool-deployment.yaml
+   kubectl get svc -n elderpath elderpath-server-pool -w   # wait for EXTERNAL-IP
+   ```
+   Once an external IP shows up, that's the address to point a game client at, port
+   `4567` — a solo player vs. SmartBot match, same as the earlier "Files" description.
+5. `job-template.yaml` still isn't applied by anything (see below) — it's unaffected
+   by any of this beyond the same arm64/OCIR adjustments already made to it.
+
 ## The core design tension, and how these two manifests each resolve it
 
 `ServerLauncher` is designed around **one authoritative match per process** (see

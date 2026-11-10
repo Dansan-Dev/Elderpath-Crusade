@@ -29,6 +29,12 @@ spec:
         match-id: "${MATCH_ID}"
     spec:
       restartPolicy: Never
+      # Oracle Always Free worker nodes are Ampere A1 (aarch64) — see pool-deployment.yaml's
+      # same nodeSelector/image comment if this cluster is OKE.
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      # imagePullSecrets:
+      #   - name: ocir-pull-secret   # only needed for a private OCIR repo, see ../README.md
       containers:
         - name: elderpath-server
           image: your-registry/elderpath-server:latest
@@ -62,13 +68,14 @@ spec:
               port: health
             periodSeconds: 5
             failureThreshold: 3
+          # Trimmed to match pool-deployment.yaml's Always Free sizing — see its comment.
           resources:
             requests:
-              cpu: 250m
-              memory: 384Mi
+              cpu: 200m
+              memory: 192Mi
             limits:
-              cpu: 1
-              memory: 512Mi
+              cpu: 500m
+              memory: 384Mi
 ---
 # One Service per match Job, selecting only that Job's Pod by match-id — this is what a
 # matchmaking controller would hand both paired clients the address of (never the shared pool
