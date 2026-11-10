@@ -23,5 +23,7 @@ public class SettingsManager {
     public static final class DebugSettings {
         public boolean eventsLoggerInDemo = true;
         public boolean enableP2Bot = true;
+        /** Sprint 64 — F3 toggles the in-game FPS/frame-time/heap/GC/music diagnostics overlay. */
+        public boolean showPerfOverlay = false;
     }
 }

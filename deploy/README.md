@@ -84,6 +84,14 @@ alongside the game's own TCP port:
   A failing readiness probe should stop routing *new* connections here without
   killing the Pod — lets an in-progress match's existing connection finish cleanly
   while new traffic goes elsewhere.
+- `GET /diag` (Sprint 64) — a JSON body of rolling tick-timing stats (`tickCount`,
+  `budgetMs`, `lastTickMs`, `avgTickMs`, `maxTickMs`, `overBudgetCount`), on the same
+  port whenever `--health-port` is set. This is the match-server half of "diagnose
+  performance/delays" — a sustained `overBudgetCount` climb, or `avgTickMs` close to
+  `budgetMs`, means this instance can't keep up with its own tick rate. There's no
+  client-side equivalent exposed here — the game's own in-game debug overlay
+  (`F3`, client-only, see `elderpath-architecture.md`'s "Diagnostics" section) covers
+  frame time/FPS/heap/GC/music, which has nothing to do with a dedicated server.
 
 Known limitation, stated plainly rather than implied away: these are HTTP-level
 checks on a separate listener, not a check that the *game* TCP port itself is

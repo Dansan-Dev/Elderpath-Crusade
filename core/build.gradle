@@ -1,6 +1,22 @@
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
+// Exposes gradle.properties' projectVersion to the running game/server at runtime (DeckCollectionEntry's
+// game_version field, Sprint 64) — nothing else read this before. A plain text resource, same spirit as the
+// root build.gradle's generateAssetList task; read back by utils.GameVersion.
+tasks.register('generateVersionResource') {
+  def outputDir = file("$buildDir/generated/resources/version")
+  def outputFile = file("$outputDir/elderpath-version.txt")
+  inputs.property('version', project.version)
+  outputs.file(outputFile)
+  doLast {
+    outputDir.mkdirs()
+    outputFile.text = project.version as String
+  }
+}
+sourceSets.main.resources.srcDir "$buildDir/generated/resources/version"
+processResources.dependsOn generateVersionResource
+
 dependencies {
   api "com.badlogicgames.box2dlights:box2dlights:$box2dlightsVersion"
   api "com.badlogicgames.gdx:gdx-ai:$aiVersion"

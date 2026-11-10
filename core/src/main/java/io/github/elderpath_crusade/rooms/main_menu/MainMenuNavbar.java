@@ -12,6 +12,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.rooms.CollectionRoom;
 import io.github.elderpath_crusade.rooms.GameModeRoom;
 import io.github.elderpath_crusade.rooms.InformationSelectionRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
@@ -26,6 +27,7 @@ public class MainMenuNavbar extends HigherOrderUI {
     private SpriteObject navbarBg;
     private ButtonList buttonList;
     private Button gameModeButton;
+    private Button collectionButton;
     private Button settingsButton;
 //    private Button infoButton;
     private Button exitButton;
@@ -56,6 +58,12 @@ public class MainMenuNavbar extends HigherOrderUI {
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
+        collectionButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Collection", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(CollectionRoom::get), ClickableEffectData.getImmediate())
+            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+
         settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
             .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
@@ -80,6 +88,7 @@ public class MainMenuNavbar extends HigherOrderUI {
         // Create ButtonList and add buttons
         buttonList = new ButtonList();
         buttonList.addButton(gameModeButton);
+        buttonList.addButton(collectionButton);
         buttonList.addButton(settingsButton);
 //        buttonList.addButton(infoButton);
         buttonList.addButton(exitButton);

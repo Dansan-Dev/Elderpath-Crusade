@@ -18,6 +18,7 @@ import io.github.elderpath_crusade.ecs.systems.TurnSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.bot.BotManager;
+import io.github.elderpath_crusade.collection.CollectionManager;
 import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ReplicaViewSync;
@@ -78,6 +79,8 @@ public class GameContext {
     @Getter private final DeckManager deckManager;
     /** Client-side orchestrator for a roguelike run (FEAT-006) — see run/ and roguelike-run-plan.md. */
     @Getter private final RunManager runManager;
+    /** The player's persistent deck collection (Sprint 64) — see collection/. */
+    @Getter private final CollectionManager collectionManager;
     @Getter private final RoomManager roomManager;
     @Getter private final SettingsManager settingsManager;
     @Getter private final MusicManager musicManager;
@@ -153,6 +156,7 @@ public class GameContext {
         this.gameModeManager = new GameModeManager();
         this.deckManager = new DeckManager();
         this.runManager = new RunManager();
+        this.collectionManager = new CollectionManager();
         this.roomManager = new RoomManager();
         this.settingsManager = new SettingsManager();
         this.musicManager = new MusicManager();

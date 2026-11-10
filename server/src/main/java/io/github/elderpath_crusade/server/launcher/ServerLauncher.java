@@ -89,16 +89,18 @@ public final class ServerLauncher {
 
         lastTickNanos = System.nanoTime();
         long staleNanos = Math.max(5_000_000_000L, 20L * options.tickMs() * 1_000_000L);
+        TickDiagnostics diagnostics = new TickDiagnostics(options.tickMs() * 1_000_000L);
         HealthServer health = null;
         if (options.healthPort() > 0) {
             health = HealthServer.start(options.healthPort(),
                     () -> System.nanoTime() - lastTickNanos < staleNanos,
-                    () -> stopReason == null);
+                    () -> stopReason == null,
+                    diagnostics::toJson);
             log("health checks on port " + health.port());
         }
 
         try {
-            loop(server, options);
+            loop(server, options, diagnostics);
         } finally {
             server.close();
             if (health != null) health.close();
@@ -107,7 +109,7 @@ public final class ServerLauncher {
         return EXIT_OK;
     }
 
-    private void loop(MatchServer server, LaunchOptions options) throws InterruptedException {
+    private void loop(MatchServer server, LaunchOptions options, TickDiagnostics diagnostics) throws InterruptedException {
         List<PieceAlignment> humans = options.humanSides();
         long tickNanos = options.tickMs() * 1_000_000L;
         long idleNanos = options.idleTimeoutSeconds() * 1_000_000_000L;
@@ -119,6 +121,8 @@ public final class ServerLauncher {
         while (stopReason == null) {
             long now = System.nanoTime();
             server.tick((now - last) / 1e9f * options.timeScale());
+            long tickDoneAt = System.nanoTime();
+            diagnostics.record(tickDoneAt - now);
             last = now;
             lastTickNanos = now;
 

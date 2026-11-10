@@ -110,6 +110,13 @@ class ServerProcessTest {
         assertEquals(200, live.statusCode());
         HttpResponse<String> ready = awaitHealthResponse(http, healthPort, "/healthz/ready");
         assertEquals(200, ready.statusCode());
+
+        // Sprint 64: /diag rides the same health port, reporting real tick-timing stats once the
+        // loop has actually ticked at least once (which `live` returning 200 above guarantees).
+        HttpResponse<String> diag = awaitHealthResponse(http, healthPort, "/diag");
+        assertEquals(200, diag.statusCode());
+        assertTrue(diag.body().contains("\"tickCount\""), diag.body());
+        assertFalse(diag.body().contains("\"tickCount\":0"), "the loop has ticked by now: " + diag.body());
     }
 
     /** The child process needs a moment to bind the health port after LISTENING is reported — poll briefly. */

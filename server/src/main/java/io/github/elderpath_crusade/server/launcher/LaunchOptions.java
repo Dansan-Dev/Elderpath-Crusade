@@ -36,8 +36,9 @@ import java.util.Map;
  *   --watch-stdin B     exit when stdin closes (default true)
  *   --idle-timeout-s N  exit after N s with no human client connected (default 60)
  *   --end-grace-s N     after the match ends, exit within N s (default 3)
- *   --health-port N     serve HTTP /healthz/live and /healthz/ready on this port for an external
- *                       health check (e.g. a Kubernetes probe); 0 disables it (default 0)
+ *   --health-port N     serve HTTP /healthz/live, /healthz/ready and /diag (Sprint 64 — rolling
+ *                       tick-timing stats) on this port for an external health check (e.g. a
+ *                       Kubernetes probe) or diagnostics; 0 disables it (default 0)
  * </pre>
  */
 record LaunchOptions(

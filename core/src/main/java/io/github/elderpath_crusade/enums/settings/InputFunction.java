@@ -5,5 +5,6 @@ public enum InputFunction {
     PAUSE_MENU, // FIXED
     EXIT_GAME, // FIXED
     CONFIRM_SELECTION, // FIXED (Enter)
+    TOGGLE_DIAGNOSTICS, // FIXED (F3) — Sprint 64
     UNBOUND;
 }

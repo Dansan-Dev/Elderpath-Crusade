@@ -37,6 +37,8 @@ public class RunState {
     private final int totalFloors;
     private boolean ended;
     private boolean won;
+    private final long startedAtMillis;
+    private long endedAtMillis;
 
     public RunState(RunMap firstFloorMap, RunDifficulty difficulty, List<RunCardInstance> startingDeck, int totalFloors) {
         if (firstFloorMap == null || difficulty == null) throw new IllegalArgumentException("map and difficulty are required");
@@ -50,6 +52,7 @@ public class RunState {
         this.floorIndex = 0;
         this.currentNodeId = map.startNodeId();
         this.visitedNodeIds.add(currentNodeId);
+        this.startedAtMillis = System.currentTimeMillis();
     }
 
     /** Builds a fresh run's starting deck as unmodified instances, ids "run-0", "run-1", ... in order. */
@@ -208,6 +211,25 @@ public class RunState {
         requireNotEnded();
         this.ended = true;
         this.won = won;
+        this.endedAtMillis = System.currentTimeMillis();
+    }
+
+    /**
+     * Wall-clock epoch millis when this run started (the first floor's map was generated) —
+     * exposed for {@link #durationMillis()}; a saved deck collection entry (Sprint 64) doesn't
+     * need this directly, only the derived duration.
+     */
+    public long startedAtMillis() {
+        return startedAtMillis;
+    }
+
+    /**
+     * How long the run took, start to {@link #endRun} — a deck collection entry's
+     * {@code run_completion_time} (Sprint 64). Only meaningful once {@link #isEnded()}; 0 before
+     * then rather than throwing, since a caller might read it defensively mid-run.
+     */
+    public long durationMillis() {
+        return ended ? endedAtMillis - startedAtMillis : 0L;
     }
 
     public void addCardToDeck(RunCardInstance instance) {

@@ -110,6 +110,22 @@ class RunStateTest {
     }
 
     @Test
+    void durationMillis_zeroBeforeEndingAndNonNegativeAfter() {
+        RunState run = freshRun(2);
+        assertEquals(0L, run.durationMillis(), "not ended yet");
+        run.endRun(true);
+        assertTrue(run.durationMillis() >= 0, "started/ended both stamped from System.currentTimeMillis()");
+    }
+
+    @Test
+    void startedAtMillis_isStampedAtConstruction() {
+        long before = System.currentTimeMillis();
+        RunState run = freshRun(2);
+        long after = System.currentTimeMillis();
+        assertTrue(run.startedAtMillis() >= before && run.startedAtMillis() <= after);
+    }
+
+    @Test
     void addCardToDeck_appendsANewInstance() {
         RunState run = freshRun(2);
         run.addCardToDeck(RunCardInstance.unmodified("reward-1", "Shockling"));

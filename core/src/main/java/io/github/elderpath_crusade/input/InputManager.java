@@ -47,6 +47,7 @@ public class InputManager {
         setInput(InputKey.ESCAPE, InputFunction.PAUSE_MENU);
         setInput(InputKey.Q, InputFunction.EXIT_GAME);
         setInput(InputKey.ENTER, InputFunction.CONFIRM_SELECTION);
+        setInput(InputKey.F3, InputFunction.TOGGLE_DIAGNOSTICS);
         // Standard binding
         // ...
 
@@ -59,6 +60,7 @@ public class InputManager {
         inputHandlers.put(InputFunction.PAUSE_MENU, new HandlePause());
         inputHandlers.put(InputFunction.EXIT_GAME, new HandleExitGame());
         inputHandlers.put(InputFunction.CONFIRM_SELECTION, new HandleConfirmSelection());
+        inputHandlers.put(InputFunction.TOGGLE_DIAGNOSTICS, new HandleToggleDiagnostics());
 
         inputHandlers.put(InputFunction.UNBOUND, new HandleUnbound());
     }

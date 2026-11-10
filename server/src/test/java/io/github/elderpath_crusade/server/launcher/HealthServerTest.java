@@ -46,6 +46,26 @@ class HealthServerTest {
     }
 
     @Test
+    void diag_servesTheSuppliedJsonWhenGiven() throws IOException, InterruptedException {
+        try (HealthServer health = HealthServer.start(0, () -> true, () -> true, () -> "{\"tickCount\":42}")) {
+            HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + health.port() + "/diag")).GET().build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, response.statusCode());
+            assertEquals("{\"tickCount\":42}", response.body());
+            assertEquals("application/json", response.headers().firstValue("Content-Type").orElse(null));
+        }
+    }
+
+    @Test
+    void diag_isNotRegisteredWithoutADiagnosticsSupplier() throws IOException, InterruptedException {
+        try (HealthServer health = HealthServer.start(0, () -> true, () -> true)) {
+            // No context registered for the path at all (not "unhealthy") — com.sun.net.httpserver
+            // answers an unrouted path with a plain 404, same as any other unknown path would get.
+            assertEquals(404, get(health, "/diag").statusCode());
+        }
+    }
+
+    @Test
     void close_stopsItFromAnsweringFurtherRequests() throws IOException {
         HealthServer health = HealthServer.start(0, () -> true, () -> true);
         int port = health.port();

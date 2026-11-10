@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.rendering.GraphicsManager;
 import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.supers.Room;
+import io.github.elderpath_crusade.ui_objects.DiagnosticsOverlay;
 import io.github.elderpath_crusade.ui_objects.SelectionOverlay;
 
 import java.util.function.Supplier;
@@ -35,6 +36,7 @@ public class RoomState implements GameState {
         // Global overlays
         GameContext.get().getGraphicsManager().addUIRenderable(new SelectionOverlay());
         GameContext.get().getGraphicsManager().addRenderable(GameContext.get().getHighlightManager());
+        GameContext.get().getGraphicsManager().addUIRenderable(new DiagnosticsOverlay());
     }
 
     @Override

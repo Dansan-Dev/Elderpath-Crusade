@@ -21,7 +21,9 @@ import io.github.elderpath_crusade.utils.FontSize;
  * both winner and loser labels to satisfy the 2-way trigger requirement.
  *
  * <p>For a roguelike run (ROUGELIKE_RUN): reports the outcome to RunManager first (the only
- * place this happens — nothing else observes a run's battles ending), then shows a single
+ * place this happens — nothing else observes a run's battles ending). A run that just ended in
+ * a win also gets its deck/Elders/relics snapshotted into {@code CollectionManager} right here
+ * (Sprint 64) — the only place the win is known before the next room is picked. Then shows a single
  * action — "Main Menu" once the run has ended (permadeath, or the *last* floor's boss was
  * cleared), otherwise "Continue" into whichever reward (if any) this node type grants (Phase
  * 3.6): a Boss win (not the last floor) continues into {@link ElderPickRoom} (which also
@@ -46,6 +48,11 @@ public class VictoryRoom extends Room {
             wonNodeType = runManager.getRunState().currentNode().type();
             runManager.reportNodeOutcome(winner);
             runEnded = runManager.getRunState().isEnded();
+            // Sprint 64: a won run's deck/Elders/relics go into the player's persistent collection here —
+            // the one place a run's outcome is known (see the class doc).
+            if (runEnded && runManager.getRunState().isWon()) {
+                GameContext.get().getCollectionManager().recordWin(runManager.getRunState(), mode);
+            }
         }
 
         // Title depends on game mode
