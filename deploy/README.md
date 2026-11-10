@@ -42,65 +42,178 @@ CI) that has the real assets before trusting it in a cluster.
 
 ## Deploying to Oracle Cloud (OKE, Always Free) — Sprint 65
 
-The target for this deployment: Oracle's Always Free tier is the one combination of
-free Kubernetes *and* free compute that doesn't just mean "free control plane, pay for
-the nodes" — an OKE Basic cluster has no control-plane fee, and Ampere A1 (**arm64**)
-worker nodes are free up to the tenancy's Always Free allocation (2 OCPU / 12 GB total
-as of the 2026 reduction — down from 4/24, still enough for this workload). Both
-manifests here already assume this: `nodeSelector: kubernetes.io/arch: arm64`, trimmed
-resource requests/limits and HPA bounds sized to fit that allocation (see
-`pool-deployment.yaml`'s own comments for the arithmetic), and the pool's `Service` set
-to `LoadBalancer` with annotations pinning OCI's load balancer to the flexible shape at
-10 Mbps — the bandwidth Always Free's one included load balancer has historically
-covered. **Verify that bandwidth figure yourself** (OCI console → Governance →
-Limits, Quotas and Usage, or just check your bill after a day) before trusting it —
-this doc can't see your tenancy's actual entitlements, and it's the one part of this
-whole setup that could cost real money if Oracle's free allowance differs from what's
-documented here.
+Start-to-finish: creating the free account through an actually-reachable dedicated
+server. Oracle's Always Free tier is the one combination of free Kubernetes *and*
+free compute that doesn't just mean "free control plane, pay for the nodes" — an OKE
+Basic cluster has no control-plane fee, and Ampere A1 (**arm64**) worker nodes are
+free up to the tenancy's Always Free allocation (2 OCPU / 12 GB total as of the 2026
+reduction — down from 4/24, still enough for this workload). Both manifests here
+already assume this: `nodeSelector: kubernetes.io/arch: arm64`, trimmed resource
+requests/limits and HPA bounds sized to fit that allocation (see
+`pool-deployment.yaml`'s own comments for the arithmetic), and the pool's `Service`
+set to `LoadBalancer` with annotations pinning OCI's load balancer to the flexible
+shape at 10 Mbps — the bandwidth Always Free's one included load balancer has
+historically covered. **Verify that bandwidth figure yourself** (OCI console →
+Governance → Limits, Quotas and Usage, or just check your bill after a day) before
+trusting it — this doc can't see your tenancy's actual entitlements, and it's the one
+part of this whole setup that could cost real money if Oracle's free allowance
+differs from what's documented here.
 
-1. **Create the cluster.** OCI Console → Developer Services → Kubernetes Clusters
-   (OKE) → Create Cluster → **Quick Create**. Pick **Basic** cluster type (no
-   control-plane fee) and, for the node pool, shape `VM.Standard.A1.Flex` with OCPUs/
-   memory inside your Always Free allowance (e.g. 2 OCPU / 12 GB across 1–2 nodes —
-   check the console's own Always Free badge/warning on the shape picker, it flags
-   this directly). The quick-create wizard also provisions the VCN/subnets for you.
-2. **Point `kubectl` at it.** Install the `oci` CLI, run `oci setup config` once
-   (API signing key), then:
-   ```sh
-   oci ce cluster create-kubeconfig --cluster-id <cluster-ocid> \
-       --file $HOME/.kube/config --region <region> --token-version 2.0.0
-   kubectl get nodes   # should list your arm64 node(s)
-   ```
-3. **Build and push the image for arm64** (see the Dockerfile's own header comment
-   for the exact `docker buildx` command) to OCIR, Oracle's container registry:
-   ```sh
-   docker buildx build --platform linux/arm64 -f deploy/server/Dockerfile \
-       -t <region-key>.ocir.io/<tenancy-namespace>/elderpath-server:latest --load .
-   docker login <region-key>.ocir.io -u '<tenancy-namespace>/<your-username>'
-       # password: an Auth Token from OCI Console → Profile → Auth Tokens (NOT your
-       # console password — OCIR never accepts that)
-   docker push <region-key>.ocir.io/<tenancy-namespace>/elderpath-server:latest
-   ```
-   Either mark the OCIR repository **Public** (Developer Services → Container
-   Registry → the repo → Repository Visibility — then no pull secret is needed at
-   all) or create one and reference it via the commented-out `imagePullSecrets` in
-   both manifests:
-   ```sh
-   kubectl create secret docker-registry ocir-pull-secret -n elderpath \
-       --docker-server=<region-key>.ocir.io \
-       --docker-username='<tenancy-namespace>/<your-username>' \
-       --docker-password='<the same auth token>'
-   ```
-4. **Fill in the image placeholder** in `pool-deployment.yaml` (`your-registry/
-   elderpath-server:latest` → the OCIR path above) and apply:
-   ```sh
-   kubectl apply -f deploy/k8s/namespace.yaml -f deploy/k8s/pool-deployment.yaml
-   kubectl get svc -n elderpath elderpath-server-pool -w   # wait for EXTERNAL-IP
-   ```
-   Once an external IP shows up, that's the address to point a game client at, port
-   `4567` — a solo player vs. SmartBot match, same as the earlier "Files" description.
-5. `job-template.yaml` still isn't applied by anything (see below) — it's unaffected
-   by any of this beyond the same arm64/OCIR adjustments already made to it.
+### 0. Create the Always Free account
+
+1. Go to Oracle's cloud signup page and start a free account. You'll need: an email
+   address, a phone number (for SMS verification), and **a credit/debit card** — Oracle
+   requires one even for the Always Free tier, for identity verification. It is not
+   charged unless you explicitly upgrade to a paid tier later; several people have
+   reported small temporary authorization holds during signup that are reversed
+   automatically, which is normal.
+2. **Pick your home region carefully.** This is the one choice in the whole signup
+   flow you can't change afterward for this tenancy. Pick whichever region is
+   geographically closest to you/your players — it's where "Always Free" resources
+   actually need to be created (some regions don't have Ampere A1 capacity at all;
+   if your first choice turns out to be short on free-tier ARM capacity later, see the
+   capacity note in step 3, you may end up wishing you'd picked a different one, but
+   you can't undo the region choice, only work around it).
+3. Verify your email, fill in the account/billing details, verify the phone number
+   and card, and wait for the tenancy to finish provisioning (usually a few minutes,
+   OCI emails you once it's ready). Log into the OCI Console.
+4. Before building anything, sanity-check your Always Free entitlements actually
+   match what this guide assumes: **Console → Governance & Administration → Limits,
+   Quotas and Usage** → filter for "Compute" (look for the `VM.Standard.A1.Flex`
+   shape's OCPU/memory limit) and "Load Balancer". If these numbers differ from
+   "2 OCPU / 12 GB" and "one 10 Mbps flexible LB" assumed throughout this doc and the
+   manifests, adjust `pool-deployment.yaml`'s resources/HPA/LB annotations to match
+   *your* actual numbers before applying anything.
+
+### 1. Install the `oci` CLI and point it at your tenancy
+
+```sh
+# macOS/Linux installer (see Oracle's docs for Windows):
+bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)"
+oci setup config   # generates an API signing key pair + ~/.oci/config; follow its prompts
+```
+`oci setup config` either uploads the generated public key to your OCI user for you,
+or tells you to paste it in yourself: **Console → Profile icon (top right) → User
+Settings → API Keys → Add API Key**. Confirm it worked:
+```sh
+oci iam region list   # should print a table, not an auth error
+```
+
+### 2. Create the OKE cluster
+
+1. **Console → Developer Services → Containers & Artifacts → Kubernetes Clusters
+   (OKE) → Create Cluster → Quick Create.**
+2. Name it, pick **Basic** cluster type (no control-plane fee — this is the whole
+   point), **Public** Kubernetes API endpoint (simplest to start with; a Private
+   endpoint needs a bastion/VPN, out of scope here), and **Public** worker nodes.
+3. Node pool: shape **`VM.Standard.A1.Flex`**, OCPUs/memory inside your Always Free
+   allowance from step 0.4 (e.g. 2 OCPU / 12 GB as a single node to start — you can
+   add more nodes later within the same allowance). The shape picker flags Always
+   Free eligibility directly; trust that over anything written here if they disagree.
+4. Click **Create Cluster** and wait (typically 5–15 minutes). The quick-create
+   wizard provisions the VCN/subnets/load balancer subnet for you — nothing else to
+   configure there.
+5. **Known Always Free hiccup:** Ampere A1 capacity is sometimes exhausted in a given
+   region/availability domain, surfacing as an "out of host capacity" error on the
+   node pool. If you hit this, retrying (sometimes repeatedly, sometimes hours/days
+   later) or trying a different availability domain within the same region are the
+   usual workarounds — there's no paid fast-path around it on Always Free.
+
+### 3. Point `kubectl` at the new cluster
+
+Console → your cluster's detail page → **Access Cluster** button → it gives you the
+exact command for your cluster (same shape as this):
+```sh
+oci ce cluster create-kubeconfig --cluster-id <cluster-ocid> \
+    --file $HOME/.kube/config --region <region> --token-version 2.0.0
+kubectl get nodes -o wide   # should list your node(s), ready, arch=arm64
+```
+
+### 4. Get the real game assets and this repo onto a machine with Docker
+
+`assets/` (`data/pieces.yaml`, `abilities.yaml`, `spells.yaml`, images, audio, fonts,
+...) is gitignored and was never in this repo's history — you need the real directory
+on whatever machine builds the image, from wherever your own copy of it lives. Clone
+this repo there too if it isn't already.
+
+### 5. Set up OCIR (Oracle's container registry) and an auth token
+
+1. Note your **region key** (e.g. `iad` for Ashburn — the OCIR hostname is
+   `<region-key>.ocir.io`) and **tenancy namespace** (Console → Profile icon →
+   Tenancy: `<name>` — the namespace is shown on that page, not the tenancy name
+   itself).
+2. Generate an auth token: **Console → Profile icon → User Settings → Auth Tokens →
+   Generate Token.** Copy it immediately — OCI shows it exactly once and never again.
+3. `docker login <region-key>.ocir.io -u '<tenancy-namespace>/<your-oci-username>'`,
+   paste the auth token as the password (**not** your console password — OCIR never
+   accepts that).
+
+### 6. Build and push the image for arm64
+
+```sh
+docker buildx build --platform linux/arm64 -f deploy/server/Dockerfile \
+    -t <region-key>.ocir.io/<tenancy-namespace>/elderpath-server:latest --push .
+```
+(`--push` builds straight to the registry — simplest when cross-building. If you're
+building natively on an arm64 host, e.g. an Apple Silicon Mac, `--load` then a
+separate `docker push` works too and skips the cross-build step entirely.)
+
+Cross-building `linux/arm64` from an x86_64 host runs under QEMU emulation and is
+noticeably slower for a full Gradle build than a native build — budget extra time (or
+do this step on an arm64 machine if one's available, even a temporary cloud VM).
+
+Either mark the OCIR repository **Public** (Developer Services → Container Registry
+→ the repo → **Repository Visibility** — then no pull secret is needed at all, the
+simplest option for a first attempt) or keep it private and create a pull secret,
+referenced via the commented-out `imagePullSecrets` in both manifests:
+```sh
+kubectl create secret docker-registry ocir-pull-secret -n elderpath \
+    --docker-server=<region-key>.ocir.io \
+    --docker-username='<tenancy-namespace>/<your-oci-username>' \
+    --docker-password='<the same auth token>'
+```
+
+### 7. Apply the manifests
+
+Edit `deploy/k8s/pool-deployment.yaml` locally — replace the `image:` placeholder
+(`your-registry/elderpath-server:latest`) with the real OCIR path from step 6. (This
+is a personal, account-specific edit — don't commit your own OCIR path back to this
+repo.) Then:
+```sh
+kubectl apply -f deploy/k8s/namespace.yaml -f deploy/k8s/pool-deployment.yaml
+kubectl get pods -n elderpath -w          # wait for Running (startupProbe can take ~30s)
+kubectl get svc -n elderpath elderpath-server-pool -w   # wait for EXTERNAL-IP
+```
+If a pod sits in `ImagePullBackOff`, it's almost always the repo-visibility/pull-secret
+step above; `kubectl describe pod -n elderpath <pod>` says exactly which.
+
+### 8. Verify it's actually healthy (optional, but worth doing once)
+
+The Service only forwards the game port (4567) — `/healthz/*` and `/diag` are
+reachable from inside the cluster (that's all a liveness/readiness probe needs), not
+through the LoadBalancer's external IP. To check them yourself from outside:
+```sh
+kubectl port-forward -n elderpath <pod-name> 8080:8080
+curl http://localhost:8080/healthz/live    # OK
+curl http://localhost:8080/diag            # tick-timing JSON
+```
+
+### 9. Connect to it
+
+**The shipped graphical game has no "join a remote server by address" screen yet**
+(FEAT-008's still-pending lobby/IP-entry UI, see "The core design tension" below) —
+don't go looking for one in the game's menus. The one thing that can connect to an
+arbitrary host/port today is the headless CLI playtest client (`cli` module,
+FEAT-009), built for exactly this kind of testing:
+```sh
+./gradlew :cli:run --args="--mode join --host <EXTERNAL-IP> --port 4567 --assets /path/to/assets"
+```
+That gets you a real P1-vs-SmartBot match against the pod on OKE, played out as text
+in your terminal — proof the whole chain (OKE → LoadBalancer → pod → `MatchServer`)
+actually works, even without a graphical client to point at it yet.
+
+`job-template.yaml` still isn't applied by anything (see below) — unaffected by any
+of this beyond the same arm64/OCIR adjustments already made to it.
 
 ## The core design tension, and how these two manifests each resolve it
 
