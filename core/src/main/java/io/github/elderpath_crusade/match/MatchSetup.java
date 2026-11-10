@@ -25,6 +25,7 @@ import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.run.RunCardModification;
+import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -177,10 +178,18 @@ public final class MatchSetup {
         List<AbilityDefinition> abilities = new ArrayList<>();
         for (String relicId : relicIds) {
             RelicDefinition relic = RelicRegistry.get(relicId);
-            if (relic == null) continue;
+            if (relic == null) {
+                Logger.error("MatchSetup", "relic '" + relicId + "' not found in relics.yaml — it will have no effect this match");
+                continue;
+            }
             for (String abilityName : relic.battleAbilityNames()) {
                 AbilityDefinition def = AbilityRegistry.get(abilityName);
-                if (def != null) abilities.add(def);
+                if (def != null) {
+                    abilities.add(def);
+                } else {
+                    Logger.error("MatchSetup", "relic '" + relicId + "' references ability '" + abilityName
+                            + "', which was not found in abilities.yaml — this relic's effect will not apply");
+                }
             }
         }
         return abilities;

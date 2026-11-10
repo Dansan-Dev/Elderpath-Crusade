@@ -175,4 +175,31 @@ class RelicCarrierTest {
 
         assertEquals(ActionResult.Reason.NO_PIECE, result.reason());
     }
+
+    @Test
+    void carrier_isNotSpawnedWhenARelicsBattleAbilityNameIsNotInAbilityRegistry() {
+        // Simulates a relics.yaml entry whose battleAbilities name has no matching entry in
+        // abilities.yaml (typo, or the ability was never added) — BUG report Sprint 68: this must
+        // not crash the match, and must leave no inert carrier for the UI to show a bubble for.
+        RelicRegistry.register(RelicDefinition.battleOnly("Horn", "desc", List.of("ThisAbilityDoesNotExist")));
+
+        grid = prepare(Map.of(PieceAlignment.P1, List.of("Horn")));
+        assertDoesNotThrow(MatchSetup::begin);
+
+        ActionResult result = server.activateAbility(PieceAlignment.P1, RelicCarrierIds.idFor(PieceAlignment.P1), 0);
+
+        assertEquals(ActionResult.Reason.NO_PIECE, result.reason(), "no carrier should exist — its only ability never resolved");
+    }
+
+    @Test
+    void carrier_isNotSpawnedWhenTheRelicIdItselfIsNotInRelicRegistry() {
+        // Simulates a run/config referencing a relic name that was never registered in
+        // relics.yaml at all.
+        grid = prepare(Map.of(PieceAlignment.P1, List.of("NoSuchRelic")));
+        assertDoesNotThrow(MatchSetup::begin);
+
+        ActionResult result = server.activateAbility(PieceAlignment.P1, RelicCarrierIds.idFor(PieceAlignment.P1), 0);
+
+        assertEquals(ActionResult.Reason.NO_PIECE, result.reason());
+    }
 }
