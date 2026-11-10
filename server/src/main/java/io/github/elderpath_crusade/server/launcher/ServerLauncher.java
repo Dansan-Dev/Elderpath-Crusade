@@ -36,6 +36,7 @@ public final class ServerLauncher {
 
     private final PrintStream protocol;
     private volatile String stopReason;
+    private volatile long lastTickNanos;
 
     private ServerLauncher(PrintStream protocol) {
         this.protocol = protocol;
@@ -86,10 +87,21 @@ public final class ServerLauncher {
         if (options.watchStdin()) startDaemon("stdin-watch", this::watchStdin);
         if (options.parentPid() != null) startDaemon("parent-watch", () -> watchParent(options.parentPid()));
 
+        lastTickNanos = System.nanoTime();
+        long staleNanos = Math.max(5_000_000_000L, 20L * options.tickMs() * 1_000_000L);
+        HealthServer health = null;
+        if (options.healthPort() > 0) {
+            health = HealthServer.start(options.healthPort(),
+                    () -> System.nanoTime() - lastTickNanos < staleNanos,
+                    () -> stopReason == null);
+            log("health checks on port " + health.port());
+        }
+
         try {
             loop(server, options);
         } finally {
             server.close();
+            if (health != null) health.close();
         }
         log("stopped: " + stopReason);
         return EXIT_OK;
@@ -108,6 +120,7 @@ public final class ServerLauncher {
             long now = System.nanoTime();
             server.tick((now - last) / 1e9f * options.timeScale());
             last = now;
+            lastTickNanos = now;
 
             boolean anyConnected = humans.stream().anyMatch(server::isConnected);
             if (anyConnected) lastConnected = now;

@@ -1,0 +1,119 @@
+# A pool of generically-available match servers, each defaulting to one human vs. SmartBot.
+# This is the ONE use case a plain Deployment+Service+HPA correctly serves without a
+# matchmaking layer: no client needs to be routed to a *specific* pod, because every pod runs
+# the same kind of match and any ready one will do (ServerLauncher's existing one-match-per-
+# process lifecycle — the process exits after the match ends or sits idle too long, see
+# ServerLauncher — means a pod that just finished a match restarts fresh for the next one;
+# Kubernetes' normal Pod restart behavior IS this project's job-per-match model, for this
+# pairing-free case). It does NOT support two specific humans finding each other — see
+# ../README.md and job-template.yaml for why, and FEAT-008's remaining phases for the
+# matchmaking/lobby/reconnect layer that would add that.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elderpath-server-pool
+  namespace: elderpath
+  labels:
+    app: elderpath-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: elderpath-server
+  template:
+    metadata:
+      labels:
+        app: elderpath-server
+    spec:
+      containers:
+        - name: elderpath-server
+          # Build with deploy/server/Dockerfile and push to a registry this cluster can pull
+          # from; replace this placeholder before applying.
+          image: your-registry/elderpath-server:latest
+          ports:
+            - name: game
+              containerPort: 4567
+            - name: health
+              containerPort: 8080
+          args:
+            - "--bind"
+            - "0.0.0.0"
+            - "--port"
+            - "4567"
+            - "--assets"
+            - "assets"
+            - "--health-port"
+            - "8080"
+            # One human vs. a SmartBot — adjust deck/bot kind/seed here for a different pool flavor.
+            - "--p2"
+            - "smart"
+            # Generous: give a player time to find this pod (through the Service below) before
+            # an unused instance recycles. Kubernetes restarts the Pod immediately either way.
+            - "--idle-timeout-s"
+            - "180"
+          # Startup can take a few seconds (JVM boot + loading pieces/abilities/spells yaml);
+          # startupProbe holds off the liveness probe until the process is actually ticking.
+          startupProbe:
+            httpGet:
+              path: /healthz/live
+              port: health
+            failureThreshold: 30
+            periodSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: health
+            periodSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: health
+            periodSeconds: 5
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+---
+# Game-port only — health checks are read directly from each Pod's IP by kubelet, not routed
+# through the Service. ClusterIP by default; switch to LoadBalancer (or add a cloud-specific
+# Ingress/Gateway in front) once this is meant to take real internet connections directly.
+apiVersion: v1
+kind: Service
+metadata:
+  name: elderpath-server-pool
+  namespace: elderpath
+spec:
+  selector:
+    app: elderpath-server
+  ports:
+    - name: game
+      port: 4567
+      targetPort: game
+  type: ClusterIP
+---
+# Scales on CPU — this workload is bursty but light per match; tune targetCPUUtilizationPercentage
+# and min/max against real measured load before trusting these numbers in production.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: elderpath-server-pool
+  namespace: elderpath
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: elderpath-server-pool
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

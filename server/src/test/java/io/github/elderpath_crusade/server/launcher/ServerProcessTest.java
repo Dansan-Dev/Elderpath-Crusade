@@ -10,6 +10,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
 
@@ -87,6 +92,38 @@ class ServerProcessTest {
         String winner = server.awaitMatchEnded(DEADLINE);
         assertTrue("P1".equals(winner) || "P2".equals(winner), "winner reported: " + winner);
         assertEquals(0, server.awaitExit(DEADLINE));
+    }
+
+    @Test
+    @RequiresAssets
+    void healthPort_servesLivenessAndReadinessOverHttp() throws Exception {
+        int healthPort;
+        try (ServerSocket probe = new ServerSocket(0)) {
+            healthPort = probe.getLocalPort();
+        }
+        server = ServerProcess.start(ServerProcess.Options.of(
+                "--assets", ASSETS, "--p2", "smart", "--seed", "1", "--health-port", String.valueOf(healthPort)));
+        assertTrue(server.getPort() > 0);
+
+        HttpClient http = HttpClient.newHttpClient();
+        HttpResponse<String> live = awaitHealthResponse(http, healthPort, "/healthz/live");
+        assertEquals(200, live.statusCode());
+        HttpResponse<String> ready = awaitHealthResponse(http, healthPort, "/healthz/ready");
+        assertEquals(200, ready.statusCode());
+    }
+
+    /** The child process needs a moment to bind the health port after LISTENING is reported — poll briefly. */
+    private HttpResponse<String> awaitHealthResponse(HttpClient http, int healthPort, String path) throws Exception {
+        long deadline = System.nanoTime() + DEADLINE.toNanos();
+        while (true) {
+            try {
+                return http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + healthPort + path)).GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+            } catch (IOException e) {
+                if (System.nanoTime() - deadline > 0) throw e;
+                Thread.sleep(20);
+            }
+        }
     }
 
     private void awaitClient(BooleanSupplier condition) throws InterruptedException {

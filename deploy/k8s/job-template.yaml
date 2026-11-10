@@ -1,0 +1,88 @@
+# NOT applied by anything today — a template for the shape a future matchmaking service would
+# generate, one per matched pair of human players. Kept here, unwired, to document the design
+# honestly rather than paper over it: see ../README.md's "Two patterns, two different fits"
+# section for why this exists alongside pool-deployment.yaml instead of using just one of them.
+#
+# ServerLauncher's lifecycle (one match per process, exits on match end/idle timeout — see
+# server/launcher/ServerLauncher.java) is a true run-to-completion Job, not a long-lived
+# Deployment replica — this is the honest fit for "two specific humans must land on the same
+# server". What's still missing before this can be real (FEAT-008's remaining phases, explicitly
+# OUT of scope for this pass): something that (a) creates a Job like this one per matched pair
+# with the right --p1-deck/--p2-deck/--seed args filled in, (b) hands both clients a routable
+# address for *this* Job's own Service (a Job's Pods need a per-Job Service, not the shared pool
+# Service — e.g. templated from ${MATCH_ID} below), and (c) a lobby UI for players to request a
+# match in the first place. None of that controller/lobby/routing logic exists yet.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: elderpath-match-${MATCH_ID}
+  namespace: elderpath
+  labels:
+    app: elderpath-server
+    match-id: "${MATCH_ID}"
+spec:
+  backoffLimit: 0 # a failed match should surface, not silently retry with the same two seats
+  template:
+    metadata:
+      labels:
+        app: elderpath-server
+        match-id: "${MATCH_ID}"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: elderpath-server
+          image: your-registry/elderpath-server:latest
+          ports:
+            - name: game
+              containerPort: 4567
+            - name: health
+              containerPort: 8080
+          args:
+            - "--bind"
+            - "0.0.0.0"
+            - "--port"
+            - "4567"
+            - "--assets"
+            - "assets"
+            - "--health-port"
+            - "8080"
+            - "--seed"
+            - "${SEED}"
+            # A matchmaking controller would fill these in per real matched pair instead of
+            # leaving both seats human with no deck override.
+          startupProbe:
+            httpGet:
+              path: /healthz/live
+              port: health
+            failureThreshold: 30
+            periodSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: health
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+---
+# One Service per match Job, selecting only that Job's Pod by match-id — this is what a
+# matchmaking controller would hand both paired clients the address of (never the shared pool
+# Service, which load-balances to an arbitrary pod).
+apiVersion: v1
+kind: Service
+metadata:
+  name: elderpath-match-${MATCH_ID}
+  namespace: elderpath
+spec:
+  selector:
+    match-id: "${MATCH_ID}"
+  ports:
+    - name: game
+      port: 4567
+      targetPort: game
+  type: ClusterIP

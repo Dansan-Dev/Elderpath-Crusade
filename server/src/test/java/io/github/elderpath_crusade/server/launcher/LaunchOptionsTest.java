@@ -29,6 +29,7 @@ class LaunchOptionsTest {
         assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P1), "no --p1-card-mods: no modifications");
         assertEquals(0, o.cardLockTurns().get(PieceAlignment.P1), "no --p1-card-lock-turns: never locked");
         assertEquals(List.of(), o.elders().get(PieceAlignment.P1), "no --p1-elders: no elder pieces");
+        assertEquals(0, o.healthPort(), "no --health-port: health checks disabled");
     }
 
     @Test
@@ -70,7 +71,7 @@ class LaunchOptionsTest {
                 "--port", "4567", "--bind", "0.0.0.0", "--p1", "basic", "--p2", "human",
                 "--p1-deck", "Rogue:3", "--p2-deck", "Wolf Cub,Fireball:2", "--seed", "42",
                 "--assets", "/tmp/a", "--tick-ms", "5", "--time-scale", "20", "--parent-pid", "123",
-                "--watch-stdin", "false", "--idle-timeout-s", "7", "--end-grace-s", "0"});
+                "--watch-stdin", "false", "--idle-timeout-s", "7", "--end-grace-s", "0", "--health-port", "8080"});
         assertEquals(4567, o.port());
         assertEquals("0.0.0.0", o.bind());
         assertEquals(Map.of(PieceAlignment.P1, BotKind.BASIC), o.bots());
@@ -85,6 +86,7 @@ class LaunchOptionsTest {
         assertFalse(o.watchStdin());
         assertEquals(7, o.idleTimeoutSeconds());
         assertEquals(0, o.endGraceSeconds());
+        assertEquals(8080, o.healthPort());
     }
 
     @Test

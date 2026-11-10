@@ -36,6 +36,8 @@ import java.util.Map;
  *   --watch-stdin B     exit when stdin closes (default true)
  *   --idle-timeout-s N  exit after N s with no human client connected (default 60)
  *   --end-grace-s N     after the match ends, exit within N s (default 3)
+ *   --health-port N     serve HTTP /healthz/live and /healthz/ready on this port for an external
+ *                       health check (e.g. a Kubernetes probe); 0 disables it (default 0)
  * </pre>
  */
 record LaunchOptions(
@@ -54,7 +56,8 @@ record LaunchOptions(
         Long parentPid,
         boolean watchStdin,
         int idleTimeoutSeconds,
-        int endGraceSeconds
+        int endGraceSeconds,
+        int healthPort
 ) {
     static final String DEFAULT_DECK = "Wolf:2,Wolf Cub:2";
 
@@ -82,6 +85,7 @@ record LaunchOptions(
         boolean watchStdin = true;
         int idleTimeout = 60;
         int endGrace = 3;
+        int healthPort = 0;
 
         for (int i = 0; i < args.length; i++) {
             String flag = args[i];
@@ -110,6 +114,7 @@ record LaunchOptions(
                 case "--watch-stdin" -> watchStdin = Boolean.parseBoolean(value);
                 case "--idle-timeout-s" -> idleTimeout = parseInt(flag, value, 1, Integer.MAX_VALUE);
                 case "--end-grace-s" -> endGrace = parseInt(flag, value, 0, Integer.MAX_VALUE);
+                case "--health-port" -> healthPort = parseInt(flag, value, 0, 65535);
                 default -> throw new IllegalArgumentException("unknown flag " + flag);
             }
         }
@@ -133,7 +138,7 @@ record LaunchOptions(
         elders.put(PieceAlignment.P1, parseNameList(p1Elders));
         elders.put(PieceAlignment.P2, parseNameList(p2Elders));
         return new LaunchOptions(port, bind, bots, decks, relics, cardMods, cardLockTurns, elders, seed, assetsDir, tickMs,
-                timeScale, parentPid, watchStdin, idleTimeout, endGrace);
+                timeScale, parentPid, watchStdin, idleTimeout, endGrace, healthPort);
     }
 
     /** "RelicA,RelicB" → [RelicA, RelicB]; blank input → no relics. */

@@ -1,0 +1,14 @@
+# Build context for deploy/server/Dockerfile. assets/ is intentionally NOT excluded here even
+# though .gitignore ignores it — the real assets/ directory must be present on disk (see
+# deploy/README.md) so the Docker build can COPY it into both build and runtime stages.
+
+.git
+.gradle
+.idea
+.claude
+*.iml
+*.log
+**/build/
+**/.gradle/
+lwjgl3/icons
+lwjgl3/src/main/resources
