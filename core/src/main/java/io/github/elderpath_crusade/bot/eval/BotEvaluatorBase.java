@@ -157,8 +157,18 @@ public abstract class BotEvaluatorBase implements IntentGenerator {
     }
 
     protected int nearestManhattan(int row, int col, List<PieceEntry> targets) {
+        return nearestManhattanExcluding(row, col, targets, null);
+    }
+
+    /**
+     * Same as {@link #nearestManhattan}, but skips {@code exclude} — for BOT-005's grouping
+     * dimension, where a maneuvering piece's own entry in {@code tactical.allies()} would
+     * otherwise count as "an ally right here" at its own current position.
+     */
+    protected int nearestManhattanExcluding(int row, int col, List<PieceEntry> targets, Entity exclude) {
         int minDistance = Integer.MAX_VALUE;
         for (PieceEntry entry : targets) {
+            if (exclude != null && entry.entity() == exclude) continue;
             int distance = Math.abs(row - entry.pos().row()) + Math.abs(col - entry.pos().col());
             if (distance < minDistance) {
                 minDistance = distance;

@@ -308,6 +308,16 @@ public class MovementEvaluator extends BotEvaluatorBase {
                     score += Math.round(config.lanePreference() * centerness * 2);
                 }
 
+                // BOT-005 grouping: 0 contributes nothing; a tie-breaking lean toward staying
+                // close to (+1) or spreading away from (-1) this piece's own other pieces,
+                // independent of which column that happens to be — excludes this entity's own
+                // (pre-move) position from the distance search, or every candidate would read
+                // "an ally is right here."
+                if (config.groupingBias() != 0 && tactical.allies().size() > 1) {
+                    int nearestAllyDist = nearestManhattanExcluding(dr, dc, tactical.allies(), entity);
+                    score += Math.round(-config.groupingBias() * nearestAllyDist * 2);
+                }
+
                 if (underAdjThreatNow && !(dr == pos.row() && dc == pos.col())) {
                     boolean exitsThreat = !tactical.threats().isThreatened(dr, dc);
                     int unblockBonus = (allyWeightInLane != -1 && dc != pos.col())

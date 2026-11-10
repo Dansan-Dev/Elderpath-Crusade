@@ -113,7 +113,7 @@ class AttackEvaluatorPersonalityTest {
         placeAttackerBetweenABigThreatAndAnEasyKill();
         int baseGap = scoreFor(attackIntents(BotConfig.defaultConfig()), 1) - scoreFor(attackIntents(BotConfig.defaultConfig()), 3);
 
-        BotConfig threatFocused = BotConfig.forPersonality(new BotPersonality(0, 0, 0, 0, 0, 1, 0));
+        BotConfig threatFocused = BotConfig.forPersonality(new BotPersonality(0, 0, 0, 0, 0, 0, 1, 0));
         List<Intent> intents = attackIntents(threatFocused);
         int biasedGap = scoreFor(intents, 1) - scoreFor(intents, 3);
 
@@ -123,7 +123,7 @@ class AttackEvaluatorPersonalityTest {
     @Test
     void negativeTargeting_flipsThePreferenceToTheEasyKill() {
         placeAttackerBetweenABigThreatAndAnEasyKill();
-        BotConfig opportunist = BotConfig.forPersonality(new BotPersonality(0, 0, 0, 0, 0, -1, 0));
+        BotConfig opportunist = BotConfig.forPersonality(new BotPersonality(0, 0, 0, 0, 0, 0, -1, 0));
         List<Intent> intents = attackIntents(opportunist);
         assertTrue(scoreFor(intents, 3) > scoreFor(intents, 1), "an opportunistic bot should prefer finishing off the weak target");
     }

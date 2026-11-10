@@ -23,8 +23,13 @@ package io.github.elderpath_crusade.bot.eval;
  *                         affordable-but-weak card).
  * @param formation        -1 (favors the flanks/side columns) .. 0 (spreads evenly) ..
  *                         +1 (spears through the center columns) — a tie-breaking lean on
- *                         where to summon/reposition, never overriding an urgent defensive
- *                         placement.
+ *                         <em>which column</em> to summon/reposition into, never overriding an
+ *                         urgent defensive placement.
+ * @param grouping         -1 (spreads its pieces apart) .. 0 (no preference) .. +1 (clusters
+ *                         its pieces together) — a tie-breaking lean on <em>proximity to its
+ *                         own other pieces</em>, independent of {@code formation}'s column
+ *                         preference (a bot can spear the center while still clustering, or
+ *                         spreading, within it).
  * @param targeting        -1 (goes for the easiest kill, lowest health first) .. 0 (balanced)
  *                         .. +1 (goes for the single biggest threat first).
  * @param unpredictability 0 (always the single best-rated move) .. 1 (casts a wide net among
@@ -37,10 +42,11 @@ public record BotPersonality(
         float tempo,
         float saving,
         float formation,
+        float grouping,
         float targeting,
         float unpredictability) {
 
-    public static final BotPersonality BALANCED = new BotPersonality(0, 0, 0, 0, 0, 0, 0);
+    public static final BotPersonality BALANCED = new BotPersonality(0, 0, 0, 0, 0, 0, 0, 0);
 
     public BotPersonality {
         aggression = clampSigned(aggression);
@@ -48,18 +54,19 @@ public record BotPersonality(
         tempo = clampSigned(tempo);
         saving = clampSigned(saving);
         formation = clampSigned(formation);
+        grouping = clampSigned(grouping);
         targeting = clampSigned(targeting);
         unpredictability = Math.max(0f, Math.min(1f, unpredictability));
     }
 
     /** A bolder, more trade-happy, race-focused, free-spending bot that leans toward the biggest threat. */
     public static BotPersonality aggressive() {
-        return new BotPersonality(0.6f, 0.4f, 0.3f, -0.3f, 0f, 0.2f, 0f);
+        return new BotPersonality(0.6f, 0.4f, 0.3f, -0.3f, 0f, 0f, 0.2f, 0f);
     }
 
     /** A cautious, trade-averse, board-control-first bot that hoards resources. */
     public static BotPersonality defensive() {
-        return new BotPersonality(-0.6f, -0.4f, -0.3f, 0.3f, 0f, -0.2f, 0f);
+        return new BotPersonality(-0.6f, -0.4f, -0.3f, 0.3f, 0f, 0f, -0.2f, 0f);
     }
 
     private static float clampSigned(float v) {

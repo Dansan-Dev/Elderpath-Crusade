@@ -24,8 +24,9 @@ public class SummonEvaluator extends BotEvaluatorBase {
         super(config);
     }
 
-    /** How strongly {@code lanePreference} can pull the chosen column away from the threat column, in score points — kept well below THREAT_COLUMN_SCORE so formation never overrides an urgent defensive placement. */
+    /** How strongly {@code lanePreference}/{@code groupingBias} can pull the chosen column away from the threat column, in score points — kept well below THREAT_COLUMN_SCORE so formation/grouping never override an urgent defensive placement. */
     private static final double LANE_SCALE = 4;
+    private static final double GROUPING_SCALE = 3;
     private static final int THREAT_COLUMN_SCORE = 1000;
 
     @Override
@@ -94,11 +95,14 @@ public class SummonEvaluator extends BotEvaluatorBase {
 
     /**
      * The defensive threat column (closest enemy to our home row) always wins when it's a valid
-     * summon target — {@code lanePreference} (BOT-005 formation) only breaks ties among the
-     * remaining columns when there's no specific threat to answer, nudging toward the center
-     * (+1) or the flanks (-1). At {@code lanePreference == 0} every column scores identically in
-     * that case, and the lowest-index valid column wins (the strict {@code >} comparison never
-     * replaces an equal score) — exactly {@code candidates.get(0)}'s old behavior.
+     * summon target — {@code lanePreference} (BOT-005 formation) and {@code groupingBias}
+     * (BOT-005 grouping) only break ties among the remaining columns when there's no specific
+     * threat to answer: formation nudges toward the center (+1) or the flanks (-1); grouping
+     * nudges toward whichever valid column lands closest to (+1) or farthest from (-1) this
+     * side's existing pieces, independent of which column that is. At both {@code 0} every
+     * column scores identically in that case, and the lowest-index valid column wins (the
+     * strict {@code >} comparison never replaces an equal score) — exactly
+     * {@code candidates.get(0)}'s old behavior.
      */
     private Coord chooseSummonColumn(BoardGrid board, PieceAlignment self, TacticalState tactical) {
         int homeRow = board.getHomeRow(self);
@@ -123,6 +127,10 @@ public class SummonEvaluator extends BotEvaluatorBase {
             double score = (col == threatCol) ? THREAT_COLUMN_SCORE : 0;
             double centerness = -Math.abs(col - center);
             score += config.lanePreference() * centerness * LANE_SCALE;
+            if (config.groupingBias() != 0 && !tactical.allies().isEmpty()) {
+                int nearestAllyDist = nearestManhattan(homeRow, col, tactical.allies());
+                score += -config.groupingBias() * nearestAllyDist * GROUPING_SCALE;
+            }
             if (score > bestScore) {
                 bestScore = score;
                 best = new Coord(homeRow, col);

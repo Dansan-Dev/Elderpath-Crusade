@@ -40,6 +40,8 @@ public record BotConfig(
         float savingBias,
         /** BOT-005 (formation), -1..+1: direct pass-through, read by {@code SummonEvaluator}/{@code MovementEvaluator}. */
         float lanePreference,
+        /** BOT-005 (grouping), -1..+1: direct pass-through, read by {@code SummonEvaluator}/{@code MovementEvaluator}. */
+        float groupingBias,
         /** BOT-005 (targeting), -1..+1: direct pass-through, read by {@code AttackEvaluator}. */
         float targetingBias,
         /** BOT-002/BOT-005 (unpredictability): how wide a net {@code SmartBot} casts among tied-best intents. */
@@ -75,6 +77,7 @@ public record BotConfig(
                 20, // penaltyTradeRiskBase — same default as penaltyThreatBase, since it replaces that field's one use in AttackEvaluator
                 0f, // savingBias
                 0f, // lanePreference
+                0f, // groupingBias
                 0f, // targetingBias
                 5 // tieBand — matches BOT-002's original fixed TIE_BAND
         );
@@ -124,6 +127,7 @@ public record BotConfig(
                 scale(b.penaltyTradeRiskBase(), tradeRiskScale),
                 p.saving(),
                 p.formation(),
+                p.grouping(),
                 p.targeting(),
                 Math.round(5 + p.unpredictability() * 15));
     }
