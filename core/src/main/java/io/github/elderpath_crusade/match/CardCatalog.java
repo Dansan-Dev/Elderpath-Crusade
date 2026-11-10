@@ -114,7 +114,22 @@ public final class CardCatalog {
         return Collections.unmodifiableSet(ENTRIES.keySet());
     }
 
+    /**
+     * Every card name a draft pool may offer — excludes the fixed starting cards and, crucially,
+     * any synthetic run-instance name (UPG-003, e.g. "Crow#run-7"). A synthetic entry is
+     * registered into this same process-lifetime map ({@link #registerSummon}/registerSpell via
+     * {@link MatchSetup#registerSyntheticCards}) by every battle of a roguelike run — including,
+     * since BUG-046, the client's own process — and is never removed once that run ends, since
+     * {@link #initialize()} only ever runs once at app start. Without this filter a finished
+     * run's modified card leaks into every later draft pool for the rest of the app's lifetime:
+     * the classic {@code DraftRoom}, a brand new run's own {@code RunDraftRoom}/{@link
+     * io.github.elderpath_crusade.game.RunManager} pool — found via the user's playtest
+     * (BUG-048).
+     */
     public static Collection<String> getDraftableNames() {
-        return ENTRIES.keySet().stream().filter(n -> !NON_DRAFTABLE.contains(n)).toList();
+        return ENTRIES.keySet().stream()
+                .filter(n -> !NON_DRAFTABLE.contains(n))
+                .filter(n -> !SyntheticCardNames.isSynthetic(n))
+                .toList();
     }
 }

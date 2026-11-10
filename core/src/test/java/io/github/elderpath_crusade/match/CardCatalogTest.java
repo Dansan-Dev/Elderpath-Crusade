@@ -58,4 +58,15 @@ class CardCatalogTest {
         assertFalse(CardCatalog.isSummon("Nope"));
         assertFalse(CardCatalog.isSummon(null));
     }
+
+    @Test
+    void draftableNames_excludeASyntheticRunInstanceCard() {
+        // BUG-048: a finished run's modified card (e.g. "Crow#run-7") stays registered in this
+        // process-lifetime catalog forever (initialize() only ever runs once, at app start) —
+        // it must never leak into a later draft pool (classic DraftRoom, or a brand new run's
+        // own RunDraftRoom/RunManager pool).
+        CardCatalog.registerSummon(SyntheticCardNames.encode("Wolf Cub", "run-7"), "WolfCub");
+
+        assertEquals(List.of("Fireball"), CardCatalog.getDraftableNames());
+    }
 }
