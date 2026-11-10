@@ -112,4 +112,32 @@ class MatchSetupCardModificationTest {
 
         assertEquals(5, EntityUtils.getDamage(grid.getEntityAt(0, 2)), "the second prepare()'s modification must win, not the first's");
     }
+
+    @Test
+    void registerSyntheticCards_isPubliclyCallableDirectly_notOnlyThroughPrepare() {
+        // BUG-046: ClientMatchSession now calls this exact method, with LocalMatchSpec's own
+        // decks/elders/cardMods, so a client process's own CardCatalog/PieceRegistry can resolve
+        // a run-modified card's name/cost/stats for display — the whole point of making it
+        // public rather than prepare()'s own private concern.
+        String synthetic = SyntheticCardNames.encode("Wolf", "run-9");
+        MatchSetup.registerSyntheticCards(
+                Map.of(PieceAlignment.P1, List.of(synthetic)),
+                Map.of(),
+                Map.of(PieceAlignment.P1, Map.of("run-9", new RunCardModification(Map.of("damage", 3), List.of()))));
+
+        assertNotNull(CardCatalog.get(synthetic));
+        assertEquals(4, PieceRegistry.get(PieceRegistry.toRegistryKey(synthetic)).damage(), "base 1 + mod's +3");
+    }
+
+    @Test
+    void registerSyntheticCards_alsoResolvesAnElderOnlySyntheticName() {
+        String synthetic = SyntheticCardNames.encode("Wolf", "run-2");
+        MatchSetup.registerSyntheticCards(
+                Map.of(), // not in any deck — an Elder is retired out of it
+                Map.of(PieceAlignment.P1, List.of(synthetic)),
+                Map.of(PieceAlignment.P1, Map.of("run-2", new RunCardModification(Map.of("health", 2), List.of()))));
+
+        assertNotNull(CardCatalog.get(synthetic));
+        assertEquals(5, PieceRegistry.get(PieceRegistry.toRegistryKey(synthetic)).health(), "base 3 + mod's +2");
+    }
 }

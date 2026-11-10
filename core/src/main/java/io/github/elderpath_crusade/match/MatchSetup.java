@@ -65,7 +65,7 @@ public final class MatchSetup {
         ctx.setActiveGrid(grid);
         for (Coord c : config.terrain()) placeTerrain(grid, c.row(), c.col());
 
-        registerSyntheticCards(config);
+        registerSyntheticCards(config.decks(), config.elders(), config.cardMods());
 
         Random rng = config.seed() == null ? new Random() : new Random(config.seed());
         for (PieceAlignment alignment : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
@@ -95,28 +95,39 @@ public final class MatchSetup {
      * copies of the player's own card names (RunManager/RunDifficulty), synthetic ones
      * included, and the registration a given instance id resolves to must stay the same no
      * matter which side's deck is scanned first.
+     *
+     * <p>Public (not just {@link #prepare}'s own concern, BUG-046): {@code ClientMatchSession}
+     * calls this too, with the exact same {@code LocalMatchSpec} data a roguelike-run battle is
+     * about to launch with, so this process's own {@code CardCatalog}/{@code PieceRegistry} —
+     * the client's, a separate process from the one that actually runs {@code prepare} — can
+     * resolve a modified card's name/cost/speed/abilities for display. Those were never sent
+     * over the wire for a synthetic registry key, which the protocol otherwise assumes any
+     * receiver can already resolve locally (see {@code ReplicaViewSync}'s own doc).
      */
-    private static void registerSyntheticCards(MatchConfig config) {
+    public static void registerSyntheticCards(Map<PieceAlignment, List<String>> decks,
+                                               Map<PieceAlignment, List<String>> elders,
+                                               Map<PieceAlignment, Map<String, RunCardModification>> cardMods) {
         Map<String, RunCardModification> allMods = new LinkedHashMap<>();
-        allMods.putAll(config.cardMods(PieceAlignment.P1));
-        allMods.putAll(config.cardMods(PieceAlignment.P2));
+        allMods.putAll(cardMods.getOrDefault(PieceAlignment.P1, Map.of()));
+        allMods.putAll(cardMods.getOrDefault(PieceAlignment.P2, Map.of()));
         for (PieceAlignment side : new PieceAlignment[]{PieceAlignment.P1, PieceAlignment.P2}) {
-            for (String cardName : config.deck(side)) {
+            for (String cardName : decks.getOrDefault(side, List.of())) {
                 if (SyntheticCardNames.isSynthetic(cardName)) registerSyntheticCard(cardName, allMods);
             }
             // An Elder (ELDER-006) is never in the deck — it's retired out of it — so its own
             // synthetic name (if its modification makes it one) needs its own registration pass.
-            for (String cardName : config.elders(side)) {
+            for (String cardName : elders.getOrDefault(side, List.of())) {
                 if (SyntheticCardNames.isSynthetic(cardName)) registerSyntheticCard(cardName, allMods);
             }
         }
     }
 
     /**
-     * Always (re-)registers, overwriting any entry from an earlier prepare() in this same
-     * process (tests only — a real battle launches a fresh server process per match, see
-     * elderpath-architecture.md's "Client Layer") — a run instance id's modification can grow
-     * between battles, so a stale definition left from a previous match must never win.
+     * Always (re-)registers, overwriting any entry from an earlier call in this same process —
+     * a run instance id's modification can grow between battles, so a stale definition left
+     * from a previous match must never win. Used to be "tests only" (a real battle server
+     * launches a fresh process per match) until BUG-046 made this public: a long-lived client
+     * process now calls it once per battle too, for the exact same reason.
      */
     private static void registerSyntheticCard(String syntheticName, Map<String, RunCardModification> modsByInstanceId) {
         String baseCardName = SyntheticCardNames.baseCardName(syntheticName);

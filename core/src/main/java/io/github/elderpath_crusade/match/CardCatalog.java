@@ -81,6 +81,18 @@ public final class CardCatalog {
         return get(name) instanceof Summon s ? s.registryKey() : null;
     }
 
+    /**
+     * True only for a registered Summon, never a Spell (BUG-045) — only a summon has a {@link
+     * PieceDefinition} to spawn as an Elder or to apply a stat-boost modification to; a spell
+     * has neither, so offering one as a target for either reward is a dead end (silently
+     * skipped as an Elder, since {@link #getPieceDefinition} returns null for it; outright
+     * rejected as a modification target, since there's no base {@link PieceDefinition} to
+     * apply the delta to).
+     */
+    public static boolean isSummon(String name) {
+        return get(name) instanceof Summon;
+    }
+
     /** The summoned piece's definition, or null if name isn't a summon or its piece isn't loaded. */
     public static PieceDefinition getPieceDefinition(String name) {
         String key = getRegistryKeyForSummon(name);

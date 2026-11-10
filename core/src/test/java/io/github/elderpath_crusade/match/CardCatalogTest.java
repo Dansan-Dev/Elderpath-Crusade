@@ -49,4 +49,13 @@ class CardCatalogTest {
     void draftableNames_excludeStarterCards() {
         assertEquals(List.of("Fireball"), CardCatalog.getDraftableNames());
     }
+
+    @Test
+    void isSummon_trueOnlyForARegisteredSummon() {
+        // BUG-045: a spell has no PieceDefinition — can't be an Elder or a card-mod target.
+        assertTrue(CardCatalog.isSummon("Wolf Cub"));
+        assertFalse(CardCatalog.isSummon("Fireball"));
+        assertFalse(CardCatalog.isSummon("Nope"));
+        assertFalse(CardCatalog.isSummon(null));
+    }
 }

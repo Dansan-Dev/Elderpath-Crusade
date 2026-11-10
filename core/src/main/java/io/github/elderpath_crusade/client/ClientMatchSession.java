@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.Coord;
+import io.github.elderpath_crusade.match.MatchSetup;
 import io.github.elderpath_crusade.match.PickRequest;
 import io.github.elderpath_crusade.net.protocol.SeatRequest;
 import io.github.elderpath_crusade.net.protocol.ServerMessage;
@@ -121,6 +122,12 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
 
     private static ClientMatchSession launch(LocalMatchSpec spec, String bindAddress, int port, List<SeatRequest> requests) {
         if (requests.isEmpty()) throw new IllegalArgumentException("no human seat to play: " + spec.bots());
+        // BUG-046: mirrors what the server's own MatchSetup.prepare will register for this exact
+        // battle, in this (client) process's own CardCatalog/PieceRegistry — a separate process
+        // from the one that actually runs prepare — so a run-modified card's name/cost/speed/
+        // abilities resolve correctly for display (hand cards, the on-board hover preview) the
+        // moment anything from this battle needs to render, not just once the server replies.
+        MatchSetup.registerSyntheticCards(spec.decks(), spec.elders(), spec.cardMods());
         ClientMatchSession session = new ClientMatchSession(spec.playerName(), requests, true);
         session.startInBackground(() -> {
             ServerProcess server = ServerProcess.start(ServerProcess.Options.of(serverArgs(spec, bindAddress, port)));

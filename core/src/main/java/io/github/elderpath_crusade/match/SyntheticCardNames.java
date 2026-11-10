@@ -40,4 +40,16 @@ public final class SyntheticCardNames {
     public static String instanceId(String syntheticName) {
         return syntheticName.substring(syntheticName.indexOf(SEPARATOR) + SEPARATOR.length());
     }
+
+    /**
+     * {@code name} if it isn't synthetic, else just its base card name — what a player should
+     * ever actually see (BUG-046): the raw synthetic form leaked straight through to an
+     * on-board piece's name label and its hover-preview title, since both ultimately read
+     * {@code IdentityComponent.name}/{@code CardCatalog.Summon.name()}, which (correctly, for
+     * stat/ability resolution) hold the full synthetic key. Never use this for a lookup key —
+     * only for text actually shown to the player.
+     */
+    public static String displayName(String name) {
+        return isSynthetic(name) ? baseCardName(name) : name;
+    }
 }

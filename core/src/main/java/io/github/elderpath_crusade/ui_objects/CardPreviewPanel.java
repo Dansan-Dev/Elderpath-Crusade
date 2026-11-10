@@ -13,6 +13,7 @@ import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 
 import java.util.ArrayList;
@@ -90,7 +91,10 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
             return;
         }
         previewedPieceId = id;
-        String title = EntityUtils.getName(entity);
+        // BUG-046: strip a run-modified piece's "#run-N" suffix for the title text only — the
+        // ability lookup just below needs the real (possibly synthetic) registryKey as-is, to
+        // resolve the modified definition's own abilities, not the unmodified base card's.
+        String title = SyntheticCardNames.displayName(EntityUtils.getName(entity));
         if (title == null || title.isEmpty()) title = "Piece";
         int dummyW = 125, dummyH = 200;
         previewCard = new PreviewCard(0, 0, dummyW, dummyH, PREVIEW_Z, title,

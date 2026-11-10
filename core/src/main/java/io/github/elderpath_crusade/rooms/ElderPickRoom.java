@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
+import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -12,6 +13,8 @@ import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
+
+import java.util.List;
 
 /**
  * Choose a new Elder (ELDER-004/005, re-triggered by Phase 3.6) — shared by both the very first
@@ -29,7 +32,9 @@ import io.github.elderpath_crusade.utils.MenuLayout;
  *
  * <p>A deck with only one card left has nothing eligible to promote without emptying it
  * (RunState.addElder's own guard) — skips straight to the usual continuation rather than show
- * an empty choice.
+ * an empty choice. A spell card is never offered either (BUG-045) — only a summon has a real
+ * {@link io.github.elderpath_crusade.data.PieceDefinition} to spawn as an on-board Elder;
+ * promoting a spell would retire it from the deck and then silently never spawn anything.
  */
 public class ElderPickRoom extends Room {
     private static final int BUTTON_WIDTH = 260;
@@ -49,6 +54,7 @@ public class ElderPickRoom extends Room {
 
         buttonList = new ButtonList();
         for (RunCardInstance instance : runManager.getRunState().deck()) {
+            if (!CardCatalog.isSummon(instance.cardName())) continue; // BUG-045 — a spell can't be an Elder
             String instanceId = instance.instanceId();
             String label = instance.cardName() + (instance.isModified() ? " (modified)" : "");
             addOption(label, () -> {
@@ -89,8 +95,12 @@ public class ElderPickRoom extends Room {
 
     public static Room get(boolean advanceFloorAfterPick) {
         RunManager runManager = GameContext.get().getRunManager();
-        if (runManager.getRunState().deck().size() <= 1) {
-            // nothing eligible to promote without emptying the deck — still advance if due
+        List<RunCardInstance> deck = runManager.getRunState().deck();
+        // Nothing eligible either way: emptying the deck isn't allowed (RunState.addElder), or
+        // every card left is a spell (BUG-045, never offered) — skip straight to the usual
+        // continuation rather than show an empty choice.
+        boolean anyEligible = deck.size() > 1 && deck.stream().anyMatch(i -> CardCatalog.isSummon(i.cardName()));
+        if (!anyEligible) {
             if (advanceFloorAfterPick) runManager.advanceToNextFloor();
             return RunRoom.get();
         }

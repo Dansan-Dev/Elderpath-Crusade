@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.game_objects.cards;
 
 import io.github.elderpath_crusade.game.DeckManager;
 import io.github.elderpath_crusade.match.CardCatalog;
+import io.github.elderpath_crusade.match.SyntheticCardNames;
 
 import java.util.Collection;
 
@@ -26,7 +27,11 @@ public final class CardFactory {
         CardCatalog.Entry entry = CardCatalog.get(name);
         Card card;
         if (entry instanceof CardCatalog.Summon s) {
-            card = new SummonCard(p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), s.name(), s.registryKey());
+            // BUG-046: a run-modified card's own registered name is its full synthetic key
+            // (e.g. "Crow#run-6") — correct for the registryKey lookup right after it, wrong
+            // for what the player should ever see as this card's title.
+            card = new SummonCard(p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(),
+                    SyntheticCardNames.displayName(s.name()), s.registryKey());
         } else if (entry instanceof CardCatalog.Spell spell) {
             card = new SpellCard(p.alignment(), p.x(), p.y(), p.width(), p.height(), p.z(), spell.name(), spell.definition());
         } else {

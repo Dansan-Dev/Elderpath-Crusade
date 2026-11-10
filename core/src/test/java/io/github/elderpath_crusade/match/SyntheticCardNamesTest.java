@@ -40,4 +40,16 @@ class SyntheticCardNamesTest {
         assertThrows(IllegalArgumentException.class, () -> SyntheticCardNames.encode("", "run-1"));
         assertThrows(IllegalArgumentException.class, () -> SyntheticCardNames.encode("Wolf", ""));
     }
+
+    @Test
+    void displayName_stripsTheInstanceIdFromASyntheticName() {
+        // BUG-046: the raw synthetic form leaked into a piece's on-board name label and its
+        // hover-preview title.
+        assertEquals("Wolf", SyntheticCardNames.displayName(SyntheticCardNames.encode("Wolf", "run-3")));
+    }
+
+    @Test
+    void displayName_passesThroughAPlainCardNameUnchanged() {
+        assertEquals("Wolf", SyntheticCardNames.displayName("Wolf"));
+    }
 }
