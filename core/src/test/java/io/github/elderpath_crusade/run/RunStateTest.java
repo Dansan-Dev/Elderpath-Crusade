@@ -162,6 +162,22 @@ class RunStateTest {
     }
 
     @Test
+    void modifyCard_alsoWorksOnAnAlreadyPromotedElder() {
+        // BUG-044: found via playtest — a card-mod reward's target list skipped Elders entirely,
+        // and even if it hadn't, modifyCard only ever searched the deck, not elders().
+        RunState run = freshRun(2); // 4-card deck: run-0..run-3
+        run.addElder("run-1");
+        RunCardModification mod = new RunCardModification(Map.of("damage", 2), List.of());
+
+        run.modifyCard("run-1", mod);
+
+        RunCardInstance modifiedElder = run.elders().get(0);
+        assertEquals("run-1", modifiedElder.instanceId());
+        assertEquals(mod, modifiedElder.modification());
+        assertTrue(run.deck().stream().noneMatch(RunCardInstance::isModified), "the deck itself is untouched");
+    }
+
+    @Test
     void addElder_movesTheInstanceFromDeckToElders() {
         RunState run = freshRun(2); // 4-card deck: run-0..run-3
 

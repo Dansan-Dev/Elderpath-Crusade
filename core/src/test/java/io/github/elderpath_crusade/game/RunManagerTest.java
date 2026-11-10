@@ -387,6 +387,21 @@ class RunManagerTest {
     }
 
     @Test
+    void upgradeCard_alsoWorksOnAnAlreadyPromotedElder() {
+        // BUG-044: found via playtest — upgradeCard used to only look in the deck, so an Elder
+        // (e.g. a promoted Warp Mage) could never be the target of a card-mod reward.
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.promoteToElder("run-1");
+
+        manager.upgradeCard("run-1", new RunCardModification(Map.of("damage", 2), List.of()));
+
+        RunCardInstance updatedElder = manager.getRunState().elders().get(0);
+        assertEquals("run-1", updatedElder.instanceId());
+        assertEquals(Map.of("damage", 2), updatedElder.modification().statDeltas());
+    }
+
+    @Test
     void upgradeCard_rejectsAnUnknownInstanceId() {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);

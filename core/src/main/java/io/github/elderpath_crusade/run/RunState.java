@@ -242,7 +242,12 @@ public class RunState {
         deck.add(instance);
     }
 
-    /** Replaces an existing deck instance's modification (e.g. a Rest-node card-mod reward). */
+    /**
+     * Replaces an existing deck or Elder instance's modification (e.g. a Rest-node card-mod
+     * reward) — checks the deck first, then {@link #elders()} (BUG-044: an Elder is a real
+     * card too, just retired from the drawable deck; it can still be the target of a later
+     * modification reward).
+     */
     public void modifyCard(String instanceId, RunCardModification modification) {
         for (int i = 0; i < deck.size(); i++) {
             if (deck.get(i).instanceId().equals(instanceId)) {
@@ -250,7 +255,13 @@ public class RunState {
                 return;
             }
         }
-        throw new IllegalArgumentException("no deck instance with id " + instanceId);
+        for (int i = 0; i < elders.size(); i++) {
+            if (elders.get(i).instanceId().equals(instanceId)) {
+                elders.set(i, elders.get(i).withModification(modification));
+                return;
+            }
+        }
+        throw new IllegalArgumentException("no deck or Elder instance with id " + instanceId);
     }
 
     public void addRelic(String relicId) {

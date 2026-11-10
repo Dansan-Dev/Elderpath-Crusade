@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.MatchConfig;
+import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.net.transport.TcpTransport;
 import io.github.elderpath_crusade.server.MatchServer;
 import io.github.elderpath_crusade.server.ServerProcess;
@@ -152,7 +153,13 @@ public final class ServerLauncher {
         CardCatalog.initialize();
         for (List<String> deck : options.decks().values()) {
             for (String card : deck) {
-                if (CardCatalog.get(card) == null) throw new IllegalArgumentException("unknown card in deck: " + card);
+                // A run-modified card's deck slot is a synthetic name (UPG-003, e.g. "Crow#run-6")
+                // that only gets its own CardCatalog entry once MatchSetup.prepare registers it
+                // from this same config's --p1-card-mods/--p2-card-mods, which hasn't run yet at
+                // this point — check the base card name instead, or every modified card in a
+                // deck would fail here as "unknown" despite being perfectly valid (BUG-044).
+                String catalogName = SyntheticCardNames.isSynthetic(card) ? SyntheticCardNames.baseCardName(card) : card;
+                if (CardCatalog.get(catalogName) == null) throw new IllegalArgumentException("unknown card in deck: " + card);
             }
         }
     }

@@ -96,6 +96,25 @@ class ServerProcessTest {
 
     @Test
     @RequiresAssets
+    void aRunModifiedDeckCard_startsInsteadOfFailingAsUnknown() throws Exception {
+        // BUG-044: a run-modified card's deck slot is a synthetic name (UPG-003, e.g.
+        // "Wolf#run-0") that loadDefinitions used to reject outright — its own CardCatalog
+        // entry only gets registered later, inside MatchSetup.prepare, from --p1-card-mods.
+        // Reproduces exactly the crash a real roguelike-run battle hit once a deck card had
+        // been modified by an Elite's card-mod reward (UPG-005): "unknown card in deck: Wolf#run-0".
+        server = ServerProcess.start(ServerProcess.Options.of(
+                "--assets", ASSETS, "--p2", "basic", "--seed", "1",
+                "--p1-deck", "Wolf#run-0,Wolf Cub:3",
+                "--p1-card-mods", "run-0@damage=2:"));
+        assertTrue(server.getPort() > 0);
+
+        client = new MatchClient(TcpTransport.connect("127.0.0.1", server.getPort(), null), SeatRequest.ANY, "tester");
+        awaitClient(() -> client.getState().isStarted());
+        assertNull(client.getState().getLastError());
+    }
+
+    @Test
+    @RequiresAssets
     void healthPort_servesLivenessAndReadinessOverHttp() throws Exception {
         int healthPort;
         try (ServerSocket probe = new ServerSocket(0)) {

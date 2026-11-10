@@ -17,8 +17,9 @@ import io.github.elderpath_crusade.utils.MenuLayout;
 /**
  * Second step of an Elite's card-modification reward (ELITE-001) — the player already picked
  * which {@link CardModificationCatalog.Entry} to apply ({@link CardModTypeRoom}); this lists
- * every card in the current deck as a target. Picking one calls
- * {@link RunManager#upgradeCard}, then continues to {@link RunRoom}.
+ * every card in the current deck, plus every Elder (BUG-044 — an Elder is a real, re-summonable
+ * card too, not excluded from this reward just because it's retired from the drawable deck), as
+ * a target. Picking one calls {@link RunManager#upgradeCard}, then continues to {@link RunRoom}.
  */
 public class CardModTargetRoom extends Room {
     private static final int BUTTON_WIDTH = 260;
@@ -39,15 +40,22 @@ public class CardModTargetRoom extends Room {
 
         buttonList = new ButtonList();
         for (RunCardInstance instance : runManager.getRunState().deck()) {
-            String instanceId = instance.instanceId();
-            String label = instance.cardName() + (instance.isModified() ? " (modified)" : "");
-            addOption(label, () -> {
-                runManager.upgradeCard(instanceId, chosenMod.delta());
-                GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
-            });
+            addCardOption(runManager, chosenMod, instance, false);
+        }
+        for (RunCardInstance instance : runManager.getRunState().elders()) {
+            addCardOption(runManager, chosenMod, instance, true);
         }
 
         layoutContents();
+    }
+
+    private void addCardOption(RunManager runManager, CardModificationCatalog.Entry chosenMod, RunCardInstance instance, boolean isElder) {
+        String instanceId = instance.instanceId();
+        String label = instance.cardName() + (instance.isModified() ? " (modified)" : "") + (isElder ? " (Elder)" : "");
+        addOption(label, () -> {
+            runManager.upgradeCard(instanceId, chosenMod.delta());
+            GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+        });
     }
 
     private void addOption(String label, Runnable onClick) {

@@ -315,19 +315,27 @@ public final class RunManager {
     /**
      * Merges {@code delta} into {@code instanceId}'s existing modification (additive — an
      * upgrade stacks with any earlier one rather than replacing it) and applies the result
-     * (UPG-005's stat-boost reward, the fallback when nothing new is left to offer).
+     * (UPG-005's stat-boost reward, the fallback when nothing new is left to offer). Works on
+     * an Elder too (BUG-044) — an Elder is already a real, re-summonable card ({@link
+     * #elderCardNames()}/{@link #elderCardModifications()} already carry its modification into
+     * every future battle, same as a deck card's), {@link #findCardInstance} just never looked
+     * there before.
      */
     public void upgradeCard(String instanceId, RunCardModification delta) {
         requireActiveRun();
-        RunCardInstance existing = findDeckInstance(instanceId);
+        RunCardInstance existing = findCardInstance(instanceId);
         runState.modifyCard(instanceId, existing.modification().plus(delta));
     }
 
-    private RunCardInstance findDeckInstance(String instanceId) {
+    /** Looks up a card instance by id across both the deck and the Elders (BUG-044). */
+    private RunCardInstance findCardInstance(String instanceId) {
         for (RunCardInstance instance : runState.deck()) {
             if (instance.instanceId().equals(instanceId)) return instance;
         }
-        throw new IllegalArgumentException("no deck instance with id " + instanceId);
+        for (RunCardInstance instance : runState.elders()) {
+            if (instance.instanceId().equals(instanceId)) return instance;
+        }
+        throw new IllegalArgumentException("no deck or Elder instance with id " + instanceId);
     }
 
     /**
