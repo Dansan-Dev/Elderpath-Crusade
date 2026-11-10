@@ -64,8 +64,19 @@ public class AttackEvaluator extends BotEvaluatorBase {
                 basePoints = config.scoreAdjAttackLethal();
             }
 
-            basePoints += Math.min(10, EntityUtils.getCost(defender));
-            basePoints += Math.min(3, Math.max(0, EntityUtils.getDamage(defender)));
+            int threatValue = Math.min(10, EntityUtils.getCost(defender)) + Math.min(3, Math.max(0, EntityUtils.getDamage(defender)));
+            basePoints += threatValue;
+
+            // BOT-005 targeting dimension: 0 contributes nothing (default behavior unchanged).
+            // Positive amplifies the existing pull toward the most dangerous/valuable target;
+            // negative pulls toward whichever target is easiest to finish off (lowest health).
+            float targetingBias = config.targetingBias();
+            if (targetingBias > 0) {
+                basePoints += Math.round(targetingBias * threatValue);
+            } else if (targetingBias < 0) {
+                int easeSignal = Math.max(0, 6 - EntityUtils.getCurrentHealth(defender));
+                basePoints += Math.round(-targetingBias * 4 * easeSignal);
+            }
 
             // Defensive Urgency: prioritize enemies closer to our home row
             int rows = board.getRows();
@@ -76,10 +87,12 @@ public class AttackEvaluator extends BotEvaluatorBase {
         }
 
         int actionsBefore = getRemainingActions(attacker);
-        // Post-attack survivability
+        // Post-attack survivability. BOT-005 riskTolerance scales this (penaltyTradeRiskBase,
+        // split out from penaltyThreatBase) rather than the general aggression/caution penalty
+        // — risk tolerance is specifically about trades, not caution in general.
         boolean lethalHere = isLethalThreatNextTurn(board, attacker, source.row(), source.col());
         if (lethalHere && actionsBefore <= 1) {
-            basePoints -= config.penaltyThreatBase();
+            basePoints -= config.penaltyTradeRiskBase();
         }
 
         if (!lethalHere && !lethal && threats.isThreatened(source.row(), source.col())) {

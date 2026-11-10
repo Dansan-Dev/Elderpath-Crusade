@@ -234,6 +234,7 @@ public class MovementEvaluator extends BotEvaluatorBase {
 
     private void buildManeuverIntents(BoardGrid board, TacticalState tactical, List<Intent> output) {
         int rows = board.getRows();
+        double center = (board.getCols() - 1) / 2.0;
         for (PieceEntry entry : tactical.allies()) {
             Entity entity = entry.entity();
             Coord pos = entry.pos();
@@ -298,6 +299,14 @@ public class MovementEvaluator extends BotEvaluatorBase {
                     score += config.dirForwardBonus();
                 else if (forwardness(board, self, pos.row(), dr) < 0)
                     score -= config.dirBackwardPenalty();
+
+                // BOT-005 formation: 0 contributes nothing; a tie-breaking lean toward the
+                // center (+1) or the flanks (-1) among otherwise comparable repositioning
+                // options, same idea as SummonEvaluator's column choice.
+                if (config.lanePreference() != 0) {
+                    double centerness = -Math.abs(dc - center);
+                    score += Math.round(config.lanePreference() * centerness * 2);
+                }
 
                 if (underAdjThreatNow && !(dr == pos.row() && dc == pos.col())) {
                     boolean exitsThreat = !tactical.threats().isThreatened(dr, dc);

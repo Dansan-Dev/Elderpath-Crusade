@@ -10,13 +10,16 @@ import java.util.Random;
 
 /**
  * Which bot implementation plays a bot-controlled slot. {@code SMART_AGGRESSIVE}/
- * {@code SMART_DEFENSIVE} (BOT-004) are the smart tier built with a non-default
- * {@link BotPersonality} — same implementation, different {@link BotConfig} weights. Plain
- * {@code SMART} stays the balanced/default personality, so every existing caller is unaffected.
- * These flow through {@code MatchConfig}/{@code LocalMatchSpec}/{@code LaunchOptions} exactly
- * like {@code BASIC}/{@code SMART} already did — a new enum constant, nothing else to widen,
- * since all three already just carry a {@code BotKind} value end to end (including across the
- * CLI boundary via {@code name().toLowerCase()}).
+ * {@code SMART_DEFENSIVE} (BOT-004, generalized by BOT-005's multi-dimensional
+ * {@link BotPersonality}) are the smart tier built with a non-default personality — same
+ * implementation, different {@link BotConfig} weights. Plain {@code SMART} stays the
+ * balanced/default personality, so every existing caller is unaffected. These flow through
+ * {@code MatchConfig}/{@code LocalMatchSpec}/{@code LaunchOptions} exactly like
+ * {@code BASIC}/{@code SMART} already did — a new enum constant, nothing else to widen, since
+ * all three already just carry a {@code BotKind} value end to end (including across the CLI
+ * boundary via {@code name().toLowerCase()}). {@link BotPersonality} itself supports far more
+ * combinations than these two named presets expose — any caller that needs a custom one builds
+ * its own {@code SmartBot} directly rather than going through {@code BotKind}.
  */
 public enum BotKind {
     BASIC,
@@ -37,8 +40,8 @@ public enum BotKind {
         return switch (this) {
             case BASIC -> new BasicBot();
             case SMART -> new SmartBot(BotConfig.defaultConfig(), random);
-            case SMART_AGGRESSIVE -> new SmartBot(BotConfig.forPersonality(BotPersonality.AGGRESSIVE), random);
-            case SMART_DEFENSIVE -> new SmartBot(BotConfig.forPersonality(BotPersonality.DEFENSIVE), random);
+            case SMART_AGGRESSIVE -> new SmartBot(BotConfig.forPersonality(BotPersonality.aggressive()), random);
+            case SMART_DEFENSIVE -> new SmartBot(BotConfig.forPersonality(BotPersonality.defensive()), random);
         };
     }
 

@@ -36,6 +36,9 @@ public class SmartBot implements Bot {
     private static final float STEP_DELAY = 0.35f;
     private static final float END_DELAY = 0.4f;
     private static final int MAX_STEPS = 60;
+
+    private final List<IntentGenerator> evaluators;
+    private final Random random;
     /**
      * Intents scored within this many points of the step's best are "equally good" and tried in
      * a random order rather than always the evaluator-insertion-order winner (BOT-002). A
@@ -44,12 +47,11 @@ public class SmartBot implements Bot {
      * two SmartBots could stalemate indefinitely (BUG-029): neither side's choice ever diverges
      * from the other's. Zero (an exact tie) would already fix that; a small band also adds
      * variety among near-equally-good moves more generally, without weakening judgment — ties
-     * are only ever broken among moves this bot already rated as equally good.
+     * are only ever broken among moves this bot already rated as equally good. Driven by
+     * {@code BotConfig.tieBand()} (BOT-005's unpredictability dimension) rather than a fixed
+     * constant, so a more unpredictable personality casts a wider net.
      */
-    private static final int TIE_BAND = 5;
-
-    private final List<IntentGenerator> evaluators;
-    private final Random random;
+    private final int tieBand;
 
     public SmartBot() {
         this(BotConfig.defaultConfig());
@@ -66,6 +68,7 @@ public class SmartBot implements Bot {
                 new MovementEvaluator(config),
                 new SummonEvaluator(config));
         this.random = random;
+        this.tieBand = config.tieBand();
     }
 
     // Per-turn state guards to avoid runaway loops after finishing
@@ -178,13 +181,13 @@ public class SmartBot implements Bot {
                         .comparingInt(BotActionContext.Intent::score)
                         .reversed());
 
-        // Among the top tier (within TIE_BAND of the best), try a random order instead of
-        // always the same evaluator-insertion-order winner — see TIE_BAND's javadoc.
+        // Among the top tier (within tieBand of the best), try a random order instead of
+        // always the same evaluator-insertion-order winner — see tieBand's javadoc.
         int bestScore = intents.get(0).score();
         List<BotActionContext.Intent> topTier = new ArrayList<>();
         List<BotActionContext.Intent> rest = new ArrayList<>();
         for (BotActionContext.Intent intent : intents) {
-            (intent.score() >= bestScore - TIE_BAND ? topTier : rest).add(intent);
+            (intent.score() >= bestScore - tieBand ? topTier : rest).add(intent);
         }
         Collections.shuffle(topTier, random);
 

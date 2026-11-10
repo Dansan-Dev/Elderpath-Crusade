@@ -1,7 +1,9 @@
 package io.github.elderpath_crusade.bot.eval;
 
 /**
- * Centralized configuration for bot scoring and heuristic constants.
+ * Centralized configuration for bot scoring and heuristic constants. {@link #forPersonality}
+ * (BOT-005) is the only thing that varies these — every evaluator just reads a {@code BotConfig}
+ * it's handed, with no notion of personality of its own.
  */
 public record BotConfig(
         int dirForwardBonus,
@@ -28,9 +30,23 @@ public record BotConfig(
         int bonusRogueFreeStrike,
         int bonusRogueLethal,
 
-        int maxWinExpansions) {
+        int maxWinExpansions,
+
+        /** BOT-005 (riskTolerance): the trade-specific exposure penalty in {@code AttackEvaluator} —
+         *  split out from {@code penaltyThreatBase} (which stays {@code aggression}-scaled and is used
+         *  everywhere else) so risk tolerance only touches combat trades, not general caution. */
+        int penaltyTradeRiskBase,
+        /** BOT-005 (saving), -1..+1: direct pass-through, read by {@code SummonEvaluator}. */
+        float savingBias,
+        /** BOT-005 (formation), -1..+1: direct pass-through, read by {@code SummonEvaluator}/{@code MovementEvaluator}. */
+        float lanePreference,
+        /** BOT-005 (targeting), -1..+1: direct pass-through, read by {@code AttackEvaluator}. */
+        float targetingBias,
+        /** BOT-002/BOT-005 (unpredictability): how wide a net {@code SmartBot} casts among tied-best intents. */
+        int tieBand) {
     /**
-     * Returns a default configuration with standard game values.
+     * Returns a default configuration with standard game values — exactly what {@code
+     * forPersonality(BotPersonality.BALANCED)} also produces, field for field.
      */
     public static BotConfig defaultConfig() {
         return new BotConfig(
@@ -55,53 +71,61 @@ public record BotConfig(
                 55, // scoreWinPathMin
                 28, // bonusRogueFreeStrike
                 20, // bonusRogueLethal
-                200 // maxWinExpansions
+                200, // maxWinExpansions
+                20, // penaltyTradeRiskBase — same default as penaltyThreatBase, since it replaces that field's one use in AttackEvaluator
+                0f, // savingBias
+                0f, // lanePreference
+                0f, // targetingBias
+                5 // tieBand — matches BOT-002's original fixed TIE_BAND
         );
     }
 
     /**
-     * Scales {@link #defaultConfig()} into one of three named playstyles (BOT-004) — a single
-     * source of truth for the baseline numbers, rather than three hand-authored copies of ~20
-     * weights that would drift out of sync. {@code BALANCED} is the baseline itself, unscaled.
+     * Scales {@link #defaultConfig()} per {@link BotPersonality} (BOT-005) — a single source of
+     * truth for the baseline numbers. Each dimension scales (or copies through) a disjoint set
+     * of fields, so they compose independently; every scale factor is {@code 1.0} (or the
+     * dimension's raw value is {@code 0}) at {@link BotPersonality#BALANCED}, reproducing
+     * {@link #defaultConfig()} exactly.
      */
-    public static BotConfig forPersonality(BotPersonality personality) {
-        BotConfig base = defaultConfig();
-        return switch (personality) {
-            case BALANCED -> base;
-            case AGGRESSIVE -> scaled(base, 1.3f, 0.7f, 0.85f);
-            case DEFENSIVE -> scaled(base, 0.85f, 1.3f, 1.2f);
-        };
-    }
+    public static BotConfig forPersonality(BotPersonality p) {
+        BotConfig b = defaultConfig();
 
-    /**
-     * @param offenseScale multiplies attack/advance/win-seeking scores and the forward-move bonus
-     * @param cautionScale multiplies risk-aversion penalties and the backward-move penalty
-     * @param defenseScale multiplies the base scores for summoning and defensive maneuvering
-     */
-    private static BotConfig scaled(BotConfig b, float offenseScale, float cautionScale, float defenseScale) {
+        float offenseScale = 1 + p.aggression() * 0.3f;
+        float cautionScale = 1 - p.aggression() * 0.3f;
+        float defenseScale = 1 - p.aggression() * 0.15f;
+        float tempoScale = 1 + p.tempo() * 0.35f;
+        float winPathSafetyScale = 1 - p.tempo() * 0.35f;
+        float tradeRiskScale = 1 - p.riskTolerance() * 0.45f;
+        float summonEagernessScale = 1 - p.saving() * 0.3f;
+
         return new BotConfig(
                 scale(b.dirForwardBonus(), offenseScale),
                 scale(b.dirBackwardPenalty(), cautionScale),
-                scale(b.scoreWinNow(), offenseScale),
-                scale(b.scoreWinPath1(), offenseScale),
-                scale(b.scoreWinPath2(), offenseScale),
+                scale(b.scoreWinNow(), tempoScale),
+                scale(b.scoreWinPath1(), tempoScale),
+                scale(b.scoreWinPath2(), tempoScale),
                 scale(b.scoreAdjAttackBase(), offenseScale),
                 scale(b.scoreAdjAttackLethal(), offenseScale),
                 scale(b.scoreRogueLethalMove(), offenseScale),
                 scale(b.scoreAdvanceBase(), offenseScale),
                 scale(b.scoreManeuverBase(), defenseScale),
-                scale(b.scoreSummonBase(), defenseScale),
+                scale(b.scoreSummonBase(), summonEagernessScale),
                 scale(b.penaltyLethalExposure(), cautionScale),
                 scale(b.penaltyThreatBase(), cautionScale),
-                scale(b.penaltyWinPathExposureScale(), cautionScale),
-                scale(b.penaltyWinPathExposureMax(), cautionScale),
-                scale(b.penaltyWinPathEndThreatBase(), cautionScale),
-                scale(b.penaltyWinPathEndThreatExtraScale(), cautionScale),
-                scale(b.penaltyWinPathEndThreatExtraMax(), cautionScale),
+                scale(b.penaltyWinPathExposureScale(), winPathSafetyScale),
+                scale(b.penaltyWinPathExposureMax(), winPathSafetyScale),
+                scale(b.penaltyWinPathEndThreatBase(), winPathSafetyScale),
+                scale(b.penaltyWinPathEndThreatExtraScale(), winPathSafetyScale),
+                scale(b.penaltyWinPathEndThreatExtraMax(), winPathSafetyScale),
                 b.scoreWinPathMin(), // the hard floor stays fixed across personalities
                 scale(b.bonusRogueFreeStrike(), offenseScale),
                 scale(b.bonusRogueLethal(), offenseScale),
-                b.maxWinExpansions()); // search budget stays constant across personalities
+                b.maxWinExpansions(), // search budget stays constant across personalities
+                scale(b.penaltyTradeRiskBase(), tradeRiskScale),
+                p.saving(),
+                p.formation(),
+                p.targeting(),
+                Math.round(5 + p.unpredictability() * 15));
     }
 
     private static int scale(int value, float factor) {
