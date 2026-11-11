@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TypedEventBus;
@@ -150,6 +151,7 @@ public final class ServerLauncher {
         Gdx.files = new AssetFiles(resolveAssetsDir(options));
         PieceRegistry.load();
         AbilityRegistry.load();
+        RelicRegistry.load();
         CardCatalog.initialize();
         for (List<String> deck : options.decks().values()) {
             for (String card : deck) {

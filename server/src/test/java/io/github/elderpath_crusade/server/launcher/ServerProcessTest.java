@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.server.launcher;
 
 import io.github.elderpath_crusade.client.MatchClient;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.net.protocol.SeatRequest;
 import io.github.elderpath_crusade.net.transport.TcpTransport;
 import io.github.elderpath_crusade.server.ServerProcess;
@@ -111,6 +112,34 @@ class ServerProcessTest {
         client = new MatchClient(TcpTransport.connect("127.0.0.1", server.getPort(), null), SeatRequest.ANY, "tester");
         awaitClient(() -> client.getState().isStarted());
         assertNull(client.getState().getLastError());
+    }
+
+    @Test
+    @RequiresAssets
+    void aRelicCarrierAbility_resolvesInARealChildProcess() throws Exception {
+        // BUG-047: loadDefinitions loaded PieceRegistry/AbilityRegistry/CardCatalog but never
+        // RelicRegistry — the spawned server's own relics.yaml was never read at all, so every
+        // real battle's RelicRegistry stayed permanently empty regardless of the file's actual
+        // content, and MatchSetup.resolveRelicAbilities silently dropped every relic as a result
+        // (no carrier ever spawned). The GUI client's own RelicRegistry loaded fine separately
+        // (via GameManager.initialize()), which is why the reward screen correctly offered a
+        // relic as pickable while every subsequent battle silently had no relic effect at all —
+        // found via the user's own playtest log ("relic 'Horn' not found in relics.yaml") once
+        // BUG-047's earlier diagnostic-logging pass made the failure visible. "Horn" here must
+        // match a relic actually defined in the real local relics.yaml (added per CONTENT-001/
+        // Sprint 67's instructions) — same real-content dependency every other @RequiresAssets
+        // test in this file already has for pieces.yaml/abilities.yaml.
+        server = ServerProcess.start(ServerProcess.Options.of(
+                "--assets", ASSETS, "--p2", "basic", "--seed", "1", "--p1-relics", "Horn"));
+        assertTrue(server.getPort() > 0);
+
+        client = new MatchClient(TcpTransport.connect("127.0.0.1", server.getPort(), null), SeatRequest.ANY, "tester");
+        awaitClient(() -> client.getState().isStarted());
+
+        long seq = client.activateAbility(RelicCarrierIds.idFor(PieceAlignment.P1), 0);
+        awaitClient(() -> client.getState().getLastAckedSeq() >= seq);
+        assertNull(client.getState().getLastRejection(),
+                "Horn's carrier/ability must resolve server-side — a rejection here means RelicRegistry was never loaded");
     }
 
     @Test
