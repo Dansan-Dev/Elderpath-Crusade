@@ -36,7 +36,14 @@ primary_region = "arn"   # Stockholm (fly.io's own region code, not an OCI one) 
   # wholesale (confirmed the hard way, Sprint 70: a `bin/server`-prefixed value here produced
   # a literal `bin/server bin/server --bind ...` invocation, which the app's own flag parser
   # rejected as "unknown flag bin/server" and crash-looped until Fly gave up at 10 restarts).
-  app = "--bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --p2 smart --idle-timeout-s 180"
+  app = "--bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --p2 smart --idle-timeout-s 180 --watch-stdin false"
+  # --watch-stdin defaults to true (LaunchOptions.java) — exits the process the moment its
+  # stdin sees EOF, meant to detect "my parent process (ServerProcess) is gone, I'm orphaned."
+  # Fly's container runtime never attaches a live stdin to the entrypoint at all, so this read
+  # as EOF immediately on every boot and self-terminated the server right after it started
+  # listening (Sprint 70, confirmed via `fly logs`: "LISTENING 4567" then immediately "stopped:
+  # stdin closed"). Fly's own Machine lifecycle + our idle-timeout + health checks already
+  # cover "should this still be running" without stdin-EOF detection.
   # One human vs. a SmartBot, same as pool-deployment.yaml's pairing-free pool — adjust the
   # deck/bot-kind/seed flags here for a different flavor. See server/launcher/LaunchOptions for
   # the full flag set (--p1-deck, --p2-deck, --seed, etc.)
