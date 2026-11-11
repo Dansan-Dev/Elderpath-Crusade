@@ -31,7 +31,12 @@ primary_region = "arn"   # Stockholm (fly.io's own region code, not an OCI one) 
   # start overriding things through [processes]/[[services]] like this file does.
 
 [processes]
-  app = "bin/server --bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --p2 smart --idle-timeout-s 180"
+  # No `bin/server` prefix here — deploy/server/Dockerfile's own ENTRYPOINT already supplies
+  # it, and Fly appends this string as ARGUMENTS to that entrypoint rather than replacing it
+  # wholesale (confirmed the hard way, Sprint 70: a `bin/server`-prefixed value here produced
+  # a literal `bin/server bin/server --bind ...` invocation, which the app's own flag parser
+  # rejected as "unknown flag bin/server" and crash-looped until Fly gave up at 10 restarts).
+  app = "--bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --p2 smart --idle-timeout-s 180"
   # One human vs. a SmartBot, same as pool-deployment.yaml's pairing-free pool — adjust the
   # deck/bot-kind/seed flags here for a different flavor. See server/launcher/LaunchOptions for
   # the full flag set (--p1-deck, --p2-deck, --seed, etc.)
