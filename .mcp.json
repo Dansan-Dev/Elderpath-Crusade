@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "replicate": {
+      "type": "sse",
+      "url": "https://mcp.replicate.com/sse",
+      "headers": {
+        "Authorization": "Bearer ${REPLICATE_API_TOKEN}"
+      }
+    }
+  }
+}
