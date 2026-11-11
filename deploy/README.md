@@ -341,13 +341,37 @@ name in `fly.toml` must be globally unique across all of fly.io — change it if
 taken) and asks a couple of setup questions; every `fly deploy` after that just ships
 the config as-is.
 
-**Partially verified (Sprint 70):** the Dockerfile-path issue above was hit and fixed
-against a real `fly launch`/`fly deploy` run. The rest of the config (the top-level
-`[checks]` stanza for `/healthz/live`/`/healthz/ready`, kept internal rather than
-publicly exposed, the same way `pool-deployment.yaml`'s Service only exposes the game
-port and lets kubelet read health straight from the Pod; the `[[services]]`
-auto-stop/auto-start behavior) is still unconfirmed beyond that — keep fixing forward
-from whatever `fly deploy`/`fly status`/the running Machine's own behavior reports.
+**Verified against a real deploy (Sprint 70).** Three real bugs were found and fixed this
+way, each confirmed via `fly logs`:
+1. `[build].dockerfile` resolves relative to `fly.toml`'s own directory, not the repo root
+   — fixed by setting it to `../server/Dockerfile` directly in the file (see the comment
+   there).
+2. `[processes].app` is appended as **arguments to the Dockerfile's own `ENTRYPOINT`**,
+   not a full replacement command — a value starting with `bin/server` again produced a
+   literal `bin/server bin/server --bind ...` invocation that the app's flag parser
+   rejected, crash-looping until Fly hit its restart limit. Fixed by dropping the
+   redundant `bin/server` prefix.
+3. `LaunchOptions`' `--watch-stdin` defaults to **true** (exit when stdin sees EOF, meant
+   to detect `ServerProcess` closing a child's stdin locally) — Fly's container runtime
+   never attaches a live stdin at all, so the server read that as immediate EOF and
+   self-terminated right after logging `LISTENING 4567` on every boot. Fixed by passing
+   `--watch-stdin false` explicitly in `[processes].app`.
+
+After all three fixes: `fly status` shows the Machine `started` with all 3 checks
+(`live`, `ready`, the TCP service check on 4567) `passing`. The top-level `[checks]`
+stanza and `[[services]]` auto-stop/auto-start behavior are confirmed working as
+documented above, not just written from docs.
+
+**Proven with a real match, not just a passing health check:** the headless CLI
+playtest client (the `cli` module, FEAT-009) connected to the deployed server and played
+a genuine P1-vs-SmartBot match:
+
+```sh
+./gradlew :cli:run --args="--mode join --host elderpath-server.fly.dev --port 4567 --assets ./assets"
+```
+
+Board rendered, mana tracked, hand dealt, turn order correct — the full chain (fly.io
+Machine → `ServerLauncher` → `MatchServer` → a real client over TCP) works end to end.
 
 The underlying one-match-per-process vs. pairing-two-specific-humans tension described
 above is identical on fly.io — switching hosts doesn't solve it; the still-missing
