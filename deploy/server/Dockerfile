@@ -15,6 +15,10 @@
 # gitignored and NOT checked into this repo — it must already exist on disk wherever this image
 # is built (a developer machine or CI with the real assets, never this cloud sandbox). See
 # deploy/README.md for the full explanation and limitations of this image.
+#
+# This same image also works unchanged on fly.io (Sprint 70 fallback, see deploy/fly/fly.toml
+# and deploy/README.md's "Deploying to fly.io" section) — build/runtime stages below don't
+# change per host, only the Kubernetes manifests vs. fly.toml on top of the resulting image do.
 
 ############################
 # Build stage: assemble the server module's runnable distribution

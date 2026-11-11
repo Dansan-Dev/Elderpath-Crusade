@@ -1,0 +1,94 @@
+# Fly.io deployment for the headless match server — an alternative to deploy/k8s/ for when
+# Kubernetes hosting (Oracle Cloud's Always Free OKE) isn't available, e.g. the Ampere A1
+# "out of host capacity" crunch in a single-AD region (see ../README.md's Oracle section and
+# the "Deploying to fly.io" section for the capacity story that motivated this file, Sprint 70).
+#
+# Run every fly command from the REPO ROOT (not this directory) — the Dockerfile's COPY
+# commands assume the whole multi-module repo as build context, same as the Kubernetes path:
+#
+#   fly launch --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile --no-deploy
+#   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile
+#
+# `fly launch` (first time only) creates the app and asks a few questions (region, whether to
+# allocate an IPv4) — decline anything that tries to add a Postgres/Redis attachment, this app
+# needs neither. `fly deploy` (every time after) just builds and ships this config.
+#
+# `app` must be globally unique across all of fly.io — change it if `fly launch` says it's taken.
+app = "elderpath-server"
+primary_region = "arn"   # Stockholm (fly.io's own region code, not an OCI one) — pick via `fly platform regions` if you want a different one
+
+[build]
+  # No local `[build].dockerfile` here — passed explicitly via --dockerfile above instead, so
+  # this file doesn't silently resolve a different path depending on where fly is invoked from.
+
+[env]
+  # Nothing secret — the same defaults deploy/server/Dockerfile's own CMD already sets, kept
+  # here too since Fly Machines don't read a Dockerfile's CMD the way `docker run` does once you
+  # start overriding things through [processes]/[[services]] like this file does.
+
+[processes]
+  app = "bin/server --bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --p2 smart --idle-timeout-s 180"
+  # One human vs. a SmartBot, same as pool-deployment.yaml's pairing-free pool — adjust the
+  # deck/bot-kind/seed flags here for a different flavor. See server/launcher/LaunchOptions for
+  # the full flag set (--p1-deck, --p2-deck, --seed, etc.)
+
+# The game's own TCP protocol (see elderpath-multiplayer-events.md) — this is the pairing-free
+# "pool" pattern (pool-deployment.yaml's equivalent): any running Machine will do, since nothing
+# routes a specific player to a specific Machine yet (no matchmaking layer — see ../README.md's
+# "core design tension" section, identical gap regardless of host).
+[[services]]
+  protocol = "tcp"
+  internal_port = 4567
+  processes = ["app"]
+
+  # Fly's own recycling: auto_stop_machines="stop" + auto_start_machines=true is Fly's answer
+  # to the same "ServerLauncher exits when idle/match ends, something must bring up a fresh one
+  # for the next player" problem Kubernetes' Pod-restart-on-exit solves in pool-deployment.yaml.
+  # min_machines_running=0 means Fly can scale all the way down to nothing between players
+  # (a stopped Machine costs $0 — see ../README.md) rather than always keeping one warm.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 4567
+
+  # Routing/readiness check on the game port itself — affects whether Fly's proxy sends new
+  # connections to this Machine, the closest analogue to pool-deployment.yaml's readinessProbe.
+  # Unlike a Kubernetes livenessProbe, a failing Fly check is not guaranteed to restart the
+  # Machine on its own (unverified here — see Fly's own health-check docs before relying on
+  # this for restart behavior) — ServerLauncher's own idle-timeout/orphan-protection
+  # (server.ServerProcess, see elderpath-architecture.md) is still the real mechanism keeping a
+  # stuck process from running forever, exactly as it already is on the Kubernetes path.
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "4s"
+    grace_period = "15s"
+
+# /healthz/live and /healthz/ready (ServerLauncher's --health-port, see ARCH-033's deploy infra
+# and elderpath-architecture.md's "Deployment" section) — kept as Fly-internal checks only, not
+# a second public service, mirroring how pool-deployment.yaml's Service exposes only the game
+# port and lets kubelet read health straight from the Pod instead of routing it through the LB.
+[checks]
+  [checks.live]
+    type = "http"
+    port = 8080
+    path = "/healthz/live"
+    interval = "10s"
+    timeout = "4s"
+    grace_period = "20s"
+  [checks.ready]
+    type = "http"
+    port = 8080
+    path = "/healthz/ready"
+    interval = "10s"
+    timeout = "4s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  # No -Xmx set anywhere (see server/launcher/ServerLauncher) — the JVM sizes its heap from the
+  # Machine's own memory automatically (container-aware default MaxRAMPercentage, Java 10+),
+  # same as pool-deployment.yaml's comment. Bump this if a real match needs more headroom —
+  # unverified here (no fly.io account in this sandbox to actually deploy and observe against).

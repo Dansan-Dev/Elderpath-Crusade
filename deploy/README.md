@@ -5,9 +5,10 @@ Deployment infrastructure for the headless match server (`server` module /
 scoping decision: a matchmaking/lobby service, lobby UI, or reconnect/session support.
 Those are FEAT-008's remaining, still-unstarted phase.
 
-Also per the user's decision: this targets a **real Kubernetes cluster**, not fly.io.
-fly.io is skipped for now — see "If fly.io comes back" below for what would need to
-change to support it later.
+Originally targeted a **real Kubernetes cluster** (Oracle Cloud's Always Free OKE), not
+fly.io, per the user's own decision. A fly.io path was added later (Sprint 70) as a
+fallback after actually hitting Oracle's Always Free Ampere A1 capacity exhaustion in
+practice — see "Deploying to fly.io" below.
 
 ## Files
 
@@ -20,6 +21,8 @@ change to support it later.
 - `deploy/k8s/job-template.yaml` — a `Job` + `Service` template, **not applied by
   anything today**, documenting the shape a future matchmaking controller would need
   to generate per matched pair of humans.
+- `deploy/fly/fly.toml` — fly.io equivalent of the two Kubernetes manifests above, for
+  when Kubernetes hosting isn't available (see "Deploying to fly.io" below).
 
 ## Building the image
 
@@ -281,15 +284,64 @@ suppliers) and `ServerProcessTest.healthPort_servesLivenessAndReadinessOverHttp`
 (`@RequiresAssets`, a real child-process `ServerLauncher` hit over real HTTP) —
 `LaunchOptionsTest` covers the new `--health-port` flag's parsing.
 
-## If fly.io comes back
+## Deploying to fly.io (Sprint 70 — fallback for Oracle A1 capacity exhaustion)
 
-The Docker image here is fly.io-agnostic — `fly launch`/`fly deploy` can run any
-container image, including this one, via a `fly.toml` (not written here, since the
-user's decision for this pass was "skip fly.io, real Kubernetes cluster"). What would
-need to change: fly.io's own primitives (Fly Machines, fly-replay-based routing) stand
-in for `Deployment`/`Service`/`Job`, and fly.io's health checks use `fly.toml`'s own
-`[[services.http_checks]]`/`[[services.tcp_checks]]` blocks pointed at the same
-`/healthz/live`/`/healthz/ready` endpoints and the same game port — those are
-unaffected by hosting choice. The underlying one-match-per-process vs.
-pairing-two-specific-humans tension above is identical on fly.io; nothing about
-switching hosts solves it either.
+Added as a parallel/fallback track after actually hitting Oracle's Always Free Ampere
+A1 "out of host capacity" error in `eu-stockholm-1` (a single-AD region — no other AD
+in the same region to fall back to). fly.io has **no free tier** (unlike Oracle's
+intended-to-be-free OKE path) — it's pay-as-you-go from account creation, and a
+**stopped Machine costs $0**, so with `ServerLauncher`'s existing idle-timeout/match-end
+exit behavior unchanged, real monthly cost for hobby-scale traffic should stay low
+(a `shared-cpu-1x`/256MB Machine is roughly $2/month *while running*) but it is a real,
+non-zero cost, unlike Oracle's. No capacity lottery either way, though — fly.io is
+ordinary paid compute, not a scarce free allocation.
+
+The same Docker image works unchanged — `deploy/server/Dockerfile` is fly.io-agnostic,
+same as it's cloud-agnostic for Kubernetes. `deploy/fly/fly.toml` recreates both
+Kubernetes manifests' patterns using fly.io's own primitives instead:
+
+- **`pool-deployment.yaml`'s pairing-free pool** (one human vs. SmartBot, any ready
+  instance will do) → Fly Machines + Fly Proxy. `auto_stop_machines = "stop"` +
+  `auto_start_machines = true` + `min_machines_running = 0` is fly.io's answer to the
+  same "a finished match's process exits, something must bring up a fresh one for the
+  next player" problem Kubernetes' Pod-restart-on-exit solves — arguably a *better* fit
+  here, since Fly natively scales to zero between players instead of needing restart
+  recycling as a workaround.
+- **`job-template.yaml`'s per-matched-pair Job+Service template** (still unwired on the
+  Kubernetes side too — no matchmaking controller exists yet, see "The core design
+  tension" above) → fly.io's Machines API
+  ([fly.io/docs/machines](https://fly.io/docs/machines/)). A future matchmaking
+  controller would call that API directly to create one Machine per matched pair (with
+  `--p1-deck`/`--p2-deck`/`--seed` passed in as that Machine's own process args), hand
+  both clients its address, and let it exit/self-destroy on match end exactly as
+  `ServerLauncher` already does — actually *less* orchestration surface than the
+  Kubernetes path, since a Fly Machine is individually addressable by design and doesn't
+  need a separate per-match Service object created and torn down alongside it.
+
+### Using it
+
+```sh
+cd /path/to/elderpath-crusade   # repo root — same build-context requirement as the Docker/K8s path
+fly launch --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile --no-deploy
+# decline anything fly offers to attach (Postgres/Redis) — this app needs neither
+fly deploy --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile
+```
+
+`fly launch`'s first run creates the actual fly.io app (the `app = "elderpath-server"`
+name in `fly.toml` must be globally unique across all of fly.io — change it if told it's
+taken) and asks a couple of setup questions; every `fly deploy` after that just ships
+the config as-is.
+
+**Unverified — no fly.io account in this sandbox to actually deploy against:** the exact
+`fly.toml` syntax (especially the top-level `[checks]` stanza used for the
+`/healthz/live`/`/healthz/ready` checks, kept internal rather than publicly exposed, the
+same way `pool-deployment.yaml`'s Service only exposes the game port and lets kubelet
+read health straight from the Pod) is written from fly.io's own documented primitives,
+not confirmed against a real deploy. `fly deploy` validates the config immediately and
+gives a clear error on anything malformed — treat the first real run as the actual test
+of this file, and fix forward from whatever it reports rather than assuming it's
+correct as committed.
+
+The underlying one-match-per-process vs. pairing-two-specific-humans tension described
+above is identical on fly.io — switching hosts doesn't solve it; the still-missing
+matchmaking controller is exactly as unbuilt here as it is on the Kubernetes path.
