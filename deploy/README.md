@@ -322,25 +322,32 @@ Kubernetes manifests' patterns using fly.io's own primitives instead:
 
 ```sh
 cd /path/to/elderpath-crusade   # repo root — same build-context requirement as the Docker/K8s path
-fly launch --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile --no-deploy
+fly launch --config deploy/fly/fly.toml --no-deploy
 # decline anything fly offers to attach (Postgres/Redis) — this app needs neither
-fly deploy --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile
+fly deploy --config deploy/fly/fly.toml
 ```
+
+No `--dockerfile` flag needed — `fly.toml`'s own `[build].dockerfile` already points at
+`../server/Dockerfile`, relative to `fly.toml`'s own directory (`deploy/fly/`), **not**
+the repo root and **not** wherever `fly` is invoked from. This was learned the hard way
+(Sprint 70's actual first deploy attempt): `fly launch` initially auto-wrote a bare
+`deploy/server/Dockerfile` into `[build].dockerfile`, which flyctl then resolved relative
+to `fly.toml`'s directory, doubling up to `deploy/fly/deploy/server/Dockerfile` and
+failing outright. If you ever re-run `fly launch` and it overwrites this line again with
+a repo-root-relative path, fix it back to `../server/Dockerfile`.
 
 `fly launch`'s first run creates the actual fly.io app (the `app = "elderpath-server"`
 name in `fly.toml` must be globally unique across all of fly.io — change it if told it's
 taken) and asks a couple of setup questions; every `fly deploy` after that just ships
 the config as-is.
 
-**Unverified — no fly.io account in this sandbox to actually deploy against:** the exact
-`fly.toml` syntax (especially the top-level `[checks]` stanza used for the
-`/healthz/live`/`/healthz/ready` checks, kept internal rather than publicly exposed, the
-same way `pool-deployment.yaml`'s Service only exposes the game port and lets kubelet
-read health straight from the Pod) is written from fly.io's own documented primitives,
-not confirmed against a real deploy. `fly deploy` validates the config immediately and
-gives a clear error on anything malformed — treat the first real run as the actual test
-of this file, and fix forward from whatever it reports rather than assuming it's
-correct as committed.
+**Partially verified (Sprint 70):** the Dockerfile-path issue above was hit and fixed
+against a real `fly launch`/`fly deploy` run. The rest of the config (the top-level
+`[checks]` stanza for `/healthz/live`/`/healthz/ready`, kept internal rather than
+publicly exposed, the same way `pool-deployment.yaml`'s Service only exposes the game
+port and lets kubelet read health straight from the Pod; the `[[services]]`
+auto-stop/auto-start behavior) is still unconfirmed beyond that — keep fixing forward
+from whatever `fly deploy`/`fly status`/the running Machine's own behavior reports.
 
 The underlying one-match-per-process vs. pairing-two-specific-humans tension described
 above is identical on fly.io — switching hosts doesn't solve it; the still-missing

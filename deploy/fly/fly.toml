@@ -6,8 +6,8 @@
 # Run every fly command from the REPO ROOT (not this directory) — the Dockerfile's COPY
 # commands assume the whole multi-module repo as build context, same as the Kubernetes path:
 #
-#   fly launch --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile --no-deploy
-#   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/server/Dockerfile
+#   fly launch --config deploy/fly/fly.toml --no-deploy
+#   fly deploy --config deploy/fly/fly.toml
 #
 # `fly launch` (first time only) creates the app and asks a few questions (region, whether to
 # allocate an IPv4) — decline anything that tries to add a Postgres/Redis attachment, this app
@@ -18,8 +18,12 @@ app = "elderpath-server"
 primary_region = "arn"   # Stockholm (fly.io's own region code, not an OCI one) — pick via `fly platform regions` if you want a different one
 
 [build]
-  # No local `[build].dockerfile` here — passed explicitly via --dockerfile above instead, so
-  # this file doesn't silently resolve a different path depending on where fly is invoked from.
+  # Relative to THIS file's own directory (deploy/fly/), not the repo root and not wherever
+  # `fly` is invoked from — flyctl resolves `[build].dockerfile` against the config file's
+  # location regardless of cwd, confirmed the hard way (fly launch itself wrote this exact
+  # path in as a bare `deploy/server/Dockerfile`, which doubled up to
+  # deploy/fly/deploy/server/Dockerfile and failed — don't reintroduce that).
+  dockerfile = "../server/Dockerfile"
 
 [env]
   # Nothing secret — the same defaults deploy/server/Dockerfile's own CMD already sets, kept
