@@ -134,7 +134,14 @@ public class RunRoom extends Room {
             startCurrentNode();
         } else {
             GameContext.get().getRunManager().advanceToNextNode(node.id());
-            GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+            if (node.type().isBattle()) {
+                // Battle/Elite/Boss: advanceToNextNode leaves it current-and-unfought (it never
+                // auto-clears a fight the way it does Rest) — go straight into it instead of
+                // redrawing this room just to make the player click the same node again.
+                startCurrentNode();
+            } else {
+                GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+            }
         }
     }
 
