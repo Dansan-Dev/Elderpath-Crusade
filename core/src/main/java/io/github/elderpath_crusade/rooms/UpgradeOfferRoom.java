@@ -20,24 +20,27 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * UPG-005's original post-battle reward screen — relic/new-card/stat-boost, kind decided by
- * which node type was just cleared. <strong>Currently unused</strong> (ELDER-005): the user
- * decided picking a new Elder ({@link ElderPickRoom}) replaces this entirely as the floor's
- * reward. Left in place, still compiling and still covered by its own RunManagerTest-level
- * coverage (offerNewCardChoices/offerRelicChoices/grantNewCard/addRelic/upgradeCard all stay
- * wired and tested), in case a future design brings a reward layer back alongside Elders —
- * nothing currently calls {@link #get}.
+ * An ordinary Battle win's reward screen (2026-11-12 fix): {@code VictoryRoom} sends every
+ * non-Elite, non-Boss win here — Boss keeps its own Elder pick ({@link ElderPickRoom}), Elite its
+ * own relic/card-modification roll ({@link EliteRewardRoom}); an ordinary Battle previously gave
+ * nothing at all ({@code VictoryRoom}'s switch just went straight back to {@link RunRoom}). This
+ * class itself predates that wiring (UPG-005) and originally covered all three node types with
+ * one relic/new-card/stat-boost screen before Elders (ELDER-005) took over Boss and
+ * {@code EliteRewardRoom} took over Elite — kept unchanged otherwise, so its {@code ELITE}
+ * branch below is now effectively dead by construction (nothing calls {@link #get} with
+ * {@code RunNodeType.ELITE} any more) rather than removed, since it's harmless and still has its
+ * own RunManagerTest-level coverage (offerNewCardChoices/offerRelicChoices/grantNewCard/
+ * addRelic/upgradeCard all stay wired and tested).
  *
- * <p>Shown after winning a non-terminal battle node, before returning to the map — offers one
- * reward, applies the pick to the active run via {@link RunManager}, then continues to
- * {@link RunRoom}. Always skippable. GUI-only; no headless test is possible here (see
- * elderpath-testing.md).
+ * <p>Shown after winning a battle node, before returning to the map — offers one reward, applies
+ * the pick to the active run via {@link RunManager}, then continues to {@link RunRoom}. Always
+ * skippable. GUI-only; no headless test is possible here (see elderpath-testing.md).
  *
- * <p>An Elite node offers a relic (2 choices, if any are registered and not already active);
- * otherwise (Elite with none available, or an ordinary Battle) offers a card reward: 3 new
- * cards, or — if no relic was offered and the deck itself has nothing new to draft either —
- * two stat-boost options for one randomly chosen owned card instead, so the room never has
- * nothing to offer.
+ * <p>For the ordinary Battle case this room is actually reached with today: offers a card
+ * reward — 3 new cards drafted from {@link RunManager#offerNewCardChoices}, added to the deck via
+ * {@link RunManager#grantNewCard} — or, if the draft pool has nothing new left to offer, falls
+ * back to two stat-boost options for one randomly chosen owned card instead, so the room never
+ * has nothing to offer.
  */
 public class UpgradeOfferRoom extends Room {
     private static final int BUTTON_WIDTH = 260;

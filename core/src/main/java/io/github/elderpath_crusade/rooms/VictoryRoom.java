@@ -72,7 +72,7 @@ public class VictoryRoom extends Room {
                 java.util.function.Supplier<Room> next = switch (wonNodeType) {
                     case BOSS -> () -> ElderPickRoom.get(true);
                     case ELITE -> EliteRewardRoom::get;
-                    default -> RunRoom::get; // BATTLE — no reward
+                    default -> () -> UpgradeOfferRoom.get(RunNodeType.BATTLE); // default is always BATTLE — see RunRoom.onNodeClicked
                 };
                 mainMenu = mainMenuButton(screenW, screenH, "Continue", next);
             }
