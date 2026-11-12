@@ -19,6 +19,7 @@ import io.github.elderpath_crusade.utils.MenuLayout;
 import io.github.elderpath_crusade.utils.ColorSettings;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,12 +43,17 @@ public class DraftRoom extends Room {
     private final PieceAlignment draftingPlayer;
     private final boolean isLocalMultiplayer;
 
+    // What happens to the finished deck is the caller's decision, not this room's — see
+    // DeckSourceSelectRoom, which is now the only way "Local Multiplayer"/"Host Online" reach
+    // this room (the plain DraftRoom::get() entry point for Demo mode still owns its own default).
+    private final Consumer<List<String>> onComplete;
+
     // UI elements
     private Text progressionText;
     private Text deckPreviewText;
     private boolean isProcessingPick;
 
-    private DraftRoom(PieceAlignment player, boolean localMultiplayer) {
+    private DraftRoom(PieceAlignment player, boolean localMultiplayer, Consumer<List<String>> onComplete) {
         super();
 
         // Play menu music
@@ -55,11 +61,17 @@ public class DraftRoom extends Room {
 
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;
+        this.onComplete = onComplete;
         initializeDraft();
     }
 
     private DraftRoom() {
-        this(PieceAlignment.P1, false);
+        this(PieceAlignment.P1, false, DraftRoom::completeDemoDraft);
+    }
+
+    private static void completeDemoDraft(List<String> deck) {
+        GameContext.get().getDeckManager().setDraftedDeck(PieceAlignment.P1, deck);
+        GameContext.get().getRoomManager().gotoRoom(DemoRoom::get);
     }
 
     private void initializeDraft() {
@@ -134,7 +146,7 @@ public class DraftRoom extends Room {
     private void showNextDraftPick() {
         if (currentPick >= DRAFT_PICKS) {
             // Draft complete, transition to DemoRoom
-            transitionToDemoRoom();
+            completeDraft();
             return;
         }
 
@@ -245,25 +257,8 @@ public class DraftRoom extends Room {
         deckPreviewText.getBounds().setY(bottomY);
     }
 
-    private void transitionToDemoRoom() {
-        if (isLocalMultiplayer) {
-            // Store drafted deck in DeckManager for current drafting player
-            GameContext.get().getDeckManager().setDraftedDeck(draftingPlayer, draftedDeck);
-
-            // If P1 just finished, transition to P2 draft
-            if (draftingPlayer == PieceAlignment.P1) {
-                GameContext.get().getRoomManager().gotoRoom(() -> new DraftRoom(PieceAlignment.P2, true));
-            } else {
-                // P2 finished, transition to LocalMatchRoom
-                GameContext.get().getRoomManager().gotoRoom(LocalMatchRoom::get);
-            }
-        } else {
-            // Single player drafts P1's deck
-            GameContext.get().getDeckManager().setDraftedDeck(PieceAlignment.P1, draftedDeck);
-
-            // Transition to DemoRoom
-            GameContext.get().getRoomManager().gotoRoom(DemoRoom::get);
-        }
+    private void completeDraft() {
+        onComplete.accept(draftedDeck);
     }
 
     @Override
@@ -275,7 +270,14 @@ public class DraftRoom extends Room {
         return new DraftRoom();
     }
 
-    public static DraftRoom getForLocalMultiplayer(PieceAlignment player) {
-        return new DraftRoom(player, true);
+    /**
+     * Generic entry point used by {@link DeckSourceSelectRoom}'s "Draft a Deck" option — drafts
+     * for {@code player}, then hands the finished deck to {@code onComplete}. Storing it in
+     * {@code DeckManager} and picking the next room is entirely the caller's job; this room
+     * doesn't know or care whether it's being used for Local Multiplayer, Host Online, or
+     * anything else.
+     */
+    public static DraftRoom forPlayer(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onComplete) {
+        return new DraftRoom(player, isLocalMultiplayer, onComplete);
     }
 }

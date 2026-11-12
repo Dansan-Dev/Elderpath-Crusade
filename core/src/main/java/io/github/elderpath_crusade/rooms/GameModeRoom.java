@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.rooms;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.ButtonList;
@@ -44,9 +43,13 @@ public class GameModeRoom extends Room {
             }
         });
         addOption("Demo", () -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get));
+        // Local Multiplayer / Host Online: both ask Draft-or-Collection first via
+        // DeckSourceSelectRoom. Join Online has no deck choice here — the joining client never
+        // builds a match spec at all, see DeckSourceSelectRoom's class doc.
         addOption("Local Multiplayer",
-                () -> GameContext.get().getRoomManager().gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1)));
-        addOption("Host Online", () -> GameContext.get().getRoomManager().gotoRoom(OnlineMatchRoom::host));
+                () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startLocalMultiplayer));
+        addOption("Host Online",
+                () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startHostOnline));
         addOption("Join Online (localhost)", () -> GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.join("localhost")));
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN,

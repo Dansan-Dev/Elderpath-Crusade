@@ -94,9 +94,9 @@ public class VictoryRoom extends Room {
             5
         ).withTextColors(Color.WHITE, Color.WHITE, Color.WHITE)
          .withOnClick((e) -> {
-            // Navigate to DraftRoom - use Local Multiplayer if in LOCAL_MATCH mode
+            // Navigate to DraftRoom - use Local Multiplayer's deck-source flow if in LOCAL_MATCH mode
             if (mode == GameMode.LOCAL_MATCH) {
-                GameContext.get().getRoomManager().gotoRoom(() -> DraftRoom.getForLocalMultiplayer(PieceAlignment.P1));
+                GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startLocalMultiplayer);
             } else {
                 GameContext.get().getRoomManager().gotoRoom(DraftRoom::get);
             }
