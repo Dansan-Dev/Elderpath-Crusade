@@ -27,7 +27,8 @@ public enum ColorSettings {
     // Roguelike run map nodes (RunRoom)
     RUN_NODE_BATTLE(Color.valueOf("#4a7fb5")),
     RUN_NODE_ELITE(Color.valueOf("#c1440e")),
-    RUN_NODE_REST(Color.valueOf("#3a9d55")),
+    RUN_NODE_RECRUITMENT(Color.valueOf("#3a9d55")),
+    RUN_NODE_EVENT(Color.valueOf("#7a4fa0")),
     RUN_NODE_BOSS(Color.valueOf("#6b1e3c")),
     RUN_NODE_VISITED(Color.valueOf("#555555")),
     RUN_NODE_LOCKED(Color.valueOf("#2e2e2e")),

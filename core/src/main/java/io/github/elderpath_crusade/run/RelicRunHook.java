@@ -18,8 +18,4 @@ public interface RelicRunHook {
     /** Fires once, right when this relic is added to the run ({@code RunManager.addRelic}). */
     default void onAcquired(RunState state) {
     }
-
-    /** Fires whenever the player's current node becomes a Rest node. */
-    default void onEnterRestNode(RunState state) {
-    }
 }

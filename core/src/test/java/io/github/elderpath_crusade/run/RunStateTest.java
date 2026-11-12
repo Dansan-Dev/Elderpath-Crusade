@@ -241,6 +241,48 @@ class RunStateTest {
     }
 
     @Test
+    void removeRelic_dropsAnActiveRelic() {
+        RunState run = freshRun(2);
+        run.addRelic("PackLeader");
+        run.removeRelic("PackLeader");
+        assertTrue(run.activeRelicIds().isEmpty());
+    }
+
+    @Test
+    void removeRelic_noOpIfNotActive() {
+        RunState run = freshRun(2);
+        assertDoesNotThrow(() -> run.removeRelic("NeverAdded"));
+    }
+
+    @Test
+    void removeCardFromDeck_removesTheNamedInstance() {
+        RunState run = freshRun(2); // 4-card deck: run-0..run-3
+        run.removeCardFromDeck("run-1");
+        assertEquals(3, run.deck().size());
+        assertTrue(run.deck().stream().noneMatch(c -> c.instanceId().equals("run-1")));
+    }
+
+    @Test
+    void removeCardFromDeck_rejectsAnUnknownInstanceId() {
+        RunState run = freshRun(2);
+        assertThrows(IllegalArgumentException.class, () -> run.removeCardFromDeck("nope"));
+    }
+
+    @Test
+    void removeCardFromDeck_rejectsShrinkingTheDeckToEmpty() {
+        RunState run = new RunState(RunMap.linearChain(1), RunDifficulty.DEFAULT,
+                List.of(RunCardInstance.unmodified("run-0", "Wolf")), 1);
+        assertThrows(IllegalStateException.class, () -> run.removeCardFromDeck("run-0"));
+    }
+
+    @Test
+    void removeCardFromDeck_rejectsAfterTheRunHasEnded() {
+        RunState run = freshRun(2);
+        run.endRun(false);
+        assertThrows(IllegalStateException.class, () -> run.removeCardFromDeck("run-0"));
+    }
+
+    @Test
     void start_rejectsAnEmptyStartingDeck() {
         assertThrows(IllegalArgumentException.class,
                 () -> RunState.start(RunMap.linearChain(1), RunDifficulty.DEFAULT, List.of(), 1));

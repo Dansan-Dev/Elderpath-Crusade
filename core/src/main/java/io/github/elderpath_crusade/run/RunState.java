@@ -152,8 +152,8 @@ public class RunState {
 
     /**
      * Marks the current node as resolved, so the player may advance past it — a battle won
-     * (RunManager.reportNodeOutcome), or a non-battle node (e.g. Rest) that has nothing to
-     * fight. Required before {@link #advanceTo}.
+     * (RunManager.reportNodeOutcome), or a non-battle node (Recruitment/Event) that has nothing
+     * to fight. Required before {@link #advanceTo}.
      */
     public void markCurrentNodeCleared() {
         requireNotEnded();
@@ -243,10 +243,10 @@ public class RunState {
     }
 
     /**
-     * Replaces an existing deck or Elder instance's modification (e.g. a Rest-node card-mod
-     * reward) — checks the deck first, then {@link #elders()} (BUG-044: an Elder is a real
-     * card too, just retired from the drawable deck; it can still be the target of a later
-     * modification reward).
+     * Replaces an existing deck or Elder instance's modification (e.g. a card-mod reward, or a
+     * Strange Surgeon combination) — checks the deck first, then {@link #elders()} (BUG-044: an
+     * Elder is a real card too, just retired from the drawable deck; it can still be the target
+     * of a later modification reward).
      */
     public void modifyCard(String instanceId, RunCardModification modification) {
         for (int i = 0; i < deck.size(); i++) {
@@ -266,6 +266,31 @@ public class RunState {
 
     public void addRelic(String relicId) {
         relics.add(relicId);
+    }
+
+    /** Drops a relic from the run (Trader event) — no-op if it wasn't active. */
+    public void removeRelic(String relicId) {
+        relics.remove(relicId);
+    }
+
+    /**
+     * Removes a deck instance outright (Sacrificial Site, a Recruitment Site's cast-off member,
+     * one half of a Strange Surgeon combination) — unlike {@link #addElder}, nothing takes its
+     * place. Same never-empty guard as promoting the last card to Elder: a run's deck must
+     * always keep at least one card.
+     */
+    public void removeCardFromDeck(String instanceId) {
+        requireNotEnded();
+        if (deck.size() <= 1) {
+            throw new IllegalStateException("can't remove the last card in the deck");
+        }
+        for (int i = 0; i < deck.size(); i++) {
+            if (deck.get(i).instanceId().equals(instanceId)) {
+                deck.remove(i);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("no deck instance with id " + instanceId);
     }
 
     /**

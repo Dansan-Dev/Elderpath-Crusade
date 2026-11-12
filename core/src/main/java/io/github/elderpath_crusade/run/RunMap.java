@@ -84,8 +84,8 @@ public record RunMap(List<RunNode> nodes, int startNodeId) {
 
     /**
      * A straight chain of {@code totalNodes - 1} Battle nodes followed by one terminal Boss
-     * node, always starting at node 0. A simple, deterministic fixture — no Elite/Rest nodes,
-     * no branching — for tests that need "a" valid map without caring about its shape.
+     * node, always starting at node 0. A simple, deterministic fixture — no Elite/Recruitment/
+     * Event nodes, no branching — for tests that need "a" valid map without caring about its shape.
      */
     public static RunMap linearChain(int totalNodes) {
         if (totalNodes < 1) throw new IllegalArgumentException("totalNodes must be >= 1");
@@ -106,14 +106,14 @@ public record RunMap(List<RunNode> nodes, int startNodeId) {
 
     /**
      * A seeded branching node graph: a single Battle start node, {@code middleFloors} floors of
-     * {@code width} nodes each (type randomly Battle/Elite/Rest, weighted 60/20/20), converging
-     * on a single terminal Boss node. Each node connects to 1-2 nodes in the next floor; every
-     * node in a floor is guaranteed at least one incoming edge from the previous floor (nothing
-     * is ever unreachable) and every non-Boss node at least one outgoing edge to the next
-     * (nothing is ever a dead end before the boss). Guarantees at least one Elite node among the
-     * middle floors (Phase 3.6) — the 60/20/20 weighting alone leaves a real chance of none at
-     * all (~41% per floor), which would make a multi-floor run's Elite reward unreachable on an
-     * unlucky seed; a map that already rolled one naturally is untouched.
+     * {@code width} nodes each (type randomly Battle/Elite/Recruitment/Event, weighted
+     * 60/20/10/10), converging on a single terminal Boss node. Each node connects to 1-2 nodes
+     * in the next floor; every node in a floor is guaranteed at least one incoming edge from the
+     * previous floor (nothing is ever unreachable) and every non-Boss node at least one outgoing
+     * edge to the next (nothing is ever a dead end before the boss). Guarantees at least one
+     * Elite node among the middle floors (Phase 3.6) — the weighting alone leaves a real chance
+     * of none at all (~41% per floor), which would make a multi-floor run's Elite reward
+     * unreachable on an unlucky seed; a map that already rolled one naturally is untouched.
      */
     public static RunMap generateBranching(long seed, int middleFloors, int width) {
         if (middleFloors < 1) throw new IllegalArgumentException("middleFloors must be >= 1");
@@ -165,7 +165,8 @@ public record RunMap(List<RunNode> nodes, int startNodeId) {
         int roll = rng.nextInt(100);
         if (roll < 60) return RunNodeType.BATTLE;
         if (roll < 80) return RunNodeType.ELITE;
-        return RunNodeType.REST;
+        if (roll < 90) return RunNodeType.RECRUITMENT;
+        return RunNodeType.EVENT;
     }
 
     /**

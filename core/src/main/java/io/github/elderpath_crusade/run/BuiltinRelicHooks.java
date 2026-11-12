@@ -3,11 +3,15 @@ package io.github.elderpath_crusade.run;
 import java.util.UUID;
 
 /**
- * Two concrete non-battle relic hooks (UPG-002), proving {@link RelicRunHook}'s shape end to
- * end: one fires the instant the relic is picked up, the other every time the run rests. Both
- * reuse {@code RunState.addCardToDeck} — no new run-state mechanism needed for either.
- * Registering one of these under a relic id ({@code RelicRegistry.register}) is how a run
- * actually offers it; this class only holds the behavior.
+ * A concrete non-battle relic hook (UPG-002), proving {@link RelicRunHook}'s shape: fires the
+ * instant the relic is picked up, reusing {@code RunState.addCardToDeck} — no new run-state
+ * mechanism needed. Registering one of these under a relic id ({@code RelicRegistry.register})
+ * is how a run actually offers it; this class only holds the behavior.
+ *
+ * <p>Used to also have a {@code grantCardOnRest} hook, firing on entering a Rest node — removed
+ * along with Rest nodes themselves (2026-11-12, user's call): no relic ever defined in the real
+ * game data actually used it (a yaml-authored relic is always {@link RelicDefinition#battleOnly}),
+ * and the node type it reacted to no longer exists.
  */
 public final class BuiltinRelicHooks {
     private BuiltinRelicHooks() {
@@ -18,16 +22,6 @@ public final class BuiltinRelicHooks {
         return new RelicRunHook() {
             @Override
             public void onAcquired(RunState state) {
-                state.addCardToDeck(RunCardInstance.unmodified(newInstanceId(), rewardCardName));
-            }
-        };
-    }
-
-    /** Grants one copy of rewardCardName to the deck every time the run enters a Rest node. */
-    public static RelicRunHook grantCardOnRest(String rewardCardName) {
-        return new RelicRunHook() {
-            @Override
-            public void onEnterRestNode(RunState state) {
                 state.addCardToDeck(RunCardInstance.unmodified(newInstanceId(), rewardCardName));
             }
         };

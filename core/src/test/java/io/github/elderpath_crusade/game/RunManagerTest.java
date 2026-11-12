@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.game;
 
 import io.github.elderpath_crusade.client.LocalMatchSpec;
+import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data.RelicRegistry;
@@ -13,8 +14,6 @@ import io.github.elderpath_crusade.run.RelicRunHook;
 import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.run.RunDifficulty;
-import io.github.elderpath_crusade.run.RunMap;
-import io.github.elderpath_crusade.run.RunNode;
 import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.run.RunState;
 import org.junit.jupiter.api.AfterEach;
@@ -60,17 +59,6 @@ class RunManagerTest {
     void tearDown() {
         RelicRegistry.clear();
         CardCatalog.clear();
-    }
-
-    /** The real generator can branch — finds a seed whose start node can reach a Rest node. */
-    private static long seedWithReachableRestNode() {
-        for (long seed = 1; seed <= 200; seed++) {
-            RunMap map = RunMap.generate(seed);
-            for (RunNode node : map.reachableFrom(map.startNodeId())) {
-                if (node.type() == RunNodeType.REST) return seed;
-            }
-        }
-        throw new IllegalStateException("no seed (1-200) found with a Rest node reachable from the start");
     }
 
     @Test
@@ -351,6 +339,100 @@ class RunManagerTest {
     void grantNewCard_requiresAnActiveRun() {
         RunManager manager = new RunManager();
         assertThrows(IllegalStateException.class, () -> manager.grantNewCard("Hero"));
+    }
+
+    @Test
+    void grantNewCard_withModification_arrivesAlreadyUpgraded() {
+        // RECRUIT-001: a Recruitment Site's new member arrives already carrying its own upgrade.
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of());
+
+        manager.grantNewCard("Hero", mod);
+
+        RunCardInstance granted = manager.getRunState().deck().get(manager.getRunState().deck().size() - 1);
+        assertEquals("Hero", granted.cardName());
+        assertEquals(mod, granted.modification());
+    }
+
+    // --- Removing cards from the deck (EVENT-001/RECRUIT-001) ---
+
+    @Test
+    void removeCardFromDeck_removesTheNamedInstance() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        manager.removeCardFromDeck("run-1");
+
+        List<RunCardInstance> deck = manager.getRunState().deck();
+        assertEquals(3, deck.size());
+        assertTrue(deck.stream().noneMatch(c -> c.instanceId().equals("run-1")));
+    }
+
+    @Test
+    void removeCardFromDeck_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.removeCardFromDeck("run-0"));
+    }
+
+    // --- Strange Surgeon: combining two cards into one chimera (EVENT-001) ---
+
+    @Test
+    void combineCards_mergesEffectiveStatsAndAbilitiesOntoTheKeptCard_andRemovesTheOther() {
+        PieceRegistry.register(new PieceDefinition("WolfWithHowl", 2, 3, 1, 1, 1, List.of(new AbilityRef("Howl"))));
+        CardCatalog.registerSummon("Wolf With Howl", "WolfWithHowl");
+        PieceRegistry.register(new PieceDefinition("CubWithBite", 1, 1, 1, 1, 1, List.of(new AbilityRef("Bite"))));
+        CardCatalog.registerSummon("Cub With Bite", "CubWithBite");
+
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, List.of("Wolf With Howl", "Cub With Bite"), SEED);
+        String keepId = manager.getRunState().deck().get(0).instanceId();
+        String foldInId = manager.getRunState().deck().get(1).instanceId();
+
+        manager.combineCards(keepId, foldInId);
+
+        List<RunCardInstance> deck = manager.getRunState().deck();
+        assertEquals(1, deck.size());
+        RunCardInstance combined = deck.get(0);
+        assertEquals(keepId, combined.instanceId());
+        assertEquals("Wolf With Howl", combined.cardName(), "the kept card's own display name is unchanged");
+        assertEquals(Map.of("cost", 1, "health", 1, "damage", 1, "speed", 1, "actions", 1), combined.modification().statDeltas(),
+                "every one of the folded-in card's base stats, including cost — a chimera's full power comes at a real cost");
+        assertEquals(List.of("Bite"), combined.modification().addedAbilities());
+    }
+
+    @Test
+    void combineCards_stacksOntoAnAlreadyModifiedKeptCard() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.upgradeCard("run-0", new RunCardModification(Map.of("damage", 2), List.of()));
+
+        manager.combineCards("run-0", "run-2"); // run-0 = Wolf, run-2 = Wolf Cub (both from setUp's registry)
+
+        RunCardInstance combined = manager.getRunState().deck().stream()
+                .filter(c -> c.instanceId().equals("run-0")).findFirst().orElseThrow();
+        assertEquals(2 + 1, combined.modification().statDeltas().get("damage"),
+                "the kept card's own prior upgrade stacks with the folded-in card's stats");
+    }
+
+    @Test
+    void combineCards_rejectsCombiningACardWithItself() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        assertThrows(IllegalArgumentException.class, () -> manager.combineCards("run-0", "run-0"));
+    }
+
+    @Test
+    void combineCards_rejectsAnUnknownInstanceId() {
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        assertThrows(IllegalArgumentException.class, () -> manager.combineCards("run-0", "nope"));
+    }
+
+    @Test
+    void combineCards_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.combineCards("run-0", "run-1"));
     }
 
     // --- Relic offer + card upgrade (UPG-005) ---
@@ -644,40 +726,20 @@ class RunManagerTest {
     }
 
     @Test
-    void advanceToNextNode_enteringARestNode_firesOnEnterRestNodeHooks() {
-        long seed = seedWithReachableRestNode();
+    void removeRelic_dropsAnActiveRelic() {
         RunManager manager = new RunManager();
-        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, seed);
-        manager.reportNodeOutcome(PieceAlignment.P1); // clears the start node
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        manager.addRelic("PackLeader");
 
-        RunNode restNode = manager.getRunState().reachableNodes().stream()
-                .filter(n -> n.type() == RunNodeType.REST).findFirst().orElseThrow();
-        AtomicBoolean fired = new AtomicBoolean(false);
-        RelicRegistry.register(new RelicDefinition("TestRelic", "desc", List.of(), List.of(
-                hookOnEnterRestNode(state -> fired.set(true)))));
-        manager.addRelic("TestRelic");
+        manager.removeRelic("PackLeader");
 
-        manager.advanceToNextNode(restNode.id());
-
-        assertTrue(fired.get());
+        assertTrue(manager.getRunState().activeRelicIds().isEmpty());
     }
 
     @Test
-    void advanceToNextNode_enteringANonRestNode_doesNotFireOnEnterRestNodeHooks() {
+    void removeRelic_requiresAnActiveRun() {
         RunManager manager = new RunManager();
-        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
-        manager.reportNodeOutcome(PieceAlignment.P1);
-
-        RunNode nonRest = manager.getRunState().reachableNodes().stream()
-                .filter(n -> n.type() != RunNodeType.REST).findFirst().orElseThrow();
-        AtomicBoolean fired = new AtomicBoolean(false);
-        RelicRegistry.register(new RelicDefinition("TestRelic", "desc", List.of(), List.of(
-                hookOnEnterRestNode(state -> fired.set(true)))));
-        manager.addRelic("TestRelic");
-
-        manager.advanceToNextNode(nonRest.id());
-
-        assertFalse(fired.get());
+        assertThrows(IllegalStateException.class, () -> manager.removeRelic("PackLeader"));
     }
 
     private static RelicRunHook hookOnAcquired(Consumer<RunState> onAcquired) {
@@ -685,15 +747,6 @@ class RunManagerTest {
             @Override
             public void onAcquired(RunState state) {
                 onAcquired.accept(state);
-            }
-        };
-    }
-
-    private static RelicRunHook hookOnEnterRestNode(Consumer<RunState> onEnterRestNode) {
-        return new RelicRunHook() {
-            @Override
-            public void onEnterRestNode(RunState state) {
-                onEnterRestNode.accept(state);
             }
         };
     }

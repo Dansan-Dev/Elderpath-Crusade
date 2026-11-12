@@ -162,14 +162,15 @@ class RunMapTest {
     }
 
     @Test
-    void generateBranching_distributionIncludesEliteAndRestAcrossSeeds() {
+    void generateBranching_distributionIncludesEliteRecruitmentAndEventAcrossSeeds() {
         Set<RunNodeType> seen = new HashSet<>();
         for (long seed = 1; seed <= 50; seed++) {
             RunMap map = RunMap.generateBranching(seed, 4, 3);
             for (RunNode node : map.nodes()) seen.add(node.type());
         }
         assertTrue(seen.contains(RunNodeType.ELITE), "never saw an Elite node across 50 seeds");
-        assertTrue(seen.contains(RunNodeType.REST), "never saw a Rest node across 50 seeds");
+        assertTrue(seen.contains(RunNodeType.RECRUITMENT), "never saw a Recruitment node across 50 seeds");
+        assertTrue(seen.contains(RunNodeType.EVENT), "never saw an Event node across 50 seeds");
     }
 
     @Test

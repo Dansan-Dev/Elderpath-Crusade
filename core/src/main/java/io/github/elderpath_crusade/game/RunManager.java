@@ -3,6 +3,8 @@ package io.github.elderpath_crusade.game;
 import io.github.elderpath_crusade.bot.BotKind;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
+import io.github.elderpath_crusade.data.AbilityRef;
+import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.CardCatalog;
@@ -24,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
 /**
  * Client-side orchestrator for a roguelike run (FEAT-006) — owns the active {@link RunState},
@@ -256,19 +257,16 @@ public final class RunManager {
 
     /**
      * Moves to the node the player picked among {@link RunState#reachableNodes()} (only valid
-     * once the current node is cleared). A non-battle node (e.g. Rest) has nothing to fight, so
-     * it's immediately marked cleared on arrival — the room sees it as already resolved and the
-     * player can pick straight past it. Entering a Rest node also fires every active relic's
-     * {@link RelicRunHook#onEnterRestNode} (UPG-002).
+     * once the current node is cleared). A non-battle node (Recruitment/Event) has nothing to
+     * fight, so it's immediately marked cleared on arrival — the room sees it as already
+     * resolved and routes straight into that node's own interactive room ({@code
+     * RecruitmentSiteRoom}/{@code EventRoom}) instead of asking the player to fight it.
      */
     public void advanceToNextNode(int nodeId) {
         requireActiveRun();
         runState.advanceTo(nodeId);
         if (!runState.currentNode().type().isBattle()) {
             runState.markCurrentNodeCleared();
-        }
-        if (runState.currentNode().type() == RunNodeType.REST) {
-            forEachRunHook(RelicRunHook::onEnterRestNode);
         }
     }
 
@@ -291,8 +289,65 @@ public final class RunManager {
 
     /** Adds a fresh unmodified copy of {@code cardName} to the run's deck (a chosen UPG-004 reward). */
     public void grantNewCard(String cardName) {
+        grantNewCard(cardName, RunCardModification.NONE);
+    }
+
+    /** Adds a fresh copy of {@code cardName} with {@code modification} already applied — a
+     *  Recruitment Site's new member arrives already upgraded (RECRUIT-001). */
+    public void grantNewCard(String cardName, RunCardModification modification) {
         requireActiveRun();
-        runState.addCardToDeck(RunCardInstance.unmodified("card-reward-" + UUID.randomUUID(), cardName));
+        runState.addCardToDeck(RunCardInstance.unmodified("card-reward-" + UUID.randomUUID(), cardName)
+                .withModification(modification));
+    }
+
+    /** Removes a deck instance outright — a Sacrificial Site, a Recruitment Site's cast-off
+     *  member, or one half of a Strange Surgeon combination (see {@link #combineCards}). */
+    public void removeCardFromDeck(String instanceId) {
+        requireActiveRun();
+        runState.removeCardFromDeck(instanceId);
+    }
+
+    /**
+     * The Strange Surgeon event (EVENT-001): folds {@code foldInInstanceId}'s full effective
+     * stats and abilities onto {@code keepInstanceId}, then removes {@code foldInInstanceId}
+     * outright — one card remains, carrying the combined total of both ("every stat and
+     * ability of the 2 cards" per the user's own design, including mana cost, so a chimera is a
+     * real power-for-cost tradeoff rather than a free stat stack). {@code keepInstanceId} keeps
+     * its own card name/display; only its modification changes. Both ids must still be in the
+     * deck and distinct.
+     */
+    public void combineCards(String keepInstanceId, String foldInInstanceId) {
+        requireActiveRun();
+        if (keepInstanceId.equals(foldInInstanceId)) {
+            throw new IllegalArgumentException("can't combine a card with itself");
+        }
+        RunCardInstance keep = findDeckInstance(keepInstanceId);
+        RunCardInstance foldIn = findDeckInstance(foldInInstanceId);
+        PieceDefinition foldInBase = CardCatalog.getPieceDefinition(foldIn.cardName());
+        if (foldInBase == null) {
+            throw new IllegalArgumentException("not a summon, nothing to combine: " + foldIn.cardName());
+        }
+
+        Map<String, Integer> foldInEffective = new LinkedHashMap<>(foldIn.modification().statDeltas());
+        foldInEffective.merge("cost", foldInBase.cost(), Integer::sum);
+        foldInEffective.merge("health", foldInBase.health(), Integer::sum);
+        foldInEffective.merge("damage", foldInBase.damage(), Integer::sum);
+        foldInEffective.merge("speed", foldInBase.speed(), Integer::sum);
+        foldInEffective.merge("actions", foldInBase.actions(), Integer::sum);
+
+        List<String> foldInAbilities = new ArrayList<>(foldIn.modification().addedAbilities());
+        for (AbilityRef ability : foldInBase.abilities()) foldInAbilities.add(ability.name());
+
+        RunCardModification combined = keep.modification().plus(new RunCardModification(foldInEffective, foldInAbilities));
+        runState.modifyCard(keepInstanceId, combined);
+        runState.removeCardFromDeck(foldInInstanceId);
+    }
+
+    private RunCardInstance findDeckInstance(String instanceId) {
+        for (RunCardInstance instance : runState.deck()) {
+            if (instance.instanceId().equals(instanceId)) return instance;
+        }
+        throw new IllegalArgumentException("no deck instance with id " + instanceId);
     }
 
     /**
@@ -379,12 +434,10 @@ public final class RunManager {
         }
     }
 
-    private void forEachRunHook(BiConsumer<RelicRunHook, RunState> call) {
-        for (String relicId : runState.activeRelicIds()) {
-            RelicDefinition relic = RelicRegistry.get(relicId);
-            if (relic == null) continue;
-            for (RelicRunHook hook : relic.runHooks()) call.accept(hook, runState);
-        }
+    /** Drops a relic from the run (the Trader event's cast-off side of the trade). */
+    public void removeRelic(String relicId) {
+        requireActiveRun();
+        runState.removeRelic(relicId);
     }
 
     private void requireActiveRun() {

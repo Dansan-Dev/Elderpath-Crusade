@@ -31,4 +31,9 @@ public class RelicState {
         if (relicId == null || relicId.isBlank()) throw new IllegalArgumentException("relicId required");
         activeIds.add(relicId);
     }
+
+    /** Drops a relic (Trader event); no-op if it wasn't active. */
+    public void remove(String relicId) {
+        activeIds.remove(relicId);
+    }
 }

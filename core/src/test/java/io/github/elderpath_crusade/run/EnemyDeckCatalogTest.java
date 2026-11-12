@@ -29,9 +29,9 @@ class EnemyDeckCatalogTest {
     // --- BOT-004: node-type personality flavoring ---
 
     @Test
-    void personalityFor_battleAndRest_leaveSmartUnflavored() {
+    void personalityFor_battleAndRecruitment_leaveSmartUnflavored() {
         assertEquals(BotKind.SMART, EnemyDeckCatalog.personalityFor(RunNodeType.BATTLE, BotKind.SMART));
-        assertEquals(BotKind.SMART, EnemyDeckCatalog.personalityFor(RunNodeType.REST, BotKind.SMART));
+        assertEquals(BotKind.SMART, EnemyDeckCatalog.personalityFor(RunNodeType.RECRUITMENT, BotKind.SMART));
     }
 
     @Test

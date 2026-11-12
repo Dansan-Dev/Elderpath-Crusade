@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -36,10 +37,12 @@ import java.util.stream.Collectors;
  * this node is one of the reachable choices for where to go next (RunManager.advanceToNextNode).
  * Every other node is disabled: visited nodes stay dimmed to mark progress, unvisited/
  * unreachable ones are locked. VictoryRoom reports a battle's outcome back to RunManager and
- * returns here — already on the next node if Rest (no fight), or cleared and awaiting a pick
- * otherwise. {@link RunMapEdgeRenderer} (BUG-041) draws the graph's actual connections between
- * node buttons, behind them, so the branching structure is visible rather than just each node's
- * own clickable/locked color.
+ * returns here, cleared and awaiting a pick. Entering a Recruitment or Event node instead
+ * routes straight into that node's own interactive room ({@link RecruitmentSiteRoom}/{@link
+ * EventRoom}) via {@link #onNodeClicked} — see {@code RunNodeType}'s doc for why there's no
+ * Rest node any more. {@link RunMapEdgeRenderer} (BUG-041) draws the graph's actual connections
+ * between node buttons, behind them, so the branching structure is visible rather than just each
+ * node's own clickable/locked color.
  */
 public class RunRoom extends Room {
     private static final List<String> DEFAULT_STARTING_DECK =
@@ -136,13 +139,23 @@ public class RunRoom extends Room {
             GameContext.get().getRunManager().advanceToNextNode(node.id());
             if (node.type().isBattle()) {
                 // Battle/Elite/Boss: advanceToNextNode leaves it current-and-unfought (it never
-                // auto-clears a fight the way it does Rest) — go straight into it instead of
-                // redrawing this room just to make the player click the same node again.
+                // auto-clears a fight the way it does Recruitment/Event) — go straight into it
+                // instead of redrawing this room just to make the player click the same node again.
                 startCurrentNode();
             } else {
-                GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
+                // Recruitment/Event: already auto-cleared by advanceToNextNode — route straight
+                // into that node's own interactive room instead of just redrawing the map.
+                GameContext.get().getRoomManager().gotoRoom(nonBattleRoomFor(node.type()));
             }
         }
+    }
+
+    private static Supplier<Room> nonBattleRoomFor(RunNodeType type) {
+        return switch (type) {
+            case RECRUITMENT -> RecruitmentSiteRoom::get;
+            case EVENT -> EventRoom::get;
+            default -> throw new IllegalStateException("not a non-battle node type: " + type);
+        };
     }
 
     private static Color colorFor(RunNodeType type, boolean visited, boolean clickable) {
@@ -151,7 +164,8 @@ public class RunRoom extends Room {
         return switch (type) {
             case BATTLE -> ColorSettings.RUN_NODE_BATTLE.getColor();
             case ELITE -> ColorSettings.RUN_NODE_ELITE.getColor();
-            case REST -> ColorSettings.RUN_NODE_REST.getColor();
+            case RECRUITMENT -> ColorSettings.RUN_NODE_RECRUITMENT.getColor();
+            case EVENT -> ColorSettings.RUN_NODE_EVENT.getColor();
             case BOSS -> ColorSettings.RUN_NODE_BOSS.getColor();
         };
     }
@@ -160,7 +174,8 @@ public class RunRoom extends Room {
         return switch (node.type()) {
             case BATTLE -> "Battle";
             case ELITE -> "Elite";
-            case REST -> "Rest";
+            case RECRUITMENT -> "Recruitment";
+            case EVENT -> "Event";
             case BOSS -> "Boss";
         };
     }

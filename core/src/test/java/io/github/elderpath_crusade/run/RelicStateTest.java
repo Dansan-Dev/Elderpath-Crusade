@@ -43,4 +43,18 @@ class RelicStateTest {
         RelicState state = new RelicState(List.of("A", "B"));
         assertEquals(List.of("A", "B"), state.activeIds());
     }
+
+    @Test
+    void remove_dropsAnActiveRelic() {
+        RelicState state = new RelicState(List.of("A", "B"));
+        state.remove("A");
+        assertEquals(List.of("B"), state.activeIds());
+        assertFalse(state.isActive("A"));
+    }
+
+    @Test
+    void remove_noOpIfNotActive() {
+        RelicState state = new RelicState();
+        assertDoesNotThrow(() -> state.remove("NeverAdded"));
+    }
 }
