@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
@@ -8,6 +9,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
+import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.rendering.TextureManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
@@ -46,6 +48,13 @@ public class LoadingRoom extends Room {
         GameContext.get().getAssets().loadAtlas(TextureManager.GAME_ATLAS_PATH);
         for (ImagePathSpritesAndAnimations image : ImagePathSpritesAndAnimations.values()) {
             GameContext.get().getAssets().loadTexture(image.getPath());
+        }
+        // Piece art is optional per piece (ART-002): a missing file must not fail the whole
+        // load — the piece just keeps its name-labelled checker.
+        for (ImagePathPieceSprites image : ImagePathPieceSprites.values()) {
+            if (Gdx.files.internal(image.getPath()).exists()) {
+                GameContext.get().getAssets().loadTexture(image.getPath());
+            }
         }
         for (ImagePathBackgroundAndUI image : ImagePathBackgroundAndUI.values()) {
             GameContext.get().getAssets().loadTexture(image.getPath());

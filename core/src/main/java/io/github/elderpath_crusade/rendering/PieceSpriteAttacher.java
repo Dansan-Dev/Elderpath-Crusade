@@ -14,6 +14,7 @@ import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.ecs.components.TerrainComponent;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
+import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
 
 /**
  * View-side: gives every board entity (piece or terrain) a sprite as it enters the engine.
@@ -69,8 +70,9 @@ public final class PieceSpriteAttacher implements EntityListener {
         if (id == null || align == null) return;
         // BUG-046: id.name is the piece's registryKey (its full synthetic key for a run-modified
         // one, e.g. "Crow#run-6") — right for spritePath's tag-only use, wrong as the label text
-        // NamedCheckerSprite actually draws on the piece.
+        // NamedCheckerSprite actually draws on the piece (only when it has no figure art, ART-002).
         entity.add(new SpriteComponent().set(id.name)
-                .setRenderable(new NamedCheckerSprite(0, 0, width, height, SyntheticCardNames.displayName(id.name), align.alignment)));
+                .setRenderable(new NamedCheckerSprite(0, 0, width, height, SyntheticCardNames.displayName(id.name),
+                        align.alignment, ImagePathPieceSprites.forRegistryKey(id.name))));
     }
 }
