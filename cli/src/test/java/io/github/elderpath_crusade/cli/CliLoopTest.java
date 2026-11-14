@@ -142,14 +142,21 @@ class CliLoopTest {
         }
     }
 
+    /**
+     * BUG-042: reaching PLAYING and this seat's first {@code LegalActionsUpdate} are two
+     * different server messages, not guaranteed in the same tick — waiting on PLAYING alone let
+     * a scripted "legal" command race the server and see "(no legal actions yet)" instead of
+     * real legal-actions text (elderpath-testing.md's "Flaky Tests" rule: wait on an explicit
+     * signal, never 'nothing arrived for a while'). Waits for both.
+     */
     private void awaitPlaying(ClientMatchSession session) throws InterruptedException {
         long deadline = System.nanoTime() + 10_000_000_000L;
         while (true) {
             session.poll();
             ClientMatchSession.Status status = session.getStatus();
-            if (status.isReady()) return;
+            if (status.isReady() && session.viewState() != null && session.viewState().getLegalActions() != null) return;
             if (status.isOver()) fail("session ended before PLAYING: " + status);
-            if (System.nanoTime() - deadline > 0) fail("never reached PLAYING: " + status);
+            if (System.nanoTime() - deadline > 0) fail("never reached PLAYING with legal actions: " + status);
             Thread.sleep(5);
         }
     }
