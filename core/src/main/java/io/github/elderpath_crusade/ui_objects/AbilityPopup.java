@@ -1,17 +1,28 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
 import io.github.elderpath_crusade.client.ClientController;
+import io.github.elderpath_crusade.data.AbilityRef;
+import io.github.elderpath_crusade.data.AbilityRegistry;
+import io.github.elderpath_crusade.data.PieceDefinition;
+import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
+import io.github.elderpath_crusade.utils.ColorSettings;
+import io.github.elderpath_crusade.utils.FontSize;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,18 +37,28 @@ import java.util.Set;
  * the server already excludes pieces with no remaining action, a stunned piece, pieces that
  * aren't this seat's, and a seat with a pending pick (LegalActions is all-empty then), so this
  * class owns no eligibility logic of its own.
+ *
+ * FEAT-015/C2: hovering a specific bubble (not just the piece) shows that ability's rules-text
+ * description — the same text CardPreviewPanel already shows for a whole piece, just resolved
+ * for one ability. Reduces the "guess what the number means" friction a bubble with no icon
+ * (numeric fallback) has for a new player, before they commit to clicking it.
  */
 public class AbilityPopup extends HigherOrderUI {
 
     private static final int BUBBLE_Z = 20;
     private static final int BUBBLE_Y_OFFSET = 8;
+    private static final int TOOLTIP_Y_OFFSET = 6;
 
     private final Map<String, AbilityBubble> activeBubbles = new HashMap<>();
     // Narrow corridor between each bubble and its piece's plot — keeps bubble alive while mouse travels upward
     private final Map<String, int[]> corridors = new HashMap<>(); // [x, y, w, h]
+    private final Map<String, BubbleSpec> activeSpecs = new HashMap<>();
+    private final Text tooltipText;
 
     public AbilityPopup() {
         super();
+        this.tooltipText = new Text("", FontType.SILKSCREEN, 0, 0, BUBBLE_Z + 1, ColorSettings.TEXT_DEFAULT.getColor())
+                .withFontSize(FontSize.CAPTION);
     }
 
     @Override
@@ -72,7 +93,7 @@ public class AbilityPopup extends HigherOrderUI {
             if (pa.abilities().isEmpty()) continue;
             for (LegalActions.AbilityOption option : pa.abilities()) {
                 String key = pa.pieceId() + "_" + option.actionIndex();
-                specs.add(new BubbleSpec(key, pa.pieceId(), option.actionIndex(), pa.from()));
+                specs.add(new BubbleSpec(key, pa.pieceId(), option.actionIndex(), pa.from(), option.abilityId()));
             }
         }
 
@@ -123,6 +144,7 @@ public class AbilityPopup extends HigherOrderUI {
             interactionManager.removeClickable(activeBubbles.get(key));
             activeBubbles.remove(key);
             corridors.remove(key);
+            activeSpecs.remove(key);
         }
 
         int bubbleSize = (int) (board.getPLOT_WIDTH() * 0.7f);
@@ -147,6 +169,7 @@ public class AbilityPopup extends HigherOrderUI {
                 // Corridor: narrow strip from plot top to bubble bottom, same width as bubble
                 corridors.put(spec.key, new int[]{bubX, plotY + board.getPLOT_HEIGHT(), bubbleSize, BUBBLE_Y_OFFSET});
                 activeBubbles.put(spec.key, bubble);
+                activeSpecs.put(spec.key, spec);
                 interactionManager.addClickable(bubble);
             }
         }
@@ -154,6 +177,44 @@ public class AbilityPopup extends HigherOrderUI {
         for (AbilityBubble bubble : activeBubbles.values()) {
             bubble.renderUI(batch, isPaused);
         }
+
+        renderHoveredTooltip(batch, isPaused, board, mx, my);
+    }
+
+    /** C2: hovering a specific bubble shows that ability's description above it. */
+    private void renderHoveredTooltip(SpriteBatch batch, boolean isPaused, Board board, int mx, int my) {
+        for (Map.Entry<String, AbilityBubble> entry : activeBubbles.entrySet()) {
+            AbilityBubble bubble = entry.getValue();
+            if (!bubble.inRange(mx, my)) continue;
+
+            BubbleSpec spec = activeSpecs.get(entry.getKey());
+            String description = spec != null ? resolveDescription(spec, board) : null;
+            if (description == null || description.isEmpty()) return;
+
+            tooltipText.setText(description);
+            tooltipText.update();
+            int tx = bubble.getX() + bubble.getWidth() / 2 - tooltipText.getWidth() / 2;
+            int ty = bubble.getY() + bubble.getHeight() + TOOLTIP_Y_OFFSET;
+            tooltipText.setBounds(new Box(tx, ty, tooltipText.getWidth(), tooltipText.getHeight()));
+            tooltipText.render(batch, BUBBLE_Z + 1, isPaused);
+            return;
+        }
+    }
+
+    /** Same resolution CardPreviewPanel uses for a whole piece, narrowed to this one ability. */
+    private String resolveDescription(BubbleSpec spec, Board board) {
+        Entity entity = board.getEntityAtPos(spec.from.row(), spec.from.col());
+        if (entity == null) return null;
+        PieceDefinition pieceDef = PieceRegistry.get(EntityUtils.getName(entity));
+        if (pieceDef == null) return null;
+        for (AbilityRef ref : pieceDef.abilities()) {
+            if (!ref.name().equals(spec.abilityId)) continue;
+            AbilityDefinition abilityDef = ref.params().isEmpty()
+                    ? AbilityRegistry.get(ref.name())
+                    : AbilityRegistry.specialize(ref.name(), ref.params());
+            return abilityDef != null ? abilityDef.description() : null;
+        }
+        return null;
     }
 
     /** Asks the match server to activate the ability — it re-validates and is the sole judge of legality. */
@@ -167,7 +228,8 @@ public class AbilityPopup extends HigherOrderUI {
         }
         activeBubbles.clear();
         corridors.clear();
+        activeSpecs.clear();
     }
 
-    private record BubbleSpec(String key, String pieceId, int actionIndex, Coord from) {}
+    private record BubbleSpec(String key, String pieceId, int actionIndex, Coord from, String abilityId) {}
 }
