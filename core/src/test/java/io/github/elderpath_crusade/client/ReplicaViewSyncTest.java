@@ -112,6 +112,41 @@ class ReplicaViewSyncTest {
     }
 
     @Test
+    void sync_twoPiecesSwappingCellsInOneTick_bothEndUpCorrectlyIndexed() {
+        // BUG-050: found via the user's playtest against a Fairy opponent (a swap-on-attack
+        // ability, EffectExecutor.executeSwap) — moving each piece one at a time with the old
+        // single-call grid.moveEntity(old, new) let the second piece's move blindly remove the
+        // first piece's freshly-placed grid entry (its old cell was still "occupied" by the
+        // first piece at that exact moment), leaving the first piece with a correct
+        // PositionComponent — it still rendered fine — but no grid entry at all, so clicking the
+        // plot it visually sat on found no piece there and did nothing.
+        welcome(List.of());
+        spawnAndSettle("a", PieceAlignment.P1, 1, 2, 3, 1, 1, false);
+        spawnAndSettle("b", PieceAlignment.P2, 4, 2, 3, 1, 1, false);
+        sync.sync(state);
+
+        state.apply(new ServerMessage.Event(
+                new PieceMovedEvent("a", PieceAlignment.P1, 1, 2, 4, 2,
+                        PieceMovedEvent.MovementType.FORCED, "ABILITY", "SwapOnAttack")));
+        state.apply(new ServerMessage.Event(
+                new PieceMovedEvent("b", PieceAlignment.P2, 4, 2, 1, 2,
+                        PieceMovedEvent.MovementType.FORCED, "ABILITY", "SwapOnAttack")));
+        state.apply(new ServerMessage.StateSync(List.of(
+                new MatchView.PieceView("a", PieceAlignment.P1, "Runner", 4, 2, 3, 3, 1, 1, false),
+                new MatchView.PieceView("b", PieceAlignment.P2, "Runner", 1, 2, 3, 3, 1, 1, false))));
+
+        sync.sync(state);
+
+        Entity atOldBCell = sync.getGrid().getEntityAt(4, 2);
+        assertNotNull(atOldBCell, "piece a must still have a grid entry at its new cell");
+        assertEquals("a", atOldBCell.getComponent(IdentityComponent.class).id);
+
+        Entity atOldACell = sync.getGrid().getEntityAt(1, 2);
+        assertNotNull(atOldACell, "piece b must still have a grid entry at its new cell");
+        assertEquals("b", atOldACell.getComponent(IdentityComponent.class).id);
+    }
+
+    @Test
     void sync_despawnsPieceRemovedFromTheReplica() {
         welcome(List.of());
         spawnAndSettle("a", PieceAlignment.P1, 1, 2, 3, 1, 1, false);

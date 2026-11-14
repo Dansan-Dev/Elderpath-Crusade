@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
 import io.github.elderpath_crusade.abilities.data.ModifierDef;
 import io.github.elderpath_crusade.abilities.data.TargetSelector;
+import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
@@ -79,13 +80,34 @@ class MatchSetupCardModificationTest {
                 List.of(new ModifierDef(new TargetSelector("Self"), Map.of("addDamage", 5)))));
 
         grid = prepare(List.of("Wolf#run-1"),
-                Map.of("run-1", new RunCardModification(Map.of(), List.of("Frenzy"))));
+                Map.of("run-1", new RunCardModification(Map.of(), List.of(new AbilityRef("Frenzy")))));
         MatchSetup.begin();
         server.playSummonCard(PieceAlignment.P1, "P1-0", 0, 2);
         MatchSetup.tick(0f); // PassiveModifierSystem resolves Frenzy's Self aura, then ModifierResolutionSystem computes it
 
         Entity piece = grid.getEntityAt(0, 2);
         assertEquals(6, EntityUtils.getDamage(piece), "base 1 + Frenzy's Self +5");
+    }
+
+    @Test
+    void addedAbilityModificationWithParams_specializesPerInstance() {
+        // BUG-050: an ability's own per-instance params (e.g. a generic ranged ability's
+        // addRange) must survive being carried in RunCardModification.addedAbilities — found
+        // via the user's playtest fusing a Rifleman into a Hero (RunManager.combineCards): the
+        // fused card's range "seemed bugged" because only the ability's name was carried, not
+        // its params, so AbilityRegistry.specialize was never invoked (PieceFactory falls back
+        // to the plain, un-specialized base definition whenever params is empty).
+        AbilityRegistry.register(new AbilityDefinition("RangeBonus", "Range +{addRange}", null, List.of(), List.of(),
+                List.of(new ModifierDef(new TargetSelector("Self"), Map.of()))));
+
+        grid = prepare(List.of("Wolf#run-1"),
+                Map.of("run-1", new RunCardModification(Map.of(), List.of(new AbilityRef("RangeBonus", Map.of("addRange", 4))))));
+        MatchSetup.begin();
+        server.playSummonCard(PieceAlignment.P1, "P1-0", 0, 2);
+        MatchSetup.tick(0f);
+
+        Entity piece = grid.getEntityAt(0, 2);
+        assertEquals(4, EntityUtils.getRange(piece), "the ability's own param (addRange=4), not the base ability's empty default");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.server.launcher;
 
 import io.github.elderpath_crusade.bot.BotKind;
+import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.run.RunCardModification;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class LaunchOptionsTest {
                 "--p1-card-mods", "run-3@damage=2:Frenzy"});
         assertEquals(List.of("PackLeader", "Bonfire"), o.relics().get(PieceAlignment.P1));
         assertEquals(List.of(), o.relics().get(PieceAlignment.P2), "no --p2-relics: no relics");
-        assertEquals(Map.of("run-3", new RunCardModification(Map.of("damage", 2), List.of("Frenzy"))),
+        assertEquals(Map.of("run-3", new RunCardModification(Map.of("damage", 2), List.of(new AbilityRef("Frenzy")))),
                 o.cardMods().get(PieceAlignment.P1));
         assertEquals(Map.of(), o.cardMods().get(PieceAlignment.P2), "no --p2-card-mods: no modifications");
     }

@@ -232,7 +232,7 @@ class RunManagerTest {
     void buildSpecForCurrentNode_modifiedDeckInstance_usesASyntheticNameAndCarriesTheModification() {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
-        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of("Frenzy"));
+        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of(new AbilityRef("Frenzy")));
         manager.getRunState().modifyCard("run-0", mod); // STARTING_DECK.get(0) == "Wolf"
 
         LocalMatchSpec spec = manager.buildSpecForCurrentNode();
@@ -398,7 +398,28 @@ class RunManagerTest {
         assertEquals("Wolf With Howl", combined.cardName(), "the kept card's own display name is unchanged");
         assertEquals(Map.of("cost", 1, "health", 1, "damage", 1, "speed", 1, "actions", 1), combined.modification().statDeltas(),
                 "every one of the folded-in card's base stats, including cost — a chimera's full power comes at a real cost");
-        assertEquals(List.of("Bite"), combined.modification().addedAbilities());
+        assertEquals(List.of(new AbilityRef("Bite")), combined.modification().addedAbilities());
+    }
+
+    @Test
+    void combineCards_preservesAnAddedAbilitysOwnParams() {
+        // BUG-050: found via the user's playtest fusing a Rifleman into a Hero — the fused
+        // card's ranged ability "seemed bugged" because combineCards used to carry only the
+        // folded-in ability's name, dropping its own per-piece params (e.g. addRange).
+        PieceRegistry.register(new PieceDefinition("Sharpshooter", 2, 2, 1, 1, 1,
+                List.of(new AbilityRef("RangeBonus", Map.of("addRange", 3)))));
+        CardCatalog.registerSummon("Sharpshooter", "Sharpshooter");
+
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, List.of("Wolf", "Sharpshooter"), SEED);
+        String keepId = manager.getRunState().deck().get(0).instanceId();
+        String foldInId = manager.getRunState().deck().get(1).instanceId();
+
+        manager.combineCards(keepId, foldInId);
+
+        RunCardInstance combined = manager.getRunState().deck().get(0);
+        assertEquals(List.of(new AbilityRef("RangeBonus", Map.of("addRange", 3))), combined.modification().addedAbilities(),
+                "the folded-in card's own ability params must survive, not just its ability name");
     }
 
     @Test

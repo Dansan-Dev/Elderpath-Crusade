@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.run;
 
+import io.github.elderpath_crusade.data.AbilityRef;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -16,7 +17,7 @@ class RunCardModificationTest {
         Map<String, Integer> stats = new LinkedHashMap<>();
         stats.put("damage", 2);
         stats.put("health", -1);
-        RunCardModification mod = new RunCardModification(stats, List.of("Frenzy", "Tough"));
+        RunCardModification mod = new RunCardModification(stats, List.of(new AbilityRef("Frenzy"), new AbilityRef("Tough")));
 
         RunCardModification roundTripped = RunCardModification.parseSpec(mod.toSpec());
 
@@ -31,13 +32,33 @@ class RunCardModificationTest {
 
     @Test
     void toSpec_and_parseSpec_roundTrip_abilitiesOnly() {
-        RunCardModification mod = new RunCardModification(Map.of(), List.of("Berserk"));
+        RunCardModification mod = new RunCardModification(Map.of(), List.of(new AbilityRef("Berserk")));
         assertEquals(mod, RunCardModification.parseSpec(mod.toSpec()));
     }
 
     @Test
     void toSpec_and_parseSpec_roundTrip_empty() {
         assertEquals(RunCardModification.NONE, RunCardModification.parseSpec(RunCardModification.NONE.toSpec()));
+    }
+
+    @Test
+    void toSpec_and_parseSpec_roundTrip_abilityWithParams() {
+        // BUG-050: an ability's own per-instance params (e.g. a ranged ability's addRange) must
+        // survive the text round-trip, not just the plain name.
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("addRange", 4);
+        params.put("name", "Longshot");
+        params.put("enabled", true);
+        RunCardModification mod = new RunCardModification(Map.of(), List.of(new AbilityRef("RangeBonus", params)));
+
+        assertEquals(mod, RunCardModification.parseSpec(mod.toSpec()));
+    }
+
+    @Test
+    void toSpec_and_parseSpec_roundTrip_mixOfAbilitiesWithAndWithoutParams() {
+        RunCardModification mod = new RunCardModification(Map.of(),
+                List.of(new AbilityRef("Frenzy"), new AbilityRef("RangeBonus", Map.of("addRange", 2))));
+        assertEquals(mod, RunCardModification.parseSpec(mod.toSpec()));
     }
 
     @Test
@@ -56,10 +77,15 @@ class RunCardModificationTest {
     }
 
     @Test
+    void parseSpec_rejectsAbilityParamsMissingClosingBrace() {
+        assertThrows(IllegalArgumentException.class, () -> RunCardModification.parseSpec(":RangeBonus{addRange=4"));
+    }
+
+    @Test
     void encodeMap_and_decodeMap_roundTrip_multipleInstances() {
         Map<String, RunCardModification> mods = new LinkedHashMap<>();
-        mods.put("run-3", new RunCardModification(Map.of("damage", 2), List.of("Frenzy")));
-        mods.put("run-5", new RunCardModification(Map.of(), List.of("Berserk", "Tough")));
+        mods.put("run-3", new RunCardModification(Map.of("damage", 2), List.of(new AbilityRef("Frenzy"))));
+        mods.put("run-5", new RunCardModification(Map.of(), List.of(new AbilityRef("Berserk"), new AbilityRef("Tough"))));
 
         String encoded = RunCardModification.encodeMap(mods);
         Map<String, RunCardModification> decoded = RunCardModification.decodeMap(encoded);
@@ -85,18 +111,18 @@ class RunCardModificationTest {
 
     @Test
     void plus_sumsOverlappingStatDeltasAndConcatenatesAbilities() {
-        RunCardModification base = new RunCardModification(Map.of("damage", 1, "health", -1), List.of("Frenzy"));
-        RunCardModification extra = new RunCardModification(Map.of("damage", 2, "speed", 1), List.of("Tough"));
+        RunCardModification base = new RunCardModification(Map.of("damage", 1, "health", -1), List.of(new AbilityRef("Frenzy")));
+        RunCardModification extra = new RunCardModification(Map.of("damage", 2, "speed", 1), List.of(new AbilityRef("Tough")));
 
         RunCardModification combined = base.plus(extra);
 
         assertEquals(Map.of("damage", 3, "health", -1, "speed", 1), combined.statDeltas());
-        assertEquals(List.of("Frenzy", "Tough"), combined.addedAbilities());
+        assertEquals(List.of(new AbilityRef("Frenzy"), new AbilityRef("Tough")), combined.addedAbilities());
     }
 
     @Test
     void plus_withNone_isUnchanged() {
-        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of("Frenzy"));
+        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of(new AbilityRef("Frenzy")));
         assertEquals(mod, mod.plus(RunCardModification.NONE));
     }
 

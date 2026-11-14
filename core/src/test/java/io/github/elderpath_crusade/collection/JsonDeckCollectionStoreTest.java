@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.collection;
 
+import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunCardModification;
@@ -18,7 +19,7 @@ class JsonDeckCollectionStoreTest {
     private static DeckCollectionEntry sampleEntry(String id) {
         return new DeckCollectionEntry(id, GameMode.ROUGELIKE_RUN, 3, 123_456L, 1_700_000_000_000L, "1.0.0",
                 List.of(RunCardInstance.unmodified("run-0", "Wolf"),
-                        new RunCardInstance("run-1", "Wolf Cub", new RunCardModification(Map.of("damage", 2), List.of("Frenzy")))),
+                        new RunCardInstance("run-1", "Wolf Cub", new RunCardModification(Map.of("damage", 2), List.of(new AbilityRef("Frenzy"))))),
                 List.of(RunCardInstance.unmodified("run-2", "Rogue")),
                 List.of("PackLeader"));
     }

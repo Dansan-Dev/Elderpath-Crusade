@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.client;
 
 import io.github.elderpath_crusade.bot.BotKind;
+import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.run.RunCardModification;
 import org.junit.jupiter.api.Test;
@@ -76,7 +77,7 @@ class LocalMatchSpecTest {
     void withCardMods_addsThePNCardModsFlagForThatSideOnly() {
         LocalMatchSpec spec = LocalMatchSpec.solo(List.of("Wolf"), List.of("Wolf"), BotKind.SMART)
                 .withCardMods(PieceAlignment.P1,
-                        Map.of("run-0", new RunCardModification(Map.of("damage", 2), List.of("Frenzy"))));
+                        Map.of("run-0", new RunCardModification(Map.of("damage", 2), List.of(new AbilityRef("Frenzy")))));
 
         List<String> args = spec.launcherArgs();
         assertEquals("run-0@damage=2:Frenzy", valueAfter(args, "--p1-card-mods"));

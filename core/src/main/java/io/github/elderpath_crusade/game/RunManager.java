@@ -335,8 +335,8 @@ public final class RunManager {
         foldInEffective.merge("speed", foldInBase.speed(), Integer::sum);
         foldInEffective.merge("actions", foldInBase.actions(), Integer::sum);
 
-        List<String> foldInAbilities = new ArrayList<>(foldIn.modification().addedAbilities());
-        for (AbilityRef ability : foldInBase.abilities()) foldInAbilities.add(ability.name());
+        List<AbilityRef> foldInAbilities = new ArrayList<>(foldIn.modification().addedAbilities());
+        foldInAbilities.addAll(foldInBase.abilities()); // full AbilityRef, params included (BUG-050)
 
         RunCardModification combined = keep.modification().plus(new RunCardModification(foldInEffective, foldInAbilities));
         runState.modifyCard(keepInstanceId, combined);

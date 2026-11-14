@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.run;
 
+import io.github.elderpath_crusade.data.AbilityRef;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -52,6 +53,6 @@ class RunCardInstanceTest {
     void modification_isEmptyWhenBothStatDeltasAndAbilitiesAreEmpty() {
         assertTrue(RunCardModification.NONE.isEmpty());
         assertFalse(new RunCardModification(Map.of("damage", 1), List.of()).isEmpty());
-        assertFalse(new RunCardModification(Map.of(), List.of("Frenzy")).isEmpty());
+        assertFalse(new RunCardModification(Map.of(), List.of(new AbilityRef("Frenzy"))).isEmpty());
     }
 }

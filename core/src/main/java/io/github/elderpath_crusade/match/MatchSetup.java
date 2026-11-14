@@ -153,7 +153,7 @@ public final class MatchSetup {
         int actions = Math.max(0, base.actions() + deltas.getOrDefault("actions", 0));
 
         List<AbilityRef> abilities = new ArrayList<>(base.abilities());
-        for (String abilityName : mod.addedAbilities()) abilities.add(new AbilityRef(abilityName));
+        abilities.addAll(mod.addedAbilities());
 
         return new PieceDefinition(newId, cost, health, damage, speed, actions, abilities);
     }

@@ -15,8 +15,10 @@ import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.net.protocol.MatchView.PieceView;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +34,19 @@ import java.util.Set;
  * actions) are filled in from {@link PieceRegistry} by registryKey, same as {@code PieceFactory}
  * does when building a simulated piece — view-only reads of these (e.g. CardPreviewPanel) see
  * the right numbers; nothing recomputes rules from them.
+ *
+ * <p>{@link #sync} vacates every moved/despawned entity's *old* grid cell before it occupies any
+ * moved/spawned entity's *new* one (BUG-050) — necessary for a simultaneous two-piece swap (e.g.
+ * an ability's "Swap" effect, {@code EffectExecutor.executeSwap}, which already does the same
+ * two-phase remove-both-then-add-both on the server's own grid for exactly this reason). The
+ * naive one-entity-at-a-time {@code grid.moveEntity(old, new)} this used to call for each piece
+ * in turn has no such guard: processing the first of two swapped pieces plants it at the
+ * second's still-occupied old cell, then processing the second blindly removes *whatever is
+ * there* from that cell — wiping out the first piece's freshly-placed grid entry even though its
+ * own {@code PositionComponent} is correct. The piece still renders in the right place (rendering
+ * reads positions directly), but the client grid's spatial index has no entry for it any more, so
+ * clicking the plot it visually sits on finds no piece there and does nothing — found via the
+ * user's playtest against a Fairy opponent (a swap-on-attack ability) reporting exactly that.
  */
 public final class ReplicaViewSync {
     private final Map<String, Entity> entitiesById = new LinkedHashMap<>();
@@ -58,21 +73,49 @@ public final class ReplicaViewSync {
         }
 
         Set<String> seen = new HashSet<>();
+        List<PieceView> toSpawn = new ArrayList<>();
+        List<Entity> movedEntities = new ArrayList<>();
+        List<PieceView> movedViews = new ArrayList<>();
+
+        // Phase 1: vacate every cell about to lose its occupant — moved-away entities (by their
+        // *old* position) and despawning ones — before anything claims a cell. Non-positional
+        // stats are updated here too; their order never matters.
         for (PieceView pieceView : state.getPieces()) {
             seen.add(pieceView.id());
             Entity entity = entitiesById.get(pieceView.id());
             if (entity == null) {
-                entitiesById.put(pieceView.id(), spawn(engine, pieceView));
-            } else {
-                update(entity, pieceView);
+                toSpawn.add(pieceView);
+                continue;
             }
+            PositionComponent pos = entity.getComponent(PositionComponent.class);
+            if (pos.row != pieceView.row() || pos.col != pieceView.col()) {
+                grid.removeEntity(pos.row, pos.col);
+                movedEntities.add(entity);
+                movedViews.add(pieceView);
+            }
+            updateStats(entity, pieceView);
         }
+        for (Map.Entry<String, Entity> entry : entitiesById.entrySet()) {
+            if (seen.contains(entry.getKey())) continue;
+            Entity entity = entry.getValue();
+            PositionComponent pos = entity.getComponent(PositionComponent.class);
+            if (pos != null) grid.removeEntity(pos.row, pos.col);
+            engine.removeEntity(entity);
+        }
+        entitiesById.keySet().removeIf(id -> !seen.contains(id));
 
-        entitiesById.entrySet().removeIf(entry -> {
-            if (seen.contains(entry.getKey())) return false;
-            despawn(engine, entry.getValue());
-            return true;
-        });
+        // Phase 2: every vacated cell is now free to claim — moved entities first (their
+        // destination can't collide with anything still occupying it after phase 1), then
+        // brand-new spawns.
+        for (int i = 0; i < movedEntities.size(); i++) {
+            Entity entity = movedEntities.get(i);
+            PieceView pieceView = movedViews.get(i);
+            entity.getComponent(PositionComponent.class).set(pieceView.row(), pieceView.col());
+            grid.addEntity(pieceView.row(), pieceView.col(), entity);
+        }
+        for (PieceView pieceView : toSpawn) {
+            entitiesById.put(pieceView.id(), spawn(engine, pieceView));
+        }
     }
 
     private void buildTerrain(Engine engine, ClientMatchState state) {
@@ -97,24 +140,14 @@ public final class ReplicaViewSync {
         return entity;
     }
 
-    private void update(Entity entity, PieceView pieceView) {
-        PositionComponent pos = entity.getComponent(PositionComponent.class);
-        if (pos.row != pieceView.row() || pos.col != pieceView.col()) {
-            grid.moveEntity(pos.row, pos.col, entity, pieceView.row(), pieceView.col());
-            pos.set(pieceView.row(), pieceView.col());
-        }
+    /** Everything but position — moving a cell is phase 2's job (see the class doc). */
+    private void updateStats(Entity entity, PieceView pieceView) {
         StatsComponent stats = entity.getComponent(StatsComponent.class);
         stats.maxHealth = pieceView.maxHealth();
         stats.currentHealth = pieceView.currentHealth();
         stats.damage = pieceView.damage();
         stats.remainingActions = pieceView.remainingActions();
         applyStun(entity, pieceView.stunned());
-    }
-
-    private void despawn(Engine engine, Entity entity) {
-        PositionComponent pos = entity.getComponent(PositionComponent.class);
-        if (pos != null) grid.removeEntity(pos.row, pos.col);
-        engine.removeEntity(entity);
     }
 
     private StatsComponent buildStats(PieceView pieceView) {
