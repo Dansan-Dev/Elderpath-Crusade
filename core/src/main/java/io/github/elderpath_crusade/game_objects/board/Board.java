@@ -199,7 +199,10 @@ public class Board extends HigherOrderTexture implements Updatable {
         return navigator.getAttackableEnemyPlots(row, col, friendlyAlignment);
     }
 
+    /** Null for an out-of-bounds (row, col) rather than throwing — a caller may be filtering a
+     *  coordinate list it didn't itself validate (e.g. a pick's candidates, BUG-052). */
     public Renderable getPlotAtPos(int row, int col) {
+        if (!grid.isInBounds(row, col)) return null;
         return layout[row][col];
     }
 
