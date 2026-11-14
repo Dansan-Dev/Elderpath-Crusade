@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
+import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.run.RunNodeType;
@@ -102,10 +103,23 @@ public class UpgradeOfferRoom extends Room {
         addCardUpgradeOptions();
     }
 
-    /** Fallback when nothing new is left to draft/offer — upgrade one randomly chosen owned card instead. */
+    /**
+     * Fallback when nothing new is left to draft/offer — upgrade one randomly chosen owned
+     * card instead. BUG-051: must only pick a summon — a stat-delta modification needs a
+     * {@code PieceDefinition} to apply to, which a spell has none of (same BUG-045 constraint
+     * {@code CardModTargetRoom}/{@code ElderPickRoom} already respect); modifying one anyway
+     * built a synthetic card name {@code MatchSetup} could never resolve, crashing the next
+     * battle. Skips straight to the usual continuation if the deck is somehow all spells.
+     */
     private void addCardUpgradeOptions() {
-        List<RunCardInstance> deck = runManager.getRunState().deck();
-        RunCardInstance target = deck.get(new Random().nextInt(deck.size()));
+        List<RunCardInstance> eligible = runManager.getRunState().deck().stream()
+                .filter(instance -> CardCatalog.isSummon(instance.cardName()))
+                .toList();
+        if (eligible.isEmpty()) {
+            continueRun();
+            return;
+        }
+        RunCardInstance target = eligible.get(new Random().nextInt(eligible.size()));
         String instanceId = target.instanceId();
 
         addOption("+1 Damage: " + target.cardName(), () -> {

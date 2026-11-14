@@ -292,10 +292,21 @@ public final class RunManager {
         grantNewCard(cardName, RunCardModification.NONE);
     }
 
-    /** Adds a fresh copy of {@code cardName} with {@code modification} already applied — a
-     *  Recruitment Site's new member arrives already upgraded (RECRUIT-001). */
+    /**
+     * Adds a fresh copy of {@code cardName} with {@code modification} already applied — a
+     * Recruitment Site's new member arrives already upgraded (RECRUIT-001). BUG-051: a
+     * non-empty modification needs a {@code PieceDefinition} to apply its stat delta to, which
+     * only a summon has (same BUG-045 constraint {@code CardModTargetRoom}/{@code
+     * ElderPickRoom} already respect for an existing deck card) — granting a modified spell
+     * built a synthetic card name {@code MatchSetup} could never resolve, crashing the next
+     * battle. Rejected here, at the source, rather than trusting every future caller to
+     * remember the check itself.
+     */
     public void grantNewCard(String cardName, RunCardModification modification) {
         requireActiveRun();
+        if (!modification.isEmpty() && !CardCatalog.isSummon(cardName)) {
+            throw new IllegalArgumentException("can't apply a modification to a non-summon card: " + cardName);
+        }
         runState.addCardToDeck(RunCardInstance.unmodified("card-reward-" + UUID.randomUUID(), cardName)
                 .withModification(modification));
     }

@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.data.AbilityRef;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data.RelicRegistry;
+import io.github.elderpath_crusade.data.SpellDefinition;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
@@ -353,6 +354,30 @@ class RunManagerTest {
         RunCardInstance granted = manager.getRunState().deck().get(manager.getRunState().deck().size() - 1);
         assertEquals("Hero", granted.cardName());
         assertEquals(mod, granted.modification());
+    }
+
+    @Test
+    void grantNewCard_withModification_rejectsANonSummonCard() {
+        // BUG-051: found via the user's playtest — a Recruitment Site drafted Frostbolt (a
+        // spell) and rolled it a random upgrade, building a synthetic card name MatchSetup
+        // could never resolve (a spell has no PieceDefinition to apply a stat delta to),
+        // crashing the next battle. Now rejected immediately instead.
+        CardCatalog.registerSpell("Frostbolt", new SpellDefinition("Frostbolt", "desc", 2, null, List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+        RunCardModification mod = new RunCardModification(Map.of("damage", 1), List.of());
+
+        assertThrows(IllegalArgumentException.class, () -> manager.grantNewCard("Frostbolt", mod));
+    }
+
+    @Test
+    void grantNewCard_withNoModification_acceptsANonSummonCard() {
+        // An unmodified spell grant is always fine — it never becomes a synthetic name.
+        CardCatalog.registerSpell("Frostbolt", new SpellDefinition("Frostbolt", "desc", 2, null, List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        assertDoesNotThrow(() -> manager.grantNewCard("Frostbolt"));
     }
 
     // --- Removing cards from the deck (EVENT-001/RECRUIT-001) ---

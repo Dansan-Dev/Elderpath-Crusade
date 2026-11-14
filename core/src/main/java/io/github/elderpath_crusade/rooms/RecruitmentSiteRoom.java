@@ -4,8 +4,10 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
+import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.run.CardModificationCatalog;
 import io.github.elderpath_crusade.run.RunCardInstance;
+import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.ButtonList;
@@ -60,10 +62,22 @@ public class RecruitmentSiteRoom extends Room {
         buttonList = new ButtonList();
         List<CardModificationCatalog.Entry> catalog = CardModificationCatalog.all();
         for (String cardName : newCardChoices) {
-            CardModificationCatalog.Entry upgrade = catalog.get(rng.nextInt(catalog.size()));
-            String label = cardName + " — " + upgrade.name();
+            // BUG-051: a modification needs a PieceDefinition to apply its stat delta to — a
+            // spell (e.g. Frostbolt) has none (same BUG-045 constraint CardModTargetRoom/
+            // ElderPickRoom already respect). Rolling an upgrade for one anyway built a
+            // synthetic card name MatchSetup could never resolve, crashing the next battle.
+            // A spell recruit simply arrives as-is, no upgrade to offer.
+            boolean canUpgrade = CardCatalog.isSummon(cardName);
+            RunCardModification upgradeDelta = RunCardModification.NONE;
+            String label = cardName;
+            if (canUpgrade) {
+                CardModificationCatalog.Entry upgrade = catalog.get(rng.nextInt(catalog.size()));
+                upgradeDelta = upgrade.delta();
+                label = cardName + " — " + upgrade.name();
+            }
+            RunCardModification finalUpgrade = upgradeDelta;
             addOption(label, () -> {
-                runManager.grantNewCard(cardName, upgrade.delta());
+                runManager.grantNewCard(cardName, finalUpgrade);
                 GameContext.get().getRoomManager().gotoRoom(() -> RecruitmentDepartureRoom.get(departureCandidates));
             });
         }
