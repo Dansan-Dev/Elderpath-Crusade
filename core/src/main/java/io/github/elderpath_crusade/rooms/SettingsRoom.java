@@ -129,6 +129,18 @@ public class SettingsRoom extends Room {
         settings.persist();
         languageLabel.setText(languageText(settings));
         languageLabel.update();
+        snapRightOf(languageLabel, languageNext);
+    }
+
+    /**
+     * Positions `button` just past `label`'s actual rendered right edge, not a guessed fixed
+     * width — a label whose text length varies (language name, a rebound key's name, a
+     * temporary capture/conflict message) must never run its text under a fixed-position
+     * button. Call after every `label.update()` whose text just changed, not only at initial
+     * layout. Y is untouched — a row's buttons never move vertically after layout.
+     */
+    private void snapRightOf(Text label, Button button) {
+        button.getBounds().setX(label.getBounds().getX() + label.getWidth() + VALUE_GAP);
     }
 
     private static String languageText(SettingsManager settings) {
@@ -158,6 +170,7 @@ public class SettingsRoom extends Room {
             setter.accept(clamped);
             label.setText(text(name));
             label.update();
+            snapRightOf(label, increment);
         }
 
         private String text(String name) {
@@ -203,16 +216,17 @@ public class SettingsRoom extends Room {
                 return; // a different row is listening — ignore this click rather than steal it
             }
             inputManager.startCapture(function, this::onCaptured);
-            show(displayName + ": press any key... (click Rebind to cancel)");
+            show("Press any key...");
         }
 
         private void onCaptured(RebindResult result) {
-            show(result == RebindResult.OK ? idleText() : idleText() + "  (that key is already in use)");
+            show(result == RebindResult.OK ? idleText() : idleText() + " (in use)");
         }
 
         private void show(String text) {
             label.setText(text);
             label.update();
+            snapRightOf(label, rebindButton);
         }
 
         private String idleText() {
@@ -239,8 +253,8 @@ public class SettingsRoom extends Room {
         languageLabel.getBounds().setY(languageY);
         languagePrev.getBounds().setX(screenCenterX - LABEL_WIDTH / 2 - VALUE_GAP - STEP_BUTTON_SIZE);
         languagePrev.getBounds().setY(languageY - 10);
-        languageNext.getBounds().setX(screenCenterX + LABEL_WIDTH / 2 + VALUE_GAP);
         languageNext.getBounds().setY(languageY - 10);
+        snapRightOf(languageLabel, languageNext);
 
         layoutKeybindRow(pauseMenuRow, screenCenterX, rowTop - ROW_SPACING * 4);
         layoutKeybindRow(confirmSelectionRow, screenCenterX, rowTop - ROW_SPACING * 5);
@@ -258,16 +272,16 @@ public class SettingsRoom extends Room {
         row.label.getBounds().setY(y);
         row.decrement.getBounds().setX(centerX - LABEL_WIDTH / 2 - VALUE_GAP - STEP_BUTTON_SIZE);
         row.decrement.getBounds().setY(y - 10);
-        row.increment.getBounds().setX(centerX + LABEL_WIDTH / 2 + VALUE_GAP);
         row.increment.getBounds().setY(y - 10);
+        snapRightOf(row.label, row.increment);
     }
 
     private void layoutKeybindRow(KeybindRow row, int centerX, int y) {
         row.label.update();
         row.label.getBounds().setX(centerX - LABEL_WIDTH / 2);
         row.label.getBounds().setY(y);
-        row.rebindButton.getBounds().setX(centerX + LABEL_WIDTH / 2 + VALUE_GAP);
         row.rebindButton.getBounds().setY(y - 10);
+        snapRightOf(row.label, row.rebindButton);
     }
 
     @Override
