@@ -4,13 +4,17 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
+import io.github.elderpath_crusade.data.RelicRegistry;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.RelicCarrierIds;
+import io.github.elderpath_crusade.path_loaders.ImagePathRelicIcons;
+import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +37,7 @@ public class RelicHud extends HigherOrderUI {
     private static final int Z = 20;
 
     private final Map<String, AbilityBubble> activeIcons = new LinkedHashMap<>();
+    private final Map<String, String> abilityIdByKey = new HashMap<>();
 
     public RelicHud() {
         super();
@@ -51,7 +56,9 @@ public class RelicHud extends HigherOrderUI {
             for (LegalActions.PieceActions pa : actions.pieces()) {
                 if (!RelicCarrierIds.isRelicCarrier(pa.pieceId())) continue;
                 for (LegalActions.AbilityOption option : pa.abilities()) {
-                    desired.add(pa.pieceId() + "_" + option.actionIndex());
+                    String key = pa.pieceId() + "_" + option.actionIndex();
+                    desired.add(key);
+                    abilityIdByKey.put(key, option.abilityId());
                 }
             }
         }
@@ -70,9 +77,11 @@ public class RelicHud extends HigherOrderUI {
                 String pieceId = key.substring(0, last);
                 int actionIndex = Integer.parseInt(key.substring(last + 1));
                 int x = LEFT_MARGIN + index * (ICON_SIZE + SPACING);
-                AbilityBubble bubble = new AbilityBubble(x, BOTTOM_MARGIN, ICON_SIZE, Z)
-                        .withIndexLabel(actionIndex + 1, Color.WHITE)
-                        .withOnClick((e) -> activate(pieceId, actionIndex), ClickableEffectData.getImmediate());
+                AbilityBubble bubble = new AbilityBubble(x, BOTTOM_MARGIN, ICON_SIZE, Z);
+                ImagePathRelicIcons icon = ImagePathRelicIcons.forRelicId(relicIdForAbility(abilityIdByKey.get(key)));
+                if (icon != null) bubble.withIcon(icon.getPath());
+                if (!bubble.hasIcon()) bubble.withIndexLabel(actionIndex + 1, Color.WHITE);
+                bubble.withOnClick((e) -> activate(pieceId, actionIndex), ClickableEffectData.getImmediate());
                 activeIcons.put(key, bubble);
                 interactionManager.addClickable(bubble);
             }
@@ -82,6 +91,19 @@ public class RelicHud extends HigherOrderUI {
         for (AbilityBubble bubble : activeIcons.values()) {
             bubble.renderUI(batch, isPaused);
         }
+    }
+
+    /**
+     * The relic whose battle abilities include this ability id (ART-003) — the carrier piece's
+     * LegalActions only name the ability, not the relic it came from. Null if none matches.
+     */
+    static String relicIdForAbility(String abilityId) {
+        if (abilityId == null) return null;
+        for (String relicId : RelicRegistry.getAllIds()) {
+            RelicDefinition def = RelicRegistry.get(relicId);
+            if (def != null && def.battleAbilityNames().contains(abilityId)) return relicId;
+        }
+        return null;
     }
 
     private static void activate(String pieceId, int actionIndex) {

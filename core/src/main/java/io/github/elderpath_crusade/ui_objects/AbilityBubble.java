@@ -76,6 +76,11 @@ public class AbilityBubble extends LowestOrderTexture implements Renderable, UIR
         return this;
     }
 
+    /** True once {@link #withIcon} actually loaded a texture (false for a missing file). */
+    public boolean hasIcon() {
+        return iconTexture != null;
+    }
+
     public AbilityBubble withIndexLabel(int index, Color color) {
         String text = String.valueOf(Math.max(1, index));
         this.labelText = new Text(text, FontType.SILKSCREEN, 0, 0, z, (color == null ? ColorSettings.TEXT_DEFAULT.getColor() : color));

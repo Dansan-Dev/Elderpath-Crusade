@@ -5,7 +5,10 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.LegalActions;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
+import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ecs.EntityUtils;
@@ -62,6 +65,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         plot.setHoverColor(hoverColor);
         plot.setClickColor(clickColor);
         plotDirt = new TextureObject(ColorSettings.PLOT_DIRT_BROWN.getColor(), 0, -(height/2), width, height/2);
+        applyTileTextures(plot, plotDirt);
         setBounds(new Box(x, y, plot.getWidth(), plot.getHeight()));
         plotDecorFront = EmptyTexture.get(x, y, getWidth(), getHeight());
         plotDecorBack = EmptyTexture.get(x, y, getWidth(), getHeight());
@@ -70,8 +74,36 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
     }
 
     public Plot withPlotColor(Color color) {
-        plot.setColor(color);
+        // Textured (ART-005): a home-row color is a translucent wash over the grass, not a flat fill
+        if (plot.getTexture() != null) plot.setOverlayColor(color.cpy().mul(1f, 1f, 1f, ROW_OVERLAY_ALPHA));
+        else plot.setColor(color);
         return this;
+    }
+
+    private static final float ROW_OVERLAY_ALPHA = 0.4f;
+
+    /**
+     * ART-005: grass top and earth front face, when their files exist. The textures carry their
+     * own color, so the tint becomes white (normal), darker (hover) and lighter (click).
+     */
+    private static void applyTileTextures(TextureObject top, TextureObject front) {
+        Texture grass = optionalTexture(ImagePathSpritesAndAnimations.PLOT_GRASS.getPath());
+        if (grass != null) {
+            top.setTexture(grass);
+            top.setColor(Color.WHITE.cpy());
+            top.setHoverColor(new Color(0.55f, 0.55f, 0.55f, 1f));
+            top.setClickColor(new Color(0.8f, 0.8f, 0.8f, 1f));
+        }
+        Texture dirt = optionalTexture(ImagePathSpritesAndAnimations.PLOT_DIRT.getPath());
+        if (dirt != null) {
+            front.setTexture(dirt);
+            front.setColor(Color.WHITE.cpy());
+        }
+    }
+
+    private static Texture optionalTexture(String path) {
+        if (Gdx.files == null || !Gdx.files.internal(path).exists()) return null;
+        return GameContext.get().getTextureManager().getTexture(path);
     }
 
     public void setBoard(Board board) { this.boardRef = board; }

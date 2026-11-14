@@ -10,12 +10,15 @@ import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
 import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
+import io.github.elderpath_crusade.path_loaders.ImagePathRelicIcons;
+import io.github.elderpath_crusade.path_loaders.ImagePathSpellArt;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.rendering.TextureManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.FontSize;
+import io.github.elderpath_crusade.utils.Logger;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
 import java.util.List;
@@ -47,17 +50,32 @@ public class LoadingRoom extends Room {
     private void queueAssets() {
         GameContext.get().getAssets().loadAtlas(TextureManager.GAME_ATLAS_PATH);
         for (ImagePathSpritesAndAnimations image : ImagePathSpritesAndAnimations.values()) {
-            GameContext.get().getAssets().loadTexture(image.getPath());
+            queueTextureIfPresent(image.getPath());
         }
-        // Piece art is optional per piece (ART-002): a missing file must not fail the whole
-        // load — the piece just keeps its name-labelled checker.
         for (ImagePathPieceSprites image : ImagePathPieceSprites.values()) {
-            if (Gdx.files.internal(image.getPath()).exists()) {
-                GameContext.get().getAssets().loadTexture(image.getPath());
-            }
+            queueTextureIfPresent(image.getPath());
+        }
+        for (ImagePathSpellArt image : ImagePathSpellArt.values()) {
+            queueTextureIfPresent(image.getPath());
+        }
+        for (ImagePathRelicIcons image : ImagePathRelicIcons.values()) {
+            queueTextureIfPresent(image.getPath());
         }
         for (ImagePathBackgroundAndUI image : ImagePathBackgroundAndUI.values()) {
-            GameContext.get().getAssets().loadTexture(image.getPath());
+            queueTextureIfPresent(image.getPath());
+        }
+    }
+
+    /**
+     * Assets are gitignored local files, and most art is optional (ART-002–005: a piece/spell/
+     * relic without art falls back to its label, a missing button plate or plot texture to a flat
+     * color) — so a missing file is logged and skipped rather than failing the whole load.
+     */
+    private static void queueTextureIfPresent(String path) {
+        if (Gdx.files.internal(path).exists()) {
+            GameContext.get().getAssets().loadTexture(path);
+        } else {
+            Logger.log("assets", "missing texture, skipped: " + path);
         }
     }
 

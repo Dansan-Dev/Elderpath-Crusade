@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.path_loaders.ImagePathRelicIcons;
+
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
@@ -67,6 +69,8 @@ public class TraderRoom extends Room {
                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
                 .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+        ImagePathRelicIcons icon = ImagePathRelicIcons.forRelicId(label);
+        if (icon != null) button.withIcon(icon.getPath());
         buttonList.addButton(button);
         addContent(button);
     }

@@ -44,6 +44,7 @@ public class DraftCard extends Card {
         this.draftOnClick = draftOnClick;
 
         setFaceUp(wrappedCard.isFaceUp());
+        setPortraitTexture(wrappedCard.getPortraitTexture());
 
         String name = "";
         if (wrappedCard instanceof SummonCard sc)
@@ -87,6 +88,7 @@ public class DraftCard extends Card {
         // Render card front/back at base position (no hover offset)
         Renderable side = isFaceUp() ? getFront() : getBack();
         side.render(batch, zLevel, isPaused, x, y);
+        if (isFaceUp() && zLevel == getZLayer()) renderPortrait(batch, x, y);
 
         // Render overlays when face-up and at card z layer
         if (!isPaused && isFaceUp() && zLevel == getZLayer()) {

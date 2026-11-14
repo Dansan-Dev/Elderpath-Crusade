@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
+import io.github.elderpath_crusade.path_loaders.ImagePathSpellArt;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
@@ -54,6 +56,8 @@ public class SpellCard extends Card implements TargetFilter {
         this.manaCost = definition.manaCost();
 
         setTitle(spellName, FontType.SILKSCREEN);
+        ImagePathSpellArt art = ImagePathSpellArt.forSpell(definition.id());
+        if (art != null) setPortrait(art.getPath());
         setTitleColor(Color.WHITE);
         initUi();
         initializeClickableEffect();

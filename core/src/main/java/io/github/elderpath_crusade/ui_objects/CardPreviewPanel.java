@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
+
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -102,6 +104,8 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
                 EntityUtils.getDamage(entity), EntityUtils.getSpeed(entity),
                 EntityUtils.getActions(entity));
         previewCard.showFront();
+        ImagePathPieceSprites figure = ImagePathPieceSprites.forRegistryKey(EntityUtils.getName(entity));
+        if (figure != null) previewCard.setPortrait(figure.getPath());
 
         // Build description from data-driven ability definitions
         String pieceName = EntityUtils.getName(entity);

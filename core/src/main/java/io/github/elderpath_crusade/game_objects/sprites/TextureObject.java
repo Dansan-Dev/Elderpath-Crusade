@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.game_objects.sprites;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.supers.BaseTexture;
@@ -12,13 +13,17 @@ import lombok.Setter;
 
 /**
  * Simple texture object
- * It returns a square of a certain color
+ * It returns a square of a certain color — or, with {@link #setTexture} (ART-005), that texture
+ * stretched over the box and tinted by the current (normal/hover/click) color.
  */
 @Getter @Setter
 public class TextureObject extends BaseTexture {
     private Color color;
     private Color hoverColor = null;
     private Color clickColor = null;
+    private Texture texture = null;
+    /** Textured mode only: a translucent color washed over the texture (e.g. a home row). */
+    private Color overlayColor = null;
 
 
     public TextureObject(Color color, int x, int y, int width, int height) {
@@ -72,13 +77,7 @@ public class TextureObject extends BaseTexture {
             }
         } else renderedColor = color;
 
-        batch.draw(
-            GraphicUtils.getPixelTexture(renderedColor),
-            renderPos[0],
-            renderPos[1],
-            bounds.getWidth(),
-            bounds.getHeight()
-        );
+        draw(batch, renderedColor, renderPos[0], renderPos[1], bounds.getWidth(), bounds.getHeight());
     }
 
     @Override
@@ -98,12 +97,18 @@ public class TextureObject extends BaseTexture {
             }
         } else renderedColor = color;
 
-        batch.draw(
-            GraphicUtils.getPixelTexture(renderedColor),
-            x + renderBasePos[0],
-            y + renderBasePos[1],
-            bounds.getWidth(),
-            bounds.getHeight()
-        );
+        draw(batch, renderedColor, x + renderBasePos[0], y + renderBasePos[1], bounds.getWidth(), bounds.getHeight());
+    }
+
+    private void draw(SpriteBatch batch, Color renderedColor, int x, int y, int width, int height) {
+        if (texture == null) {
+            batch.draw(GraphicUtils.getPixelTexture(renderedColor), x, y, width, height);
+            return;
+        }
+        Color original = batch.getColor().cpy();
+        batch.setColor(renderedColor);
+        batch.draw(texture, x, y, width, height);
+        batch.setColor(original);
+        if (overlayColor != null) batch.draw(GraphicUtils.getPixelTexture(overlayColor), x, y, width, height);
     }
 }

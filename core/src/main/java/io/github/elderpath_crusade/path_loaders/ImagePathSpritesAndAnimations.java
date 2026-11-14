@@ -11,7 +11,10 @@ public enum ImagePathSpritesAndAnimations {
     MOUNTAIN_TERRAIN("mountain_tile.png"),
     CARD_BACK("card_back.png"),
     CARD_FRONT("card_front.png"),
-    STUN("stun.png");
+    STUN("stun.png"),
+    /** ART-005: board plot top (tiled grass) and its front face (earth), tinted per plot. */
+    PLOT_GRASS("plot_grass.png"),
+    PLOT_DIRT("plot_dirt.png");
 
 
     private final String path;

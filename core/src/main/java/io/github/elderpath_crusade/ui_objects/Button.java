@@ -4,7 +4,9 @@ import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.rendering.TextureManager;
@@ -77,6 +79,15 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     @Setter
     private boolean disabled = false;
 
+    // Optional icon drawn at the button's left edge (ART-003: relic choices)
+    private Texture iconTexture;
+
+    // ART-005: shared stone plate drawn (as a nine-patch, tinted by the background color) in
+    // place of a color button's flat fill. Resolved once; null if the file isn't there.
+    private static final int PLATE_INSET = 5;
+    private static NinePatch plate;
+    private static boolean plateResolved;
+
     // Clickable integration
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
@@ -128,6 +139,36 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     // Public setter for dynamic configuration of background color
     public void setBackgroundColor(Color color) {
         this.backgroundColor = color;
+    }
+
+    /** Draws an icon (texture path from a {@code path_loaders} enum) at the button's left edge; null/missing = none. */
+    public Button withIcon(String texturePath) {
+        this.iconTexture = texturePath == null ? null : GameContext.get().getTextureManager().getTexture(texturePath);
+        return this;
+    }
+
+    private static NinePatch buttonPlate() {
+        if (!plateResolved) {
+            plateResolved = true;
+            String path = ImagePathBackgroundAndUI.BUTTON_PLATE.getPath();
+            if (Gdx.files != null && Gdx.files.internal(path).exists()) {
+                Texture texture = GameContext.get().getTextureManager().getTexture(path);
+                if (texture != null) plate = new NinePatch(texture, PLATE_INSET, PLATE_INSET, PLATE_INSET, PLATE_INSET);
+            }
+        }
+        return plate;
+    }
+
+    /** Draws the plate at an integer pixel scale (crisp pixel-art corners) stretched to the box, tinted. */
+    private static void drawPlate(SpriteBatch batch, NinePatch patch, Color tint, int x, int y, int width, int height) {
+        // Integer scale nearest the plate's native height (60 px button over a 30 px plate = 2x)
+        int nativeHeight = Math.round(patch.getTotalHeight());
+        int scale = Math.max(1, Math.round((float) height / Math.max(1, nativeHeight)));
+        while (scale > 1 && (width < PLATE_INSET * 2 * scale || height < PLATE_INSET * 2 * scale)) scale--; // corners must fit
+        Color original = batch.getColor().cpy();
+        batch.setColor(tint);
+        patch.draw(batch, x, y, 0, 0, (float) width / scale, (float) height / scale, scale, scale, 0);
+        batch.setColor(original);
     }
 
     public Button withOnClick(OnClick onClick, ClickableEffectData effectData) {
@@ -250,8 +291,13 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
                 bg = hoverColor;
             if (hovered && Gdx.input.isTouched() && clickColor != null)
                 bg = clickColor;
-            Texture pixel = GraphicUtils.getPixelTexture(bg);
-            batch.draw(pixel, xAbs, yAbs, width, height);
+            NinePatch patch = buttonPlate();
+            if (patch != null) {
+                drawPlate(batch, patch, bg, xAbs, yAbs, width, height);
+            } else {
+                Texture pixel = GraphicUtils.getPixelTexture(bg);
+                batch.draw(pixel, xAbs, yAbs, width, height);
+            }
         }
 
         // Optional border (drawn regardless of background type)
@@ -263,6 +309,12 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
                 activeBorder = hoverBorderColor;
             if (hovered && Gdx.input.isTouched() && clickBorderColor != null)
                 activeBorder = clickBorderColor;
+        }
+        // Over the stone plate (ART-005), which has its own edge, the plain default border is
+        // dropped — but a meaningful one (hover white, the run map's gold "pickable") still draws
+        boolean onPlate = backgroundTexture == null && backgroundColor != null && buttonPlate() != null;
+        if (onPlate && activeBorder != null && activeBorder.equals(ColorSettings.BUTTON_BORDER.getColor())) {
+            activeBorder = null;
         }
         if (activeBorder != null) {
             Texture px = GraphicUtils.getPixelTexture(activeBorder);
@@ -277,6 +329,12 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
                 // Right
                 batch.draw(px, xAbs + width - thickness, yAbs, thickness, height);
             }
+        }
+
+        if (iconTexture != null && height > 0) {
+            int iconSize = Math.round(height * 0.7f);
+            int pad = (height - iconSize) / 2;
+            batch.draw(iconTexture, xAbs + pad, yAbs + pad, iconSize, iconSize);
         }
 
         // else: transparent background (only text)

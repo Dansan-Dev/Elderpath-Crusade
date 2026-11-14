@@ -1,5 +1,7 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
+import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
+
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
@@ -40,6 +42,8 @@ public class SummonCard extends UnitCard implements TargetFilter {
         this.alignment = alignment;
         this.cardName = cardName;
         this.registryKey = registryKey;
+        ImagePathPieceSprites figure = ImagePathPieceSprites.forRegistryKey(registryKey);
+        if (figure != null) setPortrait(figure.getPath());
         initializeClickableEffect();
     }
 

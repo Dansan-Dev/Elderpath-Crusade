@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.game_objects.cards;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -71,6 +72,16 @@ public class Card extends HigherOrderTexture implements Clickable {
      */
     @Getter @Setter
     private boolean suppressNormalRender = false;
+
+    // ART-004: optional portrait drawn inside card_front.png's arch window. Its center/size as
+    // fractions of the card (measured on the 1024x1536 frame: window ~x 270-770, y 90-650 from top).
+    private static final float PORTRAIT_CENTER_X = 0.508f;
+    private static final float PORTRAIT_CENTER_Y = 0.735f;
+    private static final float PORTRAIT_MAX_WIDTH = 0.46f;
+    private static final float PORTRAIT_MAX_HEIGHT = 0.34f;
+
+    @Getter @Setter
+    private Texture portraitTexture;
 
     @FunctionalInterface
     public interface CardEffect {
@@ -157,6 +168,21 @@ public class Card extends HigherOrderTexture implements Clickable {
         if (title != null) {
             updateTitleSize();
         }
+    }
+
+    /** Sets the portrait from a texture path ({@code path_loaders} enum); null or a missing file clears it. */
+    public void setPortrait(String texturePath) {
+        this.portraitTexture = texturePath == null ? null
+            : GameContext.get().getTextureManager().getTexture(texturePath);
+    }
+
+    /** Draws the portrait (square, nearest-neighbor pixel art) in the arch window; no-op without one. */
+    protected void renderPortrait(SpriteBatch batch, int x, int y) {
+        if (portraitTexture == null) return;
+        int size = Math.round(Math.min(getWidth() * PORTRAIT_MAX_WIDTH, getHeight() * PORTRAIT_MAX_HEIGHT));
+        int px = x + Math.round(getWidth() * PORTRAIT_CENTER_X) - size / 2;
+        int py = y + Math.round(getHeight() * PORTRAIT_CENTER_Y) - size / 2;
+        batch.draw(portraitTexture, px, py, size, size);
     }
 
     public void flip() {
@@ -265,6 +291,7 @@ public class Card extends HigherOrderTexture implements Clickable {
         int hoverOffset = stepHoverAndGetOffset(isPaused, abs[0], abs[1], getWidth(), getHeight());
         // Draw active side at lifted Y when hovered
         activeSide().render(batch, zLevel, isPaused, abs[0], abs[1] + hoverOffset);
+        if (faceUp && zLevel == zLayer) renderPortrait(batch, abs[0], abs[1] + hoverOffset);
         // Overlays (title + border + subclass extras) only when face-up and at card z layer
         if (!isPaused && faceUp && zLevel == zLayer) {
             renderTitle(batch, zLevel, abs[0], abs[1] + hoverOffset);
@@ -277,6 +304,7 @@ public class Card extends HigherOrderTexture implements Clickable {
     public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) {
         int hoverOffset = stepHoverAndGetOffset(isPaused, x, y, getWidth(), getHeight());
         activeSide().render(batch, zLevel, isPaused, x, y + hoverOffset);
+        if (faceUp && zLevel == zLayer) renderPortrait(batch, x, y + hoverOffset);
         if (!isPaused && faceUp && zLevel == zLayer) {
             renderTitle(batch, zLevel, x, y + hoverOffset);
             renderBorderAnimation(batch, zLevel, x, y + hoverOffset);
