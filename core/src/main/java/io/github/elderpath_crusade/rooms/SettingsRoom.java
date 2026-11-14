@@ -17,36 +17,57 @@ import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
 /**
- * FEAT-015/A1: volume sliders (as +/- steppers, matching this codebase's existing button-pair
- * convention rather than a new drag-slider widget) and a language selector, on top of the one
- * existing "Toggle Fullscreen" control. Every change calls {@link SettingsManager#persist()}
- * (FEAT-015/A2) so it survives the next launch — before this, every setting here reset on every
- * restart, the Deck Collection being the only thing in the project that didn't.
+ * FEAT-015/A1: volume steppers and a language selector, on top of the existing "Toggle
+ * Fullscreen" control. Every change calls {@link SettingsManager#persist()} (FEAT-015/A2) so it
+ * survives the next launch — before this, every setting here reset on every restart, the Deck
+ * Collection being the only thing in the project that didn't.
  *
- * FEAT-015/A3 added the two Keybind rows below the language selector: Pause Menu and Confirm
- * Selection can be rebound to any keyboard key (click Rebind, then press the new key). Exit
- * Game (Q) and Toggle Diagnostics (F3) are deliberately NOT shown here — they're
- * developer-only bindings, not meant to be presented to players as regular keybinds.
+ * FEAT-015/A3 added the two Keybind rows: Pause Menu and Confirm Selection can be rebound to
+ * any keyboard key (click Rebind, then press the new key). Exit Game (Q) and Toggle
+ * Diagnostics (F3) are deliberately NOT shown here — they're developer-only bindings, not
+ * meant to be presented to players as regular keybinds.
+ *
+ * Layout (reworked 2026-11-15 — the first version's rows weren't aligned to anything, and
+ * BUG-054's fix, which positioned each row's button from its own label's width, made that
+ * worse by letting the button drift to a different X per row): every row is a fixed four-column
+ * grid — label (left-aligned, fixed X), an optional left button, a value (centered in a
+ * fixed-width slot), a right button — with every column's X the same across every row
+ * regardless of its own content length. The label column's width is measured from the real
+ * label Texts at layout time (not guessed), so it always fits whichever label is actually
+ * longest ("Confirm Selection") without needing a hand-tuned constant. Rows are grouped under
+ * "Audio"/"Display"/"Controls" section headers for visual structure instead of one flat list.
  */
 public class SettingsRoom extends Room {
-    private static final int ROW_SPACING = 70;
+    private static final int HEADER_TOP_OFFSET = 100;
+    private static final int TOP_GAP = 210;
+    private static final int ROW_SPACING = 52;
+    private static final int SECTION_HEADER_GAP = 34;
+    private static final int SECTION_GAP = 30;
     private static final int STEP_BUTTON_SIZE = 50;
-    private static final int LABEL_WIDTH = 260;
-    private static final int VALUE_GAP = 20;
-    private static final int KEYBIND_BUTTON_WIDTH = 140;
-    private static final int KEYBIND_BUTTON_HEIGHT = 50;
+    private static final int WIDE_BUTTON_WIDTH = 140;
+    private static final int WIDE_BUTTON_HEIGHT = 50;
+    private static final int COLUMN_GAP = 18;
+    private static final int VALUE_COLUMN_WIDTH = 280;
 
     private Text header;
+    private Text audioHeader;
+    private Text displayHeader;
+    private Text controlsHeader;
+
     private VolumeRow masterRow;
     private VolumeRow musicRow;
     private VolumeRow sfxRow;
-    private Text languageLabel;
-    private Button languagePrev;
-    private Button languageNext;
+    private SimpleRow languageRow;
+    private SimpleRow fullscreenRow;
     private KeybindRow pauseMenuRow;
     private KeybindRow confirmSelectionRow;
-    private Button toggleFullscreen;
     private Button backButton;
+
+    // Grid columns, recomputed in layoutContents() from the real label widths.
+    private int gridLabelX;
+    private int gridLeftButtonX;
+    private int gridValueCenterX;
+    private int gridRightButtonX;
 
     private SettingsRoom() {
         super();
@@ -61,6 +82,7 @@ public class SettingsRoom extends Room {
             .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
+        audioHeader = sectionHeader("Audio");
         masterRow = new VolumeRow("Master Volume", settings.sound::getMasterVolume, v -> {
             settings.sound.setMasterVolume(v);
             settings.persist();
@@ -74,26 +96,13 @@ public class SettingsRoom extends Room {
             settings.persist();
         });
 
-        languageLabel = new Text(languageText(settings), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-            .withFontSize(FontSize.BODY_MEDIUM);
-        addContent(languageLabel);
-        languagePrev = stepButton("<", () -> cycleLanguage(settings, -1));
-        languageNext = stepButton(">", () -> cycleLanguage(settings, 1));
-        addContent(languagePrev);
-        addContent(languageNext);
+        displayHeader = sectionHeader("Display");
+        languageRow = buildLanguageRow(settings);
+        fullscreenRow = buildFullscreenRow(settings);
 
+        controlsHeader = sectionHeader("Controls");
         pauseMenuRow = new KeybindRow("Pause Menu", InputFunction.PAUSE_MENU);
         confirmSelectionRow = new KeybindRow("Confirm Selection", InputFunction.CONFIRM_SELECTION);
-
-        toggleFullscreen = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Toggle Fullscreen", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 200, 60, 0)
-            .withOnClick((e) -> {
-                settings.screenSize.toggleFullscreen();
-                settings.persist();
-            }, ClickableEffectData.getImmediate())
-            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        addContent(toggleFullscreen);
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
             .withOnClick((e) -> {
@@ -110,6 +119,22 @@ public class SettingsRoom extends Room {
         layoutContents();
     }
 
+    // --- shared element factories ---
+
+    private Text sectionHeader(String text) {
+        Text t = new Text(text, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+            .withFontSize(FontSize.BODY_LARGE);
+        addContent(t);
+        return t;
+    }
+
+    private Text rowText(String text) {
+        Text t = new Text(text, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+            .withFontSize(FontSize.BODY_MEDIUM);
+        addContent(t);
+        return t;
+    }
+
     private Button stepButton(String label, Runnable onClick) {
         Button button = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), label, FontType.SILKSCREEN,
                 FontSize.BUTTON_DEFAULT.getSize(), 0, 0, STEP_BUTTON_SIZE, STEP_BUTTON_SIZE, 0)
@@ -121,89 +146,131 @@ public class SettingsRoom extends Room {
         return button;
     }
 
+    private Button wideButton(String label, Runnable onClick) {
+        Button button = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), label, FontType.SILKSCREEN,
+                FontSize.BUTTON_DEFAULT.getSize(), 0, 0, WIDE_BUTTON_WIDTH, WIDE_BUTTON_HEIGHT, 0)
+            .withOnClick((e) -> onClick.run(), ClickableEffectData.getImmediate())
+            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+        addContent(button);
+        return button;
+    }
+
+    private SimpleRow buildLanguageRow(SettingsManager settings) {
+        Button prev = stepButton("<", () -> cycleLanguage(settings, -1));
+        Button next = stepButton(">", () -> cycleLanguage(settings, 1));
+        return new SimpleRow("Language", settings.language.getLanguage().name(), prev, next);
+    }
+
+    private SimpleRow buildFullscreenRow(SettingsManager settings) {
+        Button toggle = wideButton("Toggle", () -> {
+            settings.screenSize.toggleFullscreen();
+            settings.persist();
+            fullscreenRow.setValue(fullscreenText(settings));
+        });
+        return new SimpleRow("Fullscreen", fullscreenText(settings), null, toggle);
+    }
+
+    private static String fullscreenText(SettingsManager settings) {
+        return settings.screenSize.isFullscreen() ? "On" : "Off";
+    }
+
     private void cycleLanguage(SettingsManager settings, int direction) {
         Language[] values = Language.values();
         int currentIndex = settings.language.getLanguage().ordinal();
         int nextIndex = Math.floorMod(currentIndex + direction, values.length);
         settings.language.setLanguage(values[nextIndex]);
         settings.persist();
-        languageLabel.setText(languageText(settings));
-        languageLabel.update();
-        snapRightOf(languageLabel, languageNext);
+        languageRow.setValue(settings.language.getLanguage().name());
     }
 
-    /**
-     * Positions `button` just past `label`'s actual rendered right edge, not a guessed fixed
-     * width — a label whose text length varies (language name, a rebound key's name, a
-     * temporary capture/conflict message) must never run its text under a fixed-position
-     * button. Call after every `label.update()` whose text just changed, not only at initial
-     * layout. Y is untouched — a row's buttons never move vertically after layout.
-     */
-    private void snapRightOf(Text label, Button button) {
-        button.getBounds().setX(label.getBounds().getX() + label.getWidth() + VALUE_GAP);
+    /** Centers `value` in the fixed value column; call after any change to its text. */
+    private void centerValue(Text value) {
+        if (value == null) return;
+        value.getBounds().setX(gridValueCenterX - value.getWidth() / 2);
     }
 
-    private static String languageText(SettingsManager settings) {
-        return "Language: " + settings.language.getLanguage().name();
+    /** One grid row with a label, an optional left button, a centered value, and a right button. */
+    private class SimpleRow {
+        private final Text label;
+        private final Text value;
+        private final Button leftButton;
+        private final Button rightButton;
+
+        SimpleRow(String labelText, String valueText, Button leftButton, Button rightButton) {
+            this.label = rowText(labelText);
+            this.value = valueText != null ? rowText(valueText) : null;
+            this.leftButton = leftButton;
+            this.rightButton = rightButton;
+        }
+
+        void setValue(String text) {
+            if (value == null) return;
+            value.setText(text);
+            value.update();
+            centerValue(value);
+        }
+
+        void layout(int y) {
+            label.update();
+            label.getBounds().setX(gridLabelX);
+            label.getBounds().setY(y);
+            if (leftButton != null) {
+                leftButton.getBounds().setX(gridLeftButtonX);
+                leftButton.getBounds().setY(y - 10);
+            }
+            if (value != null) {
+                value.update();
+                value.getBounds().setY(y);
+                centerValue(value);
+            }
+            rightButton.getBounds().setX(gridRightButtonX);
+            rightButton.getBounds().setY(y - 10);
+        }
     }
 
     /** One volume row — label, current value, and +/- steppers; reused for Master/Music/SFX. */
     private class VolumeRow {
-        private final Text label;
+        private final SimpleRow row;
         private final java.util.function.IntSupplier getter;
         private final java.util.function.IntConsumer setter;
-        private final Button decrement;
-        private final Button increment;
 
         VolumeRow(String name, java.util.function.IntSupplier getter, java.util.function.IntConsumer setter) {
             this.getter = getter;
             this.setter = setter;
-            this.label = new Text(text(name), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-                .withFontSize(FontSize.BODY_MEDIUM);
-            addContent(label);
-            this.decrement = stepButton("-", () -> change(name, -1));
-            this.increment = stepButton("+", () -> change(name, 1));
+            Button decrement = stepButton("-", () -> change(-1));
+            Button increment = stepButton("+", () -> change(1));
+            this.row = new SimpleRow(name, String.valueOf(getter.getAsInt()), decrement, increment);
         }
 
-        private void change(String name, int delta) {
+        private void change(int delta) {
             int clamped = Math.max(1, Math.min(10, getter.getAsInt() + delta));
             setter.accept(clamped);
-            label.setText(text(name));
-            label.update();
-            snapRightOf(label, increment);
+            row.setValue(String.valueOf(clamped));
         }
 
-        private String text(String name) {
-            return name + ": " + getter.getAsInt();
+        void layout(int y) {
+            row.layout(y);
         }
     }
 
     /**
-     * One rebindable keybind row (FEAT-015/A3) — label showing the function's current key, and
-     * a Rebind button that starts listening for the next physical key press. While THIS row is
-     * listening, clicking its own button again cancels; clicking the OTHER row's button is a
-     * no-op (only one capture can be in flight at a time — InputManager tracks a single
-     * capturingFunction) rather than silently stealing it and leaving this row's label stuck.
+     * One rebindable keybind row (FEAT-015/A3) — label, the function's current key as the row's
+     * value, and a Rebind button that starts listening for the next physical key press. While
+     * THIS row is listening, clicking its own button again cancels; clicking the OTHER row's
+     * button is a no-op (only one capture can be in flight at a time — InputManager tracks a
+     * single capturingFunction) rather than silently stealing it and leaving this row's value
+     * stuck on "press any key...".
      */
     private class KeybindRow {
         private final InputFunction function;
-        private final String displayName;
-        private final Text label;
-        private final Button rebindButton;
+        private final SimpleRow row;
 
         KeybindRow(String displayName, InputFunction function) {
             this.function = function;
-            this.displayName = displayName;
-            this.label = new Text(idleText(), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-                .withFontSize(FontSize.BODY_MEDIUM);
-            addContent(label);
-            this.rebindButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Rebind", FontType.SILKSCREEN,
-                    FontSize.BUTTON_DEFAULT.getSize(), 0, 0, KEYBIND_BUTTON_WIDTH, KEYBIND_BUTTON_HEIGHT, 0)
-                .withOnClick((e) -> onRebindClicked(), ClickableEffectData.getImmediate())
-                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-            addContent(rebindButton);
+            Button rebind = wideButton("Rebind", this::onRebindClicked);
+            this.row = new SimpleRow(displayName, idleValue(), null, rebind);
         }
 
         private void onRebindClicked() {
@@ -211,27 +278,25 @@ public class SettingsRoom extends Room {
             if (inputManager.isCapturing()) {
                 if (inputManager.getCapturingFunction() == function) {
                     inputManager.cancelCapture();
-                    show(idleText());
+                    row.setValue(idleValue());
                 }
                 return; // a different row is listening — ignore this click rather than steal it
             }
             inputManager.startCapture(function, this::onCaptured);
-            show("Press any key...");
+            row.setValue("press any key...");
         }
 
         private void onCaptured(RebindResult result) {
-            show(result == RebindResult.OK ? idleText() : idleText() + " (in use)");
+            row.setValue(result == RebindResult.OK ? idleValue() : idleValue() + " (in use)");
         }
 
-        private void show(String text) {
-            label.setText(text);
-            label.update();
-            snapRightOf(label, rebindButton);
-        }
-
-        private String idleText() {
+        private String idleValue() {
             int keycode = GameContext.get().getSettingsManager().keybinds.getKeycode(function);
-            return displayName + ": " + Input.Keys.toString(keycode);
+            return Input.Keys.toString(keycode);
+        }
+
+        void layout(int y) {
+            row.layout(y);
         }
     }
 
@@ -240,48 +305,64 @@ public class SettingsRoom extends Room {
         int screenCenterX = screenCenter[0];
         int screenCenterY = screenCenter[1];
 
-        MenuLayout.centerHeader(header, 100);
+        MenuLayout.centerHeader(header, HEADER_TOP_OFFSET);
+        computeGridColumns(screenCenterX);
 
-        int rowTop = screenCenterY + ROW_SPACING;
-        layoutVolumeRow(masterRow, screenCenterX, rowTop);
-        layoutVolumeRow(musicRow, screenCenterX, rowTop - ROW_SPACING);
-        layoutVolumeRow(sfxRow, screenCenterX, rowTop - ROW_SPACING * 2);
+        int y = screenCenterY + TOP_GAP;
 
-        int languageY = rowTop - ROW_SPACING * 3;
-        languageLabel.update();
-        languageLabel.getBounds().setX(screenCenterX - LABEL_WIDTH / 2);
-        languageLabel.getBounds().setY(languageY);
-        languagePrev.getBounds().setX(screenCenterX - LABEL_WIDTH / 2 - VALUE_GAP - STEP_BUTTON_SIZE);
-        languagePrev.getBounds().setY(languageY - 10);
-        languageNext.getBounds().setY(languageY - 10);
-        snapRightOf(languageLabel, languageNext);
+        y = layoutSectionHeader(audioHeader, y);
+        masterRow.layout(y); y -= ROW_SPACING;
+        musicRow.layout(y); y -= ROW_SPACING;
+        sfxRow.layout(y); y -= SECTION_GAP;
 
-        layoutKeybindRow(pauseMenuRow, screenCenterX, rowTop - ROW_SPACING * 4);
-        layoutKeybindRow(confirmSelectionRow, screenCenterX, rowTop - ROW_SPACING * 5);
+        y = layoutSectionHeader(displayHeader, y);
+        languageRow.layout(y); y -= ROW_SPACING;
+        fullscreenRow.layout(y); y -= SECTION_GAP;
 
-        toggleFullscreen.getBounds().setX(screenCenterX - toggleFullscreen.getBounds().getWidth() / 2);
-        toggleFullscreen.getBounds().setY(rowTop - ROW_SPACING * 6 - 10);
+        y = layoutSectionHeader(controlsHeader, y);
+        pauseMenuRow.layout(y); y -= ROW_SPACING;
+        confirmSelectionRow.layout(y); y -= SECTION_GAP;
 
         backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
-        backButton.getBounds().setY(rowTop - ROW_SPACING * 7 - 20);
+        backButton.getBounds().setY(y);
     }
 
-    private void layoutVolumeRow(VolumeRow row, int centerX, int y) {
-        row.label.update();
-        row.label.getBounds().setX(centerX - LABEL_WIDTH / 2);
-        row.label.getBounds().setY(y);
-        row.decrement.getBounds().setX(centerX - LABEL_WIDTH / 2 - VALUE_GAP - STEP_BUTTON_SIZE);
-        row.decrement.getBounds().setY(y - 10);
-        row.increment.getBounds().setY(y - 10);
-        snapRightOf(row.label, row.increment);
+    /** Positions a section header at `y` (aligned with the row labels below it) and returns the y for its first row. */
+    private int layoutSectionHeader(Text sectionHeader, int y) {
+        sectionHeader.update();
+        sectionHeader.getBounds().setX(gridLabelX);
+        sectionHeader.getBounds().setY(y);
+        return y - SECTION_HEADER_GAP;
     }
 
-    private void layoutKeybindRow(KeybindRow row, int centerX, int y) {
-        row.label.update();
-        row.label.getBounds().setX(centerX - LABEL_WIDTH / 2);
-        row.label.getBounds().setY(y);
-        row.rebindButton.getBounds().setY(y - 10);
-        snapRightOf(row.label, row.rebindButton);
+    /**
+     * Every row shares the same four columns — label, left button, value, right button — so
+     * nothing drifts per row the way BUG-054's per-row fix did. The label column's width is
+     * measured from the real label Texts (not a guessed constant), so it always fits whichever
+     * label is actually longest without needing to be hand-tuned when a label changes.
+     */
+    private void computeGridColumns(int screenCenterX) {
+        int labelColumnWidth = maxLabelWidth();
+        int totalWidth = labelColumnWidth + COLUMN_GAP + STEP_BUTTON_SIZE + COLUMN_GAP
+                + VALUE_COLUMN_WIDTH + COLUMN_GAP + STEP_BUTTON_SIZE;
+
+        gridLabelX = screenCenterX - totalWidth / 2;
+        gridLeftButtonX = gridLabelX + labelColumnWidth + COLUMN_GAP;
+        gridValueCenterX = gridLeftButtonX + STEP_BUTTON_SIZE + COLUMN_GAP + VALUE_COLUMN_WIDTH / 2;
+        gridRightButtonX = gridLeftButtonX + STEP_BUTTON_SIZE + COLUMN_GAP + VALUE_COLUMN_WIDTH + COLUMN_GAP;
+    }
+
+    private int maxLabelWidth() {
+        int max = 0;
+        for (Text label : new Text[] {
+                masterRow.row.label, musicRow.row.label, sfxRow.row.label,
+                languageRow.label, fullscreenRow.label,
+                pauseMenuRow.row.label, confirmSelectionRow.row.label
+        }) {
+            label.update();
+            max = Math.max(max, label.getWidth());
+        }
+        return max;
     }
 
     @Override
