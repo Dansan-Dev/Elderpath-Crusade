@@ -27,7 +27,9 @@ import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.PickKind;
 import io.github.elderpath_crusade.match.PickRequest;
 import io.github.elderpath_crusade.match.PickRouter;
+import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.ecs.EntityUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -307,6 +309,7 @@ public class ActionableAbilityExecutor {
     private static boolean isSinglePickCandidate(Entity entity, Entity owner, PositionComponent ownerPos,
             AlignmentComponent ownerAlign, int range, AlignmentFilter alignmentFilter) {
         if (entity == null || entity == owner) return false;
+        if (RelicCarrierIds.isRelicCarrier(EntityUtils.getId(entity))) return false;
         PositionComponent pos = posMapper.get(entity);
         AlignmentComponent align = alignMapper.get(entity);
         if (pos == null || align == null) return false;

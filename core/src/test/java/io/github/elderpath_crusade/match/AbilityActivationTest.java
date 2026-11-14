@@ -10,8 +10,11 @@ import io.github.elderpath_crusade.abilities.data.EffectNode;
 import io.github.elderpath_crusade.abilities.data.ExpressionContext;
 import io.github.elderpath_crusade.abilities.data.TargetSelector;
 import io.github.elderpath_crusade.bot.BotKind;
+import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.data.RelicRegistry;
+import io.github.elderpath_crusade.run.RelicDefinition;
 import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.ecs.components.IdentityComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
@@ -99,6 +102,7 @@ class AbilityActivationTest {
     @AfterEach
     void tearDown() {
         TypedEventBus.get().clear();
+        RelicRegistry.clear();
     }
 
     private BoardGrid start(Map<PieceAlignment, BotKind> bots) {
@@ -258,6 +262,30 @@ class AbilityActivationTest {
         assertEquals(Reason.OK, answer(PieceAlignment.P1, new Coord(2, 2)));
         assertSame(enemy, grid.getEntityAt(2, 2));
         assertEquals(0, actions(mage));
+    }
+
+    @Test
+    void displace_excludesTheOffBoardRelicCarrierFromCandidates() {
+        // BUG-052: MatchSetup.spawnCarrier places a side's relic carrier at (-1, col) — an
+        // invisible, off-board entity that still has Position+Alignment components. A ChooseAny
+        // pick (Warp Mage's Displace) within range of it must never offer it as a target; the
+        // old crash was the UI trying to render a Plot at that out-of-bounds row.
+        AbilityRegistry.register(new AbilityDefinition("DummyRelicAbility", "desc", null, List.of(), List.of(), List.of()));
+        RelicRegistry.register(RelicDefinition.battleOnly("DummyRelic", "desc", List.of("DummyRelicAbility")));
+
+        List<String> deck = new ArrayList<>(Collections.nCopies(12, "Runner"));
+        grid = MatchSetup.prepare(MatchConfig.standard(GameMode.DEMO, deck, new ArrayList<>(deck), 3L, Map.of())
+                .withRelics(Map.of(PieceAlignment.P1, List.of("DummyRelic"))));
+        MatchSetup.begin();
+
+        // P1's carrier spawns at (-1, 0) — chebyshev distance 2 from (1, 0), within Displace's range.
+        Entity mage = piece(PieceAlignment.P1, 1, 0, DISPLACE);
+        Entity ally = piece(PieceAlignment.P1, 1, 1); // a real, valid target so the ability still has one
+
+        assertEquals(Reason.OK, server.activateAbility(PieceAlignment.P1, id(mage), 0).reason());
+        assertEquals(PickKind.PIECE, screen.prompted.kind());
+        assertEquals(List.of(new Coord(1, 1)), screen.prompted.candidates(),
+                "the off-board relic carrier at (-1, 0) must never be offered as a pick target");
     }
 
     @Test

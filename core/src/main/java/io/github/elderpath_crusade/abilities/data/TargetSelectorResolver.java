@@ -11,6 +11,7 @@ import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ public class TargetSelectorResolver {
         for (int i = 0; i < all.size(); i++) {
             Entity e = all.get(i);
             if (e == owner) continue;
+            if (RelicCarrierIds.isRelicCarrier(EntityUtils.getId(e))) continue;
             AlignmentComponent align = alignMapper.get(e);
             boolean isEnemy = align.alignment != ownerAlign.alignment;
             if (isEnemy == enemies) result.add(e);
@@ -126,6 +128,7 @@ public class TargetSelectorResolver {
 
         for (int i = 0; i < all.size(); i++) {
             Entity e = all.get(i);
+            if (RelicCarrierIds.isRelicCarrier(EntityUtils.getId(e))) continue;
             PositionComponent pos = posMapper.get(e);
             if (pos.row != row) continue;
             if (alignmentFilter != null && ownerAlign != null) {
@@ -177,6 +180,7 @@ public class TargetSelectorResolver {
         for (int i = 0; i < all.size(); i++) {
             Entity e = all.get(i);
             if (e == owner) continue;
+            if (RelicCarrierIds.isRelicCarrier(EntityUtils.getId(e))) continue;
             result.add(e);
         }
         return result;
@@ -204,6 +208,7 @@ public class TargetSelectorResolver {
         List<Entity> candidates = new ArrayList<>();
         for (int i = 0; i < all.size(); i++) {
             Entity e = all.get(i);
+            if (RelicCarrierIds.isRelicCarrier(EntityUtils.getId(e))) continue;
             PositionComponent pos = posMapper.get(e);
             if (pos == null) continue;
             int dr = Math.abs(pos.row - centerRow);
