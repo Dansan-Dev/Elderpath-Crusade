@@ -82,11 +82,13 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
     // Optional icon drawn at the button's left edge (ART-003: relic choices)
     private Texture iconTexture;
 
-    // ART-005: shared stone plate drawn (as a nine-patch, tinted by the background color) in
-    // place of a color button's flat fill. Resolved once; null if the file isn't there.
+    // ART-005: stone plates drawn (as a nine-patch, tinted by the background color) in place of
+    // a color button's flat fill. Resolved once; only the variants whose file exists are used.
     private static final int PLATE_INSET = 5;
-    private static NinePatch plate;
-    private static boolean plateResolved;
+    private static List<NinePatch> plates;
+
+    /** Which plate variant this button uses — fixed at construction so it never changes with the label. */
+    private final int plateVariant;
 
     // Clickable integration
     private OnClick onClick = null;
@@ -96,6 +98,7 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         this.text = text;
         this.fontType = fontType;
         this.z = z;
+        this.plateVariant = plateVariantFor(text);
         this.textObj = new Text(text, fontType, x, y, z, textColor);
         setBounds(new Box(x, y, width, height));
         updateText();
@@ -147,16 +150,30 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         return this;
     }
 
-    private static NinePatch buttonPlate() {
-        if (!plateResolved) {
-            plateResolved = true;
-            String path = ImagePathBackgroundAndUI.BUTTON_PLATE.getPath();
-            if (Gdx.files != null && Gdx.files.internal(path).exists()) {
+    /** Stable, label-derived variant index (same label = same plate, across screens and launches). */
+    static int plateVariantFor(String label) {
+        return Math.floorMod(label == null ? 0 : label.hashCode(),
+            ImagePathBackgroundAndUI.BUTTON_PLATES.size());
+    }
+
+    private static List<NinePatch> buttonPlates() {
+        if (plates == null) {
+            List<NinePatch> found = new java.util.ArrayList<>();
+            for (ImagePathBackgroundAndUI image : ImagePathBackgroundAndUI.BUTTON_PLATES) {
+                String path = image.getPath();
+                if (Gdx.files == null || !Gdx.files.internal(path).exists()) continue;
                 Texture texture = GameContext.get().getTextureManager().getTexture(path);
-                if (texture != null) plate = new NinePatch(texture, PLATE_INSET, PLATE_INSET, PLATE_INSET, PLATE_INSET);
+                if (texture != null) found.add(new NinePatch(texture, PLATE_INSET, PLATE_INSET, PLATE_INSET, PLATE_INSET));
             }
+            plates = found;
         }
-        return plate;
+        return plates;
+    }
+
+    /** This button's plate, or null if no plate file exists (flat-color fallback). */
+    private NinePatch buttonPlate() {
+        List<NinePatch> available = buttonPlates();
+        return available.isEmpty() ? null : available.get(plateVariant % available.size());
     }
 
     /** Draws the plate at an integer pixel scale (crisp pixel-art corners) stretched to the box, tinted. */

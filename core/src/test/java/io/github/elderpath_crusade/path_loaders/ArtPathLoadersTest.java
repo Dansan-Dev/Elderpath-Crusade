@@ -63,9 +63,13 @@ class ArtPathLoadersTest {
         void uiTexturesExist() throws Exception {
             assertSize(ImagePathSpritesAndAnimations.PLOT_GRASS.getPath(), 64, 64);
             assertSize(ImagePathSpritesAndAnimations.PLOT_DIRT.getPath(), 64, 32);
-            BufferedImage plate = read(ImagePathBackgroundAndUI.BUTTON_PLATE.getPath());
-            // Button's nine-patch insets (5 px each side) need room for a middle
-            assertTrue(plate.getWidth() > 10 && plate.getHeight() > 10, "plate too small for its nine-patch insets");
+            assertEquals(5, ImagePathBackgroundAndUI.BUTTON_PLATES.size());
+            for (ImagePathBackgroundAndUI variant : ImagePathBackgroundAndUI.BUTTON_PLATES) {
+                BufferedImage plate = read(variant.getPath());
+                // Button's nine-patch insets (5 px each side) need room for a middle
+                assertTrue(plate.getWidth() > 10 && plate.getHeight() > 10, variant + " too small for its nine-patch insets");
+            }
+            assertSize(ImagePathSpritesAndAnimations.MOUNTAIN_TERRAIN.getPath(), 1024, 1024); // MountainSprite's crop
         }
 
         @SuppressWarnings("unchecked")
