@@ -9,6 +9,8 @@ public enum ColorSettings {
     TEXT_DEFAULT(Color.WHITE),
     TEXT_HOVER(Color.YELLOW),
     TEXT_CLICK(Color.BLUE),
+    /** Rejected-action feedback (FEAT-015/B3) — a distinct "something didn't work" color. */
+    TEXT_WARNING(Color.valueOf("#e35d5d")),
 
     // UI Buttons (Main menu, settings)
     BUTTON_PRIMARY(Color.valueOf("#81cce3")),
