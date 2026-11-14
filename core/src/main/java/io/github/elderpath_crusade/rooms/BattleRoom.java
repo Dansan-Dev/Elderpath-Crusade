@@ -152,6 +152,7 @@ public abstract class BattleRoom extends Room {
         addUI(new TurnHud());
         addUI(new AbilityPopup());
         addUI(new CardPreviewPanel());
+        addUI(new AttackOutcomePreview());
 
         // 10. Re-applies perspective (and drops a half-made selection) whenever the current
         // player changes — polled every frame since there's no local TurnStartedEvent anymore.
