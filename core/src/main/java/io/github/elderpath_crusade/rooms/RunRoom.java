@@ -106,7 +106,6 @@ public class RunRoom extends Room {
     private void buildNodeButtons(RunState state) {
         boolean cleared = state.isCurrentNodeCleared();
         int currentId = state.currentNode().id();
-        Set<Integer> visited = state.visitedNodeIds();
         Set<Integer> reachable = new HashSet<>();
         for (RunNode n : state.reachableNodes()) reachable.add(n.id());
 
@@ -115,12 +114,13 @@ public class RunRoom extends Room {
                 boolean isCurrentUnfought = !cleared && node.id() == currentId;
                 boolean isPickable = cleared && reachable.contains(node.id());
                 boolean clickable = isCurrentUnfought || isPickable;
-                boolean wasVisited = visited.contains(node.id());
 
-                Button button = Button.fromColor(colorFor(node.type(), wasVisited, clickable), nodeLabel(node),
+                // Fill always shows the node's type color; only the border signals "pickable
+                // right now" — visited/locked no longer hide which node type this is.
+                Button button = Button.fromColor(colorFor(node.type()), nodeLabel(node),
                         FontType.SILKSCREEN, FontSize.CAPTION.getSize(), 0, 0, NODE_WIDTH, NODE_HEIGHT, 1)
                     .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                    .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+                    .withBorderColor(borderColorFor(clickable))
                     .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
                 button.setDisabled(!clickable);
                 if (clickable) {
@@ -158,9 +158,7 @@ public class RunRoom extends Room {
         };
     }
 
-    private static Color colorFor(RunNodeType type, boolean visited, boolean clickable) {
-        if (visited) return ColorSettings.RUN_NODE_VISITED.getColor();
-        if (!clickable) return ColorSettings.RUN_NODE_LOCKED.getColor();
+    private static Color colorFor(RunNodeType type) {
         return switch (type) {
             case BATTLE -> ColorSettings.RUN_NODE_BATTLE.getColor();
             case ELITE -> ColorSettings.RUN_NODE_ELITE.getColor();
@@ -168,6 +166,10 @@ public class RunRoom extends Room {
             case EVENT -> ColorSettings.RUN_NODE_EVENT.getColor();
             case BOSS -> ColorSettings.RUN_NODE_BOSS.getColor();
         };
+    }
+
+    private static Color borderColorFor(boolean clickable) {
+        return clickable ? ColorSettings.RUN_NODE_PICKABLE_BORDER.getColor() : ColorSettings.BUTTON_BORDER.getColor();
     }
 
     private static String nodeLabel(RunNode node) {

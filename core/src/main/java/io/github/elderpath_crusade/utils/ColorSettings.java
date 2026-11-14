@@ -32,10 +32,11 @@ public enum ColorSettings {
     RUN_NODE_RECRUITMENT(Color.valueOf("#3a9d55")),
     RUN_NODE_EVENT(Color.valueOf("#7a4fa0")),
     RUN_NODE_BOSS(Color.valueOf("#6b1e3c")),
-    RUN_NODE_VISITED(Color.valueOf("#555555")),
-    RUN_NODE_LOCKED(Color.valueOf("#2e2e2e")),
     RUN_MAP_EDGE(Color.valueOf("#3a3a3a")),
-    RUN_MAP_EDGE_TRAVELED(Color.valueOf("#9a9a9a"));
+    RUN_MAP_EDGE_TRAVELED(Color.valueOf("#9a9a9a")),
+    /** A run map node's border when it's currently pickable — the node's fill always shows its
+     *  type color (RUN_NODE_BATTLE etc.); only the border signals "you can choose this now". */
+    RUN_NODE_PICKABLE_BORDER(Color.GOLD);
 
     private final Color color;
 
