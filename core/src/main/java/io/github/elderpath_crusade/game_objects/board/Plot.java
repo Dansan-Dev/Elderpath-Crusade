@@ -80,7 +80,7 @@ public class Plot extends HigherOrderTexture implements Clickable, TargetFilter 
         return this;
     }
 
-    private static final float ROW_OVERLAY_ALPHA = 0.4f;
+    private static final float ROW_OVERLAY_ALPHA = 0.55f;
 
     /**
      * ART-005: grass top and earth front face, when their files exist. The textures carry their
