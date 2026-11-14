@@ -31,6 +31,18 @@ public class SoundSetting {
         Music = volume;
     }
 
+    public int getMasterVolume() {
+        return Master;
+    }
+
+    public int getSFXVolume() {
+        return SFX;
+    }
+
+    public int getMusicVolume() {
+        return Music;
+    }
+
     public float getVolumeScale(SoundType type) {
         int volume = switch (type) {
             case SFX -> SFX;

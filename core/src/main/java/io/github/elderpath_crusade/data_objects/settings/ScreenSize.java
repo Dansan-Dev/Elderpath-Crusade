@@ -20,8 +20,16 @@ public class ScreenSize {
     }
 
     public void toggleFullscreen() {
-        Graphics graphics = Gdx.graphics;
-        if (!graphics.isFullscreen()) updateToFullscreenSize();
+        setFullscreen(!isFullscreen());
+    }
+
+    public boolean isFullscreen() {
+        return Gdx.graphics.isFullscreen();
+    }
+
+    /** Applies a specific fullscreen state directly — used by settings restore-on-launch (FEAT-015/A2), where there's no "previous" state to toggle away from. */
+    public void setFullscreen(boolean fullscreen) {
+        if (fullscreen) updateToFullscreenSize();
         else updateToNonFullscreenSize();
         viewport.update(getScreenWidth(), getScreenHeight(), true);
         viewport.apply();
