@@ -51,6 +51,11 @@ public class Main extends ApplicationAdapter {
                     inputManager.activateInputHandler(e.getKey(), data);
                 }
             );
+        // PAUSE_MENU / CONFIRM_SELECTION (FEAT-015/A3): rebindable, so dispatched by function
+        // rather than through a fixed InputKey — see InputManager.checkInput().
+        inputManager.getRebindableFunctionsPressed().entrySet().stream()
+            .filter(Map.Entry::getValue)
+            .forEach(e -> inputManager.activateFunctionHandler(e.getKey(), data));
     }
 
     private Map<InputHandlerData, Object> getInputHandlerData() {

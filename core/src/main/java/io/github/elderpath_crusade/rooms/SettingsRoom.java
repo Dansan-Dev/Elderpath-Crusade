@@ -1,6 +1,10 @@
 package io.github.elderpath_crusade.rooms;
 
+import com.badlogic.gdx.Input;
+import io.github.elderpath_crusade.enums.settings.InputFunction;
 import io.github.elderpath_crusade.enums.settings.Language;
+import io.github.elderpath_crusade.enums.settings.RebindResult;
+import io.github.elderpath_crusade.input.InputManager;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -18,12 +22,19 @@ import io.github.elderpath_crusade.utils.MenuLayout;
  * existing "Toggle Fullscreen" control. Every change calls {@link SettingsManager#persist()}
  * (FEAT-015/A2) so it survives the next launch — before this, every setting here reset on every
  * restart, the Deck Collection being the only thing in the project that didn't.
+ *
+ * FEAT-015/A3 added the two Keybind rows below the language selector: Pause Menu and Confirm
+ * Selection can be rebound to any keyboard key (click Rebind, then press the new key). Exit
+ * Game (Q) and Toggle Diagnostics (F3) are deliberately NOT shown here — they're
+ * developer-only bindings, not meant to be presented to players as regular keybinds.
  */
 public class SettingsRoom extends Room {
     private static final int ROW_SPACING = 70;
     private static final int STEP_BUTTON_SIZE = 50;
     private static final int LABEL_WIDTH = 260;
     private static final int VALUE_GAP = 20;
+    private static final int KEYBIND_BUTTON_WIDTH = 140;
+    private static final int KEYBIND_BUTTON_HEIGHT = 50;
 
     private Text header;
     private VolumeRow masterRow;
@@ -32,12 +43,17 @@ public class SettingsRoom extends Room {
     private Text languageLabel;
     private Button languagePrev;
     private Button languageNext;
+    private KeybindRow pauseMenuRow;
+    private KeybindRow confirmSelectionRow;
     private Button toggleFullscreen;
     private Button backButton;
 
     private SettingsRoom() {
         super();
         SettingsManager settings = GameContext.get().getSettingsManager();
+        // Defensive: a capture should never survive leaving this room (see backButton below),
+        // but guard against entering fresh with one still dangling regardless.
+        GameContext.get().getInputManager().cancelCapture();
 
         GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
 
@@ -66,6 +82,9 @@ public class SettingsRoom extends Room {
         addContent(languagePrev);
         addContent(languageNext);
 
+        pauseMenuRow = new KeybindRow("Pause Menu", InputFunction.PAUSE_MENU);
+        confirmSelectionRow = new KeybindRow("Confirm Selection", InputFunction.CONFIRM_SELECTION);
+
         toggleFullscreen = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Toggle Fullscreen", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 200, 60, 0)
             .withOnClick((e) -> {
                 settings.screenSize.toggleFullscreen();
@@ -77,7 +96,12 @@ public class SettingsRoom extends Room {
         addContent(toggleFullscreen);
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
+            .withOnClick((e) -> {
+                // A pending capture must never outlive this room — the next keypress anywhere
+                // else in the game would otherwise silently rebind it.
+                GameContext.get().getInputManager().cancelCapture();
+                GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get);
+            }, ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
@@ -141,6 +165,62 @@ public class SettingsRoom extends Room {
         }
     }
 
+    /**
+     * One rebindable keybind row (FEAT-015/A3) — label showing the function's current key, and
+     * a Rebind button that starts listening for the next physical key press. While THIS row is
+     * listening, clicking its own button again cancels; clicking the OTHER row's button is a
+     * no-op (only one capture can be in flight at a time — InputManager tracks a single
+     * capturingFunction) rather than silently stealing it and leaving this row's label stuck.
+     */
+    private class KeybindRow {
+        private final InputFunction function;
+        private final String displayName;
+        private final Text label;
+        private final Button rebindButton;
+
+        KeybindRow(String displayName, InputFunction function) {
+            this.function = function;
+            this.displayName = displayName;
+            this.label = new Text(idleText(), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+                .withFontSize(FontSize.BODY_MEDIUM);
+            addContent(label);
+            this.rebindButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Rebind", FontType.SILKSCREEN,
+                    FontSize.BUTTON_DEFAULT.getSize(), 0, 0, KEYBIND_BUTTON_WIDTH, KEYBIND_BUTTON_HEIGHT, 0)
+                .withOnClick((e) -> onRebindClicked(), ClickableEffectData.getImmediate())
+                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+            addContent(rebindButton);
+        }
+
+        private void onRebindClicked() {
+            InputManager inputManager = GameContext.get().getInputManager();
+            if (inputManager.isCapturing()) {
+                if (inputManager.getCapturingFunction() == function) {
+                    inputManager.cancelCapture();
+                    show(idleText());
+                }
+                return; // a different row is listening — ignore this click rather than steal it
+            }
+            inputManager.startCapture(function, this::onCaptured);
+            show(displayName + ": press any key... (click Rebind to cancel)");
+        }
+
+        private void onCaptured(RebindResult result) {
+            show(result == RebindResult.OK ? idleText() : idleText() + "  (that key is already in use)");
+        }
+
+        private void show(String text) {
+            label.setText(text);
+            label.update();
+        }
+
+        private String idleText() {
+            int keycode = GameContext.get().getSettingsManager().keybinds.getKeycode(function);
+            return displayName + ": " + Input.Keys.toString(keycode);
+        }
+    }
+
     private void layoutContents() {
         int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int screenCenterX = screenCenter[0];
@@ -162,11 +242,14 @@ public class SettingsRoom extends Room {
         languageNext.getBounds().setX(screenCenterX + LABEL_WIDTH / 2 + VALUE_GAP);
         languageNext.getBounds().setY(languageY - 10);
 
+        layoutKeybindRow(pauseMenuRow, screenCenterX, rowTop - ROW_SPACING * 4);
+        layoutKeybindRow(confirmSelectionRow, screenCenterX, rowTop - ROW_SPACING * 5);
+
         toggleFullscreen.getBounds().setX(screenCenterX - toggleFullscreen.getBounds().getWidth() / 2);
-        toggleFullscreen.getBounds().setY(rowTop - ROW_SPACING * 4 - 10);
+        toggleFullscreen.getBounds().setY(rowTop - ROW_SPACING * 6 - 10);
 
         backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
-        backButton.getBounds().setY(rowTop - ROW_SPACING * 5 - 20);
+        backButton.getBounds().setY(rowTop - ROW_SPACING * 7 - 20);
     }
 
     private void layoutVolumeRow(VolumeRow row, int centerX, int y) {
@@ -177,6 +260,14 @@ public class SettingsRoom extends Room {
         row.decrement.getBounds().setY(y - 10);
         row.increment.getBounds().setX(centerX + LABEL_WIDTH / 2 + VALUE_GAP);
         row.increment.getBounds().setY(y - 10);
+    }
+
+    private void layoutKeybindRow(KeybindRow row, int centerX, int y) {
+        row.label.update();
+        row.label.getBounds().setX(centerX - LABEL_WIDTH / 2);
+        row.label.getBounds().setY(y);
+        row.rebindButton.getBounds().setX(centerX + LABEL_WIDTH / 2 + VALUE_GAP);
+        row.rebindButton.getBounds().setY(y - 10);
     }
 
     @Override

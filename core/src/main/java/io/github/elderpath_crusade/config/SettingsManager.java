@@ -1,16 +1,19 @@
 package io.github.elderpath_crusade.config;
 
+import io.github.elderpath_crusade.data_objects.settings.KeybindSetting;
 import io.github.elderpath_crusade.data_objects.settings.LanguageSetting;
 import io.github.elderpath_crusade.data_objects.settings.PersistedSettings;
 import io.github.elderpath_crusade.data_objects.settings.ScreenSize;
 import io.github.elderpath_crusade.data_objects.settings.SoundSetting;
+import io.github.elderpath_crusade.enums.settings.InputFunction;
 import lombok.Getter;
 
 import java.io.File;
 
 /**
- * {@code sound}/{@code language}/{@code screenSize}'s own fullscreen state are restored from
- * (and saved to) a {@link SettingsStore} — FEAT-015/A2. Before this, every setting reset to
+ * {@code sound}/{@code language}/{@code screenSize}'s own fullscreen state/{@code keybinds} are
+ * restored from (and saved to) a {@link SettingsStore} — FEAT-015/A2 (A3 added {@code
+ * keybinds}). Before this, every setting reset to
  * defaults on every launch (confirmed: the Deck Collection was the only thing in this project
  * that persisted at all). {@link #initialize()} loads and applies the saved values; every
  * setter call from the settings screen should follow with {@link #persist()} so the change
@@ -22,6 +25,7 @@ public class SettingsManager {
     public final LanguageSetting language = new LanguageSetting();
     public final SoundSetting sound = new SoundSetting();
     public final ScreenSize screenSize = new ScreenSize();
+    public final KeybindSetting keybinds = new KeybindSetting();
     public final DebugSettings debug = new DebugSettings();
 
     private final SettingsStore store;
@@ -50,12 +54,14 @@ public class SettingsManager {
         sound.setSFXVolume(saved.sfxVolume());
         language.setLanguage(saved.language());
         screenSize.setFullscreen(saved.fullscreen());
+        keybinds.load(saved.pauseMenuKeycode(), saved.confirmSelectionKeycode());
     }
 
     /** Snapshots every current setting and saves it — call after any change made from the settings screen. */
     public void persist() {
         store.save(new PersistedSettings(sound.getMasterVolume(), sound.getMusicVolume(), sound.getSFXVolume(),
-                language.getLanguage(), screenSize.isFullscreen()));
+                language.getLanguage(), screenSize.isFullscreen(),
+                keybinds.getKeycode(InputFunction.PAUSE_MENU), keybinds.getKeycode(InputFunction.CONFIRM_SELECTION)));
     }
 
     public static final class DebugSettings {

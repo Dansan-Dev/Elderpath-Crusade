@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.config;
 
+import com.badlogic.gdx.Input;
 import io.github.elderpath_crusade.data_objects.settings.PersistedSettings;
 import io.github.elderpath_crusade.enums.settings.Language;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ class JsonSettingsStoreTest {
     void save_thenLoad_roundTripsExactly(@TempDir File dir) {
         File file = new File(dir, "nested/settings.json");
         SettingsStore store = new JsonSettingsStore(file);
-        PersistedSettings settings = new PersistedSettings(8, 2, 10, Language.SWEDISH, true);
+        PersistedSettings settings = new PersistedSettings(8, 2, 10, Language.SWEDISH, true, Input.Keys.P, Input.Keys.SPACE);
 
         store.save(settings);
 
@@ -35,9 +36,9 @@ class JsonSettingsStoreTest {
         File file = new File(dir, "settings.json");
         SettingsStore store = new JsonSettingsStore(file);
 
-        store.save(new PersistedSettings(8, 2, 10, Language.SWEDISH, true));
-        store.save(new PersistedSettings(1, 1, 1, Language.ENGLISH, false));
+        store.save(new PersistedSettings(8, 2, 10, Language.SWEDISH, true, Input.Keys.P, Input.Keys.SPACE));
+        store.save(new PersistedSettings(1, 1, 1, Language.ENGLISH, false, Input.Keys.ESCAPE, Input.Keys.ENTER));
 
-        assertEquals(new PersistedSettings(1, 1, 1, Language.ENGLISH, false), store.load());
+        assertEquals(new PersistedSettings(1, 1, 1, Language.ENGLISH, false, Input.Keys.ESCAPE, Input.Keys.ENTER), store.load());
     }
 }
