@@ -22,6 +22,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.game_objects.cards.CardDragController;
 import io.github.elderpath_crusade.game_objects.cards.Deck;
 import io.github.elderpath_crusade.game_objects.cards.Hand;
 import io.github.elderpath_crusade.game_objects.cards.HandSync;
@@ -154,6 +155,7 @@ public abstract class BattleRoom extends Room {
         addUI(new CardPreviewPanel());
         addUI(new AttackOutcomePreview());
         addUI(new RejectionToast());
+        addUI(new CardDragController());
 
         // 10. Re-applies perspective (and drops a half-made selection) whenever the current
         // player changes — polled every frame since there's no local TurnStartedEvent anymore.

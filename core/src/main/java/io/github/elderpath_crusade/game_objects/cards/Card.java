@@ -62,6 +62,16 @@ public class Card extends HigherOrderTexture implements Clickable {
     private static final float HOVER_SPEED = 6.5f; // controls animation speed
     private static final int HOVER_LIFT_PX = 90; // should be slightly > 80 to rise above hand baseline
 
+    /**
+     * FEAT-015/C1: set by CardDragController while this card is being dragged — its normal
+     * in-hand render (Hand.render → Card.render(batch, zLevel, isPaused), no x/y) is skipped so
+     * the controller's own render(batch, zLevel, isPaused, x, y) call at the cursor position is
+     * the only copy drawn. Never touched by anything else; the controller always clears it
+     * (drop, cancel, or a defensive check if the selection it belongs to ends unexpectedly).
+     */
+    @Getter @Setter
+    private boolean suppressNormalRender = false;
+
     @FunctionalInterface
     public interface CardEffect {
         void apply(Board board, int row, int col);
@@ -250,6 +260,7 @@ public class Card extends HigherOrderTexture implements Clickable {
 
     @Override
     public void render(SpriteBatch batch, int zLevel, boolean isPaused) {
+        if (suppressNormalRender) return;
         int[] abs = calculatePos();
         int hoverOffset = stepHoverAndGetOffset(isPaused, abs[0], abs[1], getWidth(), getHeight());
         // Draw active side at lifted Y when hovered
