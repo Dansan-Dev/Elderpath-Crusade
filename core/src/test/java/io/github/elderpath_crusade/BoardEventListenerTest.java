@@ -83,5 +83,6 @@ class BoardEventListenerTest {
     @Test
     void turnStarted_skipsNullPieces() {
         // No entities in engine — should not throw
+        assertDoesNotThrow(() -> TypedEventBus.get().emit(new TurnStartedEvent(PieceAlignment.P1)));
     }
 }
