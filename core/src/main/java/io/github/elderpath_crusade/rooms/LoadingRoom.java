@@ -131,6 +131,7 @@ public class LoadingRoom extends Room {
             MenuLayout.centerHeader(label, HEADER_TOP_OFFSET);
             if (finished) {
                 transitioning = true;
+                GameContext.get().getSoundManager().preload(); // FEAT-017: cached, so cheap after the first time
                 GameContext.get().getRoomManager().gotoRoom(next);
             }
         }

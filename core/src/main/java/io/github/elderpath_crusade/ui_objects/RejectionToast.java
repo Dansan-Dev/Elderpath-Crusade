@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.ui_objects;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.audio.SoundEffect;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -86,6 +87,7 @@ public class RejectionToast extends LowestOrderTexture implements UIRenderable {
                 remaining = DISPLAY_SECONDS;
                 text.setText(MESSAGES.getOrDefault(rejection.reason(), "That didn't work"));
                 text.update();
+                GameContext.get().getSoundManager().play(SoundEffect.REJECTED); // FEAT-017, B3's audio half
             }
         }
 

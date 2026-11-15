@@ -102,6 +102,7 @@ public class Main extends ApplicationAdapter {
         if (session != null) session.close();
         GameContext.get().getGraphicsManager().getBatch().dispose();
         GameContext.get().getTextureManager().dispose();
+        GameContext.get().getSoundManager().dispose();
         GameContext.get().getAssets().dispose();
         GraphicUtils.dispose();
     }

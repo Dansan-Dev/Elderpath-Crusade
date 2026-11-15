@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
+import io.github.elderpath_crusade.client.MatchSfx;
 import io.github.elderpath_crusade.client.ReplicaViewSync;
 import io.github.elderpath_crusade.client.ViewAnimations;
 import io.github.elderpath_crusade.data_objects.Box;
@@ -79,7 +80,12 @@ public abstract class BattleRoom extends Room {
         GameContext.get().getGameModeManager().setCurrent(mode);
         ReplicaViewSync viewSync = new ReplicaViewSync();
         controller = new ClientController(session::viewState, session,
-                ClientController.localUiPickPrompter(), VictoryTransition::show);
+                ClientController.localUiPickPrompter(), winner -> {
+                    // FEAT-017: the controller fires this exactly once, at the match's end
+                    GameContext.get().getSoundManager().play(MatchSfx.endOfMatch(
+                            winner, session::controls, !session.getControlledSeats().isEmpty()));
+                    VictoryTransition.show(winner);
+                });
         GameContext.get().setClientMatch(session, controller, viewSync);
         GameContext.get().getMusicManager().playLoopingMusic("Daniel_Game.mp3");
 
@@ -143,6 +149,12 @@ public abstract class BattleRoom extends Room {
         for (PieceAlignment seat : session.getControlledSeats()) {
             wireHandSync(session.stateFor(seat), seat);
             session.stateFor(seat).addEventListener(viewAnimations::onEvent);
+        }
+        // FEAT-017 sound effects: one seat's connection only — hotseat's two connections both
+        // receive every public event, and listening on both would play every sound twice.
+        if (!session.getControlledSeats().isEmpty()) {
+            MatchSfx sfx = new MatchSfx(GameContext.get().getSoundManager()::play, session::controls);
+            session.stateFor(session.getControlledSeats().get(0)).addEventListener(sfx::onEvent);
         }
 
         // 8. Deck views (the decks themselves are pure state, owned by the match server)

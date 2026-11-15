@@ -1,6 +1,9 @@
 package io.github.elderpath_crusade.input;
 
+import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.audio.SoundEffect;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
+import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.enums.ClickableEffectType;
 import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.game_objects.board.Plot;
@@ -95,7 +98,10 @@ public class InteractionManager {
 
         if (!stateMachine.isActive()) {
             Clickable hit = findHit(mouseX, mouseY, paused);
-            if (hit != null) stateMachine.beginFromClickable(hit);
+            if (hit != null) {
+                stateMachine.beginFromClickable(hit);
+                playClickSound(hit);
+            }
             return;
         }
 
@@ -106,6 +112,19 @@ public class InteractionManager {
         Clickable hit = findHit(mouseX, mouseY, paused, requiredType);
         if (hit != null) {
             stateMachine.addTarget(hit);
+        }
+    }
+
+    /**
+     * FEAT-017 UI sounds, played once here for every click rather than per button: a selection
+     * that just started (a piece or card picked up) gets SELECT; a button press gets UI_CLICK.
+     * Board actions themselves sound through the match's own events (MatchSfx), not here.
+     */
+    private void playClickSound(Clickable hit) {
+        if (stateMachine.isActive()) {
+            GameContext.get().getSoundManager().play(SoundEffect.SELECT);
+        } else if (hit instanceof Button && hit.getClickableEffectData() != null) {
+            GameContext.get().getSoundManager().play(SoundEffect.UI_CLICK);
         }
     }
 
