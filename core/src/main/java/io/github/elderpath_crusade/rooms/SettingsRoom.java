@@ -39,10 +39,19 @@ import io.github.elderpath_crusade.utils.MenuLayout;
  */
 public class SettingsRoom extends Room {
     private static final int HEADER_TOP_OFFSET = 100;
-    private static final int TOP_GAP = 210;
-    private static final int ROW_SPACING = 52;
-    private static final int SECTION_HEADER_GAP = 34;
-    private static final int SECTION_GAP = 30;
+    private static final int TOP_GAP = 200;
+    private static final int ROW_SPACING = 46;
+    private static final int SECTION_HEADER_GAP = 30;
+    // A section boundary must read as more separated than two rows within the same section —
+    // the first version had this backwards (SECTION_GAP < ROW_SPACING), so "Sfx Volume" and
+    // "Display" visually ran together despite being different groups.
+    private static final int SECTION_GAP = 75;
+    // The Back button (60 tall) is taller than every row's 50-tall buttons; reusing SECTION_GAP
+    // for the gap above it let it visually overlap "Confirm Selection" — this is sized for its
+    // actual height (60) plus the other rows' own hang-below (their buttons sit 10px below the
+    // row's y), not just a bigger guess.
+    private static final int FOOTER_GAP = 96;
+    private static final int BACK_BUTTON_HEIGHT = 60;
     private static final int STEP_BUTTON_SIZE = 50;
     private static final int WIDE_BUTTON_WIDTH = 140;
     private static final int WIDE_BUTTON_HEIGHT = 50;
@@ -104,7 +113,7 @@ public class SettingsRoom extends Room {
         pauseMenuRow = new KeybindRow("Pause Menu", InputFunction.PAUSE_MENU);
         confirmSelectionRow = new KeybindRow("Confirm Selection", InputFunction.CONFIRM_SELECTION);
 
-        backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, 60, 0)
+        backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, BACK_BUTTON_HEIGHT, 0)
             .withOnClick((e) -> {
                 // A pending capture must never outlive this room — the next keypress anywhere
                 // else in the game would otherwise silently rebind it.
@@ -321,7 +330,7 @@ public class SettingsRoom extends Room {
 
         y = layoutSectionHeader(controlsHeader, y);
         pauseMenuRow.layout(y); y -= ROW_SPACING;
-        confirmSelectionRow.layout(y); y -= SECTION_GAP;
+        confirmSelectionRow.layout(y); y -= FOOTER_GAP;
 
         backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
         backButton.getBounds().setY(y);
