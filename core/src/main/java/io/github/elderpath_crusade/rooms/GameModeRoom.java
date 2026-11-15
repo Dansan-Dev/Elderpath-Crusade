@@ -13,14 +13,17 @@ import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
 /**
- * Lists the ways to play, one level below the main menu's "Game Mode" button — Roguelike Run,
- * Demo, Local Multiplayer, Host/Join Online. Roguelike Run is intended to become the primary way
- * to play (see .claude/plans/roguelike-run-plan.md); the others stay exactly as they are.
+ * Lists the ways to play, one level below the main menu's "Game Mode" button. For the Steam
+ * release only Roguelike Run and Online (Host/Join) are offered; Demo and Local Multiplayer are
+ * kept working but hidden behind {@link #SHOW_PRACTICE_MODES} until they get their own pass.
  */
 public class GameModeRoom extends Room {
     private static final int BUTTON_WIDTH = 220;
     private static final int BUTTON_HEIGHT = 60;
     private static final int BUTTON_SPACING = 70;
+
+    /** Demo (vs bot, drafted deck) and Local Multiplayer (hotseat): hidden for now, flip to bring the buttons back. */
+    static final boolean SHOW_PRACTICE_MODES = false;
 
     private final Text header;
     private final ButtonList buttonList;
@@ -43,12 +46,14 @@ public class GameModeRoom extends Room {
                 GameContext.get().getRoomManager().gotoRoom(DifficultySelectRoom::get);
             }
         });
-        addOption("Demo", () -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get));
-        // Local Multiplayer / Host Online: both ask Draft-or-Collection first via
-        // DeckSourceSelectRoom. Join Online has no deck choice here — the joining client never
-        // builds a match spec at all, see DeckSourceSelectRoom's class doc.
-        addOption("Local Multiplayer",
-                () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startLocalMultiplayer));
+        if (SHOW_PRACTICE_MODES) {
+            addOption("Demo", () -> GameContext.get().getRoomManager().gotoRoom(DraftRoom::get));
+            // Local Multiplayer / Host Online: both ask Draft-or-Collection first via
+            // DeckSourceSelectRoom. Join Online has no deck choice here — the joining client never
+            // builds a match spec at all, see DeckSourceSelectRoom's class doc.
+            addOption("Local Multiplayer",
+                    () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startLocalMultiplayer));
+        }
         addOption("Host Online",
                 () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startHostOnline));
         addOption("Join Online (localhost)", () -> GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.join("localhost")));
