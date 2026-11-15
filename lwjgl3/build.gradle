@@ -97,6 +97,12 @@ construo {
     modules.add("java.desktop")
     modules.add("java.net.http")
     modules.add("jdk.unsupported")
+    // Found by running jdeps over our own classes (Steam prep, 2026-11-15): the F3 diagnostics overlay
+    // reads GC/heap stats through java.management, and the match server's optional health endpoint
+    // uses jdk.httpserver. Without them the bundled runtime fails with NoClassDefFoundError the first
+    // time F3 is pressed (and on any server started with --health-port).
+    modules.add("java.management")
+    modules.add("jdk.httpserver")
   }
 
   targets.configure {
