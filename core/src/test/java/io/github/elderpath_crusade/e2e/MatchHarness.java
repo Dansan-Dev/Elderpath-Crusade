@@ -63,9 +63,13 @@ public final class MatchHarness implements AutoCloseable {
 
     /** Connects a client asking for seat; its Welcome arrives on the next step(). driver may be null (scripted). */
     public TestClient join(SeatRequest seat, String name, ClientDriver driver) {
+        return join(seat, name, driver, null);
+    }
+
+    public TestClient join(SeatRequest seat, String name, ClientDriver driver, String reconnectToken) {
         List<String> raw = TestClient.newRawLog();
         try {
-            TestClient client = new TestClient(name, new MatchClient(backend.connect(raw::add), seat, name), raw, driver);
+            TestClient client = new TestClient(name, new MatchClient(backend.connect(raw::add), seat, name, reconnectToken), raw, driver);
             clients.add(client);
             return client;
         } catch (IOException e) {
@@ -78,10 +82,10 @@ public final class MatchHarness implements AutoCloseable {
      * server on its own clock (child process) may not have processed the Leave yet, the same
      * race a reconnecting game client would retry through.
      */
-    public TestClient rejoin(SeatRequest seat, String name, ClientDriver driver) {
+    public TestClient rejoin(SeatRequest seat, String name, ClientDriver driver, String reconnectToken) {
         long deadline = System.nanoTime() + SETTLE_DEADLINE_MS * 1_000_000L;
         while (true) {
-            TestClient client = join(seat, name, driver);
+            TestClient client = join(seat, name, driver, reconnectToken);
             step();
             ServerMessage.Error error = client.state().getLastError();
             if (client.state().isWelcomed() || error == null || error.code() != ServerMessage.Error.Code.SEAT_TAKEN) {

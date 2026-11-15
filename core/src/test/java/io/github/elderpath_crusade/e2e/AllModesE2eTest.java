@@ -147,9 +147,10 @@ class AllModesE2eTest {
 
         assertTrue(harness.runToEnd(6).isEmpty() || harness.ended(), "a few turns in");
         if (!harness.ended()) {
+            String token = guest.state().getReconnectToken();
             harness.leave(guest);
             harness.step();
-            TestClient back = harness.rejoin(SeatRequest.P2, "guest", new RemoteBotDriver()); // replica checked against the server right here
+            TestClient back = harness.rejoin(SeatRequest.P2, "guest", new RemoteBotDriver(), token); // replica checked against the server right here
             assertEquals(PieceAlignment.P2, back.state().getSeat());
             assertFalse(back.state().getPieces().isEmpty(), "the snapshot carries the board so far");
             assertOutcomeSeenByAll(harness.runToEnd(MAX_TURNS), host, back);

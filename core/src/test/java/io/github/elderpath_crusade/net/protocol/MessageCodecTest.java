@@ -27,6 +27,7 @@ class MessageCodecTest {
         List<ClientMessage> messages = List.of(
                 new ClientMessage.Hello(MessageCodec.PROTOCOL_VERSION, SeatRequest.ANY, "ann"),
                 new ClientMessage.Hello(MessageCodec.PROTOCOL_VERSION, SeatRequest.P2, null),
+                new ClientMessage.Hello(MessageCodec.PROTOCOL_VERSION, SeatRequest.P1, "ann", "0123abcd"),
                 new ClientMessage.Command(7, new NetworkCommand.MovePlot(0, 1, 2, 1)),
                 new ClientMessage.Command(8, new NetworkCommand.PlaySummonCard("P1-3", 0, 2)),
                 new ClientMessage.Command(9, new NetworkCommand.PlaySpellCard("P1-4", null, null)),
@@ -44,6 +45,8 @@ class MessageCodecTest {
         List<ServerMessage> messages = List.of(
                 new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, PieceAlignment.P1, 7, 5,
                         List.of(new Coord(2, 1), new Coord(2, 3)), Map.of(PieceAlignment.P1, "HUMAN", PieceAlignment.P2, "BOT_SMART")),
+                new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, PieceAlignment.P2, 7, 5, List.of(),
+                        Map.of(PieceAlignment.P1, "HUMAN", PieceAlignment.P2, "HUMAN"), "feedface"),
                 new ServerMessage.Snapshot(view),
                 new ServerMessage.Event(new CardDrawnEvent(PieceAlignment.P2, "hidden-2", null, 3)),
                 new ServerMessage.Event(new PieceSpawnedEvent("id-1", PieceAlignment.P2, 6, 0, "Runner")),

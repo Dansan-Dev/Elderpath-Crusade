@@ -31,6 +31,7 @@ import java.util.function.Consumer;
  */
 public final class ClientMatchState {
     @Getter private PieceAlignment seat;
+    private String reconnectToken;
     @Getter private int rows;
     @Getter private int cols;
     @Getter private Map<PieceAlignment, String> slots = Map.of();
@@ -65,6 +66,11 @@ public final class ClientMatchState {
      */
     public void addEventListener(Consumer<GameEvent> listener) {
         eventListeners.add(listener);
+    }
+
+    /** Secret from the Welcome: present it in a new MatchClient to take this seat back after a disconnect. */
+    public String getReconnectToken() {
+        return reconnectToken;
     }
 
     public boolean isWelcomed() {
@@ -108,6 +114,7 @@ public final class ClientMatchState {
     public void apply(ServerMessage message) {
         if (message instanceof ServerMessage.Welcome w) {
             seat = w.seat();
+            reconnectToken = w.reconnectToken();
             rows = w.rows();
             cols = w.cols();
             terrain = List.copyOf(w.terrain());

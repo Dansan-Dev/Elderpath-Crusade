@@ -131,7 +131,8 @@ class MatchServerAdversarialTest {
         LineLink p1 = seatRaw(SeatRequest.P1);
         MatchClient p2 = new MatchClient(transport.connect(), SeatRequest.P2, "b");
         server.tick(TICK);
-        drain(p1);
+        String token = drain(p1).stream().filter(m -> m instanceof ServerMessage.Welcome)
+                .map(m -> ((ServerMessage.Welcome) m).reconnectToken()).findFirst().orElseThrow();
 
         for (int i = 0; i < MatchServer.MAX_BAD_MESSAGES; i++) p1.send("{garbage " + i);
         server.tick(TICK);
@@ -146,7 +147,7 @@ class MatchServerAdversarialTest {
         server.tick(TICK);
         p2.poll();
         assertConsistent(server, p2);
-        MatchClient back = new MatchClient(transport.connect(), SeatRequest.P1, "back");
+        MatchClient back = new MatchClient(transport.connect(), SeatRequest.P1, "back", token);
         server.tick(TICK);
         back.poll();
         assertEquals(PieceAlignment.P1, back.getState().getSeat());
@@ -256,5 +257,112 @@ class MatchServerAdversarialTest {
         assertEquals("A client", MatchServer.loggableName("  "));
         assertEquals("ann?[server] fake line", MatchServer.loggableName("ann\n[server] fake line"));
         assertEquals(32, MatchServer.loggableName("n".repeat(500)).length());
+    }
+
+    // --- seat reclaim needs the reconnect token (audit S13 / AUDIT-001) ---
+
+    private static String tokenOf(List<ServerMessage> messages) {
+        return messages.stream().filter(m -> m instanceof ServerMessage.Welcome)
+                .map(m -> ((ServerMessage.Welcome) m).reconnectToken()).findFirst().orElse(null);
+    }
+
+    private LineLink helloRaw(SeatRequest seat, String token) {
+        LineLink link = transport.connectRaw();
+        link.send(MessageCodec.encode(new ClientMessage.Hello(MessageCodec.PROTOCOL_VERSION, seat, "x", token)));
+        return link;
+    }
+
+    private static boolean refusedAsTaken(List<ServerMessage> replies) {
+        return replies.stream().anyMatch(m -> m instanceof ServerMessage.Error e
+                && e.code() == ServerMessage.Error.Code.SEAT_TAKEN);
+    }
+
+    /** P1 joins and drops; returns P1's token. P2 is still connected. */
+    private String p1JoinsAndDrops() {
+        LineLink p1 = seatRaw(SeatRequest.P1);
+        MatchClient p2 = new MatchClient(transport.connect(), SeatRequest.P2, "b");
+        server.tick(TICK);
+        String token = tokenOf(drain(p1));
+        assertNotNull(token, "a seated client is given a reconnect token");
+        p1.close();
+        server.tick(TICK);
+        server.tick(TICK);
+        assertFalse(server.isConnected(PieceAlignment.P1));
+        return token;
+    }
+
+    @Test
+    void aReservedSeat_cannotBeTakenWithoutItsToken() {
+        p1JoinsAndDrops();
+        LineLink thief = helloRaw(SeatRequest.P1, null);
+        server.tick(TICK);
+        assertTrue(refusedAsTaken(drain(thief)));
+        assertFalse(server.isConnected(PieceAlignment.P1));
+    }
+
+    @Test
+    void aReservedSeat_cannotBeTakenWithAWrongOrOtherSeatsToken() {
+        String p1Token = p1JoinsAndDrops();
+        LineLink wrong = helloRaw(SeatRequest.P1, "0".repeat(p1Token.length()));
+        LineLink empty = helloRaw(SeatRequest.P1, "");
+        server.tick(TICK);
+        assertTrue(refusedAsTaken(drain(wrong)));
+        assertTrue(refusedAsTaken(drain(empty)));
+        assertFalse(server.isConnected(PieceAlignment.P1));
+    }
+
+    @Test
+    void anAnyRequest_cannotStealAReservedSeat() {
+        p1JoinsAndDrops();
+        LineLink thief = helloRaw(SeatRequest.ANY, null);
+        server.tick(TICK);
+        assertTrue(refusedAsTaken(drain(thief)));
+        assertFalse(server.isConnected(PieceAlignment.P1));
+    }
+
+    @Test
+    void theRightToken_takesTheSeatBack_forNamedAndAnyRequests() {
+        String token = p1JoinsAndDrops();
+        LineLink back = helloRaw(SeatRequest.ANY, token);
+        server.tick(TICK);
+        List<ServerMessage> replies = drain(back);
+        assertTrue(replies.stream().anyMatch(m -> m instanceof ServerMessage.Welcome w && w.seat() == PieceAlignment.P1));
+        assertTrue(server.isConnected(PieceAlignment.P1));
+        assertEquals(token, tokenOf(replies), "the seat keeps the same token across reconnects");
+    }
+
+    @Test
+    void aSeatThatIsConnected_cannotBeTakenEvenWithItsToken() {
+        LineLink p1 = seatRaw(SeatRequest.P1);
+        server.tick(TICK);
+        String token = tokenOf(drain(p1));
+        LineLink second = helloRaw(SeatRequest.P1, token);
+        server.tick(TICK);
+        assertTrue(refusedAsTaken(drain(second)));
+        assertTrue(p1.isOpen());
+    }
+
+    @Test
+    void eachSeatHasItsOwnToken_andNeverReachesTheOtherSeat() {
+        LineLink p1 = seatRaw(SeatRequest.P1);
+        LineLink p2 = seatRaw(SeatRequest.P2);
+        server.tick(TICK);
+        server.tick(TICK);
+        List<ServerMessage> p1Messages = drain(p1);
+        List<ServerMessage> p2Messages = drain(p2);
+        String t1 = tokenOf(p1Messages);
+        String t2 = tokenOf(p2Messages);
+        assertNotNull(t1);
+        assertNotNull(t2);
+        assertNotEquals(t1, t2);
+        assertFalse(MessageCodecLines.anyContains(p2Messages, t1), "P2 never sees P1's token");
+        assertFalse(MessageCodecLines.anyContains(p1Messages, t2), "P1 never sees P2's token");
+    }
+
+    private static final class MessageCodecLines {
+        static boolean anyContains(List<ServerMessage> messages, String needle) {
+            for (ServerMessage m : messages) if (MessageCodec.encode(m).contains(needle)) return true;
+            return false;
+        }
     }
 }

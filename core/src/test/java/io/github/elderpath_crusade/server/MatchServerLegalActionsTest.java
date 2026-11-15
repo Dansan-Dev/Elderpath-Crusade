@@ -39,7 +39,11 @@ class MatchServerLegalActionsTest {
     }
 
     private MatchClient join(SeatRequest seat, List<String> raw) {
-        MatchClient client = new MatchClient(transport.connect(raw::add), seat, "test");
+        return join(seat, raw, null);
+    }
+
+    private MatchClient join(SeatRequest seat, List<String> raw, String reconnectToken) {
+        MatchClient client = new MatchClient(transport.connect(raw::add), seat, "test", reconnectToken);
         clients.add(client);
         return client;
     }
@@ -108,12 +112,13 @@ class MatchServerLegalActionsTest {
         MatchClient p1 = join(SeatRequest.P1, new ArrayList<>());
         MatchClient p2 = join(SeatRequest.P2, new ArrayList<>());
         tick();
+        String token = p1.getState().getReconnectToken();
         p1.leave();
         clients.remove(p1);
         tick();
 
         List<String> raw = new ArrayList<>();
-        MatchClient back = join(SeatRequest.P1, raw);
+        MatchClient back = join(SeatRequest.P1, raw, token);
         tick();
         assertEquals(server.legalActionsFor(PieceAlignment.P1), back.getState().getLegalActions());
         assertTrue(back.getState().getLegalActions().yourTurn());

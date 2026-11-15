@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public final class MessageCodec {
     /** Bumped on any incompatible change to messages, commands or events. */
-    public static final int PROTOCOL_VERSION = 2;
+    public static final int PROTOCOL_VERSION = 3;
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);

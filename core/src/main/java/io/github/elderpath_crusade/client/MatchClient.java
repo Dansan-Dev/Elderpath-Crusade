@@ -25,8 +25,13 @@ public final class MatchClient implements ClientCommands {
 
     /** Connects and asks for a seat (the answer arrives on a later poll()). */
     public MatchClient(ServerConnection connection, SeatRequest seat, String playerName) {
+        this(connection, seat, playerName, null);
+    }
+
+    /** Reconnects to a seat held earlier: reconnectToken is that seat's ClientMatchState.getReconnectToken(). */
+    public MatchClient(ServerConnection connection, SeatRequest seat, String playerName, String reconnectToken) {
         this.connection = connection;
-        connection.send(new ClientMessage.Hello(MessageCodec.PROTOCOL_VERSION, seat, playerName));
+        connection.send(new ClientMessage.Hello(MessageCodec.PROTOCOL_VERSION, seat, playerName, reconnectToken));
     }
 
     /** Applies every message the server has sent since the last call. Returns how many there were. */

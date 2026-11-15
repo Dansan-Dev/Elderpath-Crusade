@@ -45,6 +45,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.LongSupplier;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 
 /**
  * Runs one match authoritatively for its clients — the same class whether it's a solo game's
@@ -92,6 +96,8 @@ public final class MatchServer {
     private static final class Seat {
         final PieceAlignment side;
         final HiddenInfoFilter filter;
+        /** Secret handed to whoever takes this seat; presenting it is the only way to take the seat back. */
+        final String reconnectToken = newToken();
         ClientChannel channel;
         boolean taken;
         /** Commands handled this tick, acked at its end (see sendAcks). */
@@ -105,6 +111,14 @@ public final class MatchServer {
             this.side = side;
             this.filter = new HiddenInfoFilter(side);
         }
+    }
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private static String newToken() {
+        byte[] bytes = new byte[16];
+        RANDOM.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
     }
 
     private final MatchConfig config;
@@ -275,7 +289,7 @@ public final class MatchServer {
     }
 
     private void seat(ClientChannel channel, ClientMessage.Hello hello) {
-        Seat seat = chooseSeat(hello.seat());
+        Seat seat = chooseSeat(hello.seat(), hello.reconnectToken());
         if (seat == null) {
             boolean anyFree = seats.values().stream().anyMatch(s -> s.channel == null);
             refuse(channel, anyFree ? ServerMessage.Error.Code.SEAT_TAKEN : ServerMessage.Error.Code.MATCH_FULL,
@@ -288,7 +302,7 @@ public final class MatchServer {
         seat.badMessages = 0;
         Logger.log("MatchServer", loggableName(hello.playerName()) + " took " + seat.side);
         channel.send(new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, seat.side,
-                config.rows(), config.cols(), config.terrain(), slotKinds()));
+                config.rows(), config.cols(), config.terrain(), slotKinds(), seat.reconnectToken));
         channel.send(new ServerMessage.Snapshot(viewFor(seat.side)));
         PickRequest pending = GameContext.get().getPickRouter().activeRequest(seat.side);
         if (pending != null) channel.send(new ServerMessage.PickRequested(pending));
@@ -296,18 +310,30 @@ public final class MatchServer {
     }
 
     /**
-     * A free seat for the request: the named side if no client occupies it (a never-taken
-     * seat, or a reserved one being reclaimed), or for ANY the first never-taken seat, then
-     * the first unoccupied one.
+     * A free seat for the request: a never-taken seat is open to anyone, but a seat that was taken
+     * and is now unoccupied (a disconnected player's) only to a Hello carrying its reconnect token —
+     * otherwise anyone who knew or guessed the seat could take over a dropped player's hand.
+     * For ANY: the first never-taken seat, else the unoccupied seat the token belongs to.
      */
-    private Seat chooseSeat(SeatRequest request) {
+    private Seat chooseSeat(SeatRequest request, String reconnectToken) {
         if (request == SeatRequest.P1 || request == SeatRequest.P2) {
             Seat seat = seats.get(PieceAlignment.valueOf(request.name()));
-            return seat != null && seat.channel == null ? seat : null;
+            return seat != null && claimable(seat, reconnectToken) ? seat : null;
         }
         for (Seat seat : seats.values()) if (!seat.taken) return seat;
-        for (Seat seat : seats.values()) if (seat.channel == null) return seat;
+        for (Seat seat : seats.values()) if (claimable(seat, reconnectToken)) return seat;
         return null;
+    }
+
+    private static boolean claimable(Seat seat, String reconnectToken) {
+        if (seat.channel != null) return false;
+        return !seat.taken || tokenMatches(seat, reconnectToken);
+    }
+
+    private static boolean tokenMatches(Seat seat, String presented) {
+        if (presented == null) return false;
+        return MessageDigest.isEqual(seat.reconnectToken.getBytes(StandardCharsets.UTF_8),
+                presented.getBytes(StandardCharsets.UTF_8));
     }
 
     private Map<PieceAlignment, String> slotKinds() {

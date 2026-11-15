@@ -8,8 +8,16 @@ public sealed interface ClientMessage permits
         ClientMessage.Command,
         ClientMessage.Leave {
 
-    /** First message on a connection: asks for a seat. Answered by Welcome + Snapshot, or Error. */
-    record Hello(int protocolVersion, SeatRequest seat, String playerName) implements ClientMessage {}
+    /**
+     * First message on a connection: asks for a seat. Answered by Welcome + Snapshot, or Error.
+     * reconnectToken: the token from the Welcome of this seat's earlier connection — required to
+     * take a seat back after a disconnect, null on a first join.
+     */
+    record Hello(int protocolVersion, SeatRequest seat, String playerName, String reconnectToken) implements ClientMessage {
+        public Hello(int protocolVersion, SeatRequest seat, String playerName) {
+            this(protocolVersion, seat, playerName, null);
+        }
+    }
 
     /**
      * A requested action. seq is chosen by the client (increasing) and echoed in Rejected,

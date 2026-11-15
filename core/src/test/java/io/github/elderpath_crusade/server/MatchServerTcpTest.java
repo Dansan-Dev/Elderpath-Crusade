@@ -45,8 +45,12 @@ class MatchServerTcpTest {
     }
 
     private MatchClient join(SeatRequest seat, List<String> rawLog) throws Exception {
+        return join(seat, rawLog, null);
+    }
+
+    private MatchClient join(SeatRequest seat, List<String> rawLog, String reconnectToken) throws Exception {
         MatchClient client = new MatchClient(
-                TcpTransport.connect("127.0.0.1", transport.getPort(), rawLog::add), seat, "tcp");
+                TcpTransport.connect("127.0.0.1", transport.getPort(), rawLog::add), seat, "tcp", reconnectToken);
         clients.add(client);
         return client;
     }
@@ -141,6 +145,7 @@ class MatchServerTcpTest {
         p1.playSummon(firstCard(p1), 0, 1);
         settle();
 
+        String token = p2.getState().getReconnectToken();
         p2.close(); // dropped connection, no Leave
         clients.remove(p2);
         long deadline = System.nanoTime() + STEP_DEADLINE_MS * 1_000_000L;
@@ -150,7 +155,7 @@ class MatchServerTcpTest {
             assertTrue(System.nanoTime() - deadline < 0, "the server noticed the disconnect");
         }
 
-        join(SeatRequest.P2, new ArrayList<>());
+        join(SeatRequest.P2, new ArrayList<>(), token);
         settle();
         assertTrue(server.isConnected(PieceAlignment.P2));
     }

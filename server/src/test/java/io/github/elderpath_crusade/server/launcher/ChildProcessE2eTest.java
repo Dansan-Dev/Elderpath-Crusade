@@ -93,9 +93,10 @@ class ChildProcessE2eTest {
 
         harness.runToEnd(6);
         if (!harness.ended()) {
+            String token = guest.state().getReconnectToken();
             harness.leave(guest);
             harness.step();
-            TestClient back = harness.rejoin(SeatRequest.P2, "guest", new RemoteBotDriver());
+            TestClient back = harness.rejoin(SeatRequest.P2, "guest", new RemoteBotDriver(), token);
             assertEquals(PieceAlignment.P2, back.state().getSeat(), "rejoined (error: " + back.state().getLastError()
                     + ", connected: " + back.client().isConnected() + ", server alive: " + harness.backend().ended() + ")");
             assertEquals(host.state().toView().pieces(), back.state().toView().pieces(), "the rejoin snapshot matches the host's board");

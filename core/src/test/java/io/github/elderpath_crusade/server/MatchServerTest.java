@@ -45,7 +45,11 @@ class MatchServerTest {
     }
 
     private MatchClient join(SeatRequest seat, List<String> rawLog) {
-        MatchClient client = new MatchClient(transport.connect(rawLog == null ? null : rawLog::add), seat, "test");
+        return join(seat, rawLog, null);
+    }
+
+    private MatchClient join(SeatRequest seat, List<String> rawLog, String reconnectToken) {
+        MatchClient client = new MatchClient(transport.connect(rawLog == null ? null : rawLog::add), seat, "test", reconnectToken);
         clients.add(client);
         return client;
     }
@@ -168,12 +172,13 @@ class MatchServerTest {
         p2.playSummon(firstCard(p2), 6, 2);
         tick();
 
+        String token = p2.getState().getReconnectToken();
         p2.leave();
         tick();
         assertFalse(server.isConnected(PieceAlignment.P2));
         clients.remove(p2);
 
-        MatchClient back = join(SeatRequest.P2, null);
+        MatchClient back = join(SeatRequest.P2, null, token);
         server.tick(TICK);
         back.poll();
         assertConsistent(server, back);

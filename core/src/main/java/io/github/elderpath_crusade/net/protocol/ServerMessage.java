@@ -29,9 +29,18 @@ public sealed interface ServerMessage permits
         ServerMessage.MatchEnded,
         ServerMessage.Error {
 
-    /** The seat this client got and the match's fixed setup. slots: side → "HUMAN" or "BOT_<kind>". */
+    /**
+     * The seat this client got and the match's fixed setup. slots: side → "HUMAN" or "BOT_<kind>".
+     * reconnectToken: secret to present in a later Hello to take this seat back after a disconnect.
+     * Only ever sent to the connection that holds the seat.
+     */
     record Welcome(int protocolVersion, PieceAlignment seat, int rows, int cols, List<Coord> terrain,
-                   Map<PieceAlignment, String> slots) implements ServerMessage {}
+                   Map<PieceAlignment, String> slots, String reconnectToken) implements ServerMessage {
+        public Welcome(int protocolVersion, PieceAlignment seat, int rows, int cols, List<Coord> terrain,
+                       Map<PieceAlignment, String> slots) {
+            this(protocolVersion, seat, rows, cols, terrain, slots, null);
+        }
+    }
 
     /** Everything this client may know right now — sent on joining (also mid-match). */
     record Snapshot(MatchView view) implements ServerMessage {}
