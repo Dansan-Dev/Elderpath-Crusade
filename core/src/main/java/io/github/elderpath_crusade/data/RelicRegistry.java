@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.data;
 
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.run.RelicDefinition;
+import io.github.elderpath_crusade.utils.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ public final class RelicRegistry {
                 REGISTRY.put(id, parseDefinition(id, defMap));
             }
         } catch (Exception e) {
-            System.err.println("Failed to load relics.yaml: " + e.getMessage());
+            Logger.error("RelicRegistry", "Failed to load relics.yaml: " + e.getMessage());
         }
     }
 

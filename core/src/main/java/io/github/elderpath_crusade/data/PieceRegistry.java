@@ -13,6 +13,7 @@ public final class PieceRegistry {
     @SuppressWarnings("unchecked")
     public static void load() {
         PIECES.clear();
+        if (Gdx.files == null) return; // test environment
         String text = Gdx.files.internal("data/pieces.yaml").readString();
         Map<String, Object> root = new Yaml().load(text);
         Map<String, Map<String, Object>> entries = (Map<String, Map<String, Object>>) root.get("pieces");

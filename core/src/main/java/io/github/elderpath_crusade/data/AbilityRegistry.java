@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.data;
 
 import io.github.elderpath_crusade.abilities.data.*;
 import com.badlogic.gdx.Gdx;
+import io.github.elderpath_crusade.utils.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.*;
@@ -32,7 +33,7 @@ public final class AbilityRegistry {
                 REGISTRY.put(name, def);
             }
         } catch (Exception e) {
-            System.err.println("Failed to load abilities.yaml: " + e.getMessage());
+            Logger.error("AbilityRegistry", "Failed to load abilities.yaml: " + e.getMessage());
         }
     }
 

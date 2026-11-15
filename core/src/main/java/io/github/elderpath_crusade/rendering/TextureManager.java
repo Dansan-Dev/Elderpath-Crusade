@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.assets.AssetService;
+import io.github.elderpath_crusade.utils.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class TextureManager {
                 atlasOwnedLocally = true;
             }
         } catch (Exception e) {
-            System.err.println("Failed to load atlas: " + atlasPath + " - " + e.getMessage());
+            Logger.error("TextureManager", "Failed to load atlas: " + atlasPath + " - " + e.getMessage());
         }
     }
 
@@ -67,7 +68,7 @@ public class TextureManager {
             locallyLoadedTextures.put(path, texture);
             return texture;
         } catch (Exception e) {
-            System.err.println("Failed to load texture: " + path + " - " + e.getMessage());
+            Logger.error("TextureManager", "Failed to load texture: " + path + " - " + e.getMessage());
             return null;
         }
     }

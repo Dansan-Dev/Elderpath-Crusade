@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.data;
 import com.badlogic.gdx.Gdx;
 import io.github.elderpath_crusade.abilities.data.Condition;
 import io.github.elderpath_crusade.abilities.data.EffectNode;
+import io.github.elderpath_crusade.utils.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.*;
@@ -31,7 +32,7 @@ public final class SpellRegistry {
                 REGISTRY.put(name, parseDefinition(name, defMap));
             }
         } catch (Exception e) {
-            System.err.println("Failed to load spells.yaml: " + e.getMessage());
+            Logger.error("SpellRegistry", "Failed to load spells.yaml: " + e.getMessage());
         }
     }
 
