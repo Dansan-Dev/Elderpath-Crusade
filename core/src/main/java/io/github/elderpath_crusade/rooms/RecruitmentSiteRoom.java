@@ -4,7 +4,6 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.game.RunManager;
-import io.github.elderpath_crusade.match.CardCatalog;
 import io.github.elderpath_crusade.run.CardModificationCatalog;
 import io.github.elderpath_crusade.run.RunCardInstance;
 import io.github.elderpath_crusade.run.RunCardModification;
@@ -62,22 +61,14 @@ public class RecruitmentSiteRoom extends Room {
         buttonList = new ButtonList();
         List<CardModificationCatalog.Entry> catalog = CardModificationCatalog.all();
         for (String cardName : newCardChoices) {
-            // BUG-051: a modification needs a PieceDefinition to apply its stat delta to — a
-            // spell (e.g. Frostbolt) has none (same BUG-045 constraint CardModTargetRoom/
-            // ElderPickRoom already respect). Rolling an upgrade for one anyway built a
-            // synthetic card name MatchSetup could never resolve, crashing the next battle.
-            // A spell recruit simply arrives as-is, no upgrade to offer.
-            boolean canUpgrade = CardCatalog.isSummon(cardName);
-            RunCardModification upgradeDelta = RunCardModification.NONE;
-            String label = cardName;
-            if (canUpgrade) {
-                CardModificationCatalog.Entry upgrade = catalog.get(rng.nextInt(catalog.size()));
-                upgradeDelta = upgrade.delta();
-                label = cardName + " — " + upgrade.name();
-            }
-            RunCardModification finalUpgrade = upgradeDelta;
+            // Recruits are always summons (RunManager.offerNewSummonCardChoices below) — a
+            // Recruitment Site recruits a tribe member, not a spell (user design, 2026-11-15) —
+            // so every recruit can carry a stat upgrade (RECRUIT-001).
+            CardModificationCatalog.Entry upgrade = catalog.get(rng.nextInt(catalog.size()));
+            RunCardModification upgradeDelta = upgrade.delta();
+            String label = cardName + " — " + upgrade.name();
             addOption(label, () -> {
-                runManager.grantNewCard(cardName, finalUpgrade);
+                runManager.grantNewCard(cardName, upgradeDelta);
                 GameContext.get().getRoomManager().gotoRoom(() -> RecruitmentDepartureRoom.get(departureCandidates));
             });
         }
@@ -110,7 +101,8 @@ public class RecruitmentSiteRoom extends Room {
 
     public static Room get() {
         RunManager runManager = GameContext.get().getRunManager();
-        List<String> newCardChoices = runManager.offerNewCardChoices(NEW_CARD_CHOICES);
+        // Summons only — spells aren't recruitable mercenaries (user design, 2026-11-15).
+        List<String> newCardChoices = runManager.offerNewSummonCardChoices(NEW_CARD_CHOICES);
         if (newCardChoices.isEmpty()) return RunRoom.get(); // the draft pool is exhausted — nothing to recruit
         return new RecruitmentSiteRoom(newCardChoices, departureCandidates(runManager));
     }

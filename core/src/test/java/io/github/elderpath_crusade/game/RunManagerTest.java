@@ -310,6 +310,27 @@ class RunManagerTest {
     }
 
     @Test
+    void offerNewSummonCardChoices_neverIncludesASpell() {
+        // User design (2026-11-15): a Recruitment Site recruits a tribe member, not a spell.
+        CardCatalog.registerSpell("Frostbolt", new SpellDefinition("Frostbolt", "desc", 2, null, List.of()));
+        RunManager manager = new RunManager();
+        manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);
+
+        List<String> choices = manager.offerNewSummonCardChoices(100, new Random(7));
+
+        assertFalse(choices.isEmpty());
+        for (String choice : choices) {
+            assertTrue(CardCatalog.isSummon(choice), choice + " should be a summon");
+        }
+    }
+
+    @Test
+    void offerNewSummonCardChoices_requiresAnActiveRun() {
+        RunManager manager = new RunManager();
+        assertThrows(IllegalStateException.class, () -> manager.offerNewSummonCardChoices(2));
+    }
+
+    @Test
     void grantNewCard_addsAFreshUnmodifiedInstanceToTheDeck() {
         RunManager manager = new RunManager();
         manager.startRun(RunDifficulty.DEFAULT, STARTING_DECK, SEED);

@@ -287,6 +287,25 @@ public final class RunManager {
         return pool.subList(0, Math.min(count, pool.size()));
     }
 
+    /**
+     * Same as {@link #offerNewCardChoices(int)} but restricted to summon cards — a Recruitment
+     * Site recruits a tribe member, not a spell (user design, 2026-11-15); each offered card can
+     * also carry a stat upgrade (RECRUIT-001), which only a summon's {@code PieceDefinition} can
+     * apply.
+     */
+    public List<String> offerNewSummonCardChoices(int count) {
+        return offerNewSummonCardChoices(count, new Random());
+    }
+
+    /** Deterministic overload for tests. */
+    public List<String> offerNewSummonCardChoices(int count, Random rng) {
+        requireActiveRun();
+        List<String> pool = new ArrayList<>(CardCatalog.getDraftableNames());
+        pool.removeIf(name -> !CardCatalog.isSummon(name));
+        Collections.shuffle(pool, rng);
+        return pool.subList(0, Math.min(count, pool.size()));
+    }
+
     /** Adds a fresh unmodified copy of {@code cardName} to the run's deck (a chosen UPG-004 reward). */
     public void grantNewCard(String cardName) {
         grantNewCard(cardName, RunCardModification.NONE);
