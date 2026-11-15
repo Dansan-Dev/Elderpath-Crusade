@@ -24,7 +24,8 @@ public final class SpellRegistry {
             Yaml yaml = new Yaml();
             Map<String, Object> root = yaml.load(text);
             Object spellsObj = root.get("spells");
-            if (!(spellsObj instanceof Map<?, ?> spells)) return;
+            if (!(spellsObj instanceof Map<?, ?> spells))
+                throw new IllegalStateException("spells.yaml has no top-level 'spells:' map");
 
             for (Map.Entry<?, ?> entry : spells.entrySet()) {
                 String name = entry.getKey().toString();
@@ -33,6 +34,7 @@ public final class SpellRegistry {
             }
         } catch (Exception e) {
             Logger.error("SpellRegistry", "Failed to load spells.yaml: " + e.getMessage());
+            throw new IllegalStateException("Cannot load data/spells.yaml: " + e.getMessage(), e);
         }
     }
 

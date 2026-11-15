@@ -40,7 +40,8 @@ public final class RelicRegistry {
             Yaml yaml = new Yaml();
             Map<String, Object> root = yaml.load(text);
             Object relicsObj = root.get("relics");
-            if (!(relicsObj instanceof Map<?, ?> relics)) return;
+            if (!(relicsObj instanceof Map<?, ?> relics))
+                throw new IllegalStateException("relics.yaml has no top-level 'relics:' map");
 
             for (Map.Entry<?, ?> entry : relics.entrySet()) {
                 String id = entry.getKey().toString();
@@ -49,6 +50,7 @@ public final class RelicRegistry {
             }
         } catch (Exception e) {
             Logger.error("RelicRegistry", "Failed to load relics.yaml: " + e.getMessage());
+            throw new IllegalStateException("Cannot load data/relics.yaml: " + e.getMessage(), e);
         }
     }
 

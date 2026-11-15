@@ -24,7 +24,8 @@ public final class AbilityRegistry {
             Yaml yaml = new Yaml();
             Map<String, Object> root = yaml.load(text);
             Object abilitiesObj = root.get("abilities");
-            if (!(abilitiesObj instanceof Map<?, ?> abilities)) return;
+            if (!(abilitiesObj instanceof Map<?, ?> abilities))
+                throw new IllegalStateException("abilities.yaml has no top-level 'abilities:' map");
 
             for (Map.Entry<?, ?> entry : abilities.entrySet()) {
                 String name = entry.getKey().toString();
@@ -34,6 +35,7 @@ public final class AbilityRegistry {
             }
         } catch (Exception e) {
             Logger.error("AbilityRegistry", "Failed to load abilities.yaml: " + e.getMessage());
+            throw new IllegalStateException("Cannot load data/abilities.yaml: " + e.getMessage(), e);
         }
     }
 

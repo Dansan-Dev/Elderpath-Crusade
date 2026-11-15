@@ -14,9 +14,15 @@ public final class PieceRegistry {
     public static void load() {
         PIECES.clear();
         if (Gdx.files == null) return; // test environment
-        String text = Gdx.files.internal("data/pieces.yaml").readString();
-        Map<String, Object> root = new Yaml().load(text);
-        Map<String, Map<String, Object>> entries = (Map<String, Map<String, Object>>) root.get("pieces");
+        Map<String, Map<String, Object>> entries;
+        try {
+            String text = Gdx.files.internal("data/pieces.yaml").readString();
+            Map<String, Object> root = new Yaml().load(text);
+            entries = (Map<String, Map<String, Object>>) root.get("pieces");
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("Cannot load data/pieces.yaml: " + e.getMessage(), e);
+        }
+        if (entries == null) throw new IllegalStateException("data/pieces.yaml has no top-level 'pieces:' map");
         for (Map.Entry<String, Map<String, Object>> entry : entries.entrySet()) {
             String name = entry.getKey();
             Map<String, Object> v = entry.getValue();
