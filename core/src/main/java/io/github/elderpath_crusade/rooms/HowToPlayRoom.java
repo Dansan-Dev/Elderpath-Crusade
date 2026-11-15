@@ -53,7 +53,7 @@ public class HowToPlayRoom extends Room {
             "Card Icons",
             "Common keywords are shown as icons above a card's rules text: a target with a "
                     + "number is the piece's attack range, a crossed-out sword means it cannot "
-                    + "attack. In a run, a crown beside the cost marks one of your Elders.",
+                    + "attack. In a run, a crown above the portrait marks one of your Elders.",
 
             "Ending Your Turn",
             "Each piece only has a limited number of actions per turn. Click \"Pass Turn\" once "
