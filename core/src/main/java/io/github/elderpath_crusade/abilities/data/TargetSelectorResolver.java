@@ -10,7 +10,6 @@ import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.ecs.components.AlignmentComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.RelicCarrierIds;
 import io.github.elderpath_crusade.utils.Logger;
 

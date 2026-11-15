@@ -6,7 +6,6 @@ import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
-import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.Intent;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.IntentType;
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;

@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.interfaces;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
 
-import java.util.List;
 
 public interface UIRenderable {
     Box getParent();

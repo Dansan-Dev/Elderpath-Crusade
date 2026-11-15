@@ -8,7 +8,6 @@ import io.github.elderpath_crusade.ecs.components.AbilityInstanceComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.match.BoardGrid;
 import io.github.elderpath_crusade.match.Coord;
-import io.github.elderpath_crusade.game.PlayerManager;
 
 import io.github.elderpath_crusade.bot.eval.BotActionContext.PieceEntry;
 

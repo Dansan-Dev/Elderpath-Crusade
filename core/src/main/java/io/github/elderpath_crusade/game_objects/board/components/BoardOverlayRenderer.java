@@ -1,16 +1,11 @@
 package io.github.elderpath_crusade.game_objects.board.components;
 
 import com.badlogic.ashley.core.Entity;
-import io.github.elderpath_crusade.GameContext;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.Texture;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.enums.FontType;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
-import io.github.elderpath_crusade.rendering.TextureManager;
-import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.GraphicUtils;
 

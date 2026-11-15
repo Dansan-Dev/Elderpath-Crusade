@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.rendering.TextureManager;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import io.github.elderpath_crusade.enums.FontType;

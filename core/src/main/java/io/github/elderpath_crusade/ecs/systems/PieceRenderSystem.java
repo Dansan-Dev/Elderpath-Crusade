@@ -27,6 +27,9 @@ public class PieceRenderSystem extends EntitySystem {
     private static final Color STUN_TINT = new Color(1f, 0.22f, 0.71f, 1f);
     private static final Color DARKEN_TINT = new Color(0.6f, 0.6f, 0.6f, 1.0f);
 
+    private final Color originalColor = new Color();
+    private final Color drawColor = new Color();
+
     private final ComponentMapper<SpriteComponent> spriteMapper = ComponentMapper.getFor(SpriteComponent.class);
     private final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
     private final ComponentMapper<MoveAnimationComponent> moveAnimMapper = ComponentMapper.getFor(MoveAnimationComponent.class);
@@ -93,13 +96,14 @@ public class PieceRenderSystem extends EntitySystem {
                 continue;
             }
 
-            Color original = batch.getColor().cpy();
-            Color draw = stunned ? STUN_TINT.cpy() : exhausted ? DARKEN_TINT.cpy() : original.cpy();
-            if (spawnAnim != null) draw.a *= spawnAnim.alpha();
-            if (deathFlash != null) draw.a *= deathFlash.alpha();
-            batch.setColor(draw);
+            // Scratch colours, reused every frame — the tint constants themselves are never mutated.
+            originalColor.set(batch.getColor());
+            drawColor.set(stunned ? STUN_TINT : exhausted ? DARKEN_TINT : originalColor);
+            if (spawnAnim != null) drawColor.a *= spawnAnim.alpha();
+            if (deathFlash != null) drawColor.a *= deathFlash.alpha();
+            batch.setColor(drawColor);
             sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
-            batch.setColor(original);
+            batch.setColor(originalColor);
             if (stunned) renderStunSymbol(batch, zLevel, absX, absY, plotWidth, plotHeight);
         }
     }

@@ -13,7 +13,6 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
-import java.util.List;
 
 /**
  * One {@link EventRoom} roll: the old gods demand a sacrifice. Lists every card in the deck

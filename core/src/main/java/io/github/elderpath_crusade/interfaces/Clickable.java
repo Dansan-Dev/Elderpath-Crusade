@@ -2,7 +2,6 @@ package io.github.elderpath_crusade.interfaces;
 
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 
-import java.util.HashMap;
 
 public interface Clickable extends CustomBox, InteractionSource {
     default void setClickableEffect(OnClick onClick, ClickableEffectData effectData) {

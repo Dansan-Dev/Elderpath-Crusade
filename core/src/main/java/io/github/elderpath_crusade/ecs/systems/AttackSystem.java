@@ -2,13 +2,11 @@ package io.github.elderpath_crusade.ecs.systems;
 
 import com.badlogic.ashley.core.*;
 import com.badlogic.ashley.utils.ImmutableArray;
-import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.components.*;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceAttackedEvent;
 import io.github.elderpath_crusade.events.PieceKilledEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
-import io.github.elderpath_crusade.game_objects.board.Board;
 
 /**
  * Processes AttackIntentComponent: resolves damage via CombatSystem,

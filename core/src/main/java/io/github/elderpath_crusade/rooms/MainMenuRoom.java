@@ -10,8 +10,6 @@ import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
-import io.github.elderpath_crusade.config.SettingsManager;
-import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.rooms.main_menu.MainMenuNavbar;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.utils.ColorSettings;

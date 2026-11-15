@@ -1,20 +1,10 @@
 package io.github.elderpath_crusade.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.elderpath_crusade.api.dto.UserIdDto;
 import io.github.elderpath_crusade.api.dto.UserListResponseDto;
-import io.github.elderpath_crusade.exceptions.ApiCallException;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
-import java.util.StringJoiner;
-import java.util.concurrent.CompletableFuture;
 
 
 public class BackendService {

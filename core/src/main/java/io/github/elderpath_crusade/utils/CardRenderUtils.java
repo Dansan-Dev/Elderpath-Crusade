@@ -5,8 +5,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
 import io.github.elderpath_crusade.ui_objects.Text;
 
-import java.util.function.BiConsumer;
-
 /**
  * Shared rendering logic for unit cards (SummonCard and PreviewCard).
  * Ensures consistent placement of stats orbs and description text.
@@ -79,28 +77,12 @@ public class CardRenderUtils {
             int x, int y, int w, int h,
             Text manaText, Text hpText, Text spdText, Text actText, Text atkText,
             Text descText, boolean badgeRow) {
-        // Helper to center draw
-        BiConsumer<Text, int[]> drawCentered = (t, center) -> {
-            if (t == null)
-                return;
-            int tx = x + center[0] - t.getWidth() / 2;
-            int ty = y + center[1] - t.getHeight() / 2;
-            t.render(batch, zLevel, false, tx, ty);
-        };
-
-        // Compute centers in pixel space
-        int[] manaC = new int[] { Math.round(w * MANA_CX), Math.round(h * MANA_CY) };
-        int[] hpC = new int[] { Math.round(w * HP_CX), Math.round(h * HP_CY) };
-        int[] spdC = new int[] { Math.round(w * SPD_CX), Math.round(h * SPD_CY) };
-        int[] actC = new int[] { Math.round(w * ACT_CX), Math.round(h * ACT_CY) };
-        int[] atkC = new int[] { Math.round(w * ATK_CX), Math.round(h * ATK_CY) };
-
-        // Render stats
-        drawCentered.accept(manaText, manaC);
-        drawCentered.accept(hpText, hpC);
-        drawCentered.accept(spdText, spdC);
-        drawCentered.accept(actText, actC);
-        drawCentered.accept(atkText, atkC);
+        // Render stats, each centered on its orb (no per-frame allocation: this runs per card per frame)
+        drawCentered(batch, zLevel, manaText, x + Math.round(w * MANA_CX), y + Math.round(h * MANA_CY));
+        drawCentered(batch, zLevel, hpText, x + Math.round(w * HP_CX), y + Math.round(h * HP_CY));
+        drawCentered(batch, zLevel, spdText, x + Math.round(w * SPD_CX), y + Math.round(h * SPD_CY));
+        drawCentered(batch, zLevel, actText, x + Math.round(w * ACT_CX), y + Math.round(h * ACT_CY));
+        drawCentered(batch, zLevel, atkText, x + Math.round(w * ATK_CX), y + Math.round(h * ATK_CY));
 
         // Render description text
         if (descText != null) {
@@ -123,6 +105,11 @@ public class CardRenderUtils {
 
             descText.render(batch, zLevel, isPaused, tx, ty);
         }
+    }
+
+    private static void drawCentered(SpriteBatch batch, int zLevel, Text text, int centerX, int centerY) {
+        if (text == null) return;
+        text.render(batch, zLevel, false, centerX - text.getWidth() / 2, centerY - text.getHeight() / 2);
     }
 
     /**

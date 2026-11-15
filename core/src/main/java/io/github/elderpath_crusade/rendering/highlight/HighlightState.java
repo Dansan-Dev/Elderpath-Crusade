@@ -10,7 +10,6 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interfaces.CustomBox;
-import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.TargetFilter;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.LegalActions;

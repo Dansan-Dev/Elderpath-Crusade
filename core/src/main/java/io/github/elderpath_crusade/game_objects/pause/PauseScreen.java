@@ -9,7 +9,6 @@ import io.github.elderpath_crusade.game_objects.sprites.TextureObject;
 import io.github.elderpath_crusade.game_objects.pause.pages.PauseMenuPage;
 import io.github.elderpath_crusade.game_objects.pause.pages.PauseSettingsPage;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
-import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.utils.ClickableRegistryUtil;
 import lombok.Getter;

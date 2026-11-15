@@ -9,7 +9,6 @@ import io.github.elderpath_crusade.enums.ClickableTargetType;
 import io.github.elderpath_crusade.game_objects.board.Plot;
 import io.github.elderpath_crusade.interaction.SelectionStateMachine;
 import io.github.elderpath_crusade.interfaces.*;
-import io.github.elderpath_crusade.utils.Logger;
 import lombok.Getter;
 
 import java.util.ArrayList;

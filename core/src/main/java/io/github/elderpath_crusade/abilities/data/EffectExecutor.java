@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.abilities.stats.StatsModifier;
-import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.ecs.EntityUtils;

@@ -12,7 +12,6 @@ import io.github.elderpath_crusade.ecs.components.IdentityComponent;
 import io.github.elderpath_crusade.ecs.components.ModifierComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.TurnStartedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
 

@@ -3,7 +3,6 @@ import io.github.elderpath_crusade.GameContext;
 
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.ui_objects.TextList;
-import io.github.elderpath_crusade.config.SettingsManager;
 
 /**
  * Small helper to centralize common menu layout patterns (header centering + vertical options list).

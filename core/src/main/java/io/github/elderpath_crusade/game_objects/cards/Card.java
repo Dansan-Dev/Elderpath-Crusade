@@ -18,7 +18,6 @@ import io.github.elderpath_crusade.supers.HigherOrderTexture;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.GraphicUtils;
 import io.github.elderpath_crusade.utils.SpriteCreator;
-import io.github.elderpath_crusade.input.InteractionManager;
 import io.github.elderpath_crusade.utils.HoverUtils;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.interfaces.CustomBox;

@@ -3,7 +3,6 @@ package io.github.elderpath_crusade.game_objects.cards;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.interfaces.Clickable;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
