@@ -91,13 +91,25 @@ public class ActionableAbilityExecutor {
             case "Self" -> null;
             case "ChooseEnemy", "ChooseFriendly", "ChooseAny" -> {
                 if (ownerPos == null || ownerAlign == null) yield List.of();
-                yield singlePickCandidates(owner, ownerPos, ownerAlign, range(selector), alignmentFilter(selectorType));
+                List<Coord> pieces = singlePickCandidates(owner, ownerPos, ownerAlign, range(selector), alignmentFilter(selectorType));
+                // A follow-up tile pick (Displace: "then an adjacent empty tile") needs an empty tile
+                // next to the chosen piece — a piece without one is a dead end (the action would
+                // fizzle after the click), so it's no candidate at all. With none left the ability
+                // isn't legal: LegalActions stops offering it and AbilityRules rejects it.
+                yield needsTilePick(actionDef)
+                        ? pieces.stream().filter(c -> !tilesInRange(c.row(), c.col(), 1, true).isEmpty()).toList()
+                        : pieces;
             }
             case "ChooseTile" -> ownerPos == null || ownerAlign == null
                     ? List.of() : tilesInRange(ownerPos.row, ownerPos.col, range(selector), false);
             case "ChooseRow" -> rowPickCandidates();
             default -> List.of();
         };
+    }
+
+    /** Whether the action asks a second, TILE pick next to the chosen piece ($chosenTile destination). */
+    private static boolean needsTilePick(ActionDef actionDef) {
+        return actionDef.effects().stream().anyMatch(e -> "$chosenTile".equals(e.params().get("destination")));
     }
 
     private static int range(TargetSelector selector) {
@@ -223,7 +235,7 @@ public class ActionableAbilityExecutor {
         List<Coord> candidates = firstPickCandidates(owner, actionDef);
         if (candidates.isEmpty()) return ActionResult.rejected(ActionResult.Reason.NO_VALID_TARGET);
 
-        boolean needsTilePick = actionDef.effects().stream().anyMatch(e -> "$chosenTile".equals(e.params().get("destination")));
+        boolean needsTilePick = needsTilePick(actionDef);
 
         pick(ownerAlign.alignment, PickKind.PIECE, candidates, abilityDef, choice -> {
             BoardGrid grid = GameContext.get().getActiveGrid();

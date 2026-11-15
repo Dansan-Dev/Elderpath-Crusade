@@ -265,6 +265,43 @@ class AbilityActivationTest {
     }
 
     @Test
+    void displace_neverOffersAPieceWithNoEmptyTileNextToIt() {
+        // Found by ARCH-031's live e2e test: such a piece is a dead end — after picking it the
+        // follow-up tile pick has no candidates and the action fizzles, unpaid, so the ability
+        // stayed "legal" forever and a player could click it to no effect, endlessly.
+        Entity mage = piece(PieceAlignment.P1, 0, 0, DISPLACE);
+        Entity boxedIn = piece(PieceAlignment.P2, 0, 1);
+        piece(PieceAlignment.P1, 0, 2);
+        piece(PieceAlignment.P1, 1, 0);
+        piece(PieceAlignment.P1, 1, 1);
+        piece(PieceAlignment.P1, 1, 2);
+
+        assertEquals(Reason.OK, server.activateAbility(PieceAlignment.P1, id(mage), 0).reason());
+        assertEquals(PickKind.PIECE, screen.prompted.kind());
+        assertFalse(screen.prompted.candidates().contains(new Coord(0, 1)),
+                "a piece with every neighbor taken can't be displaced anywhere");
+        assertTrue(screen.prompted.candidates().contains(new Coord(1, 1)), "a piece with room next to it still can");
+        assertSame(boxedIn, grid.getEntityAt(0, 1));
+    }
+
+    @Test
+    void displace_withEveryCandidateBoxedIn_isRejectedUpFront_noPrompt() {
+        // Range-1 Displace from a corner: every unit it could pick (itself and its three
+        // neighbors) has all of its own neighbors taken, so there's nothing it can usefully do.
+        AbilityDefinition shortDisplace = ability("ShortDisplace",
+                new ActionDef(List.of(new Cost("Action", 1)), new TargetSelector("ChooseAny", Map.of("range", 1)),
+                        List.of(new EffectNode("Move", Map.of("target", "$chosen", "destination", "$chosenTile")))));
+        Entity mage = piece(PieceAlignment.P1, 0, 0, shortDisplace);
+        for (int[] rc : new int[][]{{0, 1}, {1, 0}, {1, 1}, {0, 2}, {1, 2}, {2, 0}, {2, 1}, {2, 2}}) {
+            piece(PieceAlignment.P2, rc[0], rc[1]);
+        }
+
+        assertEquals(Reason.NO_VALID_TARGET, server.activateAbility(PieceAlignment.P1, id(mage), 0).reason());
+        assertNull(screen.prompted, "nothing to ask");
+        assertEquals(1, actions(mage), "nothing paid");
+    }
+
+    @Test
     void displace_excludesTheOffBoardRelicCarrierFromCandidates() {
         // BUG-052: MatchSetup.spawnCarrier places a side's relic carrier at (-1, col) — an
         // invisible, off-board entity that still has Position+Alignment components. A ChooseAny
