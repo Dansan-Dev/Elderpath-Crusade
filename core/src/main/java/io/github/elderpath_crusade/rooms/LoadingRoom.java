@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.interfaces.Updatable;
 import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
+import io.github.elderpath_crusade.path_loaders.ImagePathIcons;
 import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
 import io.github.elderpath_crusade.path_loaders.ImagePathRelicIcons;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpellArt;
@@ -62,6 +63,9 @@ public class LoadingRoom extends Room {
             queueTextureIfPresent(image.getPath());
         }
         for (ImagePathBackgroundAndUI image : ImagePathBackgroundAndUI.values()) {
+            queueTextureIfPresent(image.getPath());
+        }
+        for (ImagePathIcons image : ImagePathIcons.values()) {
             queueTextureIfPresent(image.getPath());
         }
     }

@@ -32,7 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 
 /**
  * Starts a match's simulation from a MatchConfig — headless, no rendering. A local room
@@ -275,7 +274,7 @@ public final class MatchSetup {
     private static void spawnElderPiece(BoardGrid grid, PieceAlignment side, PieceDefinition def, int row, int col) {
         Engine engine = GameContext.get().getEcsEngine();
         Entity entity = engine.createEntity();
-        String pieceId = UUID.randomUUID().toString();
+        String pieceId = ElderPieceIds.newId();
         entity.add(new IdentityComponent().set(pieceId, def.id()));
         entity.add(new AlignmentComponent().set(side));
         entity.add(new PositionComponent().set(row, col));

@@ -79,6 +79,16 @@ class ElderPieceSpawnTest {
     }
 
     @Test
+    void elderPiece_carriesTheReservedElderIdPrefix() {
+        prepare(baseConfig().withElders(Map.of(PieceAlignment.P1, List.of("Wolf"))));
+        MatchSetup.begin();
+
+        // UI-003: the client recognizes an Elder (crown badge on its hover card) by this id alone
+        String id = EntityUtils.getId(grid.getEntityAt(0, 2));
+        assertTrue(ElderPieceIds.isElder(id), "Elder piece id should be elder-prefixed, was " + id);
+    }
+
+    @Test
     void elderPiece_hasFullActionsRightAfterBeginWithNoEngineTickYet() {
         // The regression this guards: ComputedStatsComponent defaults to 0 actions, and
         // TurnSystem's turn-1 action reset (inside begin()) reads it before any tick ever

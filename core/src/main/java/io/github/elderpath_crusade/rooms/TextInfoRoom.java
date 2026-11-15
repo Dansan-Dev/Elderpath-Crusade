@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.config.SettingsManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
+import io.github.elderpath_crusade.ui_objects.TextPanel;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 public class TextInfoRoom extends Room {
+    /** Framed backdrop behind the scrolling text (added first so it draws behind it). */
+    private final TextPanel panel = new TextPanel();
     private Text header;
     private List<UIRenderable> infoComponents = new ArrayList<>();
     private Button backButton;
@@ -29,6 +32,7 @@ public class TextInfoRoom extends Room {
 
     private TextInfoRoom(String category) {
         super();
+        addContent(panel);
 
         String title = GameContext.get().getInfoDataManager().getTitle(category);
         header = new Text(title, FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
@@ -158,6 +162,8 @@ public class TextInfoRoom extends Room {
 
         int clipTop = screenHeight - 160;
         int clipBottom = 110;
+        int panelWidth = (int) (GameContext.get().getSettingsManager().screenSize.getScreenWidth() * 0.7f) + 64;
+        panel.setRect(GameContext.get().getSettingsManager().screenSize.getScreenWidth() / 2 - panelWidth / 2, clipBottom - 16, panelWidth, clipTop - clipBottom + 32);
 
         int currentY = screenHeight - 200 + scrollOffset;
         for (int i = 0; i < infoComponents.size(); i++) {

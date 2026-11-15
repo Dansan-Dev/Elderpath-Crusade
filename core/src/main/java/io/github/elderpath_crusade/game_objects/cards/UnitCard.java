@@ -1,15 +1,18 @@
 package io.github.elderpath_crusade.game_objects.cards;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Align;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.enums.FontType;
+import io.github.elderpath_crusade.path_loaders.ImagePathIcons;
 import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.CardRenderUtils;
 import io.github.elderpath_crusade.utils.ColorSettings;
+import io.github.elderpath_crusade.utils.IconTextures;
 
 import java.util.List;
 
@@ -31,6 +34,12 @@ public abstract class UnitCard extends Card {
 
     private Text descText;
 
+    // UI-003: keyword badges (icon + optional value label) shown instead of those abilities'
+    // rules text, and the Elder badge beside the cost. Textures resolved once, never per frame.
+    private Texture[] keywordTextures = new Texture[0];
+    private Text[] keywordLabels = new Text[0];
+    private Texture elderTexture;
+
     protected UnitCard(int x, int y, int width, int height, int z) {
         this(x, y, width, height, z, null, null);
     }
@@ -43,7 +52,10 @@ public abstract class UnitCard extends Card {
         setTitleColor(Color.WHITE);
 
         initStatTexts();
-        List<String> descs = getAbilityDescriptionsForCard(key);
+        PieceDefinition def = PieceRegistry.get(key);
+        CardKeywords.Split split = CardKeywords.split(def == null ? List.of() : def.abilities(), IconTextures::available);
+        setKeywords(split.keywords());
+        List<String> descs = split.descriptions();
         if (descs != null && !descs.isEmpty()) {
             String desc = String.join("\n\n", descs);
             descText = new Text(desc, FontType.SILKSCREEN, 0, 0, getZLayer(), ColorSettings.TEXT_DEFAULT.getColor());
@@ -87,22 +99,27 @@ public abstract class UnitCard extends Card {
     protected abstract String getCardName();
 
     protected List<String> getAbilityDescriptionsForCard() {
-        return getAbilityDescriptionsForCard(getRegistryKey());
+        PieceDefinition def = PieceRegistry.get(getRegistryKey());
+        return CardKeywords.split(def == null ? List.of() : def.abilities(), IconTextures::available).descriptions();
     }
 
-    private List<String> getAbilityDescriptionsForCard(String key) {
-        PieceDefinition def = PieceRegistry.get(key);
-        if (def == null || def.abilities().isEmpty()) return List.of();
-        List<String> descs = new java.util.ArrayList<>();
-        for (io.github.elderpath_crusade.data.AbilityRef ref : def.abilities()) {
-            io.github.elderpath_crusade.abilities.data.AbilityDefinition abDef = ref.params().isEmpty()
-                ? io.github.elderpath_crusade.data.AbilityRegistry.get(ref.name())
-                : io.github.elderpath_crusade.data.AbilityRegistry.specialize(ref.name(), ref.params());
-            if (abDef != null && abDef.description() != null && !abDef.description().isEmpty()) {
-                descs.add(abDef.description());
-            }
+    /** Replaces this card's keyword badges (UI-003); a keyword whose icon is missing is skipped. */
+    protected void setKeywords(List<CardKeywords.Keyword> keywords) {
+        List<CardKeywords.Keyword> shown = keywords == null ? List.of()
+                : keywords.stream().filter(k -> IconTextures.available(k.icon())).toList();
+        keywordTextures = new Texture[shown.size()];
+        keywordLabels = new Text[shown.size()];
+        for (int i = 0; i < shown.size(); i++) {
+            keywordTextures[i] = IconTextures.get(shown.get(i).icon());
+            String label = shown.get(i).label();
+            keywordLabels[i] = label.isEmpty() ? null : makeStatText(label);
         }
-        return descs;
+        updateStatTextSizes();
+    }
+
+    /** Shows or hides the Elder badge beside the cost gem (UI-003). */
+    protected void setElderBadge(boolean elder) {
+        elderTexture = elder ? IconTextures.get(ImagePathIcons.ELDER) : null;
     }
 
     /** Read-only access to cost. */
@@ -157,6 +174,9 @@ public abstract class UnitCard extends Card {
         if (atkText != null) atkText.withFontSize(big);
         if (spdText != null) spdText.withFontSize(small);
         if (actText != null) actText.withFontSize(small);
+        if (keywordLabels != null) {
+            for (Text label : keywordLabels) if (label != null) label.withFontSize(small);
+        }
     }
 
     @Override
@@ -179,6 +199,9 @@ public abstract class UnitCard extends Card {
                 batch, zLevel, isPaused,
                 baseX, baseY, getWidth(), getHeight(),
                 manaText, hpText, spdText, actText, atkText,
-                descText);
+                descText, keywordTextures.length > 0);
+        CardRenderUtils.renderKeywordBadges(batch, zLevel, baseX, baseY, getWidth(), getHeight(),
+                keywordTextures, keywordLabels);
+        CardRenderUtils.renderElderBadge(batch, baseX, baseY, getWidth(), getHeight(), elderTexture);
     }
 }

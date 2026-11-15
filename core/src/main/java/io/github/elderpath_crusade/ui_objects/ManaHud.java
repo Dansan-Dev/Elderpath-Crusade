@@ -11,7 +11,10 @@ import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
+import io.github.elderpath_crusade.path_loaders.ImagePathIcons;
 import io.github.elderpath_crusade.utils.FontSize;
+import io.github.elderpath_crusade.utils.IconTextures;
+import com.badlogic.gdx.graphics.Texture;
 
 /**
  * Mana HUD: shows P1 and P2 mana only.
@@ -22,6 +25,8 @@ import io.github.elderpath_crusade.utils.FontSize;
 public class ManaHud extends LowestOrderTexture implements UIRenderable {
     private final Text p1Text;
     private final Text p2Text;
+    /** Mana crystal drawn left of each line (null when the art is missing → text only). */
+    private final Texture manaIcon;
 
     public ManaHud() {
         int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
@@ -31,6 +36,7 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
             .withFontSize(FontSize.CAPTION);
         p2Text = new Text("", FontType.SILKSCREEN, 16, screenH - 16, 0, Color.WHITE)
             .withFontSize(FontSize.CAPTION);
+        manaIcon = IconTextures.get(ImagePathIcons.MANA);
         setBounds(new Box(0, 0, screenW, screenH));
     }
 
@@ -55,8 +61,10 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         boolean swapPositions = GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH &&
                                 session != null && session.currentPlayer() == PieceAlignment.P2;
         
-        int p1x = paddingX;
-        int p2x = paddingX;
+        int iconSize = Math.round(p1Text.getHeight() * 1.5f);
+        int textX = manaIcon == null ? paddingX : paddingX + iconSize + 6;
+        int p1x = textX;
+        int p2x = textX;
         int p1y, p2y;
         
         if (swapPositions) {
@@ -73,6 +81,10 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         p1Text.setBounds(new Box(p1x, p1y, p1Text.getWidth(), p1Text.getHeight()));
 
         // Render
+        if (manaIcon != null) {
+            batch.draw(manaIcon, paddingX, p2y + (p2Text.getHeight() - iconSize) / 2f, iconSize, iconSize);
+            batch.draw(manaIcon, paddingX, p1y + (p1Text.getHeight() - iconSize) / 2f, iconSize, iconSize);
+        }
         p2Text.render(batch, 0, isPaused);
         p1Text.render(batch, 0, isPaused);
     }

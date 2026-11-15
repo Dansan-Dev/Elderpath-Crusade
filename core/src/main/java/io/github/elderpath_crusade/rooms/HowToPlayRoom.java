@@ -7,6 +7,7 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
+import io.github.elderpath_crusade.ui_objects.TextPanel;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
@@ -31,6 +32,8 @@ import java.util.List;
  * CollectionRoom} already use, copied rather than reinvented.
  */
 public class HowToPlayRoom extends Room {
+    /** Framed backdrop behind the scrolling text (added first so it draws behind it). */
+    private final TextPanel panel = new TextPanel();
     private static final String[] SECTIONS = {
             "Hand & Mana",
             "Each turn you draw cards into your hand. Playing a card costs mana (shown at the "
@@ -46,6 +49,11 @@ public class HowToPlayRoom extends Room {
             "Some pieces have a special ability, shown as a small bubble above them while it's "
                     + "your turn. Click the bubble to use it. Hover over an enemy you could attack "
                     + "to preview the damage before you commit to it.",
+
+            "Card Icons",
+            "Common keywords are shown as icons above a card's rules text: a target with a "
+                    + "number is the piece's attack range, a crossed-out sword means it cannot "
+                    + "attack. In a run, a crown beside the cost marks one of your Elders.",
 
             "Ending Your Turn",
             "Each piece only has a limited number of actions per turn. Click \"Pass Turn\" once "
@@ -67,6 +75,7 @@ public class HowToPlayRoom extends Room {
 
     private HowToPlayRoom() {
         super();
+        addContent(panel);
 
         header = new Text("How to Play", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(FontSize.TITLE_MEDIUM);
@@ -154,6 +163,8 @@ public class HowToPlayRoom extends Room {
 
         int clipTop = screenHeight - 160;
         int clipBottom = 110;
+        int panelWidth = (int) (GameContext.get().getSettingsManager().screenSize.getScreenWidth() * 0.7f) + 64;
+        panel.setRect(GameContext.get().getSettingsManager().screenSize.getScreenWidth() / 2 - panelWidth / 2, clipBottom - 16, panelWidth, clipTop - clipBottom + 32);
         int currentY = screenHeight - 200 + scrollOffset;
         for (int i = 0; i < blocks.size(); i++) {
             Text block = blocks.get(i);

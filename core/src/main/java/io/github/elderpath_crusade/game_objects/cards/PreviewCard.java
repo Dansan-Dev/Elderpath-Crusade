@@ -19,6 +19,16 @@ public class PreviewCard extends UnitCard {
         setDescriptionText(desc);
     }
 
+    /** The hovered piece's keyword badges (UI-003), built by the caller from its abilities. */
+    public void setKeywordBadges(List<CardKeywords.Keyword> keywords) {
+        setKeywords(keywords);
+    }
+
+    /** Marks the hovered piece as an Elder (UI-003): a crown badge beside the cost. */
+    public void setElder(boolean elder) {
+        setElderBadge(elder);
+    }
+
     @Override
     public ClickableEffectData getClickableEffectData() {
         return null;

@@ -10,6 +10,7 @@ import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
+import io.github.elderpath_crusade.ui_objects.TextPanel;
 import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
@@ -37,6 +38,8 @@ import java.util.stream.Collectors;
  * than reinvented.
  */
 public class CollectionRoom extends Room {
+    /** Framed backdrop behind the scrolling text (added first so it draws behind it). */
+    private final TextPanel panel = new TextPanel();
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
@@ -60,6 +63,7 @@ public class CollectionRoom extends Room {
 
     private CollectionRoom(int difficultyFilter) {
         super();
+        addContent(panel);
 
         header = new Text("Deck Collection", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(FontSize.TITLE_MEDIUM);
@@ -214,6 +218,8 @@ public class CollectionRoom extends Room {
 
         int clipTop = screenHeight - 160 - LIST_TOP_SHIFT;
         int clipBottom = 110;
+        int panelWidth = (int) (GameContext.get().getSettingsManager().screenSize.getScreenWidth() * 0.8f) + 64;
+        panel.setRect(GameContext.get().getSettingsManager().screenSize.getScreenWidth() / 2 - panelWidth / 2, clipBottom - 16, panelWidth, clipTop - clipBottom + 32);
         int currentY = screenHeight - 200 - LIST_TOP_SHIFT + scrollOffset;
         for (Text block : entryBlocks) {
             block.getBounds().setX(screenCenterX - block.getBounds().getWidth() / 2);

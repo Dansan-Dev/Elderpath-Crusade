@@ -72,6 +72,17 @@ class ArtPathLoadersTest {
             assertSize(ImagePathSpritesAndAnimations.MOUNTAIN_TERRAIN.getPath(), 1024, 1024); // MountainSprite's crop
         }
 
+        @Test
+        void ui003IconsAndTextPanelExist() throws Exception {
+            for (ImagePathIcons icon : ImagePathIcons.values()) {
+                BufferedImage image = read(icon.getPath());
+                assertEquals(image.getWidth(), image.getHeight(), icon + " should be square (drawn into a square rect)");
+            }
+            BufferedImage panel = read(ImagePathBackgroundAndUI.TEXT_PANEL.getPath());
+            // TextPanel's nine-patch insets (8 px each side) need room for a middle
+            assertTrue(panel.getWidth() > 16 && panel.getHeight() > 16, "text panel too small for its insets");
+        }
+
         @SuppressWarnings("unchecked")
         private Set<String> yamlKeys(String file, String root) throws Exception {
             try (InputStream is = Files.newInputStream(Path.of("../assets/data", file))) {

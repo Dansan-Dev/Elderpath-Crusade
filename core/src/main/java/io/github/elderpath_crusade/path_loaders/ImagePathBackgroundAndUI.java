@@ -15,7 +15,9 @@ public enum ImagePathBackgroundAndUI {
     BUTTON_PLATE_2("ui/button_plate_2.png"),
     BUTTON_PLATE_3("ui/button_plate_3.png"),
     BUTTON_PLATE_4("ui/button_plate_4.png"),
-    BUTTON_PLATE_5("ui/button_plate_5.png");
+    BUTTON_PLATE_5("ui/button_plate_5.png"),
+    /** Dark wooden panel with a bronze border, drawn as a nine-patch behind text-heavy screens (see TextPanel). */
+    TEXT_PANEL("ui/text_panel.png");
 
     /** The button plate variants, in order. */
     public static final java.util.List<ImagePathBackgroundAndUI> BUTTON_PLATES =

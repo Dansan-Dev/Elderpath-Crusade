@@ -5,20 +5,20 @@ import io.github.elderpath_crusade.path_loaders.ImagePathPieceSprites;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.elderpath_crusade.abilities.data.AbilityDefinition;
-import io.github.elderpath_crusade.data.AbilityRegistry;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.ecs.EntityUtils;
 import io.github.elderpath_crusade.game_objects.board.Board;
+import io.github.elderpath_crusade.game_objects.cards.CardKeywords;
 import io.github.elderpath_crusade.game_objects.cards.PreviewCard;
+import io.github.elderpath_crusade.match.ElderPieceIds;
+import io.github.elderpath_crusade.utils.IconTextures;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -107,23 +107,14 @@ public class CardPreviewPanel extends LowestOrderTexture implements UIRenderable
         ImagePathPieceSprites figure = ImagePathPieceSprites.forRegistryKey(EntityUtils.getName(entity));
         if (figure != null) previewCard.setPortrait(figure.getPath());
 
-        // Build description from data-driven ability definitions
+        // Keyword abilities as badges (UI-003), the rest as rules text
         String pieceName = EntityUtils.getName(entity);
         PieceDefinition pieceDef = PieceRegistry.get(pieceName);
-        if (pieceDef != null && !pieceDef.abilities().isEmpty()) {
-            List<String> lines = new ArrayList<>();
-            for (io.github.elderpath_crusade.data.AbilityRef ref : pieceDef.abilities()) {
-                AbilityDefinition abDef = ref.params().isEmpty()
-                    ? AbilityRegistry.get(ref.name())
-                    : AbilityRegistry.specialize(ref.name(), ref.params());
-                if (abDef != null && abDef.description() != null && !abDef.description().isEmpty()) {
-                    lines.add(abDef.description());
-                }
-            }
-            previewCard.setDescription(lines.isEmpty() ? "" : String.join("\n\n", lines));
-        } else {
-            previewCard.setDescription("");
-        }
+        CardKeywords.Split split = CardKeywords.split(
+                pieceDef == null ? List.of() : pieceDef.abilities(), IconTextures::available);
+        previewCard.setKeywordBadges(split.keywords());
+        previewCard.setDescription(String.join("\n\n", split.descriptions()));
+        previewCard.setElder(ElderPieceIds.isElder(id));
     }
 
     private Entity findHoveredEntity() {
