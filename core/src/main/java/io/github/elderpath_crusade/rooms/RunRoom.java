@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientMatchSession;
@@ -64,7 +65,7 @@ public class RunRoom extends Room {
 
     private RunRoom() {
         super();
-        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
 
         RunManager runManager = GameContext.get().getRunManager();
         if (!runManager.hasActiveRun()) {

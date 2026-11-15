@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
@@ -54,7 +55,7 @@ public class DraftRoom extends Room {
         super();
 
         // Play menu music
-        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
 
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;

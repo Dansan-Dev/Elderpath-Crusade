@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
@@ -31,7 +32,7 @@ public class DifficultySelectRoom extends Room {
 
     private DifficultySelectRoom() {
         super();
-        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
 
         header = new Text("Choose Your Difficulty", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);

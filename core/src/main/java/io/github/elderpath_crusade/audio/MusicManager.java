@@ -55,6 +55,10 @@ public class MusicManager {
         }
     }
 
+    public void playLoopingMusic(MusicPath track) {
+        playLoopingMusic(track.getFileName());
+    }
+
     public void playLoopingMusic(String path) {
         if (path.equals(currentMusicPath)) {
             if (!isMusicPlaying) resumeMusic();

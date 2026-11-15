@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientController;
@@ -87,7 +88,7 @@ public abstract class BattleRoom extends Room {
                     VictoryTransition.show(winner);
                 });
         GameContext.get().setClientMatch(session, controller, viewSync);
-        GameContext.get().getMusicManager().playLoopingMusic("Daniel_Game.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.BATTLE);
 
         // 2. The loading room upstream already waited for this seat's Welcome (rows/cols/
         // terrain known); pump once more and build the view entities + grid before the board.

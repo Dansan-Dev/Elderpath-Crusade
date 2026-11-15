@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
@@ -48,7 +49,7 @@ public class DeckSourceSelectRoom extends Room {
     private DeckSourceSelectRoom(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onDeckChosen) {
         super();
 
-        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
 
         String title = isLocalMultiplayer
                 ? (player == PieceAlignment.P1 ? "Player 1 — Choose Your Deck" : "Player 2 — Choose Your Deck")

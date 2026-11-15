@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import com.badlogic.gdx.Input;
 import io.github.elderpath_crusade.enums.settings.InputFunction;
 import io.github.elderpath_crusade.enums.settings.Language;
@@ -85,7 +86,7 @@ public class SettingsRoom extends Room {
         // but guard against entering fresh with one still dangling regardless.
         GameContext.get().getInputManager().cancelCapture();
 
-        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
 
         header = new Text("Settings", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
             .withFontSize(FontSize.TITLE_MEDIUM);

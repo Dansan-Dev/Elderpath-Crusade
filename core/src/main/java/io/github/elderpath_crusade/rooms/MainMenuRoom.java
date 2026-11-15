@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.rooms;
 
+import io.github.elderpath_crusade.audio.MusicPath;
 import com.badlogic.gdx.graphics.Color;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.path_loaders.ImagePathBackgroundAndUI;
@@ -35,7 +36,7 @@ public class MainMenuRoom extends Room {
         super();
 
         // Play menu music
-        GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
+        GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
 
         // Create objects
 
