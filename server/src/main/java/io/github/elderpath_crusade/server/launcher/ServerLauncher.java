@@ -117,8 +117,7 @@ public final class ServerLauncher {
         long idleNanos = options.idleTimeoutSeconds() * 1_000_000_000L;
         long graceNanos = options.endGraceSeconds() * 1_000_000_000L;
         long last = System.nanoTime();
-        long lastConnected = last;
-        long endedAt = -1;
+        StopPolicy stopPolicy = new StopPolicy(!humans.isEmpty(), idleNanos, graceNanos, last);
 
         while (stopReason == null) {
             long now = System.nanoTime();
@@ -129,17 +128,13 @@ public final class ServerLauncher {
             lastTickNanos = now;
 
             boolean anyConnected = humans.stream().anyMatch(server::isConnected);
-            if (anyConnected) lastConnected = now;
-
-            if (server.isEnded() && endedAt < 0) {
-                endedAt = now;
+            String stop = stopPolicy.check(now, anyConnected, server.isEnded());
+            if (stopPolicy.matchJustEnded()) {
                 PieceAlignment winner = server.getWinner();
                 report(ServerProcess.MATCH_ENDED + " " + (winner != null ? winner.name() : "NONE"));
             }
-            if (endedAt >= 0 && (!anyConnected || now - endedAt >= graceNanos)) stopReason = "match ended";
-            else if (!humans.isEmpty() && !anyConnected && now - lastConnected >= idleNanos) {
-                stopReason = "no client connected for " + options.idleTimeoutSeconds() + " s";
-            }
+            if ("match ended".equals(stop)) stopReason = stop;
+            else if (stop != null) stopReason = "no client connected for " + options.idleTimeoutSeconds() + " s";
 
             long sleepNanos = tickNanos - (System.nanoTime() - now);
             if (sleepNanos > 0) Thread.sleep(sleepNanos / 1_000_000L, (int) (sleepNanos % 1_000_000L));

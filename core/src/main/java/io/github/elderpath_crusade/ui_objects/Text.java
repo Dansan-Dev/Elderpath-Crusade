@@ -47,6 +47,19 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     private boolean needsReflow = false;
     private int alignment = Align.center;
 
+    // What the current label was last built from: update() is called every frame by some callers
+    // (cards), and building a Label plus the wrap binary search is the expensive part, so it only
+    // runs again when one of these inputs changed (or reflow() forced it).
+    private String builtText;
+    private LabelStyle builtStyle;
+    private Float builtDesiredFontSize;
+    private float builtFontScale;
+    private Float builtMaxFontSize;
+    private boolean builtWrap;
+    private int builtWrapWidth;
+    private int builtWrapHeight;
+    private int builtAlignment;
+
     public Text(String text, FontType fontType, int x, int y, int z, Color color) {
         this.text = text;
         this.fontType = fontType;
@@ -107,10 +120,12 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
 
     // --- Wrapping API ---
     public Text withWrapBounds(int width, int height) {
+        int newWidth = Math.max(0, width);
+        int newHeight = Math.max(0, height);
+        if (!wrapEnabled || newWidth != wrapWidth || newHeight != wrapHeight) this.needsReflow = true;
         this.wrapEnabled = true;
-        this.wrapWidth = Math.max(0, width);
-        this.wrapHeight = Math.max(0, height);
-        this.needsReflow = true;
+        this.wrapWidth = newWidth;
+        this.wrapHeight = newHeight;
         update();
         return this;
     }
@@ -148,8 +163,35 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         return withFontSize(size.getSize());
     }
 
+    private boolean layoutUpToDate() {
+        return label != null && !needsReflow
+                && java.util.Objects.equals(text, builtText)
+                && style == builtStyle
+                && java.util.Objects.equals(desiredFontSize, builtDesiredFontSize)
+                && fontScale == builtFontScale
+                && java.util.Objects.equals(maxFontSize, builtMaxFontSize)
+                && wrapEnabled == builtWrap
+                && wrapWidth == builtWrapWidth
+                && wrapHeight == builtWrapHeight
+                && alignment == builtAlignment;
+    }
+
     public void update() {
         style = GameContext.get().getFontManager().getLabelStyle(fontType);
+        if (!layoutUpToDate()) rebuildLabel();
+        applyPositionAndBounds();
+    }
+
+    private void rebuildLabel() {
+        builtText = text;
+        builtStyle = style;
+        builtDesiredFontSize = desiredFontSize;
+        builtFontScale = fontScale;
+        builtMaxFontSize = maxFontSize;
+        builtWrap = wrapEnabled;
+        builtWrapWidth = wrapWidth;
+        builtWrapHeight = wrapHeight;
+        builtAlignment = alignment;
         label = new Label(text, style);
         label.setAlignment(alignment);
         label.setWrap(wrapEnabled);
@@ -222,7 +264,9 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
             label.pack(); // Calculate final height
             label.setWidth(wrapWidth); // Restore width after pack
         }
+    }
 
+    private void applyPositionAndBounds() {
         Box bounds = getBounds();
         label.setPosition(bounds.getX(), bounds.getY());
         label.setColor(color);
