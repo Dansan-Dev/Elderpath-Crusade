@@ -74,6 +74,22 @@ class AutoPlayerTest {
     }
 
     @Test
+    void cards_playedAsSpellOrSummonFromTheServersFlag_noLocalCatalogNeeded() {
+        // No CardCatalog entries exist in this test, like in the CLI process (CLI-006's soak run
+        // found AutoPlayer sending a targeted Fireball as a summon there).
+        List<LegalActions.CardActions> cards = List.of(new LegalActions.CardActions("P1-7", false, List.of(new Coord(4, 2)), true));
+        state.apply(new ServerMessage.LegalActionsUpdate(new LegalActions(PieceAlignment.P1, true, null, true, List.of(), cards)));
+        assertTrue(greedyStep(null, false));
+        assertEquals(List.of("spell P1-7"), sent);
+
+        sent.clear();
+        cards = List.of(new LegalActions.CardActions("P1-8", false, List.of(new Coord(0, 2)), false));
+        state.apply(new ServerMessage.LegalActionsUpdate(new LegalActions(PieceAlignment.P1, true, null, true, List.of(), cards)));
+        assertTrue(greedyStep(null, false));
+        assertEquals(List.of("summon P1-8@0,2"), sent);
+    }
+
+    @Test
     void neverActs_whileUnacked_offTurn_orBeforeLegalActions() {
         assertFalse(greedyStep(null, false), "no LegalActions yet");
         legal(true, true, List.of());

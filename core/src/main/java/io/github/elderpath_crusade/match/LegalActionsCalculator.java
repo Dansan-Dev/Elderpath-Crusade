@@ -120,7 +120,9 @@ public final class LegalActionsCalculator {
                     }
                 }
             }
-            if (untargeted || !targets.isEmpty()) out.add(new LegalActions.CardActions(id, untargeted, targets));
+            if (untargeted || !targets.isEmpty()) {
+                out.add(new LegalActions.CardActions(id, untargeted, targets, entry instanceof CardCatalog.Spell));
+            }
         }
         return out;
     }

@@ -276,6 +276,8 @@ class LegalActionsCalculatorTest {
             }
             boolean untargetedOk = !summon && rules.validateSpell(side, card.instanceId(), null, null).isOk();
             assertEquals(untargetedOk, listed != null && listed.untargeted(), card + " untargeted");
+            // Clients choose PlaySpellCard vs PlaySummonCard from this flag alone (CLI-006).
+            if (listed != null) assertEquals(!summon, listed.spell(), card + " spell flag");
         }
         for (LegalActions.CardActions c : legal.cards()) {
             assertTrue(hand.stream().anyMatch(h -> h.instanceId().equals(c.instanceId())), "only cards in hand");

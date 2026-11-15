@@ -46,11 +46,18 @@ public record LegalActions(
 
     /**
      * A card in hand that can be played: onto/at one of targets (summon tiles, or the pieces a
-     * spell may target), or — untargeted spell — with no target at all.
+     * spell may target), or — untargeted spell — with no target at all. {@code spell} says which
+     * command plays it (PlaySpellCard vs PlaySummonCard), so a client never needs its own card
+     * catalog to act — the CLI process doesn't load one (found by CLI-006's soak run).
      */
-    public record CardActions(String instanceId, boolean untargeted, List<Coord> targets) {
+    public record CardActions(String instanceId, boolean untargeted, List<Coord> targets, boolean spell) {
         public CardActions {
             targets = List.copyOf(targets);
+        }
+
+        /** Without an explicit kind: an untargeted card can only be a spell, otherwise a summon. */
+        public CardActions(String instanceId, boolean untargeted, List<Coord> targets) {
+            this(instanceId, untargeted, targets, untargeted);
         }
     }
 

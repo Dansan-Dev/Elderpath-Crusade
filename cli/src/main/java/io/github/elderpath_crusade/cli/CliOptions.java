@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.cli;
 
 import io.github.elderpath_crusade.bot.BotKind;
+import io.github.elderpath_crusade.client.AutoPlayer;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.LocalMatchSpec;
 import io.github.elderpath_crusade.net.protocol.SeatRequest;
@@ -32,6 +33,9 @@ public final class CliOptions {
     private File assetsDir;
     private Long seed;
     private String scriptPath;
+    private Integer soakGames;
+    private AutoPlayer.Strategy soakStrategy = AutoPlayer.Strategy.RANDOM;
+    private int soakMaxTurns = SoakRunner.DEFAULT_MAX_TURNS;
 
     private CliOptions() {}
 
@@ -52,11 +56,20 @@ public final class CliOptions {
                 case "--assets" -> o.assetsDir = new File(next(args, ++i));
                 case "--seed" -> o.seed = parseSeed(next(args, ++i));
                 case "--script" -> o.scriptPath = next(args, ++i);
+                case "--soak" -> o.soakGames = parsePositiveInt(next(args, ++i), "--soak");
+                case "--strategy" -> o.soakStrategy = parseStrategy(next(args, ++i));
+                case "--max-turns" -> o.soakMaxTurns = parsePositiveInt(next(args, ++i), "--max-turns");
                 default -> throw new IllegalArgumentException("unknown flag: " + arg);
             }
         }
         if (o.mode == Mode.JOIN && o.host == null) {
             throw new IllegalArgumentException("--mode join requires --host");
+        }
+        if (o.soakGames != null && o.mode != Mode.SOLO && o.mode != Mode.HOTSEAT) {
+            throw new IllegalArgumentException("--soak needs --mode solo or hotseat (it plays every seat it controls itself)");
+        }
+        if (o.soakGames != null && o.scriptPath != null) {
+            throw new IllegalArgumentException("--soak and --script can't be combined");
         }
         return o;
     }
@@ -68,6 +81,33 @@ public final class CliOptions {
     /** The script file to read commands from, or null for interactive stdin — wired up by CLI-004. */
     public String scriptPath() {
         return scriptPath;
+    }
+
+    /** Games to play unattended (CLI-006), or null for a normal interactive/scripted session. */
+    public Integer soakGames() {
+        return soakGames;
+    }
+
+    public AutoPlayer.Strategy soakStrategy() {
+        return soakStrategy;
+    }
+
+    public int soakMaxTurns() {
+        return soakMaxTurns;
+    }
+
+    /** The --seed given, or null — a soak run derives each game's own seed from it. */
+    public Long seed() {
+        return seed;
+    }
+
+    /**
+     * A soak game's session (CLI-006): this configuration's local match with the given seed and
+     * extra ServerLauncher flags (the soak runner speeds the server-side bot up).
+     */
+    public ClientMatchSession startSoakSession(long gameSeed, String... serverArgs) {
+        LocalMatchSpec spec = mode == Mode.HOTSEAT ? twoHumansSpec() : soloSpec();
+        return ClientMatchSession.startLocal(spec.withSeed(gameSeed).withServerArgs(serverArgs));
     }
 
     /** Starts the session this configuration describes — launches a local server (solo/hotseat/host) or connects (join). */
@@ -123,6 +163,14 @@ public final class CliOptions {
             return BotKind.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("--bot must be basic or smart (was: " + value + ")");
+        }
+    }
+
+    private static AutoPlayer.Strategy parseStrategy(String value) {
+        try {
+            return AutoPlayer.Strategy.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("--strategy must be random or greedy (was: " + value + ")");
         }
     }
 

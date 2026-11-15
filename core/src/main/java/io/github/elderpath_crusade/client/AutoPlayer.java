@@ -1,7 +1,5 @@
 package io.github.elderpath_crusade.client;
 
-import io.github.elderpath_crusade.match.CardCatalog;
-import io.github.elderpath_crusade.match.CardInstance;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.match.LegalActions;
 import io.github.elderpath_crusade.match.PickRequest;
@@ -93,7 +91,7 @@ public final class AutoPlayer {
                 return sent(commands.moveOrAttack(p.from().row(), p.from().col(), best.row(), best.col()));
             }
         }
-        if (!legal.cards().isEmpty()) return playCard(state, legal.cards().get(0), 0, commands);
+        if (!legal.cards().isEmpty()) return playCard(legal.cards().get(0), 0, commands);
         return legal.canEndTurn() && sent(commands.endTurn());
     }
 
@@ -107,10 +105,10 @@ public final class AutoPlayer {
             for (LegalActions.AbilityOption a : p.abilities()) options.add(() -> sent(commands.activateAbility(p.pieceId(), a.actionIndex())));
         }
         for (LegalActions.CardActions card : legal.cards()) {
-            if (card.untargeted()) options.add(() -> playCard(state, card, -1, commands));
+            if (card.untargeted()) options.add(() -> playCard(card, -1, commands));
             for (int i = 0; i < card.targets().size(); i++) {
                 int target = i;
-                options.add(() -> playCard(state, card, target, commands));
+                options.add(() -> playCard(card, target, commands));
             }
         }
         if (legal.canEndTurn()) options.add(() -> sent(commands.endTurn()));
@@ -118,19 +116,12 @@ public final class AutoPlayer {
         return options.get(random.nextInt(options.size())).getAsBoolean();
     }
 
-    /** targetIndex -1 = untargeted. */
-    private static boolean playCard(ClientMatchState state, LegalActions.CardActions card, int targetIndex, ClientCommands commands) {
+    /** targetIndex -1 = untargeted. Spell vs summon comes from the server's LegalActions, not a local catalog. */
+    private static boolean playCard(LegalActions.CardActions card, int targetIndex, ClientCommands commands) {
         if (card.untargeted() || targetIndex < 0) return sent(commands.playSpell(card.instanceId(), null, null));
         Coord target = card.targets().get(targetIndex);
-        if (isSpell(state, card.instanceId())) return sent(commands.playSpell(card.instanceId(), target.row(), target.col()));
+        if (card.spell()) return sent(commands.playSpell(card.instanceId(), target.row(), target.col()));
         return sent(commands.playSummon(card.instanceId(), target.row(), target.col()));
-    }
-
-    private static boolean isSpell(ClientMatchState state, String instanceId) {
-        for (CardInstance card : state.getOwnHand()) {
-            if (card.instanceId().equals(instanceId)) return CardCatalog.get(card.cardName()) instanceof CardCatalog.Spell;
-        }
-        return false;
     }
 
     private static boolean sent(long seq) {
