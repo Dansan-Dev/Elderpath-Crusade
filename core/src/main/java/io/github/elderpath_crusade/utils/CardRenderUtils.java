@@ -40,8 +40,10 @@ public class CardRenderUtils {
     public static final float BADGE_CY = 0.365f;
     public static final float BADGE_SIZE_PCT = 0.075f;   // of card height
     public static final float BADGE_ROW_PCT = 0.05f;
-    // UI-003 Elder badge: just left of the cost gem (user's placement, 2026-11-15).
-    public static final float ELDER_CX = 0.64f;
+    // UI-003 Elder badge: centered above the portrait (user feedback, 2026-11-15 — originally
+    // placed beside the cost gem). ELDER_CX mirrors Card.PORTRAIT_CENTER_X (0.508) rather than
+    // importing it directly — utils stays generic, with no dependency on a concrete card class.
+    public static final float ELDER_CX = 0.508f;
     public static final float ELDER_CY = 0.93f;
     public static final float ELDER_SIZE_PCT = 0.085f;   // of card height
 
