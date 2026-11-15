@@ -12,6 +12,7 @@ import io.github.elderpath_crusade.enums.settings.Language;
  */
 public record PersistedSettings(int masterVolume, int musicVolume, int sfxVolume, Language language,
         boolean fullscreen, int pauseMenuKeycode, int confirmSelectionKeycode) {
-    public static final PersistedSettings DEFAULTS = new PersistedSettings(5, 5, 5, Language.ENGLISH, false,
+    /** Master 7 / music 3: what every launch used to force before the saved values were honoured. */
+    public static final PersistedSettings DEFAULTS = new PersistedSettings(7, 3, 5, Language.ENGLISH, false,
             KeybindSetting.DEFAULT_PAUSE_MENU_KEYCODE, KeybindSetting.DEFAULT_CONFIRM_SELECTION_KEYCODE);
 }

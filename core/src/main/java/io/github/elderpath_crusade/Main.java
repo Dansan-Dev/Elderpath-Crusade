@@ -1,8 +1,6 @@
 package io.github.elderpath_crusade;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import io.github.elderpath_crusade.api.BackendService;
-import io.github.elderpath_crusade.api.dto.UserListResponseDto;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.enums.settings.InputHandlerData;
@@ -23,19 +21,9 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
-        boolean isOnline = BackendService.isUp();
-        if (isOnline) {
-            UserListResponseDto userListResponseDto = BackendService.getUsers();
-            System.out.println("USERS:");
-            userListResponseDto.getUsers().forEach(userResponseDto -> {
-                System.out.println("> " + userResponseDto.getUsername());
-            });
-        }
         GameContext.createClient();
+        // Loads the saved settings (volume included) — nothing here may overwrite them afterwards.
         GameContext.get().getGameManager().initialize();
-
-        GameContext.get().getSettingsManager().sound.setMusicVolume(3);
-        GameContext.get().getSettingsManager().sound.setMasterVolume(7);
         GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");
 
         GameContext.get().getRoomManager().initialize();
