@@ -18,7 +18,7 @@ import lombok.Getter;
  *
  * Not thread-safe: poll() and the commands are called from the client's own loop.
  */
-public final class MatchClient {
+public final class MatchClient implements ClientCommands {
     private final ServerConnection connection;
     @Getter private final ClientMatchState state = new ClientMatchState();
     private long nextSeq = 1;

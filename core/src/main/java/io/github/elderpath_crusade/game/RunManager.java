@@ -60,6 +60,7 @@ import java.util.UUID;
  * after each non-final floor's boss now, never after an ordinary Battle/Elite win.
  */
 public final class RunManager {
+    private String[] serverArgs = new String[0];
     /** How many sequential floors a run has (MULTI-001) — each its own map, ending in its own boss. */
     public static final int TOTAL_FLOORS = 3;
 
@@ -192,10 +193,21 @@ public final class RunManager {
      * A room that drives its own {@code ClientMatchSession}/{@code BattleRoom} polling instead
      * can skip this and call {@link #reportNodeOutcome} directly once it knows the winner.
      */
+    /**
+     * Extra {@code ServerLauncher} flags for every battle this manager starts — e.g. {@code
+     * --time-scale 20 --tick-ms 5} so a scripted/soak run (ARCH-032, CLI-006) isn't paced for
+     * human eyes. Empty (the default) in the real game.
+     */
+    public void setServerArgs(String... args) {
+        this.serverArgs = args == null ? new String[0] : args.clone();
+    }
+
     public ClientMatchSession startCurrentNode() {
         requireActiveRun();
         if (activeSession != null) throw new IllegalStateException("a node is already in progress");
-        activeSession = ClientMatchSession.startLocal(buildSpecForCurrentNode());
+        LocalMatchSpec spec = buildSpecForCurrentNode();
+        if (serverArgs.length > 0) spec = spec.withServerArgs(serverArgs);
+        activeSession = ClientMatchSession.startLocal(spec);
         return activeSession;
     }
 
