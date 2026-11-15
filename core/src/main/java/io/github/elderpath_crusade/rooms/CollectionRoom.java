@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.collection.DeckCollectionEntry;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.run.RunCardInstance;
+import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -23,36 +24,64 @@ import java.util.stream.Collectors;
 
 /**
  * Browses the player's persistent deck collection (Sprint 64) — every won run's deck/Elders/
- * relics plus its metadata, newest first. Basic by design (confirmed scope for this pass): one
- * summary block per entry, no per-card detail or filtering — a card inspector is a natural
- * follow-up, not this screen's job. Scroll layout copied from {@link TextInfoRoom}'s proven
- * up/down-button + visibility-clipping pattern rather than reinvented.
+ * relics plus its metadata, newest first. One summary block per entry, no per-card detail (a
+ * card inspector is a natural follow-up, not this screen's job) — but filterable by difficulty
+ * level (D2, FEAT-015) since that's the one dimension a player is likely to want to narrow down
+ * by once they have more than a couple of winning runs recorded.
+ *
+ * <p>Filtering re-enters the room via {@link #get(int)} rather than mutating this instance's
+ * content in place — {@code Room} has no API to remove already-shown renderables, only
+ * {@code RoomManager.gotoRoom}'s full clear-and-rebuild (see {@code elderpath-rooms.md}), so a
+ * filter change is just another room transition, same as any other button. Scroll layout
+ * copied from {@link TextInfoRoom}'s proven up/down-button + visibility-clipping pattern rather
+ * than reinvented.
  */
 public class CollectionRoom extends Room {
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
+
+    /** Sentinel for {@link #get(int)}/{@link #difficultyFilter}: no filter, show every entry. */
+    private static final int NO_FILTER = -1;
+
+    private static final int FILTER_ROW_TOP_OFFSET = 165;
+    private static final int FILTER_BUTTON_WIDTH = 60;
+    private static final int FILTER_BUTTON_HEIGHT = 36;
+    private static final int FILTER_BUTTON_SPACING = 10;
+    private static final int LIST_TOP_SHIFT = 60;
 
     private final Text header;
     private final List<Text> entryBlocks = new ArrayList<>();
     private final Button backButton;
     private final Button upButton;
     private final Button downButton;
+    private final List<Button> filterButtons = new ArrayList<>();
     private int scrollOffset = 0;
     private static final int SCROLL_STEP = 200;
 
-    private CollectionRoom() {
+    private CollectionRoom(int difficultyFilter) {
         super();
 
         header = new Text("Deck Collection", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
                 .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
+        addFilterButton("All", NO_FILTER, difficultyFilter);
+        for (int level = RunDifficulty.MIN_LEVEL; level <= RunDifficulty.MAX_LEVEL; level++) {
+            addFilterButton(String.valueOf(level), level, difficultyFilter);
+        }
+
         List<DeckCollectionEntry> entries = new ArrayList<>(GameContext.get().getCollectionManager().all());
+        if (difficultyFilter != NO_FILTER) {
+            entries.removeIf(entry -> entry.difficultyLevel() != difficultyFilter);
+        }
         entries.sort(Comparator.comparingLong(DeckCollectionEntry::timestampMillis).reversed());
 
         int maxWrapWidth = (int) (GameContext.get().getSettingsManager().screenSize.getScreenWidth() * 0.8f);
         if (entries.isEmpty()) {
-            Text empty = new Text("No winning runs recorded yet.", FontType.SILKSCREEN, 0, 0, 0,
+            String emptyMessage = difficultyFilter == NO_FILTER
+                    ? "No winning runs recorded yet."
+                    : "No winning runs recorded at this difficulty.";
+            Text empty = new Text(emptyMessage, FontType.SILKSCREEN, 0, 0, 0,
                     ColorSettings.TEXT_DEFAULT.getColor()).withFontSize(FontSize.BODY_MEDIUM).withWrapWidth(maxWrapWidth);
             entryBlocks.add(empty);
             addContent(empty);
@@ -116,6 +145,25 @@ public class CollectionRoom extends Room {
         return cards.stream().map(RunCardInstance::cardName).collect(Collectors.joining(", "));
     }
 
+    /** One difficulty-filter pill; disabled + dimmed when it's the filter already applied (same
+     *  "disabled means already in that state" convention the up/down scroll buttons use). */
+    private void addFilterButton(String label, int value, int currentFilter) {
+        boolean selected = value == currentFilter;
+        Color primary = ColorSettings.BUTTON_PRIMARY.getColor().cpy();
+        Color dimmed = primary.cpy().mul(1, 1, 1, 0.3f);
+        Button button = Button
+                .fromColor(selected ? dimmed : primary, label, FontType.SILKSCREEN,
+                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, FILTER_BUTTON_WIDTH, FILTER_BUTTON_HEIGHT, 0)
+                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(() -> CollectionRoom.get(value)),
+                        ClickableEffectData.getImmediate())
+                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
+                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
+                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
+        button.setDisabled(selected);
+        filterButtons.add(button);
+        addContent(button);
+    }
+
     private static String formatDuration(long millis) {
         long totalSeconds = millis / 1000;
         long minutes = totalSeconds / 60;
@@ -131,6 +179,16 @@ public class CollectionRoom extends Room {
 
         MenuLayout.centerHeader(header, 100);
 
+        int filterTotalWidth = filterButtons.size() * FILTER_BUTTON_WIDTH
+                + (filterButtons.size() - 1) * FILTER_BUTTON_SPACING;
+        int filterStartX = screenCenterX - filterTotalWidth / 2;
+        int filterY = screenHeight - FILTER_ROW_TOP_OFFSET;
+        for (int i = 0; i < filterButtons.size(); i++) {
+            Button filterButton = filterButtons.get(i);
+            filterButton.getBounds().setX(filterStartX + i * (FILTER_BUTTON_WIDTH + FILTER_BUTTON_SPACING));
+            filterButton.getBounds().setY(filterY);
+        }
+
         backButton.getBounds().setX(20);
         backButton.getBounds().setY(screenHeight - 70);
 
@@ -143,7 +201,7 @@ public class CollectionRoom extends Room {
         int totalHeight = 0;
         for (Text block : entryBlocks) totalHeight += block.getBounds().getHeight() + 35;
 
-        int availableSpace = (screenHeight - 200) - 100;
+        int availableSpace = (screenHeight - 200 - LIST_TOP_SHIFT) - 100;
         int maxScroll = Math.max(0, totalHeight - availableSpace);
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
 
@@ -154,9 +212,9 @@ public class CollectionRoom extends Room {
         downButton.setDisabled(scrollOffset >= maxScroll);
         downButton.setBackgroundColor(downButton.isDisabled() ? dimmed : primary);
 
-        int clipTop = screenHeight - 160;
+        int clipTop = screenHeight - 160 - LIST_TOP_SHIFT;
         int clipBottom = 110;
-        int currentY = screenHeight - 200 + scrollOffset;
+        int currentY = screenHeight - 200 - LIST_TOP_SHIFT + scrollOffset;
         for (Text block : entryBlocks) {
             block.getBounds().setX(screenCenterX - block.getBounds().getWidth() / 2);
             int compHeight = block.getBounds().getHeight();
@@ -176,6 +234,12 @@ public class CollectionRoom extends Room {
     }
 
     public static CollectionRoom get() {
-        return new CollectionRoom();
+        return new CollectionRoom(NO_FILTER);
+    }
+
+    /** @param difficultyFilter a run difficulty level (1..{@link RunDifficulty#MAX_LEVEL}), or
+     *                          {@link #NO_FILTER} to show every entry. */
+    public static CollectionRoom get(int difficultyFilter) {
+        return new CollectionRoom(difficultyFilter);
     }
 }
