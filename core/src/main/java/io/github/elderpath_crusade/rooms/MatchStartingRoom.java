@@ -53,10 +53,18 @@ public class MatchStartingRoom extends Room {
 
     /** Renders nothing — exists only to receive per-frame update() calls from GraphicsManager. */
     private static class SessionPoller extends LowestOrderTexture implements Renderable, Updatable {
+        /** Seconds between each step of the loading dots' cycle (D3, FEAT-015: cosmetic-only
+         *  feedback that something is still happening, not stalled, while the phase text itself
+         *  stays unchanged for a while — e.g. "Waiting for opponent..."). */
+        private static final float DOT_CYCLE_SECONDS = 0.4f;
+        private static final int MAX_DOTS = 3;
+
         private final ClientMatchSession session;
         private final Function<ClientMatchSession, Room> onReady;
         private final Text label;
         private boolean transitioning = false;
+        private float dotTimer = 0f;
+        private int dotCount = 0;
 
         SessionPoller(ClientMatchSession session, Function<ClientMatchSession, Room> onReady, Text label) {
             this.session = session;
@@ -83,7 +91,13 @@ public class MatchStartingRoom extends Room {
             if (transitioning) return;
             session.poll();
             ClientMatchSession.Status status = session.getStatus();
-            label.setText(statusText(status));
+
+            dotTimer += delta;
+            while (dotTimer >= DOT_CYCLE_SECONDS) {
+                dotTimer -= DOT_CYCLE_SECONDS;
+                dotCount = (dotCount + 1) % (MAX_DOTS + 1);
+            }
+            label.setText(statusText(status) + ".".repeat(dotCount));
             MenuLayout.centerHeader(label, HEADER_TOP_OFFSET);
 
             if (status.isOver()) {
@@ -98,12 +112,13 @@ public class MatchStartingRoom extends Room {
             }
         }
 
+        /** No trailing "..." — {@link #update} appends the animated dots itself. */
         private String statusText(ClientMatchSession.Status status) {
             return switch (status.phase()) {
-                case STARTING_SERVER -> "Starting match server...";
-                case CONNECTING -> "Connecting...";
-                case WAITING_FOR_PLAYERS -> "Waiting for opponent...";
-                default -> "Starting match...";
+                case STARTING_SERVER -> "Starting match server";
+                case CONNECTING -> "Connecting";
+                case WAITING_FOR_PLAYERS -> "Waiting for opponent";
+                default -> "Starting match";
             };
         }
     }
