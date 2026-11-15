@@ -54,11 +54,17 @@ public final class ClientMatchState {
      * offers exactly these — highlights, playable cards, ability bubbles, end turn.
      */
     @Getter private LegalActions legalActions;
-    private Consumer<GameEvent> eventListener;
+    private final List<Consumer<GameEvent>> eventListeners = new ArrayList<>();
 
-    /** Called with every event after it has been applied — e.g. for a UI to animate it. */
-    public void setEventListener(Consumer<GameEvent> eventListener) {
-        this.eventListener = eventListener;
+    /**
+     * Registers a listener called with every event after it has been applied — e.g. for a UI to
+     * animate it, or for SFX to react to it (FEAT-017). Additive: unlike a single settable
+     * listener, registering a second one doesn't displace the first — {@code BattleRoom
+     * .wireHandSync} already occupies one per controlled seat's state, and SFX needs its own
+     * independent hook on the same states without breaking hand sync.
+     */
+    public void addEventListener(Consumer<GameEvent> listener) {
+        eventListeners.add(listener);
     }
 
     public boolean isWelcomed() {
@@ -110,7 +116,7 @@ public final class ClientMatchState {
             applySnapshot(s.view());
         } else if (message instanceof ServerMessage.Event e) {
             applyEvent(e.event());
-            if (eventListener != null) eventListener.accept(e.event());
+            for (Consumer<GameEvent> listener : eventListeners) listener.accept(e.event());
         } else if (message instanceof ServerMessage.StateSync s) {
             pieces.clear();
             for (PieceView p : s.pieces()) pieces.put(p.id(), p);

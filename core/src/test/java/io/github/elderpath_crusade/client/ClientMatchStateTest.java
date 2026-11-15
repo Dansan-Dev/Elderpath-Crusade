@@ -90,4 +90,21 @@ class ClientMatchStateTest {
         assertTrue(state.isEnded());
         assertEquals(PieceAlignment.P2, state.getWinner());
     }
+
+    @Test
+    void addEventListener_isAdditive_registeringASecondNeverDisplacesTheFirst() {
+        // FEAT-017's prerequisite: BattleRoom.wireHandSync already occupies one listener per
+        // controlled seat's state — SFX needs its own independent hook on the same states
+        // without breaking hand sync, which a single settable listener couldn't do.
+        List<GameEvent> firstSeen = new java.util.ArrayList<>();
+        List<GameEvent> secondSeen = new java.util.ArrayList<>();
+        state.addEventListener(firstSeen::add);
+        state.addEventListener(secondSeen::add);
+
+        GameEvent e = new ManaChangedEvent(PieceAlignment.P1, 3);
+        event(e);
+
+        assertEquals(List.of(e), firstSeen);
+        assertEquals(List.of(e), secondSeen);
+    }
 }

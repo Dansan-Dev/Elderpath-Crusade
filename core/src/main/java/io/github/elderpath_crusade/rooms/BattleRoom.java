@@ -183,7 +183,7 @@ public abstract class BattleRoom extends Room {
         for (CardInstance card : state.getOwnHand()) ownSync.addCard(card);
         if (coversOther) for (String handle : state.getOpponentHandIds()) otherSync.addHiddenCard(handle);
 
-        state.setEventListener(e -> {
+        state.addEventListener(e -> {
             if (e instanceof CardDrawnEvent ev) {
                 if (ev.owner() == ownSeat) ownSync.onCardDrawn(ev);
                 else if (coversOther) otherSync.onCardDrawn(ev);
