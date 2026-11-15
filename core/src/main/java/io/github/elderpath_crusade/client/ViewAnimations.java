@@ -1,30 +1,41 @@
 package io.github.elderpath_crusade.client;
 
+import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
+import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.components.DeathFlashComponent;
 import io.github.elderpath_crusade.ecs.components.MoveAnimationComponent;
+import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpawnAnimationComponent;
+import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.events.GameEvent;
 import io.github.elderpath_crusade.events.PieceAttackedEvent;
+import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 
 /**
  * Turns the replica's event stream into cosmetic view-entity animations (FEAT-013): a piece
- * glides between cells on a move, an attacker lunges toward its defender and back, and a new
- * summon fades in. Registered via {@code ClientMatchState.addEventListener} alongside
- * {@code BattleRoom.wireHandSync} (that widening, FEAT-017's prerequisite, is exactly what lets
- * this coexist with hand sync on the same per-seat state).
+ * glides between cells on a move, an attacker lunges toward its defender and back, a new summon
+ * fades in, and a dying piece's last look fades out. Registered via {@code ClientMatchState
+ * .addEventListener} alongside {@code BattleRoom.wireHandSync} (that widening, FEAT-017's
+ * prerequisite, is exactly what lets this coexist with hand sync on the same per-seat state).
  *
- * <p>Deliberately scoped to move/attack/summon only, not death — the client despawns a dead
- * piece's entity the instant it drops out of {@code ClientMatchState.getPieces()}
- * ({@code ReplicaViewSync.sync}'s removal phase), and delaying that would mean restructuring
+ * <p>Death is handled without ever delaying the real piece's removal — the client despawns its
+ * entity the instant it drops out of {@code ClientMatchState.getPieces()} ({@code
+ * ReplicaViewSync.sync}'s removal phase), and holding onto it longer would mean restructuring
  * the exact two-phase vacate-then-claim ordering {@code ReplicaViewSync} already had to get
- * right once for a simultaneous swap (BUG-050) — a bigger, separate change than this pass
- * should risk blind. A death "flash" as an independent, non-piece effect entity is the natural
- * follow-up once this lands.
+ * right once for a simultaneous swap (BUG-050) — too big a risk to take blind in the same pass
+ * as everything else here. Instead, {@link #animateDeath} clones the dying entity's own, already-
+ * loaded sprite into a brand-new, standalone effect entity (no {@code IdentityComponent}, never
+ * added to {@code GridIndexSystem}) the instant the event arrives — before {@code sync} removes
+ * the real one this same frame — and lets it fade out on its own. {@code PieceRenderSystem}
+ * picks it up automatically (it only requires {@code SpriteComponent}+{@code PositionComponent},
+ * nothing piece-specific), and it's exempt from the stun/exhaustion tint checks there.
  *
- * <p>Holds no game rules and never touches {@code PositionComponent}/{@code GridIndexSystem} —
- * purely additive components {@code PieceRenderSystem} reads for where/how to draw a sprite.
+ * <p>Holds no game rules and never touches the real {@code PositionComponent}/
+ * {@code GridIndexSystem} — purely additive components {@code PieceRenderSystem} reads for
+ * where/how to draw a sprite, plus one standalone, self-removing effect entity for death.
  */
 public final class ViewAnimations {
     /** How far (0..1) an attack lunge travels toward the defender before returning. */
@@ -43,6 +54,8 @@ public final class ViewAnimations {
             animateLunge(e.attackerId(), e.attackerRow(), e.attackerCol(), e.defenderRow(), e.defenderCol());
         } else if (event instanceof PieceSpawnedEvent e) {
             animateSpawn(e.pieceId());
+        } else if (event instanceof PieceDiedEvent e) {
+            animateDeath(e.pieceId(), e.row(), e.col());
         }
     }
 
@@ -71,6 +84,28 @@ public final class ViewAnimations {
         if (entity.getComponent(SpawnAnimationComponent.class) == null) {
             entity.add(new SpawnAnimationComponent());
         }
+    }
+
+    /**
+     * Called while the dying piece's own entity still exists this frame (this listener fires
+     * during {@code session.poll()}, before {@code ReplicaViewSync.sync} removes it) — reads
+     * its current sprite and visual position, then builds a separate, standalone effect entity
+     * that outlives it and fades out on its own.
+     */
+    private void animateDeath(String pieceId, int row, int col) {
+        Entity dying = viewSync.getEntity(pieceId);
+        if (dying == null) return;
+        SpriteComponent sprite = dying.getComponent(SpriteComponent.class);
+        if (sprite == null || sprite.renderable == null) return;
+
+        float[] visualAt = currentVisualPosition(dying, row, col);
+
+        Engine engine = GameContext.get().getEcsEngine();
+        Entity flash = engine.createEntity();
+        flash.add(new SpriteComponent().setRenderable(sprite.renderable));
+        flash.add(new PositionComponent().set(Math.round(visualAt[0]), Math.round(visualAt[1])));
+        flash.add(new DeathFlashComponent());
+        engine.addEntity(flash);
     }
 
     private static MoveAnimationComponent animOf(Entity entity) {

@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.ecs.systems;
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.ecs.components.DeathFlashComponent;
 import io.github.elderpath_crusade.ecs.components.MoveAnimationComponent;
 import io.github.elderpath_crusade.ecs.components.SpawnAnimationComponent;
 import io.github.elderpath_crusade.events.TypedEventBus;
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Advances and removes the two cosmetic animation components; never touches anything else. */
+/** Advances the three cosmetic animation components; never touches anything else. */
 class ViewAnimationSystemTest {
     private Engine engine;
 
@@ -62,6 +63,33 @@ class ViewAnimationSystemTest {
         engine.update(SpawnAnimationComponent.DURATION + 0.01f);
 
         assertNull(entity.getComponent(SpawnAnimationComponent.class));
+    }
+
+    @Test
+    void update_advancesADeathFlashesElapsed() {
+        Entity entity = engine.createEntity();
+        DeathFlashComponent flash = new DeathFlashComponent();
+        entity.add(flash);
+        engine.addEntity(entity);
+
+        engine.update(0.05f);
+
+        assertEquals(0.05f, flash.elapsed, 1e-5f);
+    }
+
+    @Test
+    void update_removesTheWholeDeathFlashEntityOnceItsDurationElapses() {
+        // Unlike move/spawn (which belong to a real piece's own ongoing entity, so only the
+        // component is removed), a death flash *is* its own standalone entity — removing just
+        // the component would strand a fully-faded sprite on screen with nothing left to clean
+        // it up.
+        Entity entity = engine.createEntity();
+        entity.add(new DeathFlashComponent());
+        engine.addEntity(entity);
+
+        engine.update(DeathFlashComponent.DURATION + 0.01f);
+
+        assertFalse(engine.getEntities().contains(entity, true));
     }
 
     @Test

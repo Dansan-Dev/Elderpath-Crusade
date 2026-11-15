@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.DeathFlashComponent;
 import io.github.elderpath_crusade.ecs.components.MoveAnimationComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpawnAnimationComponent;
@@ -30,6 +31,7 @@ public class PieceRenderSystem extends EntitySystem {
     private final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
     private final ComponentMapper<MoveAnimationComponent> moveAnimMapper = ComponentMapper.getFor(MoveAnimationComponent.class);
     private final ComponentMapper<SpawnAnimationComponent> spawnAnimMapper = ComponentMapper.getFor(SpawnAnimationComponent.class);
+    private final ComponentMapper<DeathFlashComponent> deathFlashMapper = ComponentMapper.getFor(DeathFlashComponent.class);
     private final Family family = Family.all(SpriteComponent.class, PositionComponent.class).get();
 
     private ImmutableArray<Entity> entities;
@@ -49,7 +51,11 @@ public class PieceRenderSystem extends EntitySystem {
      * <p>A {@link MoveAnimationComponent} (FEAT-013) offsets where a piece is drawn without
      * ever touching {@code pos} itself — {@code PositionComponent} stays the instant,
      * authoritative cell the whole time, this only changes where its sprite is painted this
-     * frame. A {@link SpawnAnimationComponent} likewise only fades the sprite's alpha in.
+     * frame. A {@link SpawnAnimationComponent} likewise only fades the sprite's alpha in, and a
+     * {@link DeathFlashComponent} fades it out — the latter only ever appears on a standalone
+     * effect entity cloned from a real piece's sprite at the moment it died, never a real
+     * piece's own entity, so it's exempt from the stun/exhaustion checks below (it isn't a
+     * piece the current player's turn state applies to).
      */
     public void render(SpriteBatch batch, int zLevel, boolean isPaused,
                        int boardX, int boardY, int plotWidth, int plotHeight,
@@ -74,14 +80,15 @@ public class PieceRenderSystem extends EntitySystem {
             float displayRow = flipped ? boardRows - 1 - renderRow : renderRow;
             int absY = boardY + Math.round(displayRow * plotHeight);
 
-            boolean stunned = EntityUtils.isStunned(entity);
+            DeathFlashComponent deathFlash = deathFlashMapper.get(entity);
+            boolean stunned = deathFlash == null && EntityUtils.isStunned(entity);
             // Always shows real exhaustion state regardless of whose turn it currently is — an
             // exhausted piece never looks "refreshed" just because the other player's turn
             // began, even though it won't actually regain actions until its own next turn.
-            boolean exhausted = !stunned && EntityUtils.isExhausted(entity);
+            boolean exhausted = !stunned && deathFlash == null && EntityUtils.isExhausted(entity);
             SpawnAnimationComponent spawnAnim = spawnAnimMapper.get(entity);
 
-            if (!stunned && !exhausted && spawnAnim == null) {
+            if (!stunned && !exhausted && spawnAnim == null && deathFlash == null) {
                 sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
                 continue;
             }
@@ -89,6 +96,7 @@ public class PieceRenderSystem extends EntitySystem {
             Color original = batch.getColor().cpy();
             Color draw = stunned ? STUN_TINT.cpy() : exhausted ? DARKEN_TINT.cpy() : original.cpy();
             if (spawnAnim != null) draw.a *= spawnAnim.alpha();
+            if (deathFlash != null) draw.a *= deathFlash.alpha();
             batch.setColor(draw);
             sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
             batch.setColor(original);

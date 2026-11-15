@@ -2,16 +2,23 @@ package io.github.elderpath_crusade.client;
 
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data.PieceDefinition;
 import io.github.elderpath_crusade.data.PieceRegistry;
+import io.github.elderpath_crusade.data_objects.Box;
+import io.github.elderpath_crusade.ecs.components.DeathFlashComponent;
 import io.github.elderpath_crusade.ecs.components.MoveAnimationComponent;
+import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.SpawnAnimationComponent;
+import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.PieceAttackedEvent;
+import io.github.elderpath_crusade.events.PieceDiedEvent;
 import io.github.elderpath_crusade.events.PieceMovedEvent;
 import io.github.elderpath_crusade.events.PieceSpawnedEvent;
 import io.github.elderpath_crusade.events.TypedEventBus;
+import io.github.elderpath_crusade.interfaces.Renderable;
 import io.github.elderpath_crusade.match.Coord;
 import io.github.elderpath_crusade.net.protocol.MatchView;
 import io.github.elderpath_crusade.net.protocol.MessageCodec;
@@ -143,6 +150,55 @@ class ViewAnimationsTest {
                     PieceMovedEvent.MovementType.ACTIVE, null, null));
             animations.onEvent(new PieceAttackedEvent("ghost", PieceAlignment.P1, 0, 0, "also-ghost", 1, 1, 1));
             animations.onEvent(new PieceSpawnedEvent("ghost", PieceAlignment.P1, 0, 0, "Runner"));
+            animations.onEvent(new PieceDiedEvent("ghost", 0, 0));
         });
+    }
+
+    @Test
+    void onEvent_death_clonesTheDyingPiecesSpriteIntoAStandaloneFadingEntity() {
+        spawnAndSettle("a", PieceAlignment.P1, 2, 3);
+        Entity dying = sync.getEntity("a");
+        Renderable renderable = new NoOpRenderable();
+        dying.add(new SpriteComponent().setRenderable(renderable));
+        Engine engine = GameContext.get().getEcsEngine();
+        int before = engine.getEntities().size();
+
+        animations.onEvent(new PieceDiedEvent("a", 2, 3));
+
+        assertEquals(before + 1, engine.getEntities().size(), "adds one standalone effect entity, touches nothing else");
+        Entity flash = null;
+        for (int i = 0; i < engine.getEntities().size(); i++) {
+            Entity candidate = engine.getEntities().get(i);
+            if (candidate != dying && candidate.getComponent(DeathFlashComponent.class) != null) flash = candidate;
+        }
+        assertNotNull(flash, "a standalone entity carrying DeathFlashComponent was added");
+        assertSame(renderable, flash.getComponent(SpriteComponent.class).renderable,
+                "reuses the dying piece's own already-loaded sprite, never a new one");
+        PositionComponent pos = flash.getComponent(PositionComponent.class);
+        assertEquals(2, pos.row);
+        assertEquals(3, pos.col);
+        assertNull(flash.getComponent(io.github.elderpath_crusade.ecs.components.IdentityComponent.class),
+                "never mistaken for a real piece by anything keyed off IdentityComponent");
+    }
+
+    @Test
+    void onEvent_death_dyingPieceWithNoSpriteYet_doesNothing() {
+        // ReplicaViewSync.spawn() never sets a SpriteComponent itself (PieceSpriteAttacher,
+        // a view-side concern, does) — a death arriving before that happened must not crash.
+        spawnAndSettle("a", PieceAlignment.P1, 0, 0);
+        assertDoesNotThrow(() -> animations.onEvent(new PieceDiedEvent("a", 0, 0)));
+    }
+
+    private static final class NoOpRenderable implements Renderable {
+        private Box parent;
+        private Box bounds;
+
+        @Override public Box getParent() { return parent; }
+        @Override public void setParent(Box parent) { this.parent = parent; }
+        @Override public Box getBounds() { return bounds; }
+        @Override public void setBounds(Box bounds) { this.bounds = bounds; }
+        @Override public List<Integer> getZs() { return List.of(); }
+        @Override public void render(SpriteBatch batch, int zLevel, boolean isPaused) { }
+        @Override public void render(SpriteBatch batch, int zLevel, boolean isPaused, int x, int y) { }
     }
 }
