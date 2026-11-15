@@ -26,6 +26,14 @@ public final class InProcessTransport implements ServerTransport {
         return LineChannels.serverConnection(pair[1], rawTap);
     }
 
+    /** A client connection as a bare line link — for sending lines no well-behaved client would. */
+    public synchronized LineLink connectRaw() {
+        InProcessLink[] pair = InProcessLink.pair();
+        links.add(pair[0]);
+        accepted.add(LineChannels.clientChannel(pair[0]));
+        return pair[1];
+    }
+
     @Override
     public ClientChannel accept() {
         return accepted.poll();

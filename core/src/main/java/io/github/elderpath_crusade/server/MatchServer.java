@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.LongSupplier;
 
 /**
  * Runs one match authoritatively for its clients — the same class whether it's a solo game's
@@ -63,6 +64,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * clock, ECS) → a StateSync if any piece's public state changed → each seat's LegalActions
  * if they changed → the tick's Acks. Events are relayed as they happen, filtered per
  * recipient by HiddenInfoFilter.
+ *
+ * Clients are untrusted. Besides validating every command, the server bounds what one
+ * connection can cost: a connection must say Hello within HELLO_TIMEOUT_NANOS, at most
+ * MAX_PENDING_HANDSHAKES may be waiting to, a seat's commands are handled at most
+ * MAX_COMMANDS_PER_TICK per tick (the rest wait, so one seat can't stall the other's
+ * simulation), and a seat sending MAX_BAD_MESSAGES unreadable lines is disconnected.
  */
 public final class MatchServer {
     private static final List<Class<? extends GameEvent>> RELAYED = List.of(
@@ -70,6 +77,12 @@ public final class MatchServer {
             CardDiscardedEvent.class, CardPlayedEvent.class, PieceSpawnedEvent.class, PieceMovedEvent.class,
             PieceAttackedEvent.class, PieceDamagedEvent.class, PieceHealedEvent.class, PieceDiedEvent.class,
             PieceKilledEvent.class, ManaChangedEvent.class, ActionsResetEvent.class, ActionSpentEvent.class);
+
+    static final long HELLO_TIMEOUT_NANOS = 10_000_000_000L;
+    static final int MAX_PENDING_HANDSHAKES = 16;
+    static final int MAX_COMMANDS_PER_TICK = 32;
+    static final int MAX_BAD_MESSAGES = 5;
+    private static final int MAX_LOGGED_NAME_CHARS = 32;
 
     private static final Family PIECES = Family.all(IdentityComponent.class, PositionComponent.class,
             AlignmentComponent.class, StatsComponent.class).get();
@@ -85,6 +98,8 @@ public final class MatchServer {
         final List<Long> unacked = new ArrayList<>();
         /** The LegalActions this seat's client last got — null: send them next tick. */
         LegalActions lastLegal;
+        /** Unreadable lines from the current connection (see MAX_BAD_MESSAGES). */
+        int badMessages;
 
         Seat(PieceAlignment side) {
             this.side = side;
@@ -95,7 +110,11 @@ public final class MatchServer {
     private final MatchConfig config;
     private final Map<PieceAlignment, Seat> seats = new EnumMap<>(PieceAlignment.class);
     private final List<ServerTransport> transports = new CopyOnWriteArrayList<>();
-    private final List<ClientChannel> awaitingHello = new ArrayList<>();
+    /** A connection that hasn't said Hello yet, and when the server stops waiting for it. */
+    private record PendingClient(ClientChannel channel, long deadlineNanos) {}
+
+    private final List<PendingClient> awaitingHello = new ArrayList<>();
+    private LongSupplier nanoClock = System::nanoTime;
     private boolean started;
     private boolean ended;
     private GameWonEvent pendingWin;
@@ -118,6 +137,11 @@ public final class MatchServer {
         bus.registerScoped("session", GameWonEvent.class, e -> pendingWin = e);
         PickRouter router = GameContext.get().getPickRouter();
         for (Seat seat : seats.values()) router.setRemoteResponder(seat.side, new SeatPickResponder(seat));
+    }
+
+    /** Replaces the clock handshake deadlines are measured on (tests). */
+    void setNanoClock(LongSupplier nanoClock) {
+        this.nanoClock = nanoClock;
     }
 
     public void addTransport(ServerTransport transport) {
@@ -195,7 +219,7 @@ public final class MatchServer {
             if (seat.channel != null) seat.channel.close();
             seat.channel = null;
         }
-        for (ClientChannel c : awaitingHello) c.close();
+        for (PendingClient pending : awaitingHello) pending.channel().close();
         awaitingHello.clear();
         for (ServerTransport t : transports) t.close();
     }
@@ -205,14 +229,22 @@ public final class MatchServer {
     private void acceptConnections() {
         for (ServerTransport transport : transports) {
             ClientChannel channel;
-            while ((channel = transport.accept()) != null) awaitingHello.add(channel);
+            while ((channel = transport.accept()) != null) {
+                if (awaitingHello.size() >= MAX_PENDING_HANDSHAKES) {
+                    channel.close();
+                    continue;
+                }
+                awaitingHello.add(new PendingClient(channel, nanoClock.getAsLong() + HELLO_TIMEOUT_NANOS));
+            }
         }
     }
 
     private void handshakes() {
-        Iterator<ClientChannel> it = awaitingHello.iterator();
+        long now = nanoClock.getAsLong();
+        Iterator<PendingClient> it = awaitingHello.iterator();
         while (it.hasNext()) {
-            ClientChannel channel = it.next();
+            PendingClient pending = it.next();
+            ClientChannel channel = pending.channel();
             ClientMessage message;
             try {
                 message = channel.poll();
@@ -222,7 +254,12 @@ public final class MatchServer {
                 continue;
             }
             if (message == null) {
-                if (!channel.isOpen()) it.remove();
+                if (!channel.isOpen()) {
+                    it.remove();
+                } else if (now - pending.deadlineNanos() >= 0) {
+                    refuse(channel, ServerMessage.Error.Code.NOT_SEATED, "No Hello received");
+                    it.remove();
+                }
                 continue;
             }
             it.remove();
@@ -248,7 +285,8 @@ public final class MatchServer {
         seat.channel = channel;
         seat.taken = true;
         seat.lastLegal = null; // a (re)joined client gets its LegalActions at the end of this tick
-        Logger.log("MatchServer", (hello.playerName() == null ? "A client" : hello.playerName()) + " took " + seat.side);
+        seat.badMessages = 0;
+        Logger.log("MatchServer", loggableName(hello.playerName()) + " took " + seat.side);
         channel.send(new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, seat.side,
                 config.rows(), config.cols(), config.terrain(), slotKinds()));
         channel.send(new ServerMessage.Snapshot(viewFor(seat.side)));
@@ -281,6 +319,17 @@ public final class MatchServer {
         return kinds;
     }
 
+    /** A client-chosen name made safe to log: no control characters (no forged log lines), bounded length. */
+    static String loggableName(String playerName) {
+        if (playerName == null || playerName.isBlank()) return "A client";
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < playerName.length() && out.length() < MAX_LOGGED_NAME_CHARS; i++) {
+            char c = playerName.charAt(i);
+            out.append(Character.isISOControl(c) ? '?' : c);
+        }
+        return out.toString();
+    }
+
     private static void refuse(ClientChannel channel, ServerMessage.Error.Code code, String message) {
         channel.send(new ServerMessage.Error(code, message));
         channel.close();
@@ -299,12 +348,18 @@ public final class MatchServer {
     // --- commands ---
 
     private void drainCommands(Seat seat) {
-        while (seat.channel != null) {
+        for (int handled = 0; handled < MAX_COMMANDS_PER_TICK && seat.channel != null; handled++) {
             ClientMessage message;
             try {
                 message = seat.channel.poll();
             } catch (ProtocolException e) {
                 seat.channel.send(new ServerMessage.Error(ServerMessage.Error.Code.BAD_MESSAGE, e.getMessage()));
+                if (++seat.badMessages >= MAX_BAD_MESSAGES) {
+                    Logger.log("MatchServer", seat.side + " disconnected after " + seat.badMessages + " unreadable messages — seat reserved");
+                    seat.channel.close();
+                    seat.channel = null;
+                    seat.lastLegal = null;
+                }
                 continue;
             }
             if (message == null) return;
@@ -315,7 +370,7 @@ public final class MatchServer {
                 seat.lastLegal = null;
             } else if (message instanceof ClientMessage.Command c) {
                 seat.unacked.add(c.seq());
-                ActionResult result = execute(seat.side, c.command());
+                ActionResult result = executeSafely(seat.side, c.command());
                 if (!result.isOk()) {
                     if (seat.channel != null) seat.channel.send(new ServerMessage.Rejected(c.seq(), result.reason()));
                 } else if (c.command() instanceof NetworkCommand.AnswerPick answer && seat.channel != null) {
@@ -335,6 +390,19 @@ public final class MatchServer {
                 for (long seq : seat.unacked) seat.channel.send(new ServerMessage.Ack(seq));
             }
             seat.unacked.clear();
+        }
+    }
+
+    /**
+     * A command must never take the server down: a rule that throws on input no legal client
+     * sends is logged and answered like any other rejection.
+     */
+    private ActionResult executeSafely(PieceAlignment actor, NetworkCommand command) {
+        try {
+            return execute(actor, command);
+        } catch (RuntimeException e) {
+            Logger.error("MatchServer", "Command " + command + " by " + actor + " failed: " + e);
+            return ActionResult.rejected(ActionResult.Reason.EXECUTION_FAILED);
         }
     }
 

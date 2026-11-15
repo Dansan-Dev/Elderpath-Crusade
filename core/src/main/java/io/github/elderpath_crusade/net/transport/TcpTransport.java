@@ -18,8 +18,14 @@ import java.util.function.Consumer;
  * Clients over TCP: a daemon accept thread wraps each socket in a NetworkConnection (line
  * framing + its own reader thread) and queues it for the server's tick to pick up. Bind to
  * 127.0.0.1 for a solo match's child-process server, to all interfaces to host.
+ *
+ * At most MAX_OPEN_CONNECTIONS are open at once (each costs a reader thread); a connection
+ * beyond that is closed as soon as it is accepted. A match seats two clients, so the rest is
+ * headroom for rejoins and refused handshakes that haven't been dropped yet.
  */
 public final class TcpTransport implements ServerTransport {
+    static final int MAX_OPEN_CONNECTIONS = 16;
+
     private final ServerSocket serverSocket;
     private final Queue<ClientChannel> accepted = new ConcurrentLinkedQueue<>();
     private final List<NetworkConnection> connections = new CopyOnWriteArrayList<>();
@@ -49,8 +55,14 @@ public final class TcpTransport implements ServerTransport {
         while (!serverSocket.isClosed()) {
             try {
                 Socket socket = serverSocket.accept();
+                connections.removeIf(c -> !c.isConnected());
+                if (connections.size() >= MAX_OPEN_CONNECTIONS) {
+                    socket.close();
+                    continue;
+                }
                 socket.setTcpNoDelay(true);
-                NetworkConnection connection = new NetworkConnection(socket);
+                NetworkConnection connection = new NetworkConnection(socket,
+                        NetworkConnection.SERVER_MAX_LINE_CHARS, NetworkConnection.SERVER_MAX_QUEUED_LINES);
                 connections.add(connection);
                 accepted.add(LineChannels.clientChannel(connection));
             } catch (IOException e) {

@@ -40,6 +40,9 @@ public final class MessageCodec {
             Map.entry("Error", ServerMessage.Error.class)
     );
 
+    /** How much of a bad line an error message quotes — the rest is the sender's to keep. */
+    private static final int MAX_QUOTED_CHARS = 120;
+
     private MessageCodec() {}
 
     public static String encode(ClientMessage message) {
@@ -69,7 +72,7 @@ public final class MessageCodec {
         try {
             JsonNode node = MAPPER.readTree(line);
             String type = node.get("type").asText();
-            JsonNode payload = node.get("payload");
+            JsonNode payload = requirePayload(node);
             if ("Command".equals(type)) {
                 return new ClientMessage.Command(payload.get("seq").asLong(),
                         NetworkCommandCodec.fromTree(payload.get("command")));
@@ -78,7 +81,7 @@ public final class MessageCodec {
             if (clazz == null) throw new IllegalArgumentException("Unknown client message type: " + type);
             return MAPPER.treeToValue(payload, clazz);
         } catch (Exception e) {
-            throw new ProtocolException("Bad client message: " + line, e);
+            throw new ProtocolException("Bad client message: " + quote(line), e);
         }
     }
 
@@ -86,7 +89,7 @@ public final class MessageCodec {
         try {
             JsonNode node = MAPPER.readTree(line);
             String type = node.get("type").asText();
-            JsonNode payload = node.get("payload");
+            JsonNode payload = requirePayload(node);
             if ("Event".equals(type)) {
                 return new ServerMessage.Event(GameEventCodec.fromTree(payload.get("event")));
             }
@@ -94,8 +97,19 @@ public final class MessageCodec {
             if (clazz == null) throw new IllegalArgumentException("Unknown server message type: " + type);
             return MAPPER.treeToValue(payload, clazz);
         } catch (Exception e) {
-            throw new ProtocolException("Bad server message: " + line, e);
+            throw new ProtocolException("Bad server message: " + quote(line), e);
         }
+    }
+
+    /** A message's payload object — a missing or null one would otherwise decode to a null message. */
+    private static JsonNode requirePayload(JsonNode node) {
+        JsonNode payload = node.get("payload");
+        if (payload == null || !payload.isObject()) throw new IllegalArgumentException("Missing payload");
+        return payload;
+    }
+
+    private static String quote(String line) {
+        return line.length() <= MAX_QUOTED_CHARS ? line : line.substring(0, MAX_QUOTED_CHARS) + "… (" + line.length() + " chars)";
     }
 
     private static String envelope(String type, JsonNode payload) {

@@ -76,4 +76,46 @@ class MessageCodecTest {
         assertThrows(ProtocolException.class, () -> MessageCodec.decodeClient("{\"type\":\"Nope\",\"payload\":{}}"));
         assertThrows(ProtocolException.class, () -> MessageCodec.decodeServer("not json"));
     }
+
+    @Test
+    void malformedClientLines_areAlwaysAProtocolException_neverAnythingElseAndNeverNull() {
+        String[] lines = {
+                "", "null", "[]", "{}", "7", "\"text\"",
+                "{\"type\":null}",
+                "{\"type\":\"Hello\"}",
+                "{\"type\":\"Hello\",\"payload\":null}",
+                "{\"type\":\"Hello\",\"payload\":7}",
+                "{\"type\":\"Hello\",\"payload\":{\"protocolVersion\":2,\"seat\":\"P9\",\"playerName\":\"x\"}}",
+                "{\"type\":\"Leave\",\"payload\":[]}",
+                "{\"type\":\"Command\"}",
+                "{\"type\":\"Command\",\"payload\":null}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1}}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1,\"command\":{}}}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1,\"command\":{\"type\":\"MovePlot\"}}}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1,\"command\":{\"type\":\"MovePlot\",\"payload\":null}}}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1,\"command\":{\"type\":\"MovePlot\",\"payload\":{\"srcRow\":\"a\"}}}}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1,\"command\":{\"type\":\"MovePlot\",\"payload\":{\"srcRow\":1e99}}}}",
+                "{\"type\":\"Command\",\"payload\":{\"seq\":1,\"command\":{\"type\":\"PlaySummonCard\",\"payload\":{\"instanceId\":{\"a\":1},\"row\":1,\"col\":1}}}}",
+                "[".repeat(5_000),
+                "{\"a\":".repeat(3_000),
+        };
+        for (String line : lines) {
+            String shown = line.length() > 60 ? line.substring(0, 60) + "…" : line;
+            assertThrows(ProtocolException.class, () -> MessageCodec.decodeClient(line), shown);
+        }
+    }
+
+    @Test
+    void malformedServerLines_areAProtocolException() {
+        for (String line : new String[]{"", "{}", "{\"type\":\"Welcome\"}", "{\"type\":\"Welcome\",\"payload\":null}",
+                "{\"type\":\"Event\",\"payload\":{\"event\":{\"type\":\"PieceDiedEvent\",\"payload\":null}}}"}) {
+            assertThrows(ProtocolException.class, () -> MessageCodec.decodeServer(line), line);
+        }
+    }
+
+    @Test
+    void aBadLineIsQuotedOnlyInPart() {
+        ProtocolException e = assertThrows(ProtocolException.class, () -> MessageCodec.decodeClient("x".repeat(10_000)));
+        assertTrue(e.getMessage().length() < 300);
+    }
 }

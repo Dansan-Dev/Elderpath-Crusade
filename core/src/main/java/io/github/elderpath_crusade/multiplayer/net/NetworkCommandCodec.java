@@ -56,7 +56,9 @@ public final class NetworkCommandCodec {
             String type = node.get("type").asText();
             Class<? extends NetworkCommand> clazz = TYPES.get(type);
             if (clazz == null) throw new IllegalArgumentException("Unknown command type: " + type);
-            return MAPPER.treeToValue(node.get("payload"), clazz);
+            JsonNode payload = node.get("payload");
+            if (payload == null || !payload.isObject()) throw new IllegalArgumentException("Missing command payload");
+            return MAPPER.treeToValue(payload, clazz);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
