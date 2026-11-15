@@ -15,6 +15,7 @@ import io.github.elderpath_crusade.ecs.systems.CombatSystem;
 import io.github.elderpath_crusade.ecs.systems.AbilityResolverSystem;
 import io.github.elderpath_crusade.ecs.systems.PieceRenderSystem;
 import io.github.elderpath_crusade.ecs.systems.TurnSystem;
+import io.github.elderpath_crusade.ecs.systems.ViewAnimationSystem;
 import io.github.elderpath_crusade.events.TypedEventBus;
 import io.github.elderpath_crusade.game_objects.board.Board;
 import io.github.elderpath_crusade.bot.BotManager;
@@ -141,7 +142,10 @@ public class GameContext {
             this.ecsEngine.addSystem(new DeathSystem());
             this.ecsEngine.addSystem(new HealSystem());
         }
-        if (!headless) this.ecsEngine.addSystem(this.pieceRenderSystem);
+        if (!headless) {
+            this.ecsEngine.addSystem(this.pieceRenderSystem);
+            this.ecsEngine.addSystem(new ViewAnimationSystem());
+        }
         if (simulates) this.ecsEngine.addSystem(new AbilityResolverSystem());
         this.assets = new AssetService();
         this.turnManager = simulates ? new TurnManager() : null;

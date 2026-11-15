@@ -11,7 +11,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.ecs.EntityUtils;
+import io.github.elderpath_crusade.ecs.components.MoveAnimationComponent;
 import io.github.elderpath_crusade.ecs.components.PositionComponent;
+import io.github.elderpath_crusade.ecs.components.SpawnAnimationComponent;
 import io.github.elderpath_crusade.ecs.components.SpriteComponent;
 import io.github.elderpath_crusade.path_loaders.ImagePathSpritesAndAnimations;
 
@@ -26,6 +28,8 @@ public class PieceRenderSystem extends EntitySystem {
 
     private final ComponentMapper<SpriteComponent> spriteMapper = ComponentMapper.getFor(SpriteComponent.class);
     private final ComponentMapper<PositionComponent> posMapper = ComponentMapper.getFor(PositionComponent.class);
+    private final ComponentMapper<MoveAnimationComponent> moveAnimMapper = ComponentMapper.getFor(MoveAnimationComponent.class);
+    private final ComponentMapper<SpawnAnimationComponent> spawnAnimMapper = ComponentMapper.getFor(SpawnAnimationComponent.class);
     private final Family family = Family.all(SpriteComponent.class, PositionComponent.class).get();
 
     private ImmutableArray<Entity> entities;
@@ -41,6 +45,11 @@ public class PieceRenderSystem extends EntitySystem {
     /**
      * Draws every piece at its board position. boardRows/flipped mirror the logical row onto
      * the screen row (hotseat view flip) — positions themselves are never flipped.
+     *
+     * <p>A {@link MoveAnimationComponent} (FEAT-013) offsets where a piece is drawn without
+     * ever touching {@code pos} itself — {@code PositionComponent} stays the instant,
+     * authoritative cell the whole time, this only changes where its sprite is painted this
+     * frame. A {@link SpawnAnimationComponent} likewise only fades the sprite's alpha in.
      */
     public void render(SpriteBatch batch, int zLevel, boolean isPaused,
                        int boardX, int boardY, int plotWidth, int plotHeight,
@@ -52,28 +61,38 @@ public class PieceRenderSystem extends EntitySystem {
 
             if (sprite.renderable == null) continue;
 
-            int absX = boardX + pos.col * plotWidth;
-            int displayRow = flipped ? boardRows - 1 - pos.row : pos.row;
-            int absY = boardY + displayRow * plotHeight;
-
-            if (EntityUtils.isStunned(entity)) {
-                Color original = batch.getColor().cpy();
-                batch.setColor(STUN_TINT);
-                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
-                batch.setColor(original);
-                renderStunSymbol(batch, zLevel, absX, absY, plotWidth, plotHeight);
-            } else if (EntityUtils.isExhausted(entity)) {
-                // Always shows real exhaustion state, regardless of whose turn it currently is —
-                // previously only darkened during the piece's own controller's turn, which made
-                // an exhausted piece look "refreshed" the moment the other player's turn began,
-                // even though it wouldn't actually regain actions until its own next turn.
-                Color original = batch.getColor().cpy();
-                batch.setColor(DARKEN_TINT);
-                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
-                batch.setColor(original);
-            } else {
-                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+            float renderRow = pos.row;
+            float renderCol = pos.col;
+            MoveAnimationComponent moveAnim = moveAnimMapper.get(entity);
+            if (moveAnim != null) {
+                float t = moveAnim.shapedProgress();
+                renderRow = moveAnim.fromRow + (moveAnim.toRow - moveAnim.fromRow) * t;
+                renderCol = moveAnim.fromCol + (moveAnim.toCol - moveAnim.fromCol) * t;
             }
+
+            int absX = boardX + Math.round(renderCol * plotWidth);
+            float displayRow = flipped ? boardRows - 1 - renderRow : renderRow;
+            int absY = boardY + Math.round(displayRow * plotHeight);
+
+            boolean stunned = EntityUtils.isStunned(entity);
+            // Always shows real exhaustion state regardless of whose turn it currently is — an
+            // exhausted piece never looks "refreshed" just because the other player's turn
+            // began, even though it won't actually regain actions until its own next turn.
+            boolean exhausted = !stunned && EntityUtils.isExhausted(entity);
+            SpawnAnimationComponent spawnAnim = spawnAnimMapper.get(entity);
+
+            if (!stunned && !exhausted && spawnAnim == null) {
+                sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+                continue;
+            }
+
+            Color original = batch.getColor().cpy();
+            Color draw = stunned ? STUN_TINT.cpy() : exhausted ? DARKEN_TINT.cpy() : original.cpy();
+            if (spawnAnim != null) draw.a *= spawnAnim.alpha();
+            batch.setColor(draw);
+            sprite.renderable.render(batch, zLevel, isPaused, absX, absY);
+            batch.setColor(original);
+            if (stunned) renderStunSymbol(batch, zLevel, absX, absY, plotWidth, plotHeight);
         }
     }
 

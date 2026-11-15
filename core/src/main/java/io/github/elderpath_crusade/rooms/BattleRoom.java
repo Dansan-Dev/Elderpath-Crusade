@@ -6,6 +6,7 @@ import io.github.elderpath_crusade.client.ClientController;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
 import io.github.elderpath_crusade.client.ReplicaViewSync;
+import io.github.elderpath_crusade.client.ViewAnimations;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.events.CardDiscardedEvent;
@@ -138,8 +139,10 @@ public abstract class BattleRoom extends Room {
         // controlled seat, so this is the only source for the opponent's hand there.
         handSyncP1 = new HandSync(handP1);
         handSyncP2 = new HandSync(handP2);
+        ViewAnimations viewAnimations = new ViewAnimations(viewSync);
         for (PieceAlignment seat : session.getControlledSeats()) {
             wireHandSync(session.stateFor(seat), seat);
+            session.stateFor(seat).addEventListener(viewAnimations::onEvent);
         }
 
         // 8. Deck views (the decks themselves are pure state, owned by the match server)

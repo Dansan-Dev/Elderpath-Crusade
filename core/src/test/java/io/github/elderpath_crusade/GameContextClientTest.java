@@ -9,6 +9,7 @@ import io.github.elderpath_crusade.ecs.components.PositionComponent;
 import io.github.elderpath_crusade.ecs.components.StatsComponent;
 import io.github.elderpath_crusade.ecs.systems.GridIndexSystem;
 import io.github.elderpath_crusade.ecs.systems.PieceRenderSystem;
+import io.github.elderpath_crusade.ecs.systems.ViewAnimationSystem;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.events.ActionsResetEvent;
 import io.github.elderpath_crusade.events.GameWonEvent;
@@ -43,10 +44,13 @@ class GameContextClientTest {
     }
 
     @Test
-    void engine_hasOnlyTheSpatialIndexAndTheRenderSystem() {
+    void engine_hasOnlyTheSpatialIndexAndTheRenderAndAnimationSystems() {
+        // ViewAnimationSystem (FEAT-013) is purely cosmetic — it ticks/removes animation
+        // components PieceRenderSystem reads, never touches PositionComponent/GridIndexSystem,
+        // and is as safe for a client-only engine as PieceRenderSystem itself.
         Set<Class<?>> systems = new HashSet<>();
         for (EntitySystem system : context.getEcsEngine().getSystems()) systems.add(system.getClass());
-        assertEquals(Set.of(GridIndexSystem.class, PieceRenderSystem.class), systems);
+        assertEquals(Set.of(GridIndexSystem.class, PieceRenderSystem.class, ViewAnimationSystem.class), systems);
         assertTrue(context.isClient());
         assertFalse(context.isHeadless());
     }

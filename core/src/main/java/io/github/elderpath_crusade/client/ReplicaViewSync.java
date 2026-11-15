@@ -58,6 +58,12 @@ public final class ReplicaViewSync {
         return grid;
     }
 
+    /** The view entity for a piece id, or null if it hasn't been spawned (yet, or at all) —
+     *  used by {@code client.ViewAnimations} to attach a cosmetic animation component. */
+    public Entity getEntity(String pieceId) {
+        return entitiesById.get(pieceId);
+    }
+
     /** Mirrors the current replica into view entities. A no-op until the seat is welcomed. */
     public void sync(ClientMatchState state) {
         if (!state.isWelcomed()) return;
