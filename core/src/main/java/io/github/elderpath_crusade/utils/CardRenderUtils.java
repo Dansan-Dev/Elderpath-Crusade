@@ -16,13 +16,17 @@ public class CardRenderUtils {
     // Tuned to the standard card template
     public static final float MANA_CX = 0.825f;
     public static final float MANA_CY = 0.890f;
-    public static final float HP_CX = 0.160f;
+    // UI-002 (user request, 2026-11-14): HP/Attack swapped sides — HP now sits where Attack
+    // used to (bottom-right), Attack where HP used to (bottom-left). The card art's own two
+    // stat-colored circles (card_front.png) must swap the same way in the same pass, or each
+    // number lands in the wrong-colored circle until a local session's art edit catches up.
+    public static final float HP_CX = 0.840f;
     public static final float HP_CY = 0.130f;
     public static final float SPD_CX = 0.365f;
     public static final float SPD_CY = 0.110f;
     public static final float ACT_CX = 0.635f;
     public static final float ACT_CY = 0.110f;
-    public static final float ATK_CX = 0.840f;
+    public static final float ATK_CX = 0.160f;
     public static final float ATK_CY = 0.130f;
 
     // Description text area layout
