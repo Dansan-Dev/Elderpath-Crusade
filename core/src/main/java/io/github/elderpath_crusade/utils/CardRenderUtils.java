@@ -17,9 +17,9 @@ public class CardRenderUtils {
     public static final float MANA_CX = 0.825f;
     public static final float MANA_CY = 0.890f;
     // UI-002 (user request, 2026-11-14): HP/Attack swapped sides — HP now sits where Attack
-    // used to (bottom-right), Attack where HP used to (bottom-left). The card art's own two
-    // stat-colored circles (card_front.png) must swap the same way in the same pass, or each
-    // number lands in the wrong-colored circle until a local session's art edit catches up.
+    // used to (bottom-right), Attack where HP used to (bottom-left). card_front.png's baked-in
+    // gems were swapped to match (red HP gem bottom-right, green Attack gem bottom-left) — move
+    // these and the art together, or each number lands in the wrong-colored gem.
     public static final float HP_CX = 0.840f;
     public static final float HP_CY = 0.130f;
     public static final float SPD_CX = 0.365f;
