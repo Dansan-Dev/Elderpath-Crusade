@@ -20,6 +20,8 @@ import java.util.Objects;
 final class CliLoop {
     /** How long one nextLine() wait may block before polling the session again — keeps opponent/bot moves visible between the human's own turns, per the plan. */
     private static final long POLL_TIMEOUT_MILLIS = 200;
+    /** How long to wait between polls while a sent command awaits its server Ack. */
+    private static final long ACK_WAIT_SLICE_MILLIS = 10;
 
     private CliLoop() {}
 
@@ -63,6 +65,17 @@ final class CliLoop {
                     if (pick != null) out.println(StateRenderer.renderPick(pick));
                     lastPromptedPickId = pickId;
                 }
+            }
+
+            // BUG-055: never read the next line while a command we sent is still unacknowledged —
+            // the line may depend on its outcome (a second "end" must go out as the *next* seat,
+            // which only becomes acting once the first is processed). A script source hands
+            // lines over instantly, so against a real (child-process) server it used to send
+            // "end, end" both as P1 before the server had processed either. The server acks
+            // every command at the end of the tick that handled it, after that tick's events.
+            if (session.hasUnackedCommands()) {
+                Thread.sleep(ACK_WAIT_SLICE_MILLIS);
+                continue;
             }
 
             if (lineSource.exhausted()) return;

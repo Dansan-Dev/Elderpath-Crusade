@@ -68,6 +68,7 @@ public final class ServerProcess implements AutoCloseable {
     private volatile int port = -1;
     private volatile String winner;
     private volatile String error;
+    private volatile String lastStderrLine;
 
     private ServerProcess(Process process, Options options) {
         this.process = process;
@@ -89,7 +90,10 @@ public final class ServerProcess implements AutoCloseable {
         if (options.workingDir() != null) builder.directory(options.workingDir());
         ServerProcess server = new ServerProcess(builder.start(), options);
         server.pump(server.process.getInputStream(), "server-stdout", server::onProtocolLine);
-        server.pump(server.process.getErrorStream(), "server-stderr", line -> Logger.log("server", line));
+        server.pump(server.process.getErrorStream(), "server-stderr", line -> {
+            server.lastStderrLine = line;
+            Logger.log("server", line);
+        });
         server.awaitListening();
         return server;
     }
@@ -150,10 +154,26 @@ public final class ServerProcess implements AutoCloseable {
             signalled = false;
         }
         if (signalled && port > 0) return;
+        // BUG-055: a child that dies on startup (e.g. ServerLauncher missing from its classpath)
+        // used to be reported as a start *timeout* — say it exited, and why, when it did.
+        Integer exitCode = exitCodeIfExited();
         process.destroyForcibly();
-        throw new IOException(error != null
-                ? "match server failed to start: " + error
-                : "match server did not report " + LISTENING + " within " + options.startTimeout());
+        if (error != null) throw new IOException("match server failed to start: " + error);
+        if (exitCode != null) {
+            throw new IOException("match server exited with code " + exitCode + " before reporting " + LISTENING
+                    + (lastStderrLine != null ? " (last stderr: " + lastStderrLine + ")" : ""));
+        }
+        throw new IOException("match server did not report " + LISTENING + " within " + options.startTimeout());
+    }
+
+    /** The exit code if the process has exited (waiting briefly for a dying one), else null. */
+    private Integer exitCodeIfExited() {
+        try {
+            return process.waitFor(500, TimeUnit.MILLISECONDS) ? process.exitValue() : null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
     }
 
     private void onProtocolLine(String line) {

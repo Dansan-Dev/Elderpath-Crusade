@@ -67,8 +67,12 @@ class CliHotseatAndHostTest {
             CliOptions joinOptions = CliOptions.parse(new String[]{
                     "--mode", "join", "--host", "127.0.0.1", "--port", String.valueOf(hostSession.getPort()), "--seat", "p2"});
             try (ClientMatchSession joinSession = joinOptions.startSession()) {
-                ClientMatchSession.Status hostStatus = pumpUntilReadyOrOver(hostSession);
-                ClientMatchSession.Status joinStatus = pumpUntilReadyOrOver(joinSession);
+                // BUG-055: pump both at once. A session only takes over and drains its connection
+                // inside poll(), so waiting on the host alone left the guest unpolled and the host
+                // stuck in WAITING_FOR_PLAYERS until the deadline.
+                pumpBothUntilReadyOrOver(hostSession, joinSession);
+                ClientMatchSession.Status hostStatus = hostSession.getStatus();
+                ClientMatchSession.Status joinStatus = joinSession.getStatus();
                 assertTrue(hostStatus.isReady(), "host session: " + hostStatus);
                 assertTrue(joinStatus.isReady(), "join session: " + joinStatus);
                 assertEquals(PieceAlignment.P1, hostSession.getControlledSeats().get(0));
@@ -84,6 +88,21 @@ class CliHotseatAndHostTest {
             ClientMatchSession.Status status = session.getStatus();
             if (status.isReady() || status.isOver()) return status;
             if (System.nanoTime() - deadline > 0) fail("never reached PLAYING or a terminal status: " + status);
+            Thread.sleep(20);
+        }
+    }
+
+    private void pumpBothUntilReadyOrOver(ClientMatchSession a, ClientMatchSession b) throws InterruptedException {
+        long deadline = System.nanoTime() + 25_000_000_000L;
+        while (true) {
+            a.poll();
+            b.poll();
+            boolean aSettled = a.getStatus().isReady() || a.getStatus().isOver();
+            boolean bSettled = b.getStatus().isReady() || b.getStatus().isOver();
+            if (aSettled && bSettled) return;
+            if (System.nanoTime() - deadline > 0) {
+                fail("never both reached PLAYING or a terminal status: host=" + a.getStatus() + ", join=" + b.getStatus());
+            }
             Thread.sleep(20);
         }
     }

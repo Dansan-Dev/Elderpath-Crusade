@@ -45,6 +45,17 @@ class ServerProcessTest {
     }
 
     @Test
+    void launcherMissingFromClasspath_reportsAnEarlyExitNotATimeout() {
+        // BUG-055: a child that can't even find ServerLauncher dies at once; that used to surface
+        // as "did not report LISTENING within PT20S", sending the reader after a slow start.
+        String emptyClasspath = System.getProperty("java.io.tmpdir");
+        IOException e = assertThrows(IOException.class,
+                () -> ServerProcess.start(ServerProcess.Options.of().withClasspath(emptyClasspath)));
+        assertTrue(e.getMessage().contains("exited with code"), e.getMessage());
+        assertTrue(e.getMessage().contains("ServerLauncher"), "should carry the child's own error: " + e.getMessage());
+    }
+
+    @Test
     void missingAssets_failToStart() {
         IOException e = assertThrows(IOException.class,
                 () -> ServerProcess.start(ServerProcess.Options.of("--assets", "/nonexistent-elderpath-assets")));

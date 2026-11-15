@@ -44,4 +44,12 @@ test {
   if (project.hasProperty('testProfile')) {
     systemProperty 'testProfile', project.testProfile
   }
+  // BUG-055: a few core tests (RunManagerSessionTest) launch a real ServerLauncher child process.
+  // That class lives in :server, which core can't depend on (server depends on core), so hand the
+  // child the server module's runtime classpath explicitly — ServerProcess otherwise falls back to
+  // this JVM's own classpath, where ServerLauncher doesn't exist and the child dies on startup.
+  dependsOn ':server:classes'
+  doFirst {
+    systemProperty 'elderpath.serverClasspath', project(':server').sourceSets.main.runtimeClasspath.asPath
+  }
 }
