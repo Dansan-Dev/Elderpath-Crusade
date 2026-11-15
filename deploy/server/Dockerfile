@@ -37,14 +37,19 @@ RUN chmod +x gradlew && ./gradlew :server:installDist --no-daemon -x test
 # Runtime stage: just a JRE, the assembled distribution, and the assets it reads at startup
 ############################
 FROM eclipse-temurin:17-jre AS runtime
-RUN useradd --system --create-home --home-dir /app --shell /usr/sbin/nologin elderpath
+# A fixed numeric UID: Kubernetes' runAsNonRoot can only verify a numeric user (see deploy/k8s).
+RUN useradd --system --uid 10001 --create-home --home-dir /app --shell /usr/sbin/nologin elderpath
 WORKDIR /app
 
 COPY --from=build /workspace/server/build/install/server/ ./
 COPY --from=build /workspace/assets/ ./assets/
 RUN chown -R elderpath:elderpath /app
 
-USER elderpath
+USER 10001
+
+# An OutOfMemoryError must end the process (the platform restarts it) rather than kill one
+# thread and leave a half-working server behind. Read by the bin/server start script.
+ENV JAVA_OPTS="-XX:+ExitOnOutOfMemoryError"
 
 # 4567: the match's own TCP protocol (see elderpath-multiplayer-events.md). 8080: HTTP
 # /healthz/live and /healthz/ready for an external prober (--health-port, see ServerLauncher).

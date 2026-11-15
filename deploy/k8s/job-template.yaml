@@ -35,9 +35,25 @@ spec:
         kubernetes.io/arch: arm64
       # imagePullSecrets:
       #   - name: ocir-pull-secret   # only needed for a private OCIR repo, see ../README.md
+      volumes:
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: elderpath-server
           image: your-registry/elderpath-server:latest
+          # The image already runs as UID 10001 (deploy/server/Dockerfile); this makes the cluster
+          # refuse to run it any other way. The server writes nothing to disk — /tmp (below) is
+          # only for the JVM's own scratch files.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           ports:
             - name: game
               containerPort: 4567

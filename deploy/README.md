@@ -14,7 +14,13 @@ practice — see "Deploying to fly.io" below.
 
 - `deploy/server/Dockerfile` — multi-stage build: `eclipse-temurin:17-jdk` runs
   `./gradlew :server:installDist`, `eclipse-temurin:17-jre` runs the result as a
-  non-root user.
+  non-root user (fixed UID 10001) with `JAVA_OPTS=-XX:+ExitOnOutOfMemoryError`, so an
+  out-of-memory error restarts the server instead of leaving it half alive.
+- Both Kubernetes manifests set a container `securityContext` (non-root UID 10001, no
+  privilege escalation, all capabilities dropped, read-only root filesystem with an
+  `emptyDir` at `/tmp`). Added in the 2026-11 security audit and **not yet run in a
+  cluster** — if a pod fails to start after this change, `kubectl describe pod` will say
+  which setting it objects to.
 - `deploy/k8s/namespace.yaml` — the `elderpath` namespace everything else lives in.
 - `deploy/k8s/pool-deployment.yaml` — `Deployment` + `Service` + `HorizontalPodAutoscaler`
   for a pool of pairing-free match servers (see below).

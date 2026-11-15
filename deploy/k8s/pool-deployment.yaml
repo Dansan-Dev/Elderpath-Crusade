@@ -42,6 +42,9 @@ spec:
       # Repository Visibility in the OCI console) needs no secret at all. See ../README.md.
       # imagePullSecrets:
       #   - name: ocir-pull-secret
+      volumes:
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: elderpath-server
           # Build with deploy/server/Dockerfile for linux/arm64 and push to OCIR (Oracle's
@@ -50,6 +53,19 @@ spec:
           # (e.g. iad.ocir.io/axxxxxxxxxxxx/elderpath-server:latest). A public OCIR repo needs no
           # imagePullSecrets; a private one does — see ../README.md.
           image: your-registry/elderpath-server:latest
+          # The image already runs as UID 10001 (deploy/server/Dockerfile); this makes the cluster
+          # refuse to run it any other way. The server writes nothing to disk — /tmp (below) is
+          # only for the JVM's own scratch files.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           ports:
             - name: game
               containerPort: 4567
