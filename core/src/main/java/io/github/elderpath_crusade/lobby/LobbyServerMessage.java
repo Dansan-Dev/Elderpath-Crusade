@@ -22,16 +22,22 @@ public sealed interface LobbyServerMessage {
     record LobbyClosed(String reason) implements LobbyServerMessage {}
 
     /**
-     * The match is ready: from the next line on this connection carries the match protocol, so
-     * send the match Hello for the seat ("P1" or "P2") now. No more lobby messages either way.
+     * The match is ready (or, answering RejoinMatch, resumed): from the next line on this
+     * connection carries the match protocol, so send the match Hello for the seat ("P1" or "P2")
+     * now. No more lobby messages either way. rejoinToken is the secret to present in a
+     * RejoinMatch if this connection drops while the match is still running.
      */
-    record MatchStarting(String seat) implements LobbyServerMessage {}
+    record MatchStarting(String seat, String rejoinToken) implements LobbyServerMessage {
+        public MatchStarting(String seat) {
+            this(seat, null);
+        }
+    }
 
     record LobbyError(Code code, String message) implements LobbyServerMessage {
         public enum Code {
             BAD_MESSAGE, VERSION_MISMATCH, NOT_HELLOED, INVALID_NAME, INVALID_DECK,
             LOBBY_NOT_FOUND, LOBBY_FULL, LOBBY_STARTED, WRONG_PASSWORD, ALREADY_IN_LOBBY, NOT_IN_LOBBY,
-            NOT_HOST, NEED_TWO_PLAYERS, SERVER_BUSY, TOO_MANY_LOBBIES, START_FAILED, TOO_MANY_ATTEMPTS
+            NOT_HOST, NEED_TWO_PLAYERS, SERVER_BUSY, TOO_MANY_LOBBIES, START_FAILED, TOO_MANY_ATTEMPTS, REJOIN_REFUSED
         }
     }
 }

@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public final class LobbyCodec {
     /** Bumped on any incompatible change to lobby messages. */
-    public static final int LOBBY_PROTOCOL_VERSION = 1;
+    public static final int LOBBY_PROTOCOL_VERSION = 2;
 
     private static final int MAX_QUOTED_CHARS = 120;
 
@@ -27,7 +27,8 @@ public final class LobbyCodec {
             "CreateLobby", LobbyClientMessage.CreateLobby.class,
             "JoinLobby", LobbyClientMessage.JoinLobby.class,
             "LeaveLobby", LobbyClientMessage.LeaveLobby.class,
-            "StartMatch", LobbyClientMessage.StartMatch.class);
+            "StartMatch", LobbyClientMessage.StartMatch.class,
+            "RejoinMatch", LobbyClientMessage.RejoinMatch.class);
 
     private static final Map<String, Class<? extends LobbyServerMessage>> SERVER_TYPES = Map.of(
             "LobbyWelcome", LobbyServerMessage.LobbyWelcome.class,

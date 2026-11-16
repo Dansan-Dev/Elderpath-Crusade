@@ -26,4 +26,11 @@ public sealed interface LobbyClientMessage {
 
     /** Host only, with a guest present: starts the match. */
     record StartMatch() implements LobbyClientMessage {}
+
+    /**
+     * After a dropped connection: asks to be put back into a running match. lobbyId and
+     * rejoinToken are what this client was given when the match started (MatchStarting); the
+     * token is the only proof, so a wrong one is refused without saying why.
+     */
+    record RejoinMatch(String lobbyId, String rejoinToken) implements LobbyClientMessage {}
 }

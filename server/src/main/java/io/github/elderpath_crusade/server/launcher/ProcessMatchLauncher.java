@@ -24,7 +24,8 @@ import java.util.concurrent.Executors;
  * launch() works on a background thread; stopping one (which may wait out a grace period) does too.
  */
 final class ProcessMatchLauncher implements MatchLauncher, AutoCloseable {
-    private static final int CHILD_IDLE_TIMEOUT_SECONDS = 120;
+    /** Longer than the lobby's 20-minute rejoin hold: while a dropped player may still come back the match must outlive an empty room. */
+    private static final int CHILD_IDLE_TIMEOUT_SECONDS = 21 * 60;
 
     private final File assetsDir;
     private final ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
@@ -102,6 +103,11 @@ final class ProcessMatchLauncher implements MatchLauncher, AutoCloseable {
             Socket socket = new Socket("127.0.0.1", process.getPort());
             socket.setTcpNoDelay(true);
             return new NetworkConnection(socket);
+        }
+
+        @Override
+        public boolean isAlive() {
+            return process.isAlive();
         }
 
         @Override

@@ -18,6 +18,11 @@ public interface MatchLauncher {
         /** A new connection to the match server, speaking the match protocol (the player's Hello is forwarded through it). */
         io.github.elderpath_crusade.net.transport.LineLink connect() throws java.io.IOException;
 
+        /** Whether the match server is still running — false once it exited or crashed, so a held match can be released. */
+        default boolean isAlive() {
+            return true;
+        }
+
         /** Stops the match server (idempotent). */
         @Override
         void close();

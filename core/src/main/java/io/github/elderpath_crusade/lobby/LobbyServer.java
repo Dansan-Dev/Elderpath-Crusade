@@ -37,6 +37,10 @@ public final class LobbyServer {
     static final long HELLO_TIMEOUT_NANOS = 10_000_000_000L;
     static final long LOBBY_IDLE_NANOS = 15L * 60 * 1_000_000_000L;
     static final long LAUNCH_TIMEOUT_NANOS = 30_000_000_000L;
+    /** How long a running match waits for a dropped player to come back before the other player wins. */
+    static final long REJOIN_HOLD_NANOS = 20L * 60 * 1_000_000_000L;
+    /** A taken-over seat's old match connection needs this long to be noticed by the match server before the new one says hello. */
+    static final long TAKEOVER_DELAY_NANOS = 300_000_000L;
     static final int MAX_MESSAGES_PER_TICK = 32;
     static final int MAX_BAD_MESSAGES = 5;
     static final int MAX_PASSWORD_ATTEMPTS = 5;
@@ -51,6 +55,8 @@ public final class LobbyServer {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final long SECOND = 1_000_000_000L;
     private static final long PRUNE_INTERVAL_NANOS = 60 * SECOND;
+    private static final String LEAVE_PREFIX = "{\"type\":\"Leave\"";
+    private static final String MATCH_ENDED_PREFIX = "{\"type\":\"MatchEnded\"";
 
     private enum LobbyState { OPEN, STARTING, IN_MATCH }
 
@@ -63,10 +69,29 @@ public final class LobbyServer {
         int wrongPasswords;
         /** Once set, the connection carries the match protocol: lines are forwarded, not read. */
         LineLink upstream;
+        /** Said Leave in the match protocol: the player means to go, not to come back. */
+        boolean leftMatch;
+        /** Rejoining: waiting out the takeover delay before it is bridged. */
+        boolean awaitingAttach;
 
         Conn(LineLink link, long deadlineNanos) {
             this.link = link;
             this.deadlineNanos = deadlineNanos;
+        }
+    }
+
+    /** One player's place in a running match: who holds it, and what it takes to come back to it. */
+    private static final class SeatSlot {
+        final String seatName;
+        final String rejoinToken = newToken();
+        Conn conn;
+        /** A rejoining connection waiting for pendingAttachNanos. */
+        Conn pending;
+        long pendingAttachNanos;
+        long vacantSince;
+
+        SeatSlot(String seatName) {
+            this.seatName = seatName;
         }
     }
 
@@ -84,6 +109,9 @@ public final class LobbyServer {
         CompletableFuture<MatchLauncher.MatchEndpoint> launch;
         long launchDeadlineNanos;
         MatchLauncher.MatchEndpoint endpoint;
+        final SeatSlot[] slots = {new SeatSlot("P1"), new SeatSlot("P2")};
+        /** The match server said the match is over: nothing to hold or rejoin any more. */
+        boolean matchEnded;
 
         Lobby(String name, Conn host, List<String> hostDeck, byte[] salt, byte[] passwordHash, long now) {
             this.name = name;
@@ -143,6 +171,9 @@ public final class LobbyServer {
             Conn conn = it.next();
             if (conn.upstream != null) {
                 forward(conn);
+                if (conn.leftMatch && conn.lobby != null) forfeit(conn.lobby, conn);
+            } else if (conn.awaitingAttach) {
+                // waiting for its seat to be handed over — its lines stay queued until then
             } else {
                 drainMessages(conn, now);
             }
@@ -152,6 +183,7 @@ public final class LobbyServer {
             }
         }
         finishLaunches(now);
+        runMatchUpkeep(now);
         expireLobbies(now);
         if (now - lastPruneNanos >= PRUNE_INTERVAL_NANOS) {
             lastPruneNanos = now;
@@ -226,6 +258,8 @@ public final class LobbyServer {
             leave(conn, "You left the lobby");
         } else if (message instanceof StartMatch) {
             start(conn, now);
+        } else if (message instanceof RejoinMatch rejoin) {
+            rejoin(conn, rejoin, now);
         }
     }
 
@@ -390,8 +424,10 @@ public final class LobbyServer {
         }
         lobby.endpoint = endpoint;
         lobby.state = LobbyState.IN_MATCH;
-        send(lobby.host, new LobbyServerMessage.MatchStarting("P1"));
-        send(lobby.guest, new LobbyServerMessage.MatchStarting("P2"));
+        lobby.slots[0].conn = lobby.host;
+        lobby.slots[1].conn = lobby.guest;
+        send(lobby.host, new LobbyServerMessage.MatchStarting("P1", lobby.slots[0].rejoinToken));
+        send(lobby.guest, new LobbyServerMessage.MatchStarting("P2", lobby.slots[1].rejoinToken));
         lobby.host.upstream = hostUp;
         lobby.guest.upstream = guestUp;
     }
@@ -403,13 +439,24 @@ public final class LobbyServer {
         for (Conn member : lobby.members()) error(member, Code.START_FAILED, message);
     }
 
-    /** Copies what each side has said since the last tick to the other, unread. */
+    /**
+     * Copies what each side has said since the last tick to the other, unread — apart from two
+     * things the lobby has to know: a player saying Leave (they are going for good), and the match
+     * server saying MatchEnded (nothing left to hold). Both are recognised by the exact prefix the
+     * codec writes, which a hostile client can't forge into anyone else's stream.
+     */
     private void forward(Conn conn) {
         String line;
         int budget = 256;
-        while (budget-- > 0 && (line = conn.link.pollLine()) != null) conn.upstream.send(line);
+        while (budget-- > 0 && (line = conn.link.pollLine()) != null) {
+            if (line.startsWith(LEAVE_PREFIX)) conn.leftMatch = true;
+            conn.upstream.send(line);
+        }
         budget = 256;
-        while (budget-- > 0 && (line = conn.upstream.pollLine()) != null) conn.link.send(line);
+        while (budget-- > 0 && (line = conn.upstream.pollLine()) != null) {
+            if (line.startsWith(MATCH_ENDED_PREFIX) && conn.lobby != null) conn.lobby.matchEnded = true;
+            conn.link.send(line);
+        }
     }
 
     // --- leaving, closing, expiring ---
@@ -437,10 +484,19 @@ public final class LobbyServer {
             }
             lobbies.remove(lobby.id);
             closeLateEndpoint(lobby);
-        } else {
+        } else if (lobby.state == LobbyState.IN_MATCH) {
             conn.lobby = null;
-            Conn other = conn == lobby.host ? lobby.guest : lobby.host;
-            if (other == null || other.lobby != lobby || !other.link.isOpen()) endMatch(lobby);
+            long now = nanoClock.getAsLong();
+            for (SeatSlot slot : lobby.slots) {
+                if (slot.conn == conn) {
+                    slot.conn = null;
+                    slot.vacantSince = now;
+                }
+                if (slot.pending == conn) slot.pending = null;
+            }
+            // A match that ended has nothing to wait for; otherwise a drop is held for REJOIN_HOLD_NANOS
+            // (an explicit Leave was already settled by forfeit()).
+            if (lobby.matchEnded && lobby.slots[0].conn == null && lobby.slots[1].conn == null) endMatch(lobby);
         }
     }
 
@@ -448,7 +504,141 @@ public final class LobbyServer {
         if (lobby.endpoint != null) lobby.endpoint.close();
         lobby.host.lobby = null;
         if (lobby.guest != null) lobby.guest.lobby = null;
+        for (SeatSlot slot : lobby.slots) {
+            if (slot.pending != null) {
+                slot.pending.lobby = null;
+                slot.pending.awaitingAttach = false;
+                send(slot.pending, new LobbyServerMessage.LobbyError(Code.REJOIN_REFUSED, "The match is over"));
+                slot.pending = null;
+            }
+        }
         lobbies.remove(lobby.id);
+    }
+
+    // --- running matches: forfeit, the rejoin hold, rejoining ---
+
+    /** Tells a player they won (the other side is gone for good) in the match protocol's own words. */
+    private void declareWinner(SeatSlot winner) {
+        if (winner.conn == null) return;
+        winner.conn.link.send(io.github.elderpath_crusade.net.protocol.MessageCodec.encode(
+                new io.github.elderpath_crusade.net.protocol.ServerMessage.MatchEnded(
+                        io.github.elderpath_crusade.enums.PieceAlignment.valueOf(winner.seatName))));
+    }
+
+    /** A player said Leave: the other wins at once and the match server is stopped. */
+    private void forfeit(Lobby lobby, Conn leaver) {
+        if (lobby.state != LobbyState.IN_MATCH) return;
+        if (!lobby.matchEnded) {
+            for (SeatSlot slot : lobby.slots) if (slot.conn != null && slot.conn != leaver) declareWinner(slot);
+        }
+        leaver.lobby = null;
+        for (SeatSlot slot : lobby.slots) if (slot.conn == leaver) slot.conn = null;
+        endMatch(lobby);
+    }
+
+    /** Hands over seats whose takeover delay is up, and ends matches whose dropped player stayed away too long. */
+    private void runMatchUpkeep(long now) {
+        for (Lobby lobby : new ArrayList<>(lobbies.values())) {
+            if (lobby.state != LobbyState.IN_MATCH || lobby.matchEnded) continue;
+            if (lobby.endpoint != null && !lobby.endpoint.isAlive()) {
+                // The match server is gone (crashed or timed out): nothing left to hold for.
+                endMatch(lobby);
+                continue;
+            }
+            for (SeatSlot slot : lobby.slots) {
+                if (slot.pending != null && now - slot.pendingAttachNanos >= 0) {
+                    if (!attach(lobby, slot)) break;
+                }
+            }
+            if (!lobbies.containsKey(lobby.id)) continue;
+            for (int i = 0; i < 2; i++) {
+                SeatSlot slot = lobby.slots[i];
+                if (slot.conn == null && slot.pending == null && now - slot.vacantSince >= REJOIN_HOLD_NANOS) {
+                    declareWinner(lobby.slots[1 - i]);
+                    endMatch(lobby);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void rejoin(Conn conn, RejoinMatch message, long now) {
+        String key = addressKey(conn);
+        if (conn.lobby != null) {
+            error(conn, Code.ALREADY_IN_LOBBY, "Leave your current lobby first");
+            return;
+        }
+        long wait = addressFailures.secondsLeft(key, now);
+        if (wait > 0) {
+            error(conn, Code.TOO_MANY_ATTEMPTS, "Too many failed attempts, try again in " + wait + " s");
+            return;
+        }
+        Lobby lobby = message.lobbyId() == null ? null : lobbies.get(message.lobbyId());
+        SeatSlot slot = null;
+        if (lobby != null && lobby.state == LobbyState.IN_MATCH && !lobby.matchEnded && lobby.endpoint != null
+                && message.rejoinToken() != null) {
+            for (SeatSlot candidate : lobby.slots) {
+                if (tokenMatches(candidate.rejoinToken, message.rejoinToken())) slot = candidate;
+            }
+        }
+        if (slot == null) {
+            addressFailures.recordFailure(key, now);
+            error(conn, Code.REJOIN_REFUSED, "There is no match to rejoin");
+            return;
+        }
+        addressFailures.recordSuccess(key);
+
+        // The token holder may take the seat even while the old connection still looks alive —
+        // a dead network often leaves a socket open for minutes. The old one is dropped, and the
+        // new one is bridged a moment later so the match server has noticed the old one is gone.
+        boolean takeover = slot.conn != null;
+        if (slot.pending != null) {
+            slot.pending.lobby = null;
+            slot.pending.awaitingAttach = false;
+            slot.pending.link.close();
+        }
+        if (takeover) {
+            Conn old = slot.conn;
+            slot.conn = null;
+            old.lobby = null;
+            old.link.close();
+            if (old.upstream != null) old.upstream.close();
+            slot.vacantSince = now;
+        }
+        slot.pending = conn;
+        slot.pendingAttachNanos = takeover ? now + TAKEOVER_DELAY_NANOS : now;
+        conn.lobby = lobby;
+        conn.awaitingAttach = true;
+        if (!takeover) attach(lobby, slot);
+    }
+
+    /** Opens the player's own connection to the match server and bridges it. Returns false if the match is gone. */
+    private boolean attach(Lobby lobby, SeatSlot slot) {
+        Conn conn = slot.pending;
+        slot.pending = null;
+        conn.awaitingAttach = false;
+        LineLink upstream;
+        try {
+            upstream = lobby.endpoint.connect();
+        } catch (java.io.IOException | RuntimeException e) {
+            Logger.error("LobbyServer", "Could not reconnect a player to the match server: " + e);
+            conn.lobby = null;
+            error(conn, Code.REJOIN_REFUSED, "The match server is gone");
+            SeatSlot other = lobby.slots[slot == lobby.slots[0] ? 1 : 0];
+            declareWinner(other);
+            endMatch(lobby);
+            return false;
+        }
+        send(conn, new LobbyServerMessage.MatchStarting(slot.seatName, slot.rejoinToken));
+        conn.upstream = upstream;
+        conn.leftMatch = false;
+        slot.conn = conn;
+        return true;
+    }
+
+    private static boolean tokenMatches(String expected, String presented) {
+        return MessageDigest.isEqual(expected.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                presented.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private void closeLobby(Lobby lobby, String reason) {
@@ -535,6 +725,10 @@ public final class LobbyServer {
         byte[] bytes = new byte[length];
         RANDOM.nextBytes(bytes);
         return bytes;
+    }
+
+    private static String newToken() {
+        return HexFormat.of().formatHex(randomBytes(16));
     }
 
     private static String newId() {

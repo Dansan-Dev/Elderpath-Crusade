@@ -31,6 +31,8 @@ class LobbyServerTest {
         final List<MatchSpec> specs = new ArrayList<>();
         final List<LineLink> matchSideLinks = new ArrayList<>();
         int closed;
+        boolean alive = true;
+        boolean connectFails;
 
         @Override
         public CompletableFuture<MatchEndpoint> launch(MatchSpec spec) {
@@ -42,7 +44,13 @@ class LobbyServerTest {
         MatchEndpoint endpoint() {
             return new MatchEndpoint() {
                 @Override
-                public LineLink connect() {
+                public boolean isAlive() {
+                    return alive;
+                }
+
+                @Override
+                public LineLink connect() throws IOException {
+                    if (connectFails) throw new IOException("match server gone");
                     InProcessLink[] pair = InProcessLink.pair();
                     matchSideLinks.add(pair[0]);
                     return pair[1];
@@ -434,7 +442,10 @@ class LobbyServerTest {
         hosts.get(2).poll();
         assertEquals(LobbyError.Code.SERVER_BUSY, hosts.get(2).lastError().code());
 
-        // match 0 ends: its match server closes both connections
+        // match 0 ends: its match server announces it, then hangs up on both players
+        launcher.matchSideLinks.get(0).send("{\"type\":\"MatchEnded\",\"payload\":{\"winner\":\"P1\"}}");
+        launcher.matchSideLinks.get(1).send("{\"type\":\"MatchEnded\",\"payload\":{\"winner\":\"P1\"}}");
+        server.tick();
         launcher.matchSideLinks.get(0).close();
         launcher.matchSideLinks.get(1).close();
         server.tick();
@@ -617,5 +628,247 @@ class LobbyServerTest {
         bad.send(new JoinLobby(id, "nope", DECK));
         bad.poll();
         assertEquals(LobbyError.Code.WRONG_PASSWORD, bad.lastError().code(), "the count started over after the success");
+    }
+
+    // --- rejoining a running match ---
+
+    private static final long MINUTE = 60_000_000_000L;
+
+    /** A started match between "host" (P1) and "guest" (P2); returns the clients and their rejoin tokens. */
+    private final class RunningMatch {
+        final Client host;
+        final Client guest;
+        final String lobbyId;
+        final String hostToken;
+        final String guestToken;
+        final LineLink hostMatchSide;
+        final LineLink guestMatchSide;
+
+        RunningMatch() {
+            host = hello("host");
+            lobbyId = create(host, "Held", null);
+            guest = joinedGuest(lobbyId, null);
+            host.send(new StartMatch());
+            host.poll();
+            guest.poll();
+            hostToken = host.lastOf(MatchStarting.class).rejoinToken();
+            guestToken = guest.lastOf(MatchStarting.class).rejoinToken();
+            hostMatchSide = launcher.matchSideLinks.get(launcher.matchSideLinks.size() - 2);
+            guestMatchSide = launcher.matchSideLinks.get(launcher.matchSideLinks.size() - 1);
+        }
+    }
+
+    private static boolean isMatchEnded(String line, String winner) {
+        return line != null && line.startsWith("{\"type\":\"MatchEnded\"") && line.contains("\"" + winner + "\"");
+    }
+
+    @Test
+    void matchStartingGivesEachPlayerItsOwnRejoinToken() {
+        RunningMatch m = new RunningMatch();
+        assertNotNull(m.hostToken);
+        assertNotNull(m.guestToken);
+        assertNotEquals(m.hostToken, m.guestToken);
+    }
+
+    @Test
+    void aDroppedPlayerIsHeld_theOtherKeepsPlaying_andTheTokenBringsThemBack() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close(); // network drop, no Leave
+        m.host.poll();
+        assertEquals(1, server.lobbyCount(), "the match is held for the dropped player");
+        assertEquals(1, server.activeMatches());
+        assertEquals(0, launcher.closed);
+
+        m.host.link.send("{\"type\":\"Command\",\"payload\":{}}");   // the host keeps talking to the match server
+        server.tick();
+        assertEquals("{\"type\":\"Command\",\"payload\":{}}", m.hostMatchSide.pollLine());
+
+        Client back = hello("guest");
+        back.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        back.poll();
+        assertEquals("P2", back.lastOf(MatchStarting.class).seat());
+        assertEquals(m.guestToken, back.lastOf(MatchStarting.class).rejoinToken(), "the same token keeps working");
+        assertEquals(3, launcher.matchSideLinks.size(), "a fresh connection to the match server");
+        LineLink newMatchSide = launcher.matchSideLinks.get(2);
+        back.link.send("hello again");
+        server.tick();
+        assertEquals("hello again", newMatchSide.pollLine());
+        newMatchSide.send("snapshot");
+        server.tick();
+        assertEquals("snapshot", back.link.pollLine());
+    }
+
+    @Test
+    void rejoiningNeedsTheRightTokenForTheRightMatch() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        for (String[] attempt : new String[][]{{m.lobbyId, "0".repeat(32)}, {m.lobbyId, null}, {"nope", m.guestToken}, {null, m.guestToken}}) {
+            Client c = hello("thief");
+            c.send(new RejoinMatch(attempt[0], attempt[1]));
+            c.poll();
+            assertEquals(LobbyError.Code.REJOIN_REFUSED, c.lastError().code(), java.util.Arrays.toString(attempt));
+            assertNull(c.lastOf(MatchStarting.class));
+        }
+        assertEquals(2, launcher.matchSideLinks.size(), "nobody got a new match connection");
+    }
+
+    @Test
+    void theOtherPlayersTokenCannotTakeAnOccupiedSeatForSomeoneElse_butIsTheirOwnSeat() {
+        RunningMatch m = new RunningMatch();
+        // the host's token takes over the HOST's seat (P1), never the guest's
+        Client c = hello("anyone");
+        c.send(new RejoinMatch(m.lobbyId, m.hostToken));
+        c.poll();
+        clock.addAndGet(LobbyServer.TAKEOVER_DELAY_NANOS);
+        c.poll();
+        assertEquals("P1", c.lastOf(MatchStarting.class).seat());
+    }
+
+    @Test
+    void takingOverALiveSeatDropsTheOldConnectionAndBridgesTheNewOneAfterAShortDelay() {
+        RunningMatch m = new RunningMatch();
+        // the guest's old connection still looks open (a dead network), but the token holder shows up
+        Client back = hello("guest");
+        back.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        back.poll();
+        assertFalse(m.guest.link.isOpen(), "the stale connection was dropped");
+        assertNull(back.lastOf(MatchStarting.class), "not bridged yet: the match server must notice the old connection first");
+        assertEquals(2, launcher.matchSideLinks.size());
+
+        clock.addAndGet(LobbyServer.TAKEOVER_DELAY_NANOS);
+        back.poll();
+        assertEquals("P2", back.lastOf(MatchStarting.class).seat());
+        assertEquals(3, launcher.matchSideLinks.size());
+    }
+
+    @Test
+    void aDroppedPlayerWhoStaysAwayTwentyMinutes_losesToTheOtherPlayer() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        clock.addAndGet(LobbyServer.REJOIN_HOLD_NANOS - MINUTE);
+        m.host.poll();
+        assertEquals(1, server.activeMatches(), "still held at 19 minutes");
+        clock.addAndGet(MINUTE);
+        server.tick(); // the remaining player now only gets match-protocol lines, which a lobby Client can't decode
+        String line;
+        boolean told = false;
+        while ((line = m.host.link.pollLine()) != null) told |= isMatchEnded(line, "P1");
+        assertTrue(told, "the remaining player is told they won");
+        assertEquals(0, server.activeMatches());
+        assertEquals(1, launcher.closed, "the match server is stopped");
+
+        Client late = hello("guest");
+        late.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        late.poll();
+        assertEquals(LobbyError.Code.REJOIN_REFUSED, late.lastError().code());
+    }
+
+    @Test
+    void whenTheOtherPlayerLeavesForGoodTheDroppedOneCannotRejoinAnything() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        m.host.link.send("{\"type\":\"Leave\",\"payload\":{}}");
+        m.host.poll();
+        assertEquals(0, server.lobbyCount());
+        assertEquals(1, launcher.closed);
+        Client back = hello("guest");
+        back.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        back.poll();
+        assertEquals(LobbyError.Code.REJOIN_REFUSED, back.lastError().code());
+    }
+
+    @Test
+    void anExplicitLeaveForfeitsAtOnce_theOtherPlayerWins() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.send("{\"type\":\"Leave\",\"payload\":{}}");
+        m.guest.poll();
+        boolean told = false;
+        String line;
+        while ((line = m.host.link.pollLine()) != null) told |= isMatchEnded(line, "P1");
+        assertTrue(told);
+        assertEquals(0, server.lobbyCount());
+        assertEquals(1, launcher.closed);
+    }
+
+    @Test
+    void whenBothPlayersDropTheMatchIsStillHeldForTheFullTime() {
+        RunningMatch m = new RunningMatch();
+        m.host.link.close();
+        m.guest.link.close();
+        server.tick();
+        assertEquals(1, server.lobbyCount());
+        clock.addAndGet(LobbyServer.REJOIN_HOLD_NANOS - MINUTE);
+        server.tick();
+        assertEquals(1, server.lobbyCount());
+        Client back = hello("host");
+        back.send(new RejoinMatch(m.lobbyId, m.hostToken));
+        back.poll();
+        assertEquals("P1", back.lastOf(MatchStarting.class).seat());
+        clock.addAndGet(2 * MINUTE);
+        server.tick();
+        assertEquals(0, server.lobbyCount(), "the guest never came back");
+    }
+
+    @Test
+    void aFinishedMatchIsNotHeld() {
+        RunningMatch m = new RunningMatch();
+        m.hostMatchSide.send("{\"type\":\"MatchEnded\",\"payload\":{\"winner\":\"P2\"}}");
+        server.tick();
+        assertNotNull(m.host.link.pollLine(), "the end is forwarded to the player");
+        m.host.link.close();
+        m.guest.link.close();
+        server.tick();
+        assertEquals(0, server.lobbyCount(), "nothing to wait for after the match ended");
+        assertEquals(1, launcher.closed);
+    }
+
+    @Test
+    void aMatchServerThatDiedIsReleasedInsteadOfHeld() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        launcher.alive = false; // the child crashed
+        // the flag is read from the endpoint each tick
+        m.host.poll();
+        assertEquals(0, server.lobbyCount());
+    }
+
+    @Test
+    void rejoiningWhenTheMatchServerCannotBeReachedEndsTheMatch() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        launcher.connectFails = true;
+        Client back = hello("guest");
+        back.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        back.poll();
+        assertEquals(LobbyError.Code.REJOIN_REFUSED, back.lastError().code());
+        assertEquals(0, server.lobbyCount());
+    }
+
+    @Test
+    void guessingRejoinTokensIsRateLimitedPerAddress() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        LobbyError last = null;
+        for (int i = 0; i < 12 && (last == null || last.code() != LobbyError.Code.TOO_MANY_ATTEMPTS); i++) {
+            Client c = helloFrom("g" + i, "203.0.113.77");
+            c.send(new RejoinMatch(m.lobbyId, String.format("%032x", i)));
+            c.poll();
+            last = c.lastError();
+        }
+        assertEquals(LobbyError.Code.TOO_MANY_ATTEMPTS, last.code());
+        Client owner = helloFrom("guest", "203.0.113.77");
+        owner.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        owner.poll();
+        assertEquals(LobbyError.Code.TOO_MANY_ATTEMPTS, owner.lastError().code(), "even the real token waits while the address is locked");
+        Client elsewhere = helloFrom("guest", "198.51.100.1");
+        elsewhere.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        elsewhere.poll();
+        assertEquals("P2", elsewhere.lastOf(MatchStarting.class).seat());
     }
 }

@@ -21,7 +21,8 @@ class LobbyCodecTest {
                 new CreateLobby("Open", null, List.of("Wolf")),
                 new JoinLobby("ab12cd34", "pw", List.of("Wolf")),
                 new LeaveLobby(),
-                new StartMatch());
+                new StartMatch(),
+                new RejoinMatch("ab12cd34", "feedface"));
         for (LobbyClientMessage m : messages) assertEquals(m, LobbyCodec.decodeClient(LobbyCodec.encode(m)));
     }
 
@@ -35,6 +36,7 @@ class LobbyCodecTest {
                 new LobbyUpdate(VIEW),
                 new LobbyClosed("The host left"),
                 new MatchStarting("P2"),
+                new MatchStarting("P1", "0123abcd"),
                 new LobbyError(LobbyError.Code.WRONG_PASSWORD, "Wrong password"));
         for (LobbyServerMessage m : messages) assertEquals(m, LobbyCodec.decodeServer(LobbyCodec.encode(m)));
     }
