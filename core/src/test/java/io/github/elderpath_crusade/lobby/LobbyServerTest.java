@@ -916,4 +916,51 @@ class LobbyServerTest {
         assertTrue(notice.contains("\"connected\":false"));
         assertTrue(notice.contains("\"holdSeconds\":900"), "15 minutes of the guest's hold are left: " + notice);
     }
+
+    // --- idle connections ---
+
+    @Test
+    void aConnectionInNoLobbyThatSendsNothingIsEventuallyClosed() {
+        Client browser = hello("browser");
+        clock.addAndGet(LobbyServer.IDLE_CONNECTION_NANOS - 1_000_000_000L);
+        browser.poll();
+        assertTrue(browser.link.isOpen());
+        clock.addAndGet(1_000_000_000L);
+        browser.poll();
+        assertEquals(LobbyError.Code.IDLE_TIMEOUT, browser.lastError().code());
+        assertFalse(browser.link.isOpen());
+    }
+
+    @Test
+    void anyMessageKeepsAConnectionAlive_likeABrowsingClientsRefresh() {
+        Client browser = hello("browser");
+        for (int i = 0; i < 6; i++) {
+            clock.addAndGet(LobbyServer.IDLE_CONNECTION_NANOS - 1_000_000_000L);
+            browser.send(new ListLobbies());
+            browser.poll();
+        }
+        assertTrue(browser.link.isOpen(), "30 minutes of refreshes, never idle for 5");
+    }
+
+    @Test
+    void aPlayerWaitingInALobbyIsNotIdleClosed_butTheirLobbyTimesOutOnItsOwn() {
+        Client host = hello("host");
+        create(host, "Waiting", null);
+        clock.addAndGet(LobbyServer.IDLE_CONNECTION_NANOS + 1_000_000_000L);
+        host.poll();
+        assertTrue(host.link.isOpen());
+        clock.addAndGet(LobbyServer.LOBBY_IDLE_NANOS);
+        host.poll();
+        assertInstanceOf(LobbyClosed.class, host.last());
+        assertTrue(host.link.isOpen(), "a closed lobby is not the player's inactivity: a fresh idle period starts");
+    }
+
+    @Test
+    void aPlayerInARunningMatchIsNeverIdleClosed() {
+        RunningMatch m = new RunningMatch();
+        clock.addAndGet(2 * LobbyServer.IDLE_CONNECTION_NANOS);
+        server.tick();
+        assertTrue(m.host.link.isOpen());
+        assertTrue(m.guest.link.isOpen());
+    }
 }

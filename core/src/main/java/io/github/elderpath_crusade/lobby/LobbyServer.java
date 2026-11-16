@@ -35,6 +35,8 @@ import java.util.function.Predicate;
  */
 public final class LobbyServer {
     static final long HELLO_TIMEOUT_NANOS = 10_000_000_000L;
+    /** A connection that is in no lobby and no match and sends nothing for this long is closed — it holds a slot. */
+    static final long IDLE_CONNECTION_NANOS = 5L * 60 * 1_000_000_000L;
     static final long LOBBY_IDLE_NANOS = 15L * 60 * 1_000_000_000L;
     static final long LAUNCH_TIMEOUT_NANOS = 30_000_000_000L;
     /** How long a running match waits for a dropped player to come back before the other player wins. */
@@ -67,6 +69,8 @@ public final class LobbyServer {
         Lobby lobby;
         int badMessages;
         int wrongPasswords;
+        /** When this connection last sent anything (or was last told something that restarts its idle clock). */
+        long lastActivityNanos;
         /** Once set, the connection carries the match protocol: lines are forwarded, not read. */
         LineLink upstream;
         /** Said Leave in the match protocol: the player means to go, not to come back. */
@@ -165,7 +169,11 @@ public final class LobbyServer {
     public void tick() {
         long now = nanoClock.getAsLong();
         LineLink link;
-        while ((link = transport.accept()) != null) connections.add(new Conn(link, now + HELLO_TIMEOUT_NANOS));
+        while ((link = transport.accept()) != null) {
+            Conn fresh = new Conn(link, now + HELLO_TIMEOUT_NANOS);
+            fresh.lastActivityNanos = now;
+            connections.add(fresh);
+        }
 
         for (Iterator<Conn> it = connections.iterator(); it.hasNext(); ) {
             Conn conn = it.next();
@@ -222,6 +230,7 @@ public final class LobbyServer {
         for (int handled = 0; handled < MAX_MESSAGES_PER_TICK && conn.upstream == null; handled++) {
             String line = conn.link.pollLine();
             if (line == null) break;
+            conn.lastActivityNanos = now;
             LobbyClientMessage message;
             try {
                 message = LobbyCodec.decodeClient(line);
@@ -236,6 +245,11 @@ public final class LobbyServer {
                 Logger.error("LobbyServer", "Handling " + message.getClass().getSimpleName() + " failed: " + e);
                 send(conn, new LobbyServerMessage.LobbyError(Code.BAD_MESSAGE, "Could not handle that message"));
             }
+        }
+        if (conn.playerName != null && conn.lobby == null && conn.link.isOpen()
+                && now - conn.lastActivityNanos >= IDLE_CONNECTION_NANOS) {
+            send(conn, new LobbyServerMessage.LobbyError(Code.IDLE_TIMEOUT, "Disconnected for inactivity"));
+            conn.link.close();
         }
         if (conn.playerName == null && conn.link.isOpen() && now - conn.deadlineNanos >= 0) {
             send(conn, new LobbyServerMessage.LobbyError(Code.NOT_HELLOED, "No hello received"));
@@ -662,6 +676,7 @@ public final class LobbyServer {
         for (Conn member : lobby.members()) {
             if (member.lobby == lobby) {
                 member.lobby = null;
+                member.lastActivityNanos = nanoClock.getAsLong(); // a closed lobby is not the member's inactivity
                 send(member, new LobbyServerMessage.LobbyClosed(reason));
             }
         }
