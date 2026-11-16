@@ -46,8 +46,11 @@ primary_region = "arn"
   [[services.ports]]
     # The game connects with TLS on 443 (LobbyEndpoint's default for a non-local host). Fly
     # terminates TLS and then sends a PROXY protocol header; the server reads it (--proxy-protocol).
-    # The "proxy_proto" handler is PROXY protocol version 1 by default per Fly's docs — the server
-    # parses v1 only; if Fly's current docs say otherwise, adjust before deploying.
+    # CONFIRMED 2026-11-16 against docs.fly.io/networking/services: the "proxy_proto" handler sends PROXY
+    # protocol v1 (text) by default; v2 is only sent if `proxy_proto_options = { version = "v2" }` is set
+    # here. Do NOT set that option — the server parses v1 only (net.transport.ProxyProtocol).
+    # Handler order ["tls","proxy_proto"] and the exact auto_stop_machines semantics are not stated
+    # on that page: still unverified until a first deploy.
     port = 443
     handlers = ["tls", "proxy_proto"]
 

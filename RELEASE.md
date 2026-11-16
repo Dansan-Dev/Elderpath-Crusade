@@ -48,11 +48,31 @@ One task per platform; each downloads its runtime, makes a minimal runtime with 
 ./gradlew :lwjgl3:packageLinuxX64 --no-daemon
 ./gradlew :lwjgl3:packageMacX64 :lwjgl3:packageMacM1 --no-daemon
 ```
-- Output is under `lwjgl3/build/construo/` (exact file names: check after the first build) (unverified).
+- **Verified 2026-11-16** (all four built from a Linux/WSL host, ~3 min total, each downloads its Temurin 17.0.15 JDK):
+  - Zips: `lwjgl3/build/construo/dist/ElderpathCrusade-{linuxX64,winX64,macX64,macM1}.zip` (~160 MB each). Each holds one
+    folder `ElderpathCrusade-<version>-<target>/` (so the version is in the folder name, not the zip name).
+  - **For SteamPipe, upload the staged folders, not the zips** — Construo's zip stores no file modes (everything is
+    `0000` except the main launcher), so an unzipped Linux/macOS `install.sh` or `java` is not executable. Staged
+    folders: `lwjgl3/build/construo/linuxX64/roast/`, `.../winX64/roast/`, `.../macX64/ElderpathCrusade.app`,
+    `.../macM1/ElderpathCrusade.app`. (The game also sets the exec bit on its own `runtime/bin/java` if missing.)
+  - Executables (for Steam launch options): Linux `ElderpathCrusade` (next to `ElderpathCrusade-<version>.jar`,
+    `runtime/`, `app/ElderpathCrusade.json`, `install.sh`, `uninstall.sh`, `icons/icon-256.png`, `README.md`);
+    Windows `ElderpathCrusade.exe`; macOS `ElderpathCrusade.app/Contents/MacOS/ElderpathCrusade`. The launcher is
+    a native "roast" program that loads the runtime's libjvm in-process — it is **not** a `java`.
+  - Fixed 2026-11-16: the jar no longer carries `asset_register.yaml`, `images_old/`, `*Zone.Identifier`, pack `.url`
+    and `Preview.ogg`, the unused numbered `audio/NN_*` files or the four unused music tracks (136 MB → 89 MB
+    uncompressed jar). See `jar { exclude ... }` in `lwjgl3/build.gradle`. Add a track/sfx to the used set by
+    removing its exclude.
+  - Fixed 2026-11-16: **the runtime had no `java` executable**, so `ServerProcess` (which used the process
+    command = the native launcher) could not start a match server from a bundle. `injectJava<Target>` now copies
+    `bin/java[.exe]` from the Temurin archive into `runtime/bin`, and `ServerProcess.javaBinary()` prefers
+    `java.home/bin/java`. And **`java.logging` was missing from the module list** (SnakeYAML needs it; the child
+    server died at startup). Verified by starting `ServerLauncher` (match mode, and lobby mode with `/healthz`) using
+    only the Linux bundle's own `runtime/bin/java` with no `java` on `PATH`.
 - The runtime's module list is in `lwjgl3/build.gradle` (`jlink { modules ... }`). If you add a dependency that
-  needs another JDK module, run `jdeps` over the classes and add it — a missing module only shows as a
+  needs another JDK module, add it — `jdeps` over our fat jar only reports `java.base` and cannot be trusted; instead start the server from the bundle's own runtime (see below) — a missing module only shows as a
   `NoClassDefFoundError` at runtime (that is how `java.management`/`jdk.httpserver` were found).
-- Whether Construo can build the macOS targets from Windows/Linux is (unverified); if it can't, build them on a Mac.
+- Construo **does** build both macOS targets from Linux (verified 2026-11-16). Whether the resulting `.app` runs on a Mac is not tested (no Mac here).
 - Solo, hotseat and hosted play start a **child server process** from inside the game: the bundle's runtime must
   be able to run it (`java -cp <the game jar> ...ServerLauncher`). Step 3 checks exactly that.
 
@@ -83,7 +103,7 @@ fly scale count 1 --config deploy/fly/fly.lobby.toml   # lobbies live in one pro
 fly logs --config deploy/fly/fly.lobby.toml            # expect "lobby service listening" and a health line
 ```
 Then connect with a real client (step 3). Everything in `fly.lobby.toml` is (unverified) until the first deploy —
-in particular the `proxy_proto` handler's PROXY version (the server parses v1) and the memory size (`1gb`).
+in particular the handler order and the memory size (`1gb`). The PROXY version is confirmed: Fly's `proxy_proto` sends v1 by default (docs.fly.io/networking/services, checked 2026-11-16), which is what the server parses — never set `proxy_proto_options` to v2.
 To roll back: `fly releases` and redeploy the previous image, or `fly deploy --config deploy/fly/fly.toml`
 (that restores the old one-bot-match server, which the new client cannot use).
 

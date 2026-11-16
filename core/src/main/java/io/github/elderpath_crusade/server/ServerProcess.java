@@ -225,8 +225,20 @@ public final class ServerProcess implements AutoCloseable {
         return configured != null ? configured : System.getProperty("java.class.path");
     }
 
-    private static String javaBinary() {
-        return ProcessHandle.current().info().command()
-                .orElse(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
+    /**
+     * The `java` to start the match server with. The running JVM's own `java.home/bin/java` comes first: in a
+     * packaged build (Construo) the process command is the native launcher, not a `java`, so starting it with
+     * `-cp ... ServerLauncher` would open another game instead of a server. Falls back to the process command
+     * only when `java.home` has no executable (e.g. a jlink image that was built without one).
+     */
+    static String javaBinary() {
+        String name = System.getProperty("os.name", "").toLowerCase().contains("win") ? "java.exe" : "java";
+        File fromJavaHome = new File(System.getProperty("java.home") + File.separator + "bin" + File.separator + name);
+        if (fromJavaHome.isFile()) {
+            // A bundle unzipped by a tool that ignores mode bits (Construo's zip stores none) leaves it non-executable.
+            if (!fromJavaHome.canExecute()) fromJavaHome.setExecutable(true, false);
+            return fromJavaHome.getPath();
+        }
+        return ProcessHandle.current().info().command().orElse(fromJavaHome.getPath());
     }
 }

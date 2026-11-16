@@ -390,7 +390,7 @@ matchmaking controller is exactly as unbuilt here as it is on the Kubernetes pat
 and join named, optionally password-protected lobbies, and each started lobby's match runs in its own
 child match server on the same machine (see `.claude/plans/lobby-plan.md` and `elderpath-architecture.md`'s
 "Lobby Service"). Flags: `--max-matches N` (concurrent matches, default 4), `--proxy-protocol true`
-(connections start with a PROXY protocol v1 line, so the connection limits see real client addresses).
+(connections start with a PROXY protocol v1 line — Fly's `proxy_proto` sends v1 unless `proxy_proto_options` asks for v2, confirmed against Fly's docs 2026-11-16 — so the connection limits see real client addresses).
 
 - **One machine only** — lobbies and running matches live in that process's memory; a second machine
   would be a second, separate lobby list. Each match is a child JVM, so memory bounds `--max-matches`

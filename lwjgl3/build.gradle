@@ -68,6 +68,13 @@ jar {
   dependencies {
     exclude('META-INF/INDEX.LIST', 'META-INF/maven/**')
   }
+// Keep the shipped jar free of things that must not (or need not) be redistributed (2026-11-16 audit):
+// the internal asset register, archived old art, Windows download markers, pack previews/links, and
+// audio/music that no code or data file references and whose provenance is unrecorded.
+// (`:lwjgl3:run` reads assets/ directly, so it is unaffected.)
+  exclude('asset_register.yaml', 'assets.txt', 'images_old/**', '**/*Zone.Identifier', '**/*.url',
+          '**/Preview.ogg', 'audio/0*_*', 'audio/1*_*', 'audio/2*_*',
+          'music/Floating_Dream.mp3', 'music/Polar_Lights.mp3', 'music/Forgotten_Biomes.mp3', 'music/Sunlight_Through_Leaves.mp3')
 // setting the manifest makes the JAR runnable.
   manifest {
     attributes 'Main-Class': project.mainClassName
@@ -103,6 +110,10 @@ construo {
     // time F3 is pressed (and on any server started with --health-port).
     modules.add("java.management")
     modules.add("jdk.httpserver")
+    // Found 2026-11-16 by starting the match server from the real Linux bundle (jdeps over the fat jar only
+    // reports java.base, so it cannot be trusted for this): SnakeYAML (every registry load) needs java.logging;
+    // without it the child match server dies at startup with NoClassDefFoundError: java/util/logging/Logger.
+    modules.add("java.logging")
   }
 
   targets.configure {
@@ -191,6 +202,15 @@ distributions {
       if (!roastDir.exists()) {
         roastDir.mkdirs()
       }
+      // The READMEs promise a LICENSE.txt "included with the game" and the third-party licence texts must ship
+      // with the bundle too. They live in the gitignored assets/license/, so skip quietly if absent.
+      def licenseDir = rootProject.file('assets/license')
+      if (licenseDir.exists()) {
+        def licenseTarget = cfg.packaging != 'mac' ? roastDir : file("${buildDir}/construo/${cfg.folder}/${appName}.app/Contents/MacOS")
+        licenseTarget.mkdirs()
+        copy { from new File(licenseDir, 'LICENSE.txt'); into licenseTarget }
+        copy { from licenseDir; include 'LICENSE-*.txt', '*.pdf'; into new File(licenseTarget, 'licenses') }
+      }
       def platformReadme = project.file("packaging/${cfg.packaging}/resources/README.md")
       if (platformReadme.exists()) {
         if (cfg.packaging != 'mac') {
@@ -213,6 +233,38 @@ distributions {
   }
   tasks.matching { it.name == "package${cfg.name}" }.configureEach {
     dependsOn injectTask
+  }
+}
+
+// The jlink runtime Construo builds has no `java` executable (only libjvm/libjli, which the native launcher loads
+// in-process), but ServerProcess starts every match server as a child `java` process. Copy the tiny `java[.exe]`
+// launcher from the same Temurin archive into <runtime>/bin so `java.home/bin/java` exists in the bundle
+// (found 2026-11-16 by inspecting the real bundles; libjli/jli.dll are already in the runtime).
+[
+  [name: 'LinuxX64', folder: 'linuxX64', archive: 'linuxX64.tar.gz', exe: 'java',     runtime: 'roast/runtime'],
+  [name: 'MacM1',    folder: 'macM1',    archive: 'macM1.tar.gz',    exe: 'java',     runtime: "${appName}.app/Contents/MacOS/runtime"],
+  [name: 'MacX64',   folder: 'macX64',   archive: 'macX64.tar.gz',   exe: 'java',     runtime: "${appName}.app/Contents/MacOS/runtime"],
+  [name: 'WinX64',   folder: 'winX64',   archive: 'winX64.zip',      exe: 'java.exe', runtime: 'roast/runtime']
+].each { cfg ->
+  def injectJava = tasks.register("injectJava${cfg.name}") {
+    dependsOn tasks.matching { it.name == "roast${cfg.name}" }
+    doLast {
+      def archive = file("${buildDir}/construo/jdk/${cfg.archive}")
+      def binDir = file("${buildDir}/construo/${cfg.folder}/${cfg.runtime}/bin")
+      binDir.mkdirs()
+      def tree = cfg.archive.endsWith('.zip') ? zipTree(archive) : tarTree(resources.gzip(archive))
+      copy {
+        from tree
+        include { it.relativePath.pathString.endsWith("/bin/${cfg.exe}") }
+        eachFile { it.relativePath = new RelativePath(true, it.name) }
+        includeEmptyDirs = false
+        into binDir
+      }
+      new File(binDir, cfg.exe).setExecutable(true, false)
+    }
+  }
+  tasks.matching { it.name == "package${cfg.name}" }.configureEach {
+    dependsOn injectJava
   }
 }
 
