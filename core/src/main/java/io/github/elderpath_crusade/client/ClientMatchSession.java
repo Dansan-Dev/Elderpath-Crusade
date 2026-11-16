@@ -120,6 +120,19 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
         return session;
     }
 
+    /**
+     * Plays seat over a connection that is already open to a match server — one reached through
+     * the lobby service's bridge (see LobbyClient.takeMatchConnection). Nothing to launch or dial.
+     */
+    public static ClientMatchSession joinThrough(ServerConnection connection, SeatRequest seat, String playerName) {
+        ClientMatchSession session = new ClientMatchSession(playerName, List.of(seat), false);
+        synchronized (session) {
+            session.connecting = true;
+            session.pendingConnections = List.of(connection);
+        }
+        return session;
+    }
+
     private static ClientMatchSession launch(LocalMatchSpec spec, String bindAddress, int port, List<SeatRequest> requests) {
         if (requests.isEmpty()) throw new IllegalArgumentException("no human seat to play: " + spec.bots());
         // BUG-046: mirrors what the server's own MatchSetup.prepare will register for this exact
