@@ -25,12 +25,14 @@ public class MainMenuRoom extends Room {
     private MainMenuNavbar navbar;
     private Text title;
     private Button howToPlayButton;
+    private Text versionText;
 
     private static final int[] backgroundSize = {1536, 1024};
     private static final int[] navbarSize = {551, 831};
     private static final int HOW_TO_PLAY_BUTTON_WIDTH = 160;
     private static final int HOW_TO_PLAY_BUTTON_HEIGHT = 50;
     private static final int HOW_TO_PLAY_BUTTON_MARGIN = 20;
+    private static final int VERSION_MARGIN = 12;
 
     private MainMenuRoom() {
         super();
@@ -61,7 +63,7 @@ public class MainMenuRoom extends Room {
         addUI(navbar);
 
         // Title remains as content
-        title = new Text("Main Menu", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+        title = new Text("Elderpath Crusade", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
             .withFontSize(FontSize.BODY_LARGE);
         addContent(title);
 
@@ -76,6 +78,11 @@ public class MainMenuRoom extends Room {
                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
                 .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
         addContent(howToPlayButton);
+
+        // The build's version, small in the bottom-left corner — what a player quotes in a bug report.
+        versionText = new Text("v" + io.github.elderpath_crusade.utils.GameVersion.current(), FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+            .withFontSize(FontSize.CAPTION);
+        addContent(versionText);
 
         // Initial layout
         layoutContents();
@@ -95,6 +102,9 @@ public class MainMenuRoom extends Room {
         // Top-right corner, clear of the title and the bottom-center navbar.
         howToPlayButton.getBounds().setX(screen_width - HOW_TO_PLAY_BUTTON_WIDTH - HOW_TO_PLAY_BUTTON_MARGIN);
         howToPlayButton.getBounds().setY(screen_height - HOW_TO_PLAY_BUTTON_HEIGHT - HOW_TO_PLAY_BUTTON_MARGIN);
+
+        versionText.getBounds().setX(VERSION_MARGIN);
+        versionText.getBounds().setY(VERSION_MARGIN);
 
         // Navbar alignment stays at bottom center with slightly larger scale
         // Use divisor of 2.7 instead of 3 to make navbar ~11% larger

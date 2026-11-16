@@ -21,6 +21,11 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void create() {
+        // A shipped game has no console: keep a log file (and any crash) a player can send along.
+        io.github.elderpath_crusade.utils.Logger.enableFileLogging(io.github.elderpath_crusade.utils.Logger.defaultLogFile());
+        io.github.elderpath_crusade.utils.Logger.log("Main", "Elderpath Crusade " + io.github.elderpath_crusade.utils.GameVersion.current() + " starting");
+        Thread.setDefaultUncaughtExceptionHandler((thread, error) ->
+                io.github.elderpath_crusade.utils.Logger.error("Crash", "Uncaught exception on thread " + thread.getName(), error));
         GameContext.createClient();
         // Loads the saved settings (volume included) — nothing here may overwrite them afterwards.
         GameContext.get().getGameManager().initialize();
