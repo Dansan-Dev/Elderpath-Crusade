@@ -109,6 +109,12 @@ public class NetworkConnection implements Closeable, LineLink {
     }
 
     @Override
+    public String peerAddress() {
+        java.net.InetAddress address = socket.getInetAddress();
+        return address == null ? null : address.getHostAddress();
+    }
+
+    @Override
     public boolean isOpen() {
         return isConnected();
     }

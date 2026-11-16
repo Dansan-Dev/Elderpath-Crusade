@@ -3,6 +3,7 @@ package io.github.elderpath_crusade.lobby;
 import io.github.elderpath_crusade.lobby.LobbyClientMessage.*;
 import io.github.elderpath_crusade.lobby.LobbyServerMessage.LobbyError.Code;
 import io.github.elderpath_crusade.net.protocol.ProtocolException;
+import io.github.elderpath_crusade.net.transport.AttemptLimiter;
 import io.github.elderpath_crusade.net.transport.LineLink;
 import io.github.elderpath_crusade.utils.Logger;
 
@@ -48,6 +49,8 @@ public final class LobbyServer {
     private static final int PBKDF2_ITERATIONS = 20_000;
 
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final long SECOND = 1_000_000_000L;
+    private static final long PRUNE_INTERVAL_NANOS = 60 * SECOND;
 
     private enum LobbyState { OPEN, STARTING, IN_MATCH }
 
@@ -108,6 +111,14 @@ public final class LobbyServer {
 
     private final List<Conn> connections = new ArrayList<>();
     private final Map<String, Lobby> lobbies = new LinkedHashMap<>();
+    /**
+     * Guessing limits, beyond a connection's own strikes (a guesser just reconnects): failed
+     * passwords and failed rejoin tokens per client address, and failed passwords per lobby.
+     * Each lockout doubles when earned again.
+     */
+    private final AttemptLimiter addressFailures = new AttemptLimiter(10, 10 * 60 * SECOND, 60 * SECOND, 60 * 60 * SECOND);
+    private final AttemptLimiter lobbyFailures = new AttemptLimiter(5, 5 * 60 * SECOND, 60 * SECOND, 15 * 60 * SECOND);
+    private long lastPruneNanos;
 
     /** maxMatches: matches (started lobbies) running at once; knownCard: whether a card name can appear in a deck. */
     public LobbyServer(LobbyTransport transport, MatchLauncher launcher, int maxMatches, Predicate<String> knownCard) {
@@ -142,6 +153,11 @@ public final class LobbyServer {
         }
         finishLaunches(now);
         expireLobbies(now);
+        if (now - lastPruneNanos >= PRUNE_INTERVAL_NANOS) {
+            lastPruneNanos = now;
+            addressFailures.prune(now);
+            lobbyFailures.prune(now);
+        }
     }
 
     public int lobbyCount() {
@@ -263,7 +279,11 @@ public final class LobbyServer {
             error(conn, Code.LOBBY_FULL, "That lobby is full");
         } else if (!validDeck(join.deck())) {
             error(conn, Code.INVALID_DECK, "That deck is not valid");
+        } else if (lobby.passwordProtected() && locked(conn, lobby, now)) {
+            // refused without even looking at the password: a locked key gets no more guesses
         } else if (lobby.passwordProtected() && !passwordMatches(lobby, join.password())) {
+            addressFailures.recordFailure(addressKey(conn), now);
+            lobbyFailures.recordFailure("lobby:" + lobby.id, now);
             if (++conn.wrongPasswords >= MAX_PASSWORD_ATTEMPTS) {
                 error(conn, Code.TOO_MANY_ATTEMPTS, "Too many wrong passwords");
                 conn.link.close();
@@ -271,6 +291,10 @@ public final class LobbyServer {
                 error(conn, Code.WRONG_PASSWORD, "Wrong password");
             }
         } else {
+            if (lobby.passwordProtected()) {
+                addressFailures.recordSuccess(addressKey(conn));
+                lobbyFailures.recordSuccess("lobby:" + lobby.id);
+            }
             lobby.guest = conn;
             lobby.guestDeck = List.copyOf(join.deck());
             lobby.lastActivityNanos = now;
@@ -461,6 +485,21 @@ public final class LobbyServer {
         List<String> names = new ArrayList<>();
         for (Conn member : lobby.members()) names.add(member.playerName);
         return new LobbyServerMessage.LobbyView(lobby.id, lobby.name, names, lobby.passwordProtected());
+    }
+
+    /** The key per-address limits use: the peer address, or — for links with none — the connection itself. */
+    private static String addressKey(Conn conn) {
+        String peer = conn.link.peerAddress();
+        return peer != null ? "ip:" + peer : "conn:" + System.identityHashCode(conn);
+    }
+
+    /** Whether conn (or the lobby it wants) has used up its guesses; tells the player how long to wait. */
+    private boolean locked(Conn conn, Lobby lobby, long now) {
+        long wait = Math.max(addressFailures.secondsLeft(addressKey(conn), now),
+                lobbyFailures.secondsLeft("lobby:" + lobby.id, now));
+        if (wait <= 0) return false;
+        error(conn, Code.TOO_MANY_ATTEMPTS, "Too many wrong passwords, try again in " + wait + " s");
+        return true;
     }
 
     private boolean validDeck(List<String> deck) {

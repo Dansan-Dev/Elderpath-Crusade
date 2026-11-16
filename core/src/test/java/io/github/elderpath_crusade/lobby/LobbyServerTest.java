@@ -57,7 +57,15 @@ class LobbyServerTest {
     }
 
     private final class Client {
-        final LineLink link = transport.connect();
+        final LineLink link;
+
+        Client() {
+            this(transport.connect());
+        }
+
+        Client(LineLink link) {
+            this.link = link;
+        }
         final List<LobbyServerMessage> received = new ArrayList<>();
         final List<String> rawLines = new ArrayList<>();
 
@@ -533,5 +541,81 @@ class LobbyServerTest {
         sneaky.send(new LobbyHello(LobbyCodec.LOBBY_PROTOCOL_VERSION, "bad\u0007name"));
         sneaky.poll();
         assertEquals(LobbyError.Code.INVALID_NAME, sneaky.lastError().code());
+    }
+
+    // --- guessing limits beyond a single connection ---
+
+    private Client helloFrom(String name, String address) {
+        Client c = new Client(transport.connect(address));
+        c.send(new LobbyHello(LobbyCodec.LOBBY_PROTOCOL_VERSION, name));
+        c.poll();
+        return c;
+    }
+
+    @Test
+    void aLobbyIsLockedAfterRepeatedWrongPasswords_evenAcrossConnections_andTheRightPasswordWaits() {
+        Client host = hello("host");
+        String id = create(host, "Private", "hunter2");
+        for (int i = 0; i < 5; i++) {
+            Client guesser = helloFrom("g" + i, "10.0.0." + i); // five different addresses, one connection each
+            guesser.send(new JoinLobby(id, "guess" + i, DECK));
+            guesser.poll();
+            assertEquals(LobbyError.Code.WRONG_PASSWORD, guesser.lastError().code());
+        }
+        Client rightPassword = helloFrom("friend", "10.0.0.50");
+        rightPassword.send(new JoinLobby(id, "hunter2", DECK));
+        rightPassword.poll();
+        assertEquals(LobbyError.Code.TOO_MANY_ATTEMPTS, rightPassword.lastError().code(), "locked: even the right password is refused for now");
+        assertNull(rightPassword.lastOf(LobbyJoined.class));
+
+        clock.addAndGet(61_000_000_000L);
+        rightPassword.send(new JoinLobby(id, "hunter2", DECK));
+        rightPassword.poll();
+        assertNotNull(rightPassword.lastOf(LobbyJoined.class), "the lock ended");
+    }
+
+    @Test
+    void anAddressThatKeepsGuessingAcrossLobbiesAndConnectionsIsLockedOut() {
+        List<String> ids = new ArrayList<>();
+        for (int i = 0; i < 4; i++) ids.add(create(hello("h" + i), "L" + i, "pw" + i));
+        int attempts = 0;
+        LobbyError last = null;
+        for (int round = 0; round < 12 && (last == null || last.code() != LobbyError.Code.TOO_MANY_ATTEMPTS); round++) {
+            Client guesser = helloFrom("g" + round, "203.0.113.9"); // a fresh connection every time, same address
+            guesser.send(new JoinLobby(ids.get(round % 4), "wrong", DECK));
+            guesser.poll();
+            last = guesser.lastError();
+            attempts++;
+        }
+        assertNotNull(last);
+        assertEquals(LobbyError.Code.TOO_MANY_ATTEMPTS, last.code());
+        assertTrue(attempts <= 11, "stopped after about ten failures, took " + attempts);
+
+        // another address is unaffected (the per-lobby limit allows 5 failures, the last lobby had ~2)
+        Client other = helloFrom("other", "198.51.100.7");
+        other.send(new JoinLobby(ids.get(3), "pw3", DECK));
+        other.poll();
+        assertNotNull(other.lastOf(LobbyJoined.class));
+    }
+
+    @Test
+    void aCorrectPasswordClearsTheFailuresOfThatLobbyAndAddress() {
+        Client host = hello("host");
+        String id = create(host, "Private", "hunter2");
+        for (int i = 0; i < 4; i++) {
+            Client guesser = helloFrom("g" + i, "10.1.1.1");
+            guesser.send(new JoinLobby(id, "no" + i, DECK));
+            guesser.poll();
+        }
+        Client good = helloFrom("good", "10.1.1.2");
+        good.send(new JoinLobby(id, "hunter2", DECK));
+        good.poll();
+        assertNotNull(good.lastOf(LobbyJoined.class));
+        good.send(new LeaveLobby());
+        good.poll();
+        Client bad = helloFrom("bad", "10.1.1.3");
+        bad.send(new JoinLobby(id, "nope", DECK));
+        bad.poll();
+        assertEquals(LobbyError.Code.WRONG_PASSWORD, bad.lastError().code(), "the count started over after the success");
     }
 }

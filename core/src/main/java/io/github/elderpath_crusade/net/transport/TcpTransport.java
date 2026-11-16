@@ -29,6 +29,7 @@ public final class TcpTransport implements ServerTransport {
     private final ServerSocket serverSocket;
     private final Queue<ClientChannel> accepted = new ConcurrentLinkedQueue<>();
     private final List<NetworkConnection> connections = new CopyOnWriteArrayList<>();
+    private final ConnectionLimiter limiter = new ConnectionLimiter(ConnectionLimiter.Config.defaults());
 
     /** port 0 picks a free ephemeral port (see getPort()). */
     public TcpTransport(String bindAddress, int port) throws IOException {
@@ -56,7 +57,12 @@ public final class TcpTransport implements ServerTransport {
             try {
                 Socket socket = serverSocket.accept();
                 connections.removeIf(c -> !c.isConnected());
-                if (connections.size() >= MAX_OPEN_CONNECTIONS) {
+                // Loopback is this machine's own processes (a lobby bridging to its child match servers, a
+                // client to its own server): only the global limit applies, never a per-address one.
+                String address = socket.getInetAddress() == null || socket.getInetAddress().isLoopbackAddress()
+                        ? null : socket.getInetAddress().getHostAddress();
+                int openFromAddress = (int) connections.stream().filter(c -> address != null && address.equals(c.peerAddress())).count();
+                if (connections.size() >= MAX_OPEN_CONNECTIONS || !limiter.allow(address, openFromAddress, System.nanoTime())) {
                     socket.close();
                     continue;
                 }

@@ -13,5 +13,10 @@ public interface LineLink {
 
     boolean isOpen();
 
+    /** The remote address as text (what per-client limits are keyed by), or null if the link has none (in-process). */
+    default String peerAddress() {
+        return null;
+    }
+
     void close();
 }

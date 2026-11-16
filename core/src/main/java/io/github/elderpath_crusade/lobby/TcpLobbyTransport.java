@@ -1,6 +1,7 @@
 package io.github.elderpath_crusade.lobby;
 
 import io.github.elderpath_crusade.multiplayer.net.NetworkConnection;
+import io.github.elderpath_crusade.net.transport.ConnectionLimiter;
 import io.github.elderpath_crusade.net.transport.LineLink;
 import io.github.elderpath_crusade.utils.Logger;
 
@@ -16,7 +17,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Lobby clients over TCP, with the same bounds as the match server's transport (line length,
- * queue length) and a cap on open connections — each costs a reader thread. TLS is terminated in
+ * queue length), a cap on open connections (each costs a reader thread), and per-address limits
+ * on open connections and on new ones per minute, with escalating blocks ({@link ConnectionLimiter}). TLS is terminated in
  * front of this (the hosting platform's proxy); this class speaks plain TCP.
  */
 public final class TcpLobbyTransport implements LobbyTransport {
@@ -26,6 +28,7 @@ public final class TcpLobbyTransport implements LobbyTransport {
     private final ServerSocket serverSocket;
     private final Queue<LineLink> accepted = new ConcurrentLinkedQueue<>();
     private final List<NetworkConnection> connections = new CopyOnWriteArrayList<>();
+    private final ConnectionLimiter limiter = new ConnectionLimiter(ConnectionLimiter.Config.defaults());
 
     public TcpLobbyTransport(String bindAddress, int port) throws IOException {
         serverSocket = new ServerSocket();
@@ -45,7 +48,12 @@ public final class TcpLobbyTransport implements LobbyTransport {
             try {
                 Socket socket = serverSocket.accept();
                 connections.removeIf(c -> !c.isConnected());
-                if (connections.size() >= MAX_OPEN_CONNECTIONS) {
+                // Loopback is this machine's own processes (a lobby bridging to its child match servers, a
+                // client to its own server): only the global limit applies, never a per-address one.
+                String address = socket.getInetAddress() == null || socket.getInetAddress().isLoopbackAddress()
+                        ? null : socket.getInetAddress().getHostAddress();
+                int openFromAddress = (int) connections.stream().filter(c -> address != null && address.equals(c.peerAddress())).count();
+                if (connections.size() >= MAX_OPEN_CONNECTIONS || !limiter.allow(address, openFromAddress, System.nanoTime())) {
                     socket.close();
                     continue;
                 }
