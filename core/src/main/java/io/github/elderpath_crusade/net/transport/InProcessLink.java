@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * One end of an in-process LineLink pair: what one end sends, the other polls. Closing either
  * end closes both, like a socket.
  */
-final class InProcessLink implements LineLink {
+public final class InProcessLink implements LineLink {
     private final BlockingQueue<String> incoming;
     private final BlockingQueue<String> outgoing;
     private final AtomicBoolean closed;
@@ -20,7 +20,7 @@ final class InProcessLink implements LineLink {
     }
 
     /** Two connected ends: [0] and [1]. */
-    static InProcessLink[] pair() {
+    public static InProcessLink[] pair() {
         BlockingQueue<String> aToB = new LinkedBlockingQueue<>();
         BlockingQueue<String> bToA = new LinkedBlockingQueue<>();
         AtomicBoolean closed = new AtomicBoolean(false);
