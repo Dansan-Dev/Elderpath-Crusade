@@ -86,6 +86,8 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
     private boolean connecting;
     private boolean closed;
     private int port = -1;
+    /** The match server's token for taking back a seat (joinThrough after a drop); null on a first join. */
+    private String reconnectToken;
 
     private ClientMatchSession(String playerName, List<SeatRequest> seatRequests, boolean launchesServer) {
         this.playerName = playerName;
@@ -125,7 +127,18 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
      * the lobby service's bridge (see LobbyClient.takeMatchConnection). Nothing to launch or dial.
      */
     public static ClientMatchSession joinThrough(ServerConnection connection, SeatRequest seat, String playerName) {
+        return joinThrough(connection, seat, playerName, null);
+    }
+
+    /**
+     * Like {@link #joinThrough(ServerConnection, SeatRequest, String)} but takes back a seat this
+     * player held before a drop: matchReconnectToken is the match server's own token from the
+     * earlier session's Welcome (ClientMatchState.getReconnectToken()).
+     */
+    public static ClientMatchSession joinThrough(ServerConnection connection, SeatRequest seat, String playerName,
+                                                 String matchReconnectToken) {
         ClientMatchSession session = new ClientMatchSession(playerName, List.of(seat), false);
+        session.reconnectToken = matchReconnectToken;
         synchronized (session) {
             session.connecting = true;
             session.pendingConnections = List.of(connection);
@@ -247,7 +260,7 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
         List<ServerConnection> ready = takePendingConnections();
         if (ready != null) {
             for (int i = 0; i < ready.size(); i++) {
-                seats.add(new Seat(seatRequests.get(i), new MatchClient(ready.get(i), seatRequests.get(i), playerName)));
+                seats.add(new Seat(seatRequests.get(i), new MatchClient(ready.get(i), seatRequests.get(i), playerName, reconnectToken)));
             }
         }
         for (Seat seat : seats) seat.client().poll();
@@ -442,6 +455,11 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
         }
         if (unclaimed != null) unclaimed.forEach(ServerConnection::close);
         if (server != null) server.stop();
+    }
+
+    /** Whether this session plays on a server it did not launch (online play) — leaving it means the other player is waiting on us. */
+    public boolean isRemote() {
+        return !launchesServer;
     }
 
     /** Whether the server this session launched is still running (false for a join session). */

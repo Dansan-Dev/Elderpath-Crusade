@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.lobby.LobbyClient;
 import io.github.elderpath_crusade.lobby.LobbyConnection;
+import io.github.elderpath_crusade.lobby.RejoinTicket;
 import io.github.elderpath_crusade.lobby.LobbyServerMessage.LobbyView;
 import io.github.elderpath_crusade.net.protocol.SeatRequest;
 import io.github.elderpath_crusade.supers.Room;
@@ -125,6 +126,9 @@ public class LobbyRoom extends Room {
     private void startMatch(LobbyConnection connection, LobbyClient client) {
         transitioning = true;
         SeatRequest seat = SeatRequest.valueOf(client.getMatchSeat());
+        // Remember how to get back in if this connection drops mid-match (see OnlineMatchRoom / ReconnectRoom).
+        connection.setRejoinTicket(new RejoinTicket(connection.getEndpoint(), client.getJoinedLobbyId(),
+                client.getRejoinToken(), client.getMatchSeat(), connection.getPlayerName()));
         ClientMatchSession session = ClientMatchSession.joinThrough(client.takeMatchConnection(), seat, connection.getPlayerName());
         connection.release();
         GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.through(session));

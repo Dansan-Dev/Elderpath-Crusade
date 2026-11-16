@@ -35,6 +35,8 @@ public final class LobbyClient implements AutoCloseable {
     private LobbyError lastError;
     private String closedReason;
     private String matchSeat;
+    private String rejoinToken;
+    private String joinedLobbyId;
     private boolean handedOver;
     private boolean protocolFailed;
 
@@ -89,6 +91,7 @@ public final class LobbyClient implements AutoCloseable {
             lobbies = List.copyOf(l.lobbies());
         } else if (message instanceof LobbyJoined j) {
             lobby = j.lobby();
+            joinedLobbyId = j.lobby().id();
             host = j.host();
             lastError = null;
         } else if (message instanceof LobbyUpdate u) {
@@ -99,6 +102,7 @@ public final class LobbyClient implements AutoCloseable {
             closedReason = c.reason();
         } else if (message instanceof MatchStarting m) {
             matchSeat = m.seat();
+            if (m.rejoinToken() != null) rejoinToken = m.rejoinToken();
         } else if (message instanceof LobbyError e) {
             lastError = e;
         }
@@ -129,6 +133,12 @@ public final class LobbyClient implements AutoCloseable {
     public void startMatch() {
         lastError = null;
         send(new LobbyClientMessage.StartMatch());
+    }
+
+    /** After a dropped connection, on a fresh client: asks to be put back into the running match. */
+    public void rejoinMatch(String lobbyId, String rejoinToken) {
+        lastError = null;
+        send(new LobbyClientMessage.RejoinMatch(lobbyId, rejoinToken));
     }
 
     private void send(LobbyClientMessage message) {
@@ -168,6 +178,16 @@ public final class LobbyClient implements AutoCloseable {
     /** Why the lobby this client was in closed, or null. */
     public String getClosedReason() {
         return closedReason;
+    }
+
+    /** The id of the lobby this client was last in (kept after the match starts, for rejoining), or null. */
+    public String getJoinedLobbyId() {
+        return joinedLobbyId;
+    }
+
+    /** The secret that brings this player back into the running match after a drop, once MatchStarting arrived; else null. */
+    public String getRejoinToken() {
+        return rejoinToken;
     }
 
     /** "P1"/"P2" once the match is starting — then call takeMatchConnection(). */

@@ -26,11 +26,18 @@ public final class LobbyConnection implements AutoCloseable {
     private String playerName = "Player";
     private String serverAddress = LobbyEndpoint.DEFAULT_ADDRESS;
     private int generation;
+    private LobbyEndpoint endpoint;
+    private RejoinTicket rejoinTicket;
     private LobbyClient arrived;
     private String arrivedFailure;
 
     public LobbyConnection() {
-        this((endpoint, name) -> LobbyClient.connect(endpoint.host(), endpoint.port(), endpoint.tls(), name));
+        this(dialingConnector());
+    }
+
+    /** The real connector: opens a TCP (or TLS) socket to the endpoint. */
+    public static Connector dialingConnector() {
+        return (endpoint, name) -> LobbyClient.connect(endpoint.host(), endpoint.port(), endpoint.tls(), name);
     }
 
     public LobbyConnection(Connector connector) {
@@ -57,6 +64,7 @@ public final class LobbyConnection implements AutoCloseable {
     /** Closes any earlier connection and starts connecting to endpoint as the current player name. */
     public synchronized void connect(LobbyEndpoint endpoint) {
         closeClient();
+        this.endpoint = endpoint;
         phase = Phase.CONNECTING;
         failure = "";
         int mine = ++generation;
@@ -107,6 +115,24 @@ public final class LobbyConnection implements AutoCloseable {
                 phase = Phase.FAILED;
             }
         }
+    }
+
+    /** The endpoint of the latest connect(), or null. */
+    public synchronized LobbyEndpoint getEndpoint() {
+        return endpoint;
+    }
+
+    /** What the match screen needs to reconnect if the bridged connection drops; null outside a lobby match. */
+    public synchronized RejoinTicket getRejoinTicket() {
+        return rejoinTicket;
+    }
+
+    public synchronized void setRejoinTicket(RejoinTicket ticket) {
+        this.rejoinTicket = ticket;
+    }
+
+    public synchronized void clearRejoinTicket() {
+        this.rejoinTicket = null;
     }
 
     public synchronized Phase getPhase() {

@@ -60,6 +60,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withClickColor(ColorSettings.TEXT_CLICK.getColor())
                 .withOnClick(
                     (e) -> {
+                        leaveOnlineMatch();
                         GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get);
                         GameContext.get().getGameManager().unpause();
                     },
@@ -78,6 +79,20 @@ public class PauseMenuPage extends HigherOrderTexture {
         );
 
         getRenderables().add(options);
+    }
+
+    /**
+     * Going back to the menu from an online match means leaving it: the session sends Leave so the
+     * lobby ends the match with the opponent winning, instead of holding it for 20 minutes for a
+     * player who has walked away. Local matches (solo, hotseat, runs) are left as they were.
+     */
+    private static void leaveOnlineMatch() {
+        io.github.elderpath_crusade.client.ClientMatchSession session = GameContext.get().getClientMatchSession();
+        if (session != null && session.isRemote()) {
+            session.close();
+            GameContext.get().clearClientMatch();
+        }
+        GameContext.get().getLobbyConnection().clearRejoinTicket();
     }
 
     public void update() {

@@ -33,9 +33,35 @@ public class OnlineMatchRoom extends BattleRoom {
     private static final int STARTING_WOLF_CUBS = 2;
     private static final int DEFAULT_PORT = 4567;
 
+    private boolean leaving;
+
     private OnlineMatchRoom(ClientMatchSession session) {
         super(GameMode.ONLINE_MATCH, session);
         layoutBoard();
+        addContent(new Ticker(delta -> watchConnection(session)));
+    }
+
+    /**
+     * A match played through the lobby service survives a dropped connection: when this session
+     * loses its link (and the match has not ended) the player goes to the reconnect screen, which
+     * keeps trying for the 20 minutes the lobby holds the match.
+     */
+    private void watchConnection(ClientMatchSession session) {
+        if (leaving) return;
+        io.github.elderpath_crusade.lobby.LobbyConnection lobbyConnection = GameContext.get().getLobbyConnection();
+        ClientMatchSession.Phase phase = session.getStatus().phase();
+        if (phase == ClientMatchSession.Phase.ENDED) {
+            lobbyConnection.clearRejoinTicket();
+            return;
+        }
+        io.github.elderpath_crusade.lobby.RejoinTicket ticket = lobbyConnection.getRejoinTicket();
+        if (phase == ClientMatchSession.Phase.DISCONNECTED && ticket != null && session.isRemote()
+                && session.viewState() != null) {
+            leaving = true;
+            String matchToken = session.viewState().getReconnectToken();
+            session.close();
+            GameContext.get().getRoomManager().gotoRoom(() -> ReconnectRoom.get(ticket, matchToken));
+        }
     }
 
     @Override

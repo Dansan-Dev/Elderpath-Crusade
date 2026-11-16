@@ -119,6 +119,69 @@ class LobbyClientTest {
     }
 
     @Test
+    void aPlayerWhoDropsMidMatchComesBackIntoTheSameMatchWithTheirHand() {
+        LobbyClient host = new LobbyClient(lobbyTransport.connect(), "host");
+        LobbyClient guest = new LobbyClient(lobbyTransport.connect(), "guest");
+        tick(host, guest);
+        host.createLobby("Back", null, DECK);
+        tick(host, guest);
+        String lobbyId = host.getLobby().id();
+        guest.joinLobby(lobbyId, null, DECK);
+        tick(host, guest);
+        tick(host, guest);
+        host.startMatch();
+        tick(host, guest);
+        tick(host, guest);
+        String guestRejoinToken = guest.getRejoinToken();
+
+        ClientMatchSession hostSession = ClientMatchSession.joinThrough(host.takeMatchConnection(), SeatRequest.P1, "host");
+        io.github.elderpath_crusade.net.transport.ServerConnection guestConnection = guest.takeMatchConnection();
+        ClientMatchSession guestSession = ClientMatchSession.joinThrough(guestConnection, SeatRequest.P2, "guest");
+        for (int i = 0; i < 20 && !(hostSession.getStatus().isReady() && guestSession.getStatus().isReady()); i++) {
+            tick(hostSession, guestSession);
+        }
+        assertTrue(guestSession.getStatus().isReady());
+        String guestMatchToken = guestSession.viewState().getReconnectToken();
+        assertNotNull(guestMatchToken);
+        int handBefore = guestSession.viewState().getOwnHand().size();
+
+        // the guest's connection dies (a network drop: no Leave is sent, unlike guestSession.close())
+        guestConnection.close();
+        for (int i = 0; i < 5; i++) tick(hostSession, guestSession);
+        assertTrue(hostSession.getStatus().isReady(), "the host's match goes on");
+
+        // reconnect through the lobby on a fake clock, driving both servers while it waits
+        java.util.concurrent.atomic.AtomicLong clockNanos = new java.util.concurrent.atomic.AtomicLong(System.nanoTime());
+        RejoinTicket ticket = new RejoinTicket(new LobbyEndpoint("example.com", 443, true), lobbyId, guestRejoinToken, "P2", "guest");
+        MatchReconnector reconnector = new MatchReconnector(ticket, (endpoint, name) -> new LobbyClient(lobbyTransport.connect(), name),
+                clockNanos::get, ms -> {
+                    clockNanos.addAndGet(ms * 1_000_000L);
+                    lobby.tick();
+                    match.tick(TICK);
+                    hostSession.poll();
+                }, MatchReconnector.HOLD_NANOS, new java.util.Random(1));
+        // the sleeper also needs the lobby to notice the closed old connection first
+        lobby.tick();
+        match.tick(TICK);
+        reconnector.run();
+        assertEquals(MatchReconnector.Phase.SUCCEEDED, reconnector.getPhase(), reconnector.getMessage());
+
+        ClientMatchSession back = ClientMatchSession.joinThrough(reconnector.takeConnection(), SeatRequest.P2, "guest", guestMatchToken);
+        for (int i = 0; i < 30 && !back.getStatus().isReady(); i++) {
+            lobby.tick();
+            match.tick(TICK);
+            hostSession.poll();
+            back.poll();
+        }
+        assertTrue(back.getStatus().isReady(), String.valueOf(back.getStatus()));
+        assertEquals(PieceAlignment.P2, back.viewState().getSeat());
+        assertEquals(handBefore, back.viewState().getOwnHand().size(), "the same hand, rebuilt from the match server's snapshot");
+        assertTrue(hostSession.getStatus().isReady());
+        hostSession.close();
+        back.close();
+    }
+
+    @Test
     void aClosedLobbyIsReportedToTheGuest() {
         LobbyClient host = new LobbyClient(lobbyTransport.connect(), "host");
         LobbyClient guest = new LobbyClient(lobbyTransport.connect(), "guest");
