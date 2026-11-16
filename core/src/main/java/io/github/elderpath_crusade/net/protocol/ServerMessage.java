@@ -27,6 +27,7 @@ public sealed interface ServerMessage permits
         ServerMessage.Rejected,
         ServerMessage.Ack,
         ServerMessage.MatchEnded,
+        ServerMessage.OpponentConnection,
         ServerMessage.Error {
 
     /**
@@ -81,6 +82,14 @@ public sealed interface ServerMessage permits
     record Ack(long seq) implements ServerMessage {}
 
     record MatchEnded(PieceAlignment winner) implements ServerMessage {}
+
+    /**
+     * Whether the opponent is connected. Sent by the lobby service (not by a match server) when a
+     * player's connection drops (connected = false, holdSeconds = how long the match waits for
+     * them) and when they are back (connected = true) — so the player who stayed knows why
+     * nothing is happening.
+     */
+    record OpponentConnection(boolean connected, long holdSeconds) implements ServerMessage {}
 
     record Error(Code code, String message) implements ServerMessage {
         public enum Code {

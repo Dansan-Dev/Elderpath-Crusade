@@ -382,3 +382,24 @@ Machine → `ServerLauncher` → `MatchServer` → a real client over TCP) works
 The underlying one-match-per-process vs. pairing-two-specific-humans tension described
 above is identical on fly.io — switching hosts doesn't solve it; the still-missing
 matchmaking controller is exactly as unbuilt here as it is on the Kubernetes path.
+
+
+## The lobby service (FEAT-008 phase 4b)
+
+`ServerLauncher --lobby true` is the server the game's **Play Online** screens talk to: players host
+and join named, optionally password-protected lobbies, and each started lobby's match runs in its own
+child match server on the same machine (see `.claude/plans/lobby-plan.md` and `elderpath-architecture.md`'s
+"Lobby Service"). Flags: `--max-matches N` (concurrent matches, default 4), `--proxy-protocol true`
+(connections start with a PROXY protocol v1 line, so the connection limits see real client addresses).
+
+- **One machine only** — lobbies and running matches live in that process's memory; a second machine
+  would be a second, separate lobby list. Each match is a child JVM, so memory bounds `--max-matches`
+  (`deploy/fly/fly.lobby.toml` caps each JVM's heap with `JAVA_TOOL_OPTIONS`).
+- **TLS** is terminated by the platform in front (fly.toml's `handlers = ["tls", "proxy_proto"]`); the
+  client connects with TLS and verifies the host name (`LobbyClient.connect`).
+- **Not wired to anything**: `deploy/fly/fly.lobby.toml` is a separate file and is applied only by running
+  `fly deploy --config deploy/fly/fly.lobby.toml`, which replaces the running app. Deploy it together with
+  the matching game build (match protocol 4, lobby protocol 2). Never tried against fly.io from this
+  sandbox — every setting in it is unverified until a first real deploy.
+- A match is held for **20 minutes** when a player drops (the child's idle timeout is 21 minutes), so a
+  full machine can stay busy that long; `--max-matches` counts held matches.

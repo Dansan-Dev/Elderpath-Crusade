@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public final class MessageCodec {
     /** Bumped on any incompatible change to messages, commands or events. */
-    public static final int PROTOCOL_VERSION = 3;
+    public static final int PROTOCOL_VERSION = 4;
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -37,6 +37,7 @@ public final class MessageCodec {
             Map.entry("Rejected", ServerMessage.Rejected.class),
             Map.entry("Ack", ServerMessage.Ack.class),
             Map.entry("MatchEnded", ServerMessage.MatchEnded.class),
+            Map.entry("OpponentConnection", ServerMessage.OpponentConnection.class),
             Map.entry("Error", ServerMessage.Error.class)
     );
 

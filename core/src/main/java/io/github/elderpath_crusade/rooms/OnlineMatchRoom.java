@@ -34,11 +34,26 @@ public class OnlineMatchRoom extends BattleRoom {
     private static final int DEFAULT_PORT = 4567;
 
     private boolean leaving;
+    private final io.github.elderpath_crusade.ui_objects.Text opponentNotice = OnlineUi.line(" ",
+            io.github.elderpath_crusade.utils.FontSize.BODY_MEDIUM, io.github.elderpath_crusade.utils.ColorSettings.TEXT_WARNING.getColor());
 
     private OnlineMatchRoom(ClientMatchSession session) {
         super(GameMode.ONLINE_MATCH, session);
         layoutBoard();
-        addContent(new Ticker(delta -> watchConnection(session)));
+        addContent(opponentNotice);
+        addContent(new Ticker(delta -> {
+            watchConnection(session);
+            showOpponentNotice(session);
+        }));
+    }
+
+    /** While the lobby says the opponent's connection dropped, say so (and for how long the match waits). */
+    private void showOpponentNotice(ClientMatchSession session) {
+        io.github.elderpath_crusade.client.ClientMatchState state = session.viewState();
+        boolean away = state != null && !state.isOpponentConnected();
+        String text = away ? "Opponent disconnected - the match waits up to " + Math.max(1, state.getOpponentHoldSeconds() / 60)
+                + " min for them to return" : " ";
+        OnlineUi.show(opponentNotice, text, GameContext.get().getSettingsManager().screenSize.getScreenHeight() - 40);
     }
 
     /**

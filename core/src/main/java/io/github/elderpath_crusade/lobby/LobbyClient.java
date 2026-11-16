@@ -60,6 +60,7 @@ public final class LobbyClient implements AutoCloseable {
             socket = secure;
         }
         socket.setTcpNoDelay(true);
+        socket.setKeepAlive(true);
         return new LobbyClient(new NetworkConnection(socket), playerName);
     }
 
@@ -80,6 +81,7 @@ public final class LobbyClient implements AutoCloseable {
             }
             apply(message);
             count++;
+            if (matchSeat != null) break; // whatever follows MatchStarting is the match protocol, for the match connection to read
         }
         return count;
     }

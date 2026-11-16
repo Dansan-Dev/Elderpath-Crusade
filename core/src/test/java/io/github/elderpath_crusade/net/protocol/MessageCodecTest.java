@@ -47,6 +47,8 @@ class MessageCodecTest {
                         List.of(new Coord(2, 1), new Coord(2, 3)), Map.of(PieceAlignment.P1, "HUMAN", PieceAlignment.P2, "BOT_SMART")),
                 new ServerMessage.Welcome(MessageCodec.PROTOCOL_VERSION, PieceAlignment.P2, 7, 5, List.of(),
                         Map.of(PieceAlignment.P1, "HUMAN", PieceAlignment.P2, "HUMAN"), "feedface"),
+                new ServerMessage.OpponentConnection(false, 1200),
+                new ServerMessage.OpponentConnection(true, 0),
                 new ServerMessage.Snapshot(view),
                 new ServerMessage.Event(new CardDrawnEvent(PieceAlignment.P2, "hidden-2", null, 3)),
                 new ServerMessage.Event(new PieceSpawnedEvent("id-1", PieceAlignment.P2, 6, 0, "Runner")),

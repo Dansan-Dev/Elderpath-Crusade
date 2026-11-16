@@ -41,4 +41,22 @@ class JsonSettingsStoreTest {
 
         assertEquals(new PersistedSettings(1, 1, 1, Language.ENGLISH, false, Input.Keys.ESCAPE, Input.Keys.ENTER), store.load());
     }
+
+    @Test
+    void onlineNameAndAddress_roundTrip_andAnOldFileWithoutThemStillLoads(@TempDir File dir) throws Exception {
+        File file = new File(dir, "settings.json");
+        SettingsStore store = new JsonSettingsStore(file);
+        PersistedSettings withOnline = new PersistedSettings(8, 2, 10, Language.SWEDISH, true, Input.Keys.P, Input.Keys.SPACE,
+                "Ann", "example.com:8443");
+        store.save(withOnline);
+        assertEquals(withOnline, store.load());
+
+        // a file written before the online fields existed
+        java.nio.file.Files.writeString(file.toPath(), "{\"masterVolume\":8,\"musicVolume\":2,\"sfxVolume\":10,\"language\":\"SWEDISH\","
+                + "\"fullscreen\":true,\"pauseMenuKeycode\":" + Input.Keys.P + ",\"confirmSelectionKeycode\":" + Input.Keys.SPACE + "}");
+        PersistedSettings old = store.load();
+        assertEquals(8, old.masterVolume());
+        assertNull(old.onlinePlayerName());
+        assertNull(old.onlineServerAddress());
+    }
 }

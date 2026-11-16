@@ -107,4 +107,15 @@ class ClientMatchStateTest {
         assertEquals(List.of(e), firstSeen);
         assertEquals(List.of(e), secondSeen);
     }
+
+    @Test
+    void opponentConnectionNoticesAreTracked() {
+        ClientMatchState state = new ClientMatchState();
+        assertTrue(state.isOpponentConnected(), "connected until told otherwise");
+        state.apply(new ServerMessage.OpponentConnection(false, 1200));
+        assertFalse(state.isOpponentConnected());
+        assertEquals(1200, state.getOpponentHoldSeconds());
+        state.apply(new ServerMessage.OpponentConnection(true, 0));
+        assertTrue(state.isOpponentConnected());
+    }
 }

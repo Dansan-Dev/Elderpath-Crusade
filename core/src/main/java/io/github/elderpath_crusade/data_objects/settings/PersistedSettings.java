@@ -11,7 +11,14 @@ import io.github.elderpath_crusade.enums.settings.Language;
  * the live {@link SoundSetting}/{@link LanguageSetting}/{@code ScreenSize}/{@link KeybindSetting}.
  */
 public record PersistedSettings(int masterVolume, int musicVolume, int sfxVolume, Language language,
-        boolean fullscreen, int pauseMenuKeycode, int confirmSelectionKeycode) {
+        boolean fullscreen, int pauseMenuKeycode, int confirmSelectionKeycode,
+        String onlinePlayerName, String onlineServerAddress) {
+    /** Without the online fields (a settings file saved before they existed has none either: they read as null). */
+    public PersistedSettings(int masterVolume, int musicVolume, int sfxVolume, Language language,
+            boolean fullscreen, int pauseMenuKeycode, int confirmSelectionKeycode) {
+        this(masterVolume, musicVolume, sfxVolume, language, fullscreen, pauseMenuKeycode, confirmSelectionKeycode, null, null);
+    }
+
     /** Master 7 / music 3: what every launch used to force before the saved values were honoured. */
     public static final PersistedSettings DEFAULTS = new PersistedSettings(7, 3, 5, Language.ENGLISH, false,
             KeybindSetting.DEFAULT_PAUSE_MENU_KEYCODE, KeybindSetting.DEFAULT_CONFIRM_SELECTION_KEYCODE);

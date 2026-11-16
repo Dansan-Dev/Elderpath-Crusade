@@ -29,6 +29,8 @@ public class SettingsManager {
     public final DebugSettings debug = new DebugSettings();
 
     private final SettingsStore store;
+    private String onlinePlayerName;
+    private String onlineServerAddress;
 
     public SettingsManager() {
         this(new JsonSettingsStore(defaultFile()));
@@ -55,13 +57,33 @@ public class SettingsManager {
         language.setLanguage(saved.language());
         screenSize.setFullscreen(saved.fullscreen());
         keybinds.load(saved.pauseMenuKeycode(), saved.confirmSelectionKeycode());
+        onlinePlayerName = saved.onlinePlayerName();
+        onlineServerAddress = saved.onlineServerAddress();
+    }
+
+    /** The name the player last used online, or null if never set (the online menu then offers its own default). */
+    public String getOnlinePlayerName() {
+        return onlinePlayerName;
+    }
+
+    /** The server address the player last used online, or null if never set. */
+    public String getOnlineServerAddress() {
+        return onlineServerAddress;
+    }
+
+    /** Remembers the online name and server address and saves them. */
+    public void rememberOnline(String playerName, String serverAddress) {
+        this.onlinePlayerName = playerName;
+        this.onlineServerAddress = serverAddress;
+        persist();
     }
 
     /** Snapshots every current setting and saves it — call after any change made from the settings screen. */
     public void persist() {
         store.save(new PersistedSettings(sound.getMasterVolume(), sound.getMusicVolume(), sound.getSFXVolume(),
                 language.getLanguage(), screenSize.isFullscreen(),
-                keybinds.getKeycode(InputFunction.PAUSE_MENU), keybinds.getKeycode(InputFunction.CONFIRM_SELECTION)));
+                keybinds.getKeycode(InputFunction.PAUSE_MENU), keybinds.getKeycode(InputFunction.CONFIRM_SELECTION),
+                onlinePlayerName, onlineServerAddress));
     }
 
     public static final class DebugSettings {

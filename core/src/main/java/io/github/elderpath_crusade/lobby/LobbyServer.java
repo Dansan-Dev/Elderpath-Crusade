@@ -495,8 +495,14 @@ public final class LobbyServer {
                 if (slot.pending == conn) slot.pending = null;
             }
             // A match that ended has nothing to wait for; otherwise a drop is held for REJOIN_HOLD_NANOS
-            // (an explicit Leave was already settled by forfeit()).
-            if (lobby.matchEnded && lobby.slots[0].conn == null && lobby.slots[1].conn == null) endMatch(lobby);
+            // (an explicit Leave was already settled by forfeit()) and the other player is told why it is quiet.
+            if (lobby.matchEnded && lobby.slots[0].conn == null && lobby.slots[1].conn == null) {
+                endMatch(lobby);
+            } else if (!lobby.matchEnded) {
+                for (SeatSlot slot : lobby.slots) {
+                    if (slot.conn != null) tellOpponentConnection(slot.conn, false, REJOIN_HOLD_NANOS / SECOND);
+                }
+            }
         }
     }
 
@@ -633,7 +639,17 @@ public final class LobbyServer {
         conn.upstream = upstream;
         conn.leftMatch = false;
         slot.conn = conn;
+        // The player who stayed hears that they are back; the one who came back hears if the other is away too.
+        SeatSlot other = slot == lobby.slots[0] ? lobby.slots[1] : lobby.slots[0];
+        if (other.conn != null) tellOpponentConnection(other.conn, true, 0);
+        else tellOpponentConnection(conn, false, Math.max(0, (REJOIN_HOLD_NANOS - (nanoClock.getAsLong() - other.vacantSince)) / SECOND));
         return true;
+    }
+
+    /** Tells a bridged player, in the match protocol's words, whether their opponent is connected. */
+    private void tellOpponentConnection(Conn to, boolean connected, long holdSeconds) {
+        to.link.send(io.github.elderpath_crusade.net.protocol.MessageCodec.encode(
+                new io.github.elderpath_crusade.net.protocol.ServerMessage.OpponentConnection(connected, holdSeconds)));
     }
 
     private static boolean tokenMatches(String expected, String presented) {

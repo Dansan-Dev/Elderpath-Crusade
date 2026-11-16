@@ -39,6 +39,9 @@ import java.util.Map;
  *   --lobby true        run the lobby service instead of a single match: players host/join lobbies and
  *                       each started lobby gets its own child match server (--max-matches N, default 4);
  *                       --p1/--p2/--*-deck/--seed are ignored in this mode
+ *   --proxy-protocol true  (lobby mode) every connection starts with a PROXY protocol v1 line from the
+ *                       hosting platform's proxy (fly.io's proxy_proto handler) naming the real client
+ *                       address, which the per-address limits then use; only behind such a proxy
  *   --health-port N     serve HTTP /healthz/live, /healthz/ready and /diag (Sprint 64 — rolling
  *                       tick-timing stats) on this port for an external health check (e.g. a
  *                       Kubernetes probe) or diagnostics; 0 disables it (default 0)
@@ -63,7 +66,8 @@ record LaunchOptions(
         int endGraceSeconds,
         int healthPort,
         boolean lobby,
-        int maxMatches
+        int maxMatches,
+        boolean proxyProtocol
 ) {
     static final String DEFAULT_DECK = "Wolf:2,Wolf Cub:2";
 
@@ -94,6 +98,7 @@ record LaunchOptions(
         int healthPort = 0;
         boolean lobby = false;
         int maxMatches = 4;
+        boolean proxyProtocol = false;
 
         for (int i = 0; i < args.length; i++) {
             String flag = args[i];
@@ -124,6 +129,7 @@ record LaunchOptions(
                 case "--end-grace-s" -> endGrace = parseInt(flag, value, 0, Integer.MAX_VALUE);
                 case "--health-port" -> healthPort = parseInt(flag, value, 0, 65535);
                 case "--lobby" -> lobby = Boolean.parseBoolean(value);
+                case "--proxy-protocol" -> proxyProtocol = Boolean.parseBoolean(value);
                 case "--max-matches" -> maxMatches = parseInt(flag, value, 1, 64);
                 default -> throw new IllegalArgumentException("unknown flag " + flag);
             }
@@ -148,7 +154,7 @@ record LaunchOptions(
         elders.put(PieceAlignment.P1, parseNameList(p1Elders));
         elders.put(PieceAlignment.P2, parseNameList(p2Elders));
         return new LaunchOptions(port, bind, bots, decks, relics, cardMods, cardLockTurns, elders, seed, assetsDir, tickMs,
-                timeScale, parentPid, watchStdin, idleTimeout, endGrace, healthPort, lobby, maxMatches);
+                timeScale, parentPid, watchStdin, idleTimeout, endGrace, healthPort, lobby, maxMatches, proxyProtocol);
     }
 
     /** "RelicA,RelicB" → [RelicA, RelicB]; blank input → no relics. */

@@ -1,0 +1,79 @@
+# fly.io config for the LOBBY service (FEAT-008 phase 4b, see .claude/plans/lobby-plan.md) —
+# the dedicated server the game's "Play Online" screens connect to. NOT APPLIED BY ANYTHING:
+# it only takes effect when someone runs `fly deploy --config deploy/fly/fly.lobby.toml`, and
+# doing so REPLACES whatever app named below is running today (the one-bot-match server from
+# fly.toml). Ship it together with the matching game build — the lobby protocol and the
+# match protocol (4) are not compatible with older clients.
+#
+# Run flyctl from the REPO ROOT, as with fly.toml (the Dockerfile needs the whole repo as context):
+#
+#   fly deploy --config deploy/fly/fly.lobby.toml
+#   fly scale count 1 --config deploy/fly/fly.lobby.toml   # lobbies live in ONE process's memory
+#
+# Unverified here (no fly.io account in this sandbox): every setting below follows Fly's documented
+# config, but nothing was deployed — check the first deploy with `fly logs` and a real client.
+app = "elderpath-server"
+primary_region = "arn"
+
+[build]
+  dockerfile = "../server/Dockerfile"
+
+[env]
+  # Every JVM on the machine — the lobby and each match's child process, which inherits the
+  # environment — gets a small heap, so a few concurrent matches fit in the machine's memory.
+  JAVA_TOOL_OPTIONS = "-Xmx128m -XX:MaxMetaspaceSize=96m"
+
+[processes]
+  # As in fly.toml: no `bin/server` prefix (the Dockerfile's ENTRYPOINT supplies it) and
+  # --watch-stdin false (Fly attaches no stdin, which would read as EOF and stop the server).
+  #   --lobby true          run the lobby service instead of a single match
+  #   --max-matches 4       concurrent matches (each is a child JVM); Start is refused beyond that
+  #   --proxy-protocol true every connection starts with Fly's PROXY header (see the port below), so
+  #                         the per-address connection/guess limits see the real client address
+  app = "--lobby true --bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --max-matches 4 --proxy-protocol true --watch-stdin false"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 4567
+  processes = ["app"]
+
+  # Lobbies and running matches exist only in this process's memory: it must never be stopped for
+  # being idle, and there must be exactly one machine.
+  auto_stop_machines = "off"
+  auto_start_machines = false
+  min_machines_running = 1
+
+  [[services.ports]]
+    # The game connects with TLS on 443 (LobbyEndpoint's default for a non-local host). Fly
+    # terminates TLS and then sends a PROXY protocol header; the server reads it (--proxy-protocol).
+    # The "proxy_proto" handler is PROXY protocol version 1 by default per Fly's docs — the server
+    # parses v1 only; if Fly's current docs say otherwise, adjust before deploying.
+    port = 443
+    handlers = ["tls", "proxy_proto"]
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "4s"
+    grace_period = "15s"
+
+[checks]
+  [checks.live]
+    type = "http"
+    port = 8080
+    path = "/healthz/live"
+    interval = "10s"
+    timeout = "4s"
+    grace_period = "20s"
+  [checks.ready]
+    type = "http"
+    port = 8080
+    path = "/healthz/ready"
+    interval = "10s"
+    timeout = "4s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  # The lobby plus up to 4 match JVMs at the -Xmx above. Unverified: raise it if `fly logs` shows
+  # out-of-memory kills (the JVMs exit on OutOfMemoryError, see the Dockerfile).
+  memory = "1gb"

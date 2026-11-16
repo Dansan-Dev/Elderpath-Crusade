@@ -39,6 +39,11 @@ public class OnlineMenuRoom extends Room {
         GameContext.get().getInputManager().stopTextEditing();
         LobbyConnection connection = GameContext.get().getLobbyConnection();
         connection.close();
+        // What the player used last time (saved in settings.json), else the session's / the defaults.
+        String savedName = GameContext.get().getSettingsManager().getOnlinePlayerName();
+        String savedAddress = GameContext.get().getSettingsManager().getOnlineServerAddress();
+        if (savedName != null && !savedName.isBlank()) connection.setPlayerName(savedName);
+        if (savedAddress != null && !savedAddress.isBlank()) connection.setServerAddress(savedAddress);
 
         header = OnlineUi.line("Play Online", FontSize.TITLE_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
         nameLabel = OnlineUi.line("Your name", FontSize.BODY_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
@@ -81,6 +86,7 @@ public class OnlineMenuRoom extends Room {
         LobbyConnection connection = GameContext.get().getLobbyConnection();
         connection.setPlayerName(name);
         connection.setServerAddress(address.strip());
+        GameContext.get().getSettingsManager().rememberOnline(name, address.strip());
         connection.connect(endpoint);
         GameContext.get().getRoomManager().gotoRoom(next);
     }

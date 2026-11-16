@@ -76,6 +76,8 @@ class LobbyServerTest {
         }
         final List<LobbyServerMessage> received = new ArrayList<>();
         final List<String> rawLines = new ArrayList<>();
+        /** Lines in the match protocol (what a bridged player receives): kept apart from lobby messages. */
+        final List<String> matchLines = new ArrayList<>();
 
         void send(LobbyClientMessage message) {
             link.send(LobbyCodec.encode(message));
@@ -92,11 +94,25 @@ class LobbyServerTest {
             String line;
             while ((line = link.pollLine()) != null) {
                 rawLines.add(line);
+                if (line.startsWith("{\"type\":\"OpponentConnection\"") || line.startsWith("{\"type\":\"MatchEnded\"")) {
+                    matchLines.add(line);
+                    continue;
+                }
                 LobbyServerMessage m = LobbyCodec.decodeServer(line);
                 received.add(m);
                 fresh.add(m);
             }
             return fresh;
+        }
+
+        /** Every match-protocol line received so far, including any still waiting on the link. */
+        List<String> allMatchLines() {
+            String line;
+            while ((line = link.pollLine()) != null) {
+                rawLines.add(line);
+                matchLines.add(line);
+            }
+            return matchLines;
         }
 
         LobbyServerMessage last() {
@@ -752,9 +768,8 @@ class LobbyServerTest {
         assertEquals(1, server.activeMatches(), "still held at 19 minutes");
         clock.addAndGet(MINUTE);
         server.tick(); // the remaining player now only gets match-protocol lines, which a lobby Client can't decode
-        String line;
         boolean told = false;
-        while ((line = m.host.link.pollLine()) != null) told |= isMatchEnded(line, "P1");
+        for (String line : m.host.allMatchLines()) told |= isMatchEnded(line, "P1");
         assertTrue(told, "the remaining player is told they won");
         assertEquals(0, server.activeMatches());
         assertEquals(1, launcher.closed, "the match server is stopped");
@@ -786,8 +801,7 @@ class LobbyServerTest {
         m.guest.link.send("{\"type\":\"Leave\",\"payload\":{}}");
         m.guest.poll();
         boolean told = false;
-        String line;
-        while ((line = m.host.link.pollLine()) != null) told |= isMatchEnded(line, "P1");
+        for (String line : m.host.allMatchLines()) told |= isMatchEnded(line, "P1");
         assertTrue(told);
         assertEquals(0, server.lobbyCount());
         assertEquals(1, launcher.closed);
@@ -817,7 +831,7 @@ class LobbyServerTest {
         RunningMatch m = new RunningMatch();
         m.hostMatchSide.send("{\"type\":\"MatchEnded\",\"payload\":{\"winner\":\"P2\"}}");
         server.tick();
-        assertNotNull(m.host.link.pollLine(), "the end is forwarded to the player");
+        assertFalse(m.host.allMatchLines().isEmpty(), "the end is forwarded to the player");
         m.host.link.close();
         m.guest.link.close();
         server.tick();
@@ -870,5 +884,36 @@ class LobbyServerTest {
         elsewhere.send(new RejoinMatch(m.lobbyId, m.guestToken));
         elsewhere.poll();
         assertEquals("P2", elsewhere.lastOf(MatchStarting.class).seat());
+    }
+
+    @Test
+    void theRemainingPlayerIsToldWhenTheOpponentDropsAndWhenTheyAreBack() {
+        RunningMatch m = new RunningMatch();
+        m.guest.link.close();
+        m.host.poll();
+        List<String> lines = m.host.allMatchLines();
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith("{\"type\":\"OpponentConnection\"") && l.contains("\"connected\":false")
+                && l.contains("\"holdSeconds\":1200")), lines.toString());
+
+        Client back = hello("guest");
+        back.send(new RejoinMatch(m.lobbyId, m.guestToken));
+        back.poll();
+        List<String> after = m.host.allMatchLines();
+        assertTrue(after.get(after.size() - 1).contains("\"connected\":true"), "the host hears the guest is back: " + after);
+    }
+
+    @Test
+    void aPlayerWhoRejoinsWhileTheOpponentIsAlsoAwayHearsThatToo() {
+        RunningMatch m = new RunningMatch();
+        m.host.link.close();
+        m.guest.link.close();
+        server.tick();
+        clock.addAndGet(5 * MINUTE);
+        Client back = hello("host");
+        back.send(new RejoinMatch(m.lobbyId, m.hostToken));
+        back.poll();
+        String notice = back.allMatchLines().stream().filter(l -> l.startsWith("{\"type\":\"OpponentConnection\"")).findFirst().orElseThrow();
+        assertTrue(notice.contains("\"connected\":false"));
+        assertTrue(notice.contains("\"holdSeconds\":900"), "15 minutes of the guest's hold are left: " + notice);
     }
 }

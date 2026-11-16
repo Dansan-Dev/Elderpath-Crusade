@@ -118,7 +118,7 @@ public final class ServerLauncher {
     private int runLobby(LaunchOptions options) throws IOException, InterruptedException {
         loadDefinitions(options);
         ProcessMatchLauncher launcher = new ProcessMatchLauncher(resolveAssetsDir(options));
-        TcpLobbyTransport transport = new TcpLobbyTransport(options.bind(), options.port());
+        TcpLobbyTransport transport = new TcpLobbyTransport(options.bind(), options.port(), options.proxyProtocol());
         LobbyServer lobby = new LobbyServer(transport, launcher, options.maxMatches(), ServerLauncher::isPlayableCard);
         report(ServerProcess.LISTENING + " " + transport.getPort());
         log("lobby service listening on " + options.bind() + ":" + transport.getPort()

@@ -36,6 +36,7 @@ public class NetworkConnection implements Closeable, LineLink {
     private final BlockingQueue<String> incoming = new LinkedBlockingQueue<>();
     private final int maxLineChars;
     private final int maxQueuedLines;
+    private final String clientAddress;
     private volatile boolean closed = false;
 
     /** A client's connection to a server it chose to connect to. */
@@ -44,7 +45,13 @@ public class NetworkConnection implements Closeable, LineLink {
     }
 
     public NetworkConnection(Socket socket, int maxLineChars, int maxQueuedLines) throws IOException {
+        this(socket, maxLineChars, maxQueuedLines, null);
+    }
+
+    /** clientAddress: the real client's address when a proxy in front reported it (PROXY protocol); null = the socket's own peer. */
+    public NetworkConnection(Socket socket, int maxLineChars, int maxQueuedLines, String clientAddress) throws IOException {
         this.socket = socket;
+        this.clientAddress = clientAddress;
         this.maxLineChars = maxLineChars;
         this.maxQueuedLines = maxQueuedLines;
         this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
@@ -110,6 +117,7 @@ public class NetworkConnection implements Closeable, LineLink {
 
     @Override
     public String peerAddress() {
+        if (clientAddress != null) return clientAddress;
         java.net.InetAddress address = socket.getInetAddress();
         return address == null ? null : address.getHostAddress();
     }

@@ -32,6 +32,8 @@ import java.util.function.Consumer;
 public final class ClientMatchState {
     @Getter private PieceAlignment seat;
     private String reconnectToken;
+    private boolean opponentConnected = true;
+    private long opponentHoldSeconds;
     @Getter private int rows;
     @Getter private int cols;
     @Getter private Map<PieceAlignment, String> slots = Map.of();
@@ -66,6 +68,16 @@ public final class ClientMatchState {
      */
     public void addEventListener(Consumer<GameEvent> listener) {
         eventListeners.add(listener);
+    }
+
+    /** False while the lobby service reports the opponent's connection as dropped (the match is waiting for them). */
+    public boolean isOpponentConnected() {
+        return opponentConnected;
+    }
+
+    /** How many seconds the match waits for a dropped opponent, as of when the drop was reported. */
+    public long getOpponentHoldSeconds() {
+        return opponentHoldSeconds;
     }
 
     /** Secret from the Welcome: present it in a new MatchClient to take this seat back after a disconnect. */
@@ -139,6 +151,9 @@ public final class ClientMatchState {
             lastRejection = r;
         } else if (message instanceof ServerMessage.Ack a) {
             lastAckedSeq = Math.max(lastAckedSeq, a.seq());
+        } else if (message instanceof ServerMessage.OpponentConnection o) {
+            opponentConnected = o.connected();
+            opponentHoldSeconds = o.holdSeconds();
         } else if (message instanceof ServerMessage.MatchEnded m) {
             winner = m.winner();
             ended = true;
