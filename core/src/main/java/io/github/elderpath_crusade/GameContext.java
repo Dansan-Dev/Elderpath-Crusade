@@ -37,6 +37,7 @@ import io.github.elderpath_crusade.match.MatchClock;
 import io.github.elderpath_crusade.audio.MusicManager;
 import io.github.elderpath_crusade.game.PlayerManager;
 import io.github.elderpath_crusade.game.RunManager;
+import io.github.elderpath_crusade.lobby.LobbyConnection;
 import io.github.elderpath_crusade.rendering.RenderPipeline;
 import io.github.elderpath_crusade.rooms.RoomManager;
 import io.github.elderpath_crusade.server.GameServer;
@@ -80,6 +81,8 @@ public class GameContext {
     @Getter private final DeckManager deckManager;
     /** Client-side orchestrator for a roguelike run (FEAT-006) — see run/ and roguelike-run-plan.md. */
     @Getter private final RunManager runManager;
+    /** The game's connection to a dedicated server's lobby service (FEAT-008 phase 4b); idle until an online screen connects it. */
+    @Getter private final LobbyConnection lobbyConnection;
     /** The player's persistent deck collection (Sprint 64) — see collection/. */
     @Getter private final CollectionManager collectionManager;
     @Getter private final RoomManager roomManager;
@@ -160,6 +163,7 @@ public class GameContext {
         this.gameModeManager = new GameModeManager();
         this.deckManager = new DeckManager();
         this.runManager = new RunManager();
+        this.lobbyConnection = new LobbyConnection();
         this.collectionManager = new CollectionManager();
         this.roomManager = new RoomManager();
         this.settingsManager = new SettingsManager();

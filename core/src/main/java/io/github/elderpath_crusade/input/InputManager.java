@@ -2,6 +2,7 @@ package io.github.elderpath_crusade.input;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.settings.KeybindSetting;
 import io.github.elderpath_crusade.enums.settings.InputFunction;
@@ -51,6 +52,48 @@ public class InputManager {
     @Getter private InputFunction capturingFunction;
     private Consumer<RebindResult> captureCallback;
 
+    // Text editing (online lobby screens): while a TextEntry is being edited, typed characters go
+    // to it and every keyboard hotkey is suppressed — typing "q" must not quit the game and ESC
+    // must not open the pause menu, exactly as a pending key-rebind capture suppresses them.
+    private TextEntry editingEntry;
+    private Runnable editingOnSubmit;
+    private Runnable editingOnCancel;
+    /** Set when editing stops: the key that ended it (ESC/Enter) must not also fire its hotkey this frame. */
+    private boolean suppressKeysOneFrame;
+    private final InputAdapter textEditingAdapter = new InputAdapter() {
+        @Override
+        public boolean keyTyped(char c) {
+            if (editingEntry == null) return false;
+            if (c == '\b' || c == 127) {
+                editingEntry.backspace();
+            } else if (c == '\r' || c == '\n') {
+                Runnable submit = editingOnSubmit;
+                stopTextEditing();
+                if (submit != null) submit.run();
+            } else {
+                editingEntry.typeChar(c);
+            }
+            return true;
+        }
+
+        @Override
+        public boolean keyDown(int keycode) {
+            if (editingEntry == null) return false;
+            if (keycode == Input.Keys.ESCAPE) {
+                Runnable cancel = editingOnCancel;
+                stopTextEditing();
+                if (cancel != null) cancel.run();
+                return true;
+            }
+            boolean ctrl = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+            if (keycode == Input.Keys.V && ctrl && Gdx.app != null && Gdx.app.getClipboard() != null) {
+                editingEntry.type(Gdx.app.getClipboard().getContents());
+                return true;
+            }
+            return false;
+        }
+    };
+
     public InputManager() {}
 
     public void initialize() {
@@ -93,6 +136,8 @@ public class InputManager {
         // just triggered it must not ALSO fire its old function below (e.g. picking Q for
         // Pause Menu must not also quit the game via EXIT_GAME in the same frame).
         boolean wasCapturing = capturingFunction != null;
+        boolean suppressKeys = suppressKeysOneFrame || editingEntry != null;
+        suppressKeysOneFrame = false;
         if (wasCapturing) {
             Integer pressedKeycode = findJustPressedKeycode();
             if (pressedKeycode != null) {
@@ -107,7 +152,7 @@ public class InputManager {
         }
 
         for (InputKey key : InputKey.values()) {
-            boolean isPressed = (wasCapturing && key.isKey()) ? false
+            boolean isPressed = ((wasCapturing || suppressKeys) && key.isKey()) ? false
                     : (key.isKey() ?
                         Gdx.input.isKeyJustPressed(key.getKeyCode()) :
                         Gdx.input.isButtonJustPressed(key.getKeyCode()));
@@ -116,7 +161,7 @@ public class InputManager {
 
         KeybindSetting keybinds = GameContext.get().getSettingsManager().keybinds;
         for (InputFunction function : KeybindSetting.REBINDABLE_FUNCTIONS) {
-            boolean isPressed = !wasCapturing && Gdx.input.isKeyJustPressed(keybinds.getKeycode(function));
+            boolean isPressed = !wasCapturing && !suppressKeys && Gdx.input.isKeyJustPressed(keybinds.getKeycode(function));
             rebindableFunctionsPressed.put(function, isPressed);
         }
     }
@@ -160,6 +205,36 @@ public class InputManager {
     public void cancelCapture() {
         capturingFunction = null;
         captureCallback = null;
+    }
+
+    /**
+     * Routes typed characters to entry until Enter (onSubmit), ESC (onCancel) or stopTextEditing().
+     * Replaces any entry being edited. Both callbacks may be null.
+     */
+    public void startTextEditing(TextEntry entry, Runnable onSubmit, Runnable onCancel) {
+        editingEntry = entry;
+        editingOnSubmit = onSubmit;
+        editingOnCancel = onCancel;
+        if (Gdx.input != null) Gdx.input.setInputProcessor(textEditingAdapter);
+    }
+
+    /** Stops routing text; safe to call when nothing is being edited. */
+    public void stopTextEditing() {
+        boolean was = editingEntry != null;
+        editingEntry = null;
+        editingOnSubmit = null;
+        editingOnCancel = null;
+        if (was) suppressKeysOneFrame = true;
+        if (Gdx.input != null && Gdx.input.getInputProcessor() == textEditingAdapter) Gdx.input.setInputProcessor(null);
+    }
+
+    public boolean isTextEditing() {
+        return editingEntry != null;
+    }
+
+    /** Whether this very entry is the one being edited (a field draws its caret by this). */
+    public boolean isEditing(TextEntry entry) {
+        return editingEntry != null && editingEntry == entry;
     }
 
     public boolean isCapturing() {

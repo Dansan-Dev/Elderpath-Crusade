@@ -7,8 +7,11 @@ import io.github.elderpath_crusade.net.transport.LineChannels;
 import io.github.elderpath_crusade.net.transport.LineLink;
 import io.github.elderpath_crusade.net.transport.ServerConnection;
 
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 
@@ -22,6 +25,8 @@ import java.util.List;
  * {@link #takeMatchConnection()} hands it over (and this client stops reading it).
  */
 public final class LobbyClient implements AutoCloseable {
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+
     private final LineLink link;
     private boolean welcomed;
     private List<LobbyView> lobbies = List.of();
@@ -41,7 +46,17 @@ public final class LobbyClient implements AutoCloseable {
 
     /** Opens a TCP connection (TLS when tls is set — the public server's front proxy terminates it) and says hello. */
     public static LobbyClient connect(String host, int port, boolean tls, String playerName) throws IOException {
-        Socket socket = tls ? SSLSocketFactory.getDefault().createSocket(host, port) : new Socket(host, port);
+        Socket socket = new Socket();
+        socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MS);
+        if (tls) {
+            SSLSocket secure = (SSLSocket) ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket(socket, host, port, true);
+            // Without this the JDK accepts a certificate for any host name — the server's own must match.
+            SSLParameters parameters = secure.getSSLParameters();
+            parameters.setEndpointIdentificationAlgorithm("HTTPS");
+            secure.setSSLParameters(parameters);
+            secure.startHandshake();
+            socket = secure;
+        }
         socket.setTcpNoDelay(true);
         return new LobbyClient(new NetworkConnection(socket), playerName);
     }

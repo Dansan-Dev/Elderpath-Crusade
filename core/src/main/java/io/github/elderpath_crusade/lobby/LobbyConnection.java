@@ -24,6 +24,7 @@ public final class LobbyConnection implements AutoCloseable {
     private Phase phase = Phase.IDLE;
     private String failure = "";
     private String playerName = "Player";
+    private String serverAddress = LobbyEndpoint.DEFAULT_ADDRESS;
     private int generation;
     private LobbyClient arrived;
     private String arrivedFailure;
@@ -42,6 +43,15 @@ public final class LobbyConnection implements AutoCloseable {
 
     public synchronized void setPlayerName(String playerName) {
         this.playerName = playerName;
+    }
+
+    /** What the player last typed as the server address — remembered across the online screens (this session only). */
+    public synchronized String getServerAddress() {
+        return serverAddress;
+    }
+
+    public synchronized void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
     }
 
     /** Closes any earlier connection and starts connecting to endpoint as the current player name. */
@@ -92,7 +102,7 @@ public final class LobbyConnection implements AutoCloseable {
             client.poll();
             // A client whose connection went to the match protocol is deliberately not ours any more.
             if (client.getMatchSeat() == null && !client.isConnected()) {
-                failure = "Disconnected from the lobby server";
+                failure = client.getLastError() != null ? client.getLastError().message() : "Disconnected from the lobby server";
                 closeClient();
                 phase = Phase.FAILED;
             }

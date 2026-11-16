@@ -47,6 +47,11 @@ public class OnlineMatchRoom extends BattleRoom {
         return MatchStartingRoom.get(OnlineMatchRoom::startHosting, OnlineMatchRoom::new);
     }
 
+    /** Plays an already-seated session — one reached through the lobby service's bridge (see LobbyRoom). */
+    public static Room through(ClientMatchSession session) {
+        return MatchStartingRoom.get(() -> session, OnlineMatchRoom::new);
+    }
+
     public static Room join(String address) {
         return MatchStartingRoom.get(() -> startJoining(address), OnlineMatchRoom::new);
     }

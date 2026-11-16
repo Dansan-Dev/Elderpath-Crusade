@@ -14,7 +14,7 @@ import io.github.elderpath_crusade.utils.MenuLayout;
 
 /**
  * Lists the ways to play, one level below the main menu's "Game Mode" button. For the Steam
- * release only Roguelike Run and Online (Host/Join) are offered; Demo and Local Multiplayer are
+ * release only Roguelike Run and Play Online (the lobby screens) are offered; Demo and Local Multiplayer are
  * kept working but hidden behind {@link #SHOW_PRACTICE_MODES} until they get their own pass.
  */
 public class GameModeRoom extends Room {
@@ -22,7 +22,7 @@ public class GameModeRoom extends Room {
     private static final int BUTTON_HEIGHT = 60;
     private static final int BUTTON_SPACING = 70;
 
-    /** Demo (vs bot, drafted deck) and Local Multiplayer (hotseat): hidden for now, flip to bring the buttons back. */
+    /** Demo (vs bot, drafted deck), Local Multiplayer (hotseat) and the old direct Host/Join Online: hidden for now, flip to bring the buttons back. */
     static final boolean SHOW_PRACTICE_MODES = false;
 
     private final Text header;
@@ -54,9 +54,12 @@ public class GameModeRoom extends Room {
             addOption("Local Multiplayer",
                     () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startLocalMultiplayer));
         }
-        addOption("Host Online",
-                () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startHostOnline));
-        addOption("Join Online (localhost)", () -> GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.join("localhost")));
+        addOption("Play Online", () -> GameContext.get().getRoomManager().gotoRoom(OnlineMenuRoom::get));
+        if (SHOW_PRACTICE_MODES) {
+            addOption("Host Online",
+                    () -> GameContext.get().getRoomManager().gotoRoom(DeckSourceSelectRoom::startHostOnline));
+            addOption("Join Online (localhost)", () -> GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.join("localhost")));
+        }
 
         backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN,
                 FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 120, BUTTON_HEIGHT, 0)
