@@ -14,6 +14,8 @@ import io.github.elderpath_crusade.match.SyntheticCardNames;
 import io.github.elderpath_crusade.net.transport.TcpTransport;
 import io.github.elderpath_crusade.server.MatchServer;
 import io.github.elderpath_crusade.server.ServerProcess;
+import io.github.elderpath_crusade.lobby.LobbyServer;
+import io.github.elderpath_crusade.lobby.TcpLobbyTransport;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,6 +72,7 @@ public final class ServerLauncher {
     }
 
     private int run(LaunchOptions options) throws IOException, InterruptedException {
+        if (options.lobby()) return runLobby(options);
         loadDefinitions(options);
         TypedEventBus.get().clear();
         GameContext.createHeadless();
@@ -109,6 +112,51 @@ public final class ServerLauncher {
         }
         log("stopped: " + stopReason);
         return EXIT_OK;
+    }
+
+    /** --lobby: the lobby service, each started lobby's match in its own child process. */
+    private int runLobby(LaunchOptions options) throws IOException, InterruptedException {
+        loadDefinitions(options);
+        ProcessMatchLauncher launcher = new ProcessMatchLauncher(resolveAssetsDir(options));
+        TcpLobbyTransport transport = new TcpLobbyTransport(options.bind(), options.port());
+        LobbyServer lobby = new LobbyServer(transport, launcher, options.maxMatches(), ServerLauncher::isPlayableCard);
+        report(ServerProcess.LISTENING + " " + transport.getPort());
+        log("lobby service listening on " + options.bind() + ":" + transport.getPort()
+                + ", at most " + options.maxMatches() + " matches at once");
+
+        if (options.watchStdin()) startDaemon("stdin-watch", this::watchStdin);
+        if (options.parentPid() != null) startDaemon("parent-watch", () -> watchParent(options.parentPid()));
+
+        lastTickNanos = System.nanoTime();
+        long staleNanos = Math.max(5_000_000_000L, 20L * options.tickMs() * 1_000_000L);
+        HealthServer health = null;
+        if (options.healthPort() > 0) {
+            health = HealthServer.start(options.healthPort(),
+                    () -> System.nanoTime() - lastTickNanos < staleNanos,
+                    () -> stopReason == null);
+            log("health checks on port " + health.port());
+        }
+        try {
+            long tickNanos = options.tickMs() * 1_000_000L;
+            while (stopReason == null) {
+                long now = System.nanoTime();
+                lobby.tick();
+                lastTickNanos = now;
+                long sleepNanos = tickNanos - (System.nanoTime() - now);
+                if (sleepNanos > 0) Thread.sleep(sleepNanos / 1_000_000L, (int) (sleepNanos % 1_000_000L));
+            }
+        } finally {
+            lobby.close();
+            launcher.close();
+            if (health != null) health.close();
+        }
+        log("stopped: " + stopReason);
+        return EXIT_OK;
+    }
+
+    /** A lobby deck may only name real cards — never a run-modified synthetic one, which a client can't have earned. */
+    private static boolean isPlayableCard(String name) {
+        return CardCatalog.get(name) != null && !SyntheticCardNames.isSynthetic(name);
     }
 
     private void loop(MatchServer server, LaunchOptions options, TickDiagnostics diagnostics) throws InterruptedException {

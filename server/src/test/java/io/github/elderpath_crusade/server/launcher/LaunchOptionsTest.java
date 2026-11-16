@@ -31,6 +31,8 @@ class LaunchOptionsTest {
         assertEquals(0, o.cardLockTurns().get(PieceAlignment.P1), "no --p1-card-lock-turns: never locked");
         assertEquals(List.of(), o.elders().get(PieceAlignment.P1), "no --p1-elders: no elder pieces");
         assertEquals(0, o.healthPort(), "no --health-port: health checks disabled");
+        assertFalse(o.lobby(), "a single match unless --lobby true");
+        assertEquals(4, o.maxMatches());
     }
 
     @Test
@@ -105,5 +107,14 @@ class LaunchOptionsTest {
         assertThrows(IllegalArgumentException.class, () -> LaunchOptions.parse(new String[]{"--p1-deck", ","}));
         assertThrows(IllegalArgumentException.class, () -> LaunchOptions.parse(new String[]{"--p1-deck", "Wolf:x"}));
         assertThrows(IllegalArgumentException.class, () -> LaunchOptions.parse(new String[]{"--time-scale", "0"}));
+    }
+
+    @Test
+    void parse_lobbyMode() {
+        LaunchOptions o = LaunchOptions.parse(new String[]{"--lobby", "true", "--max-matches", "3", "--port", "4567"});
+        assertTrue(o.lobby());
+        assertEquals(3, o.maxMatches());
+        assertThrows(IllegalArgumentException.class, () -> LaunchOptions.parse(new String[]{"--max-matches", "0"}));
+        assertThrows(IllegalArgumentException.class, () -> LaunchOptions.parse(new String[]{"--max-matches", "65"}));
     }
 }
