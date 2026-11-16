@@ -7,11 +7,14 @@ eclipse.project.name = appName + '-core'
 tasks.register('generateVersionResource') {
   def outputDir = file("$buildDir/generated/resources/version")
   def outputFile = file("$outputDir/elderpath-version.txt")
+  def nameFile = file("$outputDir/elderpath-name.txt")
   inputs.property('version', project.version)
-  outputs.file(outputFile)
+  inputs.property('name', projectName)
+  outputs.files(outputFile, nameFile)
   doLast {
     outputDir.mkdirs()
     outputFile.text = project.version as String
+    nameFile.text = projectName as String // gradle.properties' projectName — read back by utils.GameName
   }
 }
 sourceSets.main.resources.srcDir "$buildDir/generated/resources/version"

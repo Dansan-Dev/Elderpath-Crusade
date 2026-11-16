@@ -65,7 +65,7 @@ configure(subprojects) {
 
 subprojects {
   version = "$projectVersion"
-  ext.appName = 'ElderpathCrusade'
+  ext.appName = projectName.replaceAll('\\s', '') // file/jar/executable name: the display name without spaces
   repositories {
     mavenCentral()
     maven { url 'https://s01.oss.sonatype.org' }
@@ -77,7 +77,7 @@ subprojects {
   }
 }
 
-eclipse.project.name = 'ElderpathCrusade' + '-parent'
+eclipse.project.name = projectName.replaceAll('\\s', '') + '-parent'
 
 repositories {
   mavenCentral()

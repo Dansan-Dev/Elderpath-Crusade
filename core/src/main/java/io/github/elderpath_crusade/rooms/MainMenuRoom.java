@@ -63,7 +63,7 @@ public class MainMenuRoom extends Room {
         addUI(navbar);
 
         // Title remains as content
-        title = new Text("Elderpath Crusade", FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+        title = new Text(io.github.elderpath_crusade.utils.GameName.current(), FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
             .withFontSize(FontSize.BODY_LARGE);
         addContent(title);
 

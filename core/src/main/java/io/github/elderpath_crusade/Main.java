@@ -23,7 +23,7 @@ public class Main extends ApplicationAdapter {
     public void create() {
         // A shipped game has no console: keep a log file (and any crash) a player can send along.
         io.github.elderpath_crusade.utils.Logger.enableFileLogging(io.github.elderpath_crusade.utils.Logger.defaultLogFile());
-        io.github.elderpath_crusade.utils.Logger.log("Main", "Elderpath Crusade " + io.github.elderpath_crusade.utils.GameVersion.current() + " starting");
+        io.github.elderpath_crusade.utils.Logger.log("Main", io.github.elderpath_crusade.utils.GameName.current() + " " + io.github.elderpath_crusade.utils.GameVersion.current() + " starting");
         Thread.setDefaultUncaughtExceptionHandler((thread, error) ->
                 io.github.elderpath_crusade.utils.Logger.error("Crash", "Uncaught exception on thread " + thread.getName(), error));
         GameContext.createClient();
