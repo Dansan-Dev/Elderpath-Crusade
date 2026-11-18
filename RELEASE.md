@@ -1,5 +1,9 @@
 # Releasing Elderpath Crusade
 
+> **Platforms for the first release (decision 2026-11-18): Windows and Linux only.** macOS is not shipped — that would
+> need an Apple Developer ID (paid) for signing/notarisation, which the owner chose not to buy. The macOS Construo targets
+> still exist and build; they are simply not uploaded. Skip every macOS line below (build, smoke test, depot, launch option).
+
 How to turn this repository into the builds Steam serves, and the server they talk to. Written from the
 build files in this repo, not from a release that has been done: **anything marked (unverified) has never
 been run** — fix this file as soon as a real release shows otherwise.
@@ -108,7 +112,7 @@ To roll back: `fly releases` and redeploy the previous image, or `fly deploy --c
 (that restores the old one-bot-match server, which the new client cannot use).
 
 ## 5. Steam (SteamPipe) — outline, (unverified) in detail; follow Valve's docs for the exact files
-1. Steamworks → your app → **SteamPipe → Depots**: one depot per OS (Windows, Linux, macOS).
+1. Steamworks → your app → **SteamPipe → Depots**: one depot per OS — **Windows and Linux** (no macOS depot for now).
 2. Put each bundle's contents in its content folder; write a depot build script (`depot_build_<id>.vdf`)
    and an app build script (`app_build.vdf`) mapping depots → content folders.
 3. Upload with `steamcmd +login <build account> +run_app_build app_build.vdf +quit`, **to a private branch**
