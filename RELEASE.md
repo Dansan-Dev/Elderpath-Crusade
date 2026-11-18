@@ -18,6 +18,14 @@ Related: `deploy/README.md` (the server), `.claude/plans/steam-release-plan.md` 
   build on the machine that holds them. `assets/` is packed into the game jar (`lwjgl3/build.gradle` adds it
   to the resources), so nothing else has to be shipped beside the game.
 - Nothing from `.claude/` is needed to build.
+- **Moving the gitignored files to another machine** (a second checkout, a CI box): on the machine that has
+  them run `./gradlew exportAssets` (writes `build/asset-bundles/elderpath-assets-<time>.zip`, or choose the file
+  with `-Pout=<file>`), copy the zip over, then in the other checkout `./gradlew importAssets -Pzip=<file>`.
+  Import verifies a SHA-256 per file against the bundle's manifest before writing anything, refuses unsafe paths,
+  never deletes files that aren't in the bundle, and refuses to overwrite a file that differs unless
+  `-Pforce=true` (the old file is then kept in `build/asset-import-backup/<time>/`). `-PdryRun=true` only reports.
+  The generated `assets/assets.txt` and Windows `:Zone.Identifier` leftovers are left out. Self-test:
+  `gradle/test-assets-tool.sh` (21 scenarios on throw-away fake projects).
 
 ## 1. Before every release
 1. **Version**: bump `projectVersion` in `gradle.properties` (the name comes from `projectName` there too).

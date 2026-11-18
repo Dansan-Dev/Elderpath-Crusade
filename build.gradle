@@ -79,6 +79,9 @@ subprojects {
 
 eclipse.project.name = projectName.replaceAll('\\s', '') + '-parent'
 
+// exportAssets / importAssets: move the gitignored assets between machines (see gradle/assets.gradle)
+apply from: 'gradle/assets.gradle'
+
 repositories {
   mavenCentral()
   maven { url 'https://s01.oss.sonatype.org' }
