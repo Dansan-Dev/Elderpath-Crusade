@@ -9,18 +9,18 @@ import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.client.ClientMatchState;
-import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.supers.LowestOrderTexture;
 import io.github.elderpath_crusade.path_loaders.ImagePathIcons;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.IconTextures;
 import com.badlogic.gdx.graphics.Texture;
 
+import java.util.function.Supplier;
+
 /**
- * Mana HUD: shows P1 and P2 mana only.
- * Layout requirement:
- * - P2 at top-left
- * - P1 at bottom-left
+ * Mana HUD: shows P1 and P2 mana only, on the left. The viewer's own side is always the bottom line and the
+ * other side the top line, so it follows the board's perspective: it never swaps while one player keeps the
+ * same view (solo, online), and in hotseat it follows the current player exactly as the board does (UI-015).
  */
 public class ManaHud extends LowestOrderTexture implements UIRenderable {
     private final Text p1Text;
@@ -28,7 +28,11 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
     /** Mana crystal drawn left of each line (null when the art is missing → text only). */
     private final Texture manaIcon;
 
-    public ManaHud() {
+    private final Supplier<PieceAlignment> viewer;
+
+    /** @param viewer the side this screen is oriented for (BattleRoom.viewerAlignment) — its line goes at the bottom */
+    public ManaHud(Supplier<PieceAlignment> viewer) {
+        this.viewer = viewer;
         int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
         // Initial positions; will be updated each render to remain anchored
@@ -57,10 +61,9 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         int paddingX = 16; // moved further right from 16 to 48
         int paddingY = 50;
         
-        // Swap positions in LOCAL_MATCH mode when P2's turn
-        boolean swapPositions = GameContext.get().getGameModeManager().getCurrent() == GameMode.LOCAL_MATCH &&
-                                session != null && session.currentPlayer() == PieceAlignment.P2;
-        
+        // The viewer's own line is the bottom one; with P2 as viewer the two lines trade places.
+        boolean swapPositions = viewer.get() == PieceAlignment.P2;
+
         int iconSize = Math.round(p1Text.getHeight() * 1.5f);
         int textX = manaIcon == null ? paddingX : paddingX + iconSize + 6;
         int p1x = textX;
@@ -68,7 +71,7 @@ public class ManaHud extends LowestOrderTexture implements UIRenderable {
         int p1y, p2y;
         
         if (swapPositions) {
-            // P2's turn: swap positions (P1 at top, P2 at bottom)
+            // P2 is the viewer: P2 at the bottom, P1 at the top
             p2y = screenH/2 - paddingY - p2Text.getHeight();
             p1y = screenH/2 + paddingY;
         } else {
