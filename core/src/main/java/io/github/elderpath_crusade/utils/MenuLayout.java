@@ -45,4 +45,20 @@ public final class MenuLayout {
         header.getBounds().setX((int) (centerX - (header.getLabel().getWidth() / 2)));
         header.getBounds().setY(screenHeight - headerTopOffset);
     }
+
+    /**
+     * Centers a long one-line flavour/description text under a header (UI-011 follow-up): wrapped to the window's width
+     * (minus a margin) and at most two lines high, so a long sentence is shrunk/wrapped instead of running off both
+     * sides of the screen. {@code topOffset} is the distance from the top of the window to the text's lower edge.
+     */
+    public static void centerFlavor(Text text, int topOffset) {
+        int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int centerX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
+        int wrapWidth = Math.max(200, screenWidth - 160);
+        text.withWrapBounds(wrapWidth, 50);
+        text.update();
+        text.getBounds().setX(centerX - wrapWidth / 2);
+        text.getBounds().setY(screenHeight - topOffset);
+    }
 }

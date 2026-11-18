@@ -78,7 +78,7 @@ public class TraderRoom extends Room {
     private void layoutContents() {
         int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         MenuLayout.centerHeader(header, 100);
-        MenuLayout.centerHeader(flavor, 150);
+        MenuLayout.centerFlavor(flavor, 165);
         buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
     }
 

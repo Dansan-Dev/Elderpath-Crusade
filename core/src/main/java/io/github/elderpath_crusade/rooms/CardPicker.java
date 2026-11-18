@@ -54,7 +54,6 @@ final class CardPicker {
     private static final int LIST_BUTTON_WIDTH = 220;
     private static final int LIST_BUTTON_HEIGHT = 60;
     private static final int LIST_SPACING = 70;
-    private static final int LIST_SHIFT_LEFT = 150;
     private static final int PREVIEW_RIGHT_MARGIN = 190;
     private static final int BOTTOM_MARGIN = 90;
 
@@ -96,7 +95,8 @@ final class CardPicker {
                 hands.add(hand);
                 add.accept(hand);
                 Text caption = new Text(options.get(i).caption() == null ? " " : options.get(i).caption(), FontType.SILKSCREEN, 0, 0, 0,
-                        ColorSettings.TEXT_DEFAULT.getColor()).withFontSize(FontSize.CAPTION);
+                        ColorSettings.TEXT_DEFAULT.getColor()).withFontSize(FontSize.CAPTION)
+                        .withWrapBounds(CARD_WIDTH + CARD_GAP - 10, CAPTION_SPACE); // wrapped, so neighbours' captions never overlap
                 captions.add(caption);
                 add.accept(caption);
             }
@@ -193,12 +193,20 @@ final class CardPicker {
                 hand.updateBounds();
                 Text caption = captions.get(i);
                 caption.update();
-                caption.getBounds().setX(cardCenter - caption.getBounds().getWidth() / 2);
+                caption.getBounds().setX(cardCenter - (CARD_WIDTH + CARD_GAP - 10) / 2);
                 caption.getBounds().setY(cardBottom - 8 - caption.getBounds().getHeight());
             }
         } else {
-            list.alignButtonsFitting(LIST_SPACING, centerX - LIST_SHIFT_LEFT, centerY);
-            previewHand.setCenterX(screenWidth - PREVIEW_RIGHT_MARGIN);
+            // Centered in the window; only a list wide enough to reach the preview card is pushed left, just far enough.
+            list.alignButtonsFitting(LIST_SPACING, centerX, centerY);
+            int previewCenter = screenWidth - PREVIEW_RIGHT_MARGIN;
+            int limit = previewCenter - CARD_WIDTH / 2 - 20;
+            int right = Integer.MIN_VALUE;
+            for (Button button : buttons) right = Math.max(right, button.getBounds().getX() + button.getBounds().getWidth());
+            if (right > limit) {
+                for (Button button : buttons) button.getBounds().setX(button.getBounds().getX() - (right - limit));
+            }
+            previewHand.setCenterX(previewCenter);
             previewHand.setBottomY(cardBottom);
             previewHand.updateBounds();
         }
