@@ -17,6 +17,8 @@ import io.github.elderpath_crusade.run.RunCardModification;
 import io.github.elderpath_crusade.run.RunDifficulty;
 import io.github.elderpath_crusade.run.RunMap;
 import io.github.elderpath_crusade.run.RunNodeType;
+import io.github.elderpath_crusade.run.RunSaveStore;
+import io.github.elderpath_crusade.run.RunSnapshot;
 import io.github.elderpath_crusade.run.RunState;
 
 import java.util.ArrayList;
@@ -66,6 +68,9 @@ public final class RunManager {
 
     private RunState runState;
     private ClientMatchSession activeSession;
+    /** Where the run is kept between sessions (RUN-004); null = no persistence (tests, headless). */
+    private RunSaveStore saveStore;
+    private boolean savedRunChecked;
 
     public RunManager() {
     }
@@ -80,14 +85,74 @@ public final class RunManager {
         RunMap firstFloor = RunMap.generate(mapSeed);
         this.runState = RunState.start(firstFloor, difficulty, startingDeckCardNames, TOTAL_FLOORS);
         this.activeSession = null;
+        this.savedRunChecked = true;
+        persist();
     }
 
     public RunState getRunState() {
+        ensureSavedRunLoaded();
         return runState;
     }
 
     public boolean hasActiveRun() {
+        ensureSavedRunLoaded();
         return runState != null && !runState.isEnded();
+    }
+
+    /**
+     * Turns on persistence (RUN-004): the run is written to {@code store} after every change and removed when it
+     * ends or is abandoned; a run found there is picked up lazily by the first {@link #hasActiveRun()}/
+     * {@link #getRunState()} (by then the card catalog is loaded, so a save naming a card that no longer exists
+     * can be refused instead of crashing a battle later).
+     */
+    public void setSaveStore(RunSaveStore store) {
+        this.saveStore = store;
+        this.savedRunChecked = false;
+    }
+
+    private void ensureSavedRunLoaded() {
+        if (savedRunChecked || saveStore == null) return;
+        savedRunChecked = true;
+        if (runState != null) return;
+        try {
+            RunSnapshot snapshot = saveStore.load().orElse(null);
+            if (snapshot == null) return;
+            RunState restored = snapshot.toState();
+            if (!CardCatalog.getAllNames().isEmpty()) {
+                for (RunCardInstance card : restored.deck()) requireKnownCard(card);
+                for (RunCardInstance card : restored.elders()) requireKnownCard(card);
+            }
+            runState = restored;
+        } catch (RuntimeException e) {
+            io.github.elderpath_crusade.utils.Logger.error("RunSave", "saved run could not be restored, ignoring it", e);
+        }
+    }
+
+    private static void requireKnownCard(RunCardInstance card) {
+        if (CardCatalog.get(card.cardName()) == null) {
+            throw new IllegalStateException("saved run uses a card that no longer exists: " + card.cardName());
+        }
+    }
+
+    /** Writes the run (or forgets it, once it has ended). Called after every change to the run. */
+    private void persist() {
+        if (saveStore == null || runState == null) return;
+        if (runState.isEnded()) saveStore.clear();
+        else saveStore.save(RunSnapshot.of(runState, io.github.elderpath_crusade.utils.GameVersion.current()));
+    }
+
+    /**
+     * Gives the run up (RUN-004): closes a battle still in progress through this class's own session and forgets
+     * the run and its save. Nothing is recorded — only a won run goes to the collection.
+     */
+    public void abandonRun() {
+        if (activeSession != null) {
+            activeSession.close();
+            activeSession = null;
+        }
+        runState = null;
+        savedRunChecked = true;
+        if (saveStore != null) saveStore.clear();
     }
 
     /** Whether a node's battle is currently in progress through this class's own session. */
@@ -246,13 +311,12 @@ public final class RunManager {
         boolean won = winner == PieceAlignment.P1;
         if (!won) {
             runState.endRun(false);
-            return;
-        }
-        if (runState.currentNode().isTerminal() && runState.isLastFloor()) {
+        } else if (runState.currentNode().isTerminal() && runState.isLastFloor()) {
             runState.endRun(true);
-            return;
+        } else {
+            runState.markCurrentNodeCleared();
         }
-        runState.markCurrentNodeCleared();
+        persist();
     }
 
     /**
@@ -265,6 +329,7 @@ public final class RunManager {
     public void advanceToNextFloor() {
         requireActiveRun();
         runState.advanceToNextFloor(RunMap.generate(new Random().nextLong()));
+        persist();
     }
 
     /**
@@ -280,6 +345,7 @@ public final class RunManager {
         if (!runState.currentNode().type().isBattle()) {
             runState.markCurrentNodeCleared();
         }
+        persist();
     }
 
     /**
@@ -340,6 +406,7 @@ public final class RunManager {
         }
         runState.addCardToDeck(RunCardInstance.unmodified("card-reward-" + UUID.randomUUID(), cardName)
                 .withModification(modification));
+        persist();
     }
 
     /** Removes a deck instance outright — a Sacrificial Site, a Recruitment Site's cast-off
@@ -347,6 +414,7 @@ public final class RunManager {
     public void removeCardFromDeck(String instanceId) {
         requireActiveRun();
         runState.removeCardFromDeck(instanceId);
+        persist();
     }
 
     /**
@@ -383,6 +451,7 @@ public final class RunManager {
         RunCardModification combined = keep.modification().plus(new RunCardModification(foldInEffective, foldInAbilities));
         runState.modifyCard(keepInstanceId, combined);
         runState.removeCardFromDeck(foldInInstanceId);
+        persist();
     }
 
     private RunCardInstance findDeckInstance(String instanceId) {
@@ -422,6 +491,7 @@ public final class RunManager {
         requireActiveRun();
         RunCardInstance existing = findCardInstance(instanceId);
         runState.modifyCard(instanceId, existing.modification().plus(delta));
+        persist();
     }
 
     /** Looks up a card instance by id across both the deck and the Elders (BUG-044). */
@@ -443,6 +513,7 @@ public final class RunManager {
     public void promoteToElder(String instanceId) {
         requireActiveRun();
         runState.addElder(instanceId);
+        persist();
     }
 
     /**
@@ -474,15 +545,18 @@ public final class RunManager {
         if (relic != null) {
             for (RelicRunHook hook : relic.runHooks()) hook.onAcquired(runState);
         }
+        persist();
     }
 
     /** Drops a relic from the run (the Trader event's cast-off side of the trade). */
     public void removeRelic(String relicId) {
         requireActiveRun();
         runState.removeRelic(relicId);
+        persist();
     }
 
     private void requireActiveRun() {
+        ensureSavedRunLoaded();
         if (runState == null) throw new IllegalStateException("no active run — call startRun first");
         if (runState.isEnded()) throw new IllegalStateException("the run has already ended");
     }

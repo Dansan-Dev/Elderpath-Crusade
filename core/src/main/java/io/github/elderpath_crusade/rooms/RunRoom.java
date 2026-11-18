@@ -52,14 +52,13 @@ public class RunRoom extends Room {
     private static final int STATUS_TOP_OFFSET = 110;
     private static final int ELDERS_TOP_OFFSET = 145;
     private static final int MAP_TOP_MARGIN = 180;
-    private static final int MAP_BOTTOM_MARGIN = 90;
+    private static final int MAP_BOTTOM_MARGIN = 60;
     private static final int NODE_WIDTH = 110;
     private static final int NODE_HEIGHT = 50;
 
     private final Text header;
     private final Text status;
     private final Text elders;
-    private final Button backButton;
     private final List<List<RunNode>> floors;
     private final Map<Integer, Button> nodeButtons = new LinkedHashMap<>();
 
@@ -92,14 +91,6 @@ public class RunRoom extends Room {
 
         buildNodeButtons(state);
         addContent(new RunMapEdgeRenderer(state.map(), nodeButtons, state.visitedNodeIds()));
-
-        backButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Main Menu", FontType.SILKSCREEN,
-                FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 160, 60, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get), ClickableEffectData.getImmediate())
-            .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-            .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-            .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        addContent(backButton);
 
         layoutContents();
     }
@@ -233,9 +224,6 @@ public class RunRoom extends Room {
         MenuLayout.centerHeader(elders, ELDERS_TOP_OFFSET);
         layoutMap(screenW, screenH);
 
-        int screenCenterX = GameContext.get().getSettingsManager().screenSize.getScreenCenter()[0];
-        backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
-        backButton.getBounds().setY(30);
     }
 
     private void layoutMap(int screenW, int screenH) {

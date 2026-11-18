@@ -27,6 +27,7 @@ public class PauseMenuPage extends HigherOrderTexture {
         ColorSettings.TEXT_DEFAULT.getColor()
     ).withFontSize(io.github.elderpath_crusade.utils.FontSize.TITLE_LARGE).asPauseUI();
     private final TextList options = new TextList();
+    private boolean abandonArmed;
 
     public PauseMenuPage() {
         getRenderables().add(header);
@@ -61,6 +62,7 @@ public class PauseMenuPage extends HigherOrderTexture {
                 .withOnClick(
                     (e) -> {
                         leaveOnlineMatch();
+                        leaveRunBattle();
                         GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get);
                         GameContext.get().getGameManager().unpause();
                     },
@@ -68,6 +70,30 @@ public class PauseMenuPage extends HigherOrderTexture {
                 )
                 .asPauseUI()
         );
+
+        if (canAbandonRun()) {
+            Text abandon = new Text("Abandon Run", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+                .withFontSize(io.github.elderpath_crusade.utils.FontSize.BODY_MEDIUM)
+                .withHoverColor(ColorSettings.TEXT_HOVER.getColor())
+                .withClickColor(ColorSettings.TEXT_CLICK.getColor())
+                .asPauseUI();
+            // Two clicks: the first only asks, so a stray click can't throw a run away.
+            abandon.withOnClick((e) -> {
+                if (!abandonArmed) {
+                    abandonArmed = true;
+                    abandon.setText("Really abandon? Click again");
+                    abandon.reflow();
+                    update();
+                    return;
+                }
+                leaveOnlineMatch();
+                leaveRunBattle();
+                GameContext.get().getRunManager().abandonRun();
+                GameContext.get().getRoomManager().gotoRoom(MainMenuRoom::get);
+                GameContext.get().getGameManager().unpause();
+            }, ClickableEffectData.getImmediate());
+            options.addText(abandon);
+        }
 
         options.addText(
             new Text("Exit", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
@@ -93,6 +119,26 @@ public class PauseMenuPage extends HigherOrderTexture {
             GameContext.get().clearClientMatch();
         }
         GameContext.get().getLobbyConnection().clearRejoinTicket();
+    }
+
+    /** Whether a run of this player's own is in progress (not while sitting in an online match). */
+    private static boolean canAbandonRun() {
+        io.github.elderpath_crusade.client.ClientMatchSession session = GameContext.get().getClientMatchSession();
+        return GameContext.get().getRunManager().hasActiveRun() && !(session != null && session.isRemote());
+    }
+
+    /**
+     * Main Menu from a roguelike battle leaves the battle: its match server is closed (it used to keep running
+     * unseen) and the run keeps its saved state, so "Resume" returns to the map with that node's battle still to
+     * fight — a battle in progress is never resumed mid-turn (RUN-004).
+     */
+    private static void leaveRunBattle() {
+        io.github.elderpath_crusade.client.ClientMatchSession session = GameContext.get().getClientMatchSession();
+        if (session != null && !session.isRemote()
+                && GameContext.get().getGameModeManager().getCurrent() == io.github.elderpath_crusade.enums.GameMode.ROUGELIKE_RUN) {
+            session.close();
+            GameContext.get().clearClientMatch();
+        }
     }
 
     public void update() {

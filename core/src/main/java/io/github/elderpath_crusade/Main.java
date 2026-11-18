@@ -27,6 +27,9 @@ public class Main extends ApplicationAdapter {
         Thread.setDefaultUncaughtExceptionHandler((thread, error) ->
                 io.github.elderpath_crusade.utils.Logger.error("Crash", "Uncaught exception on thread " + thread.getName(), error));
         GameContext.createClient();
+        // A roguelike run survives closing the game (RUN-004); only the real app persists it, never a test context.
+        GameContext.get().getRunManager().setSaveStore(
+                new io.github.elderpath_crusade.run.JsonRunSaveStore(io.github.elderpath_crusade.run.JsonRunSaveStore.defaultFile()));
         // Loads the saved settings (volume included) — nothing here may overwrite them afterwards.
         GameContext.get().getGameManager().initialize();
         GameContext.get().getMusicManager().playLoopingMusic("Evening_Harmony.mp3");

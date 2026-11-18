@@ -28,7 +28,7 @@ public class RunState {
     private final RunDifficulty difficulty;
     private final List<RunCardInstance> deck = new ArrayList<>();
     private final List<RunCardInstance> elders = new ArrayList<>();
-    private final int startingDeckSize;
+    private int startingDeckSize;
     private final RelicState relics = new RelicState();
     private final Set<Integer> visitedNodeIds = new LinkedHashSet<>();
     private int currentNodeId;
@@ -37,7 +37,7 @@ public class RunState {
     private final int totalFloors;
     private boolean ended;
     private boolean won;
-    private final long startedAtMillis;
+    private long startedAtMillis;
     private long endedAtMillis;
 
     public RunState(RunMap firstFloorMap, RunDifficulty difficulty, List<RunCardInstance> startingDeck, int totalFloors) {
@@ -53,6 +53,33 @@ public class RunState {
         this.currentNodeId = map.startNodeId();
         this.visitedNodeIds.add(currentNodeId);
         this.startedAtMillis = System.currentTimeMillis();
+    }
+
+    /**
+     * Puts a saved run back (RUN-004, see {@link RunSnapshot}): the same state a run was in between battles.
+     * Throws if the position doesn't belong to the map or the deck is empty.
+     */
+    public static RunState restore(RunMap map, RunDifficulty difficulty, List<RunCardInstance> deck,
+                                   List<RunCardInstance> elders, List<String> relicIds, java.util.Collection<Integer> visited,
+                                   int currentNodeId, boolean currentNodeCleared, int floorIndex, int totalFloors,
+                                   int startingDeckSize, long startedAtMillis) {
+        RunState state = new RunState(map, difficulty, deck, totalFloors);
+        map.node(currentNodeId); // throws if it isn't one of the map's nodes
+        if (floorIndex < 0 || floorIndex >= totalFloors) throw new IllegalArgumentException("floorIndex out of range: " + floorIndex);
+        state.elders.addAll(elders);
+        for (String relicId : relicIds) state.relics.add(relicId);
+        state.visitedNodeIds.clear();
+        for (int id : visited) {
+            map.node(id);
+            state.visitedNodeIds.add(id);
+        }
+        state.visitedNodeIds.add(currentNodeId);
+        state.currentNodeId = currentNodeId;
+        state.currentNodeCleared = currentNodeCleared;
+        state.floorIndex = floorIndex;
+        state.startingDeckSize = startingDeckSize;
+        state.startedAtMillis = startedAtMillis;
+        return state;
     }
 
     /** Builds a fresh run's starting deck as unmodified instances, ids "run-0", "run-1", ... in order. */

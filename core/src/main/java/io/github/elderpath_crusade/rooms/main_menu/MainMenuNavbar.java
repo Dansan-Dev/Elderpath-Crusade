@@ -15,6 +15,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.rooms.CollectionRoom;
 import io.github.elderpath_crusade.rooms.GameModeRoom;
 import io.github.elderpath_crusade.rooms.InformationSelectionRoom;
+import io.github.elderpath_crusade.rooms.RunRoom;
 import io.github.elderpath_crusade.rooms.SettingsRoom;
 import io.github.elderpath_crusade.supers.HigherOrderUI;
 import io.github.elderpath_crusade.utils.SpriteCreator;
@@ -57,8 +58,11 @@ public class MainMenuNavbar extends HigherOrderUI {
         );
 
         int buttonWidth = BUTTON_WIDTH;
-        gameModeButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Game Mode", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
-            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(GameModeRoom::get), ClickableEffectData.getImmediate())
+        // RUN-004: while a roguelike run is active (this session's, or one saved by an earlier session) the first
+        // button takes the player straight back into it instead of opening the mode list.
+        boolean hasRun = GameContext.get().getRunManager().hasActiveRun();
+        gameModeButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), hasRun ? "Resume" : "Game Mode", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
+            .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(hasRun ? RunRoom::get : GameModeRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
