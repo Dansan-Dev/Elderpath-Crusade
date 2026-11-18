@@ -117,8 +117,8 @@ public abstract class BattleRoom extends Room {
             "Pass Turn",
             FontType.SILKSCREEN,
             (int) FontSize.BODY_MEDIUM.getSize(),
-            screenW - 150, screenH / 2 - 20,
-            130, 40,
+            screenW - 210, screenH / 2 - 20,
+            190, 40,
             2
         );
         passTurn.withTextColors(Color.WHITE, Color.WHITE, Color.WHITE);
