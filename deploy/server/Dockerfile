@@ -58,4 +58,8 @@ EXPOSE 4567 8080
 ENTRYPOINT ["bin/server"]
 # Every flag here can be overridden by a Pod's `args:` (see deploy/k8s) — these are just
 # reasonable defaults for "start a server, bind to all interfaces, report health on 8080".
-CMD ["--bind", "0.0.0.0", "--port", "4567", "--assets", "assets", "--health-port", "8080", "--idle-timeout-s", "120"]
+# --watch-stdin false: the server exits when its stdin closes (orphan protection for a server a game launched),
+# and a container started without `-i` has no stdin, so without this flag a plain `docker run` stopped at once
+# ("stopped: stdin closed", found 2026-11-18). Anything passed after the image name REPLACES this whole CMD:
+# keep `--watch-stdin false` in your own argument list too.
+CMD ["--bind", "0.0.0.0", "--port", "4567", "--assets", "assets", "--health-port", "8080", "--idle-timeout-s", "120", "--watch-stdin", "false"]

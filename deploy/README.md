@@ -399,7 +399,22 @@ child match server on the same machine (see `.claude/plans/lobby-plan.md` and `e
   client connects with TLS and verifies the host name (`LobbyClient.connect`).
 - **Not wired to anything**: `deploy/fly/fly.lobby.toml` is a separate file and is applied only by running
   `fly deploy --config deploy/fly/fly.lobby.toml`, which replaces the running app. Deploy it together with
-  the matching game build (match protocol 4, lobby protocol 2). Never tried against fly.io from this
-  sandbox — every setting in it is unverified until a first real deploy.
+  the matching game build (match protocol 4, lobby protocol 2). **Its `app = "elderpath-server"` is the live
+  app: always pass `--app <throwaway name>` to try it** (see below). Verified 2026-11-18 on a throwaway app
+  (one `shared-cpu-1x`/1 GB machine, TLS on 443 + PROXY v1, a whole match through it, ~170 MB idle and ~280 MB
+  during a match); not yet deployed to the real app.
+- **Trying it locally** (verified 2026-11-18, hardened like production):
+  ```sh
+  docker build -f deploy/server/Dockerfile -t elderpath-server:dev .
+  docker run --rm --name elderpath-lobby --read-only --tmpfs /tmp --cap-drop ALL \
+    --security-opt no-new-privileges -m 1g -e JAVA_TOOL_OPTIONS="-Xmx128m -XX:MaxMetaspaceSize=96m" \
+    -p 4567:4567 -p 8080:8080 elderpath-server:dev \
+    --bind 0.0.0.0 --port 4567 --assets assets --health-port 8080 --lobby true --max-matches 4 --watch-stdin false
+  ```
+  Arguments after the image name replace the image's default `CMD`, so keep `--watch-stdin false` (a container
+  has no stdin; without it the server stops at once). In the game, Play Online with server `localhost`.
+- **Trying it on Fly without touching the live app**: `fly apps create <name>`, then
+  `fly deploy --config deploy/fly/fly.lobby.toml --app <name> --ha=false` (say yes to the dedicated IPv4: the
+  service is plain TCP+TLS, not HTTP), play with server `<name>.fly.dev`, then `fly apps destroy <name>`.
 - A match is held for **20 minutes** when a player drops (the child's idle timeout is 21 minutes), so a
   full machine can stay busy that long; `--max-matches` counts held matches.
