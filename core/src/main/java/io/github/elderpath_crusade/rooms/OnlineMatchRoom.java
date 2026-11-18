@@ -51,8 +51,10 @@ public class OnlineMatchRoom extends BattleRoom {
     private void showOpponentNotice(ClientMatchSession session) {
         io.github.elderpath_crusade.client.ClientMatchState state = session.viewState();
         boolean away = state != null && !state.isOpponentConnected();
-        String text = away ? "Opponent disconnected - the match waits up to " + Math.max(1, state.getOpponentHoldSeconds() / 60)
-                + " min for them to return" : " ";
+        // Short on purpose: the longer sentence was wider than the window and ran under the ESC hint and off the
+        // right edge (UI-016). Centered at the top it must stay clear of the ESC hint and the deck pile.
+        String text = away ? "Opponent disconnected - waiting up to " + Math.max(1, state.getOpponentHoldSeconds() / 60)
+                + " min" : " ";
         OnlineUi.show(opponentNotice, text, GameContext.get().getSettingsManager().screenSize.getScreenHeight() - 40);
     }
 
