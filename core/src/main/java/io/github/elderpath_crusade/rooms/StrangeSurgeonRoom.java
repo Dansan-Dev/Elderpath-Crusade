@@ -29,13 +29,10 @@ import java.util.List;
  */
 public class StrangeSurgeonRoom extends Room {
     static final int SUBJECT_CHOICES = 3;
-    private static final int BUTTON_WIDTH = 260;
-    private static final int BUTTON_HEIGHT = 60;
-    private static final int BUTTON_SPACING = 70;
 
     private final Text header;
     private final Text flavor;
-    private final ButtonList buttonList;
+    private final CardPicker picker;
 
     private StrangeSurgeonRoom(List<RunCardInstance> candidates) {
         super();
@@ -48,33 +45,22 @@ public class StrangeSurgeonRoom extends Room {
                 FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor()).withFontSize(FontSize.BODY_MEDIUM);
         addContent(flavor);
 
-        buttonList = new ButtonList();
+        List<CardPicker.Option> options = new ArrayList<>();
         for (RunCardInstance instance : candidates) {
             String instanceId = instance.instanceId();
             String label = instance.cardName() + (instance.isModified() ? " (modified)" : "");
-            addOption(label, () -> GameContext.get().getRoomManager().gotoRoom(
-                    () -> StrangeSurgeonCombineRoom.get(instanceId)));
+            options.add(new CardPicker.Option(label, null, CardPicker.cardNameFor(instance), () -> GameContext.get().getRoomManager().gotoRoom(
+                    () -> StrangeSurgeonCombineRoom.get(instanceId))));
         }
+        picker = new CardPicker(this::addContent, options);
 
         layoutContents();
     }
 
-    private void addOption(String label, Runnable onClick) {
-        Button button = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), label, FontType.SILKSCREEN,
-                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 0)
-                .withOnClick((e) -> onClick.run(), ClickableEffectData.getImmediate())
-                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        buttonList.addButton(button);
-        addContent(button);
-    }
-
     private void layoutContents() {
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         MenuLayout.centerHeader(header, 100);
         MenuLayout.centerHeader(flavor, 150);
-        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
+        picker.layout(200);
     }
 
     @Override

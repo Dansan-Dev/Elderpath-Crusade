@@ -14,6 +14,7 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,12 +38,9 @@ import java.util.List;
  * promoting a spell would retire it from the deck and then silently never spawn anything.
  */
 public class ElderPickRoom extends Room {
-    private static final int BUTTON_WIDTH = 260;
-    private static final int BUTTON_HEIGHT = 60;
-    private static final int BUTTON_SPACING = 70;
 
     private final Text header;
-    private final ButtonList buttonList;
+    private final CardPicker picker;
 
     private ElderPickRoom(boolean advanceFloorAfterPick) {
         super();
@@ -52,29 +50,19 @@ public class ElderPickRoom extends Room {
                 .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
-        buttonList = new ButtonList();
+        List<CardPicker.Option> options = new ArrayList<>();
         for (RunCardInstance instance : runManager.getRunState().deck()) {
             if (!CardCatalog.isSummon(instance.cardName())) continue; // BUG-045 — a spell can't be an Elder
             String instanceId = instance.instanceId();
             String label = instance.cardName() + (instance.isModified() ? " (modified)" : "");
-            addOption(label, () -> {
+            options.add(new CardPicker.Option(label, null, CardPicker.cardNameFor(instance), () -> {
                 runManager.promoteToElder(instanceId);
                 continueRun(runManager, advanceFloorAfterPick);
-            });
+            }));
         }
+        picker = new CardPicker(this::addContent, options);
 
         layoutContents();
-    }
-
-    private void addOption(String label, Runnable onClick) {
-        Button button = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), label, FontType.SILKSCREEN,
-                FontSize.BUTTON_DEFAULT.getSize(), 0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 0)
-                .withOnClick((e) -> onClick.run(), ClickableEffectData.getImmediate())
-                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        buttonList.addButton(button);
-        addContent(button);
     }
 
     private static void continueRun(RunManager runManager, boolean advanceFloorAfterPick) {
@@ -83,9 +71,8 @@ public class ElderPickRoom extends Room {
     }
 
     private void layoutContents() {
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         MenuLayout.centerHeader(header, 100);
-        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
+        picker.layout(150);
     }
 
     @Override

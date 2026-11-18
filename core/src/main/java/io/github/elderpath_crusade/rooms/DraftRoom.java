@@ -1,262 +1,131 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.audio.MusicPath;
-import com.badlogic.gdx.utils.Timer;
 import io.github.elderpath_crusade.GameContext;
+import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
-import io.github.elderpath_crusade.game_objects.cards.Card;
 import io.github.elderpath_crusade.game_objects.cards.CardFactory;
-import io.github.elderpath_crusade.game_objects.cards.Hand;
-import io.github.elderpath_crusade.game_objects.cards.DraftCard;
-import io.github.elderpath_crusade.game.DeckManager;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Text;
-import io.github.elderpath_crusade.enums.FontType;
+import io.github.elderpath_crusade.ui_objects.TextPanel;
+import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
-import io.github.elderpath_crusade.utils.ColorSettings;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
- * Room for drafting cards before entering the game.
- * Player starts with 2x Wolf and 2x WolfCub, then drafts 4 cards from random options.
+ * Room for drafting cards before entering the game: the player starts with 2x Wolf and 2x Wolf Cub, then drafts
+ * 4 cards, each from 3 random options. UI-014: every pick is its own screen (a fresh instance, like
+ * {@link RunDraftRoom}) with a clear header ("Pick 2 of 4"), the three cards shown by the shared
+ * {@link CardPicker} with space between them, and the deck so far as a panel on the left.
  */
 public class DraftRoom extends Room {
     private static final int DRAFT_PICKS = 4;
     private static final int CARDS_PER_PICK = 3;
-    private static final float PICK_DELAY = 0.15f; // 150ms
+    private static final List<String> STARTING_DECK = List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub");
 
-    // Draft state
-    private List<String> draftedDeck;
-    private int currentPick;
-    private List<Card> currentOptions;
-    private Hand draftOptionsHand;
-    private Random rng;
+    private static final int DECK_PANEL_X = 30;
+    private static final int DECK_PANEL_WIDTH = 250;
+    private static final int DECK_PANEL_BOTTOM = 60;
+    private static final int DECK_PANEL_TOP_CLEARANCE = 160;
+    private static final int DECK_PANEL_PADDING = 20;
 
-    // Multiplayer support
+    private final List<String> draftedDeck;
+    private final int picksDone;
     private final PieceAlignment draftingPlayer;
     private final boolean isLocalMultiplayer;
-
-    // What happens to the finished deck is the caller's decision, not this room's — see
-    // DeckSourceSelectRoom, which is now the only way "Local Multiplayer"/"Host Online" reach
-    // this room (the plain DraftRoom::get() entry point for Demo mode still owns its own default).
+    // What happens to the finished deck is the caller's decision, not this room's — see DeckSourceSelectRoom, which
+    // is the way "Local Multiplayer"/"Host Online" reach this room (the plain DraftRoom::get() entry point for Demo
+    // mode still owns its own default).
     private final Consumer<List<String>> onComplete;
 
-    // UI elements
-    private Text progressionText;
-    private Text deckPreviewText;
-    private boolean isProcessingPick;
+    private final Text header;
+    private final Text subHeader;
+    private final TextPanel deckPanel = new TextPanel();
+    private final Text deckTitle;
+    private final Text deckList;
+    private final CardPicker picker;
 
-    private DraftRoom(PieceAlignment player, boolean localMultiplayer, Consumer<List<String>> onComplete) {
+    private DraftRoom(PieceAlignment player, boolean localMultiplayer, Consumer<List<String>> onComplete,
+                      List<String> draftedSoFar, int picksDone) {
         super();
-
-        // Play menu music
         GameContext.get().getMusicManager().playLoopingMusic(MusicPath.EVENING_HARMONY);
-
         this.draftingPlayer = player;
         this.isLocalMultiplayer = localMultiplayer;
         this.onComplete = onComplete;
-        initializeDraft();
-    }
+        this.draftedDeck = List.copyOf(draftedSoFar);
+        this.picksDone = picksDone;
 
-    private DraftRoom() {
-        this(PieceAlignment.P1, false, DraftRoom::completeDemoDraft);
-    }
+        String who = localMultiplayer ? (player == PieceAlignment.P1 ? "Player 1: " : "Player 2: ") : "";
+        header = new Text(who + "Draft Your Deck", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+                .withFontSize(FontSize.TITLE_MEDIUM);
+        subHeader = new Text("Pick " + (picksDone + 1) + " of " + DRAFT_PICKS + " - click the card you want",
+                FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor()).withFontSize(FontSize.BODY_MEDIUM);
+        deckTitle = new Text("Your deck (" + draftedDeck.size() + ")", FontType.SILKSCREEN, 0, 0, 0,
+                ColorSettings.TEXT_DEFAULT.getColor()).withFontSize(FontSize.BODY_MEDIUM);
+        deckList = new Text(deckText(draftedDeck), FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
+                .withFontSize(FontSize.CAPTION);
 
-    private static void completeDemoDraft(List<String> deck) {
-        GameContext.get().getDeckManager().setDraftedDeck(PieceAlignment.P1, deck);
-        GameContext.get().getRoomManager().gotoRoom(DemoRoom::get);
-    }
+        addContent(deckPanel); // first, so it draws behind the deck text
+        addContent(header);
+        addContent(subHeader);
+        addContent(deckTitle);
+        addContent(deckList);
 
-    private void initializeDraft() {
-        // Initialize starting deck
-        draftedDeck = new ArrayList<>(List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub"));
-        currentPick = 0;
-        currentOptions = new ArrayList<>();
-        rng = new Random();
-
-        // Create UI elements
-        String progressionPrefix = isLocalMultiplayer
-            ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
-            : "";
-        progressionText = new Text(progressionPrefix + "0/4",
-            FontType.SILKSCREEN,
-            0, 0, 0,
-            ColorSettings.TEXT_DEFAULT.getColor())
-            .withFontSize(FontSize.TITLE_MEDIUM);
-        addContent(progressionText);
-
-        deckPreviewText = new Text("", FontType.SILKSCREEN, 0, 0, 0, ColorSettings.TEXT_DEFAULT.getColor())
-            .withFontSize(FontSize.BODY_MEDIUM);
-        addContent(deckPreviewText);
-
-        // Create hand for draft options
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
-        int cardWidth = 187; // 1.5x larger for better visibility during drafting
-        int cardHeight = 300; // 1.5x larger for better visibility during drafting
-        draftOptionsHand = new Hand(screenCenter[0], screenCenter[1], cardWidth, cardHeight, 0);
-        addContent(draftOptionsHand);
-
-        isProcessingPick = false;
-
-        // Layout UI
+        List<String> available = new ArrayList<>(CardFactory.getDraftableNames());
+        Collections.shuffle(available);
+        List<CardPicker.Option> options = new ArrayList<>();
+        for (int i = 0; i < CARDS_PER_PICK && i < available.size(); i++) {
+            String cardName = available.get(i);
+            options.add(new CardPicker.Option(cardName, null, cardName, () -> onPicked(cardName)));
+        }
+        picker = new CardPicker(this::addContent, options);
         layoutContents();
+    }
 
-        // Update deck preview
-        updateDeckPreview();
+    private void onPicked(String cardName) {
+        List<String> updated = new ArrayList<>(draftedDeck);
+        updated.add(cardName);
+        int done = picksDone + 1;
+        if (done >= DRAFT_PICKS) {
+            onComplete.accept(updated);
+        } else {
+            GameContext.get().getRoomManager().gotoRoom(
+                    () -> new DraftRoom(draftingPlayer, isLocalMultiplayer, onComplete, updated, done));
+        }
+    }
 
-        // Show first pick
-        showNextDraftPick();
+    /** "2x Wolf" / "Crow" per distinct card, alphabetical. */
+    private static String deckText(List<String> deck) {
+        Map<String, Integer> counts = new TreeMap<>();
+        for (String card : deck) counts.merge(card, 1, Integer::sum);
+        List<String> lines = new ArrayList<>();
+        counts.forEach((name, count) -> lines.add(count > 1 ? count + "x " + name : name));
+        return String.join("\n", lines);
     }
 
     private void layoutContents() {
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
-        int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
+        MenuLayout.centerHeader(header, 100);
+        MenuLayout.centerHeader(subHeader, 150);
 
-        // Progression text at top center
-        MenuLayout.centerHeader(progressionText, 100);
+        int panelTop = screenHeight - DECK_PANEL_TOP_CLEARANCE;
+        deckPanel.setRect(DECK_PANEL_X, DECK_PANEL_BOTTOM, DECK_PANEL_WIDTH, panelTop - DECK_PANEL_BOTTOM);
+        int textX = DECK_PANEL_X + DECK_PANEL_PADDING;
+        deckTitle.update();
+        deckTitle.getBounds().setX(textX);
+        deckTitle.getBounds().setY(panelTop - DECK_PANEL_PADDING - deckTitle.getBounds().getHeight());
+        deckList.update();
+        deckList.getBounds().setX(textX);
+        deckList.getBounds().setY(deckTitle.getBounds().getY() - 14 - deckList.getBounds().getHeight());
 
-        // Deck preview on right side - position it clearly visible
-        // Fixed top position relative to screen height (top stays fixed as text expands downward)
-        int previewWidth = 300;
-        int previewX = screenWidth - previewWidth - 50; // Right side with margin
-        int fixedTopY = (screenHeight * 2 / 3) - 100; // Fixed top Y position
-        deckPreviewText.getBounds().setX(previewX);
-        deckPreviewText.getBounds().setWidth(previewWidth);
-        // Update to calculate text bounds first
-        deckPreviewText.update();
-        // Set Y position so that top stays fixed (Y is bottom, so bottom = top - height)
-        int bottomY = fixedTopY - deckPreviewText.getBounds().getHeight();
-        deckPreviewText.getBounds().setY(bottomY);
-
-        // Draft options hand centered in middle
-        draftOptionsHand.setCenterX(screenCenter[0]);
-        draftOptionsHand.setBottomY(screenCenter[1] - 50);
-        // Update hand bounds to reposition cards
-        draftOptionsHand.updateBounds();
-    }
-
-    private void showNextDraftPick() {
-        if (currentPick >= DRAFT_PICKS) {
-            // Draft complete, transition to DemoRoom
-            completeDraft();
-            return;
-        }
-
-        // Update progression text
-        String progressionPrefix = isLocalMultiplayer
-            ? (draftingPlayer == PieceAlignment.P1 ? "Player 1 Draft: " : "Player 2 Draft: ")
-            : "";
-        progressionText.setText(progressionPrefix + currentPick + "/" + DRAFT_PICKS);
-        progressionText.update();
-
-        // Generate 3 unique random cards
-        List<String> available = new ArrayList<>(CardFactory.getDraftableNames());
-        Collections.shuffle(available, rng);
-
-        currentOptions.clear();
-        draftOptionsHand.getCards().forEach(card -> {
-            draftOptionsHand.removeCard(card);
-            GameContext.get().getInteractionManager().removeClickable(card);
-        });
-
-        for (int i = 0; i < CARDS_PER_PICK && i < available.size(); i++) {
-            String cardName = available.get(i);
-            DeckManager.CardCreationParams params = new DeckManager.CardCreationParams(
-                PieceAlignment.P1, 0, 0, 187, 300, 0  // 1.5x larger for better visibility during drafting
-            );
-            Card realCard = CardFactory.create(cardName, null, params);
-            realCard.showFront(); // Make sure card is face up
-
-            // Wrap in DraftCard to bypass mana checks
-            final String finalCardName = cardName;
-            final DraftCard[] cardRef = new DraftCard[1];
-            DraftCard card = new DraftCard(realCard, (e) -> {
-                if (!isProcessingPick && cardRef[0] != null) {
-                    onCardSelected(cardRef[0], finalCardName);
-                }
-            });
-            cardRef[0] = card; // Assign after creation
-            card.showFront(); // Make sure card is face up
-
-            currentOptions.add(card);
-            draftOptionsHand.addCard(card);
-        }
-
-        isProcessingPick = false;
-    }
-
-    private void onCardSelected(Card selectedCard, String cardName) {
-        if (isProcessingPick) return;
-        isProcessingPick = true;
-
-        // Add selected card to drafted deck
-        draftedDeck.add(cardName);
-
-        // Update deck preview immediately
-        updateDeckPreview();
-
-        // Clear current options
-        currentOptions.forEach(card -> {
-            draftOptionsHand.removeCard(card);
-            GameContext.get().getInteractionManager().removeClickable(card);
-        });
-        currentOptions.clear();
-
-        // Delay before showing next pick
-        Timer.schedule(new Timer.Task() {
-            @Override
-            public void run() {
-                currentPick++;
-                showNextDraftPick();
-            }
-        }, PICK_DELAY);
-    }
-
-    private void updateDeckPreview() {
-        // Count cards by name
-        Map<String, Long> cardCounts = draftedDeck.stream()
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        // Format as "Nx card_name" or "card_name" for singles
-        List<String> formattedCards = cardCounts.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
-            .map(entry -> {
-                String name = entry.getKey();
-                long count = entry.getValue();
-                return count > 1 ? count + "x " + name : name;
-            })
-            .collect(Collectors.toList());
-
-        String previewText = "Deck:\n" + String.join("\n", formattedCards);
-        deckPreviewText.setText(previewText);
-
-        // Calculate fixed top position (always relative to screen height)
-        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
-        int screenWidth = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
-        int fixedTopY = (screenHeight * 2 / 3) - 100; // Fixed top Y position
-        int previewWidth = 300;
-        int previewX = screenWidth - previewWidth - 50; // Right side with margin
-
-        // Set X and width before update
-        deckPreviewText.getBounds().setX(previewX);
-        deckPreviewText.getBounds().setWidth(previewWidth);
-
-        // Update to recalculate text bounds (height will grow)
-        deckPreviewText.update();
-
-        // Set Y position so that top stays fixed (Y is bottom, so bottom = top - height)
-        int bottomY = fixedTopY - deckPreviewText.getBounds().getHeight();
-        deckPreviewText.getBounds().setY(bottomY);
-    }
-
-    private void completeDraft() {
-        onComplete.accept(draftedDeck);
+        picker.layout(200);
     }
 
     @Override
@@ -265,17 +134,21 @@ public class DraftRoom extends Room {
     }
 
     public static DraftRoom get() {
-        return new DraftRoom();
+        return new DraftRoom(PieceAlignment.P1, false, DraftRoom::completeDemoDraft, STARTING_DECK, 0);
+    }
+
+    private static void completeDemoDraft(List<String> deck) {
+        GameContext.get().getDeckManager().setDraftedDeck(PieceAlignment.P1, deck);
+        GameContext.get().getRoomManager().gotoRoom(DemoRoom::get);
     }
 
     /**
-     * Generic entry point used by {@link DeckSourceSelectRoom}'s "Draft a Deck" option — drafts
-     * for {@code player}, then hands the finished deck to {@code onComplete}. Storing it in
-     * {@code DeckManager} and picking the next room is entirely the caller's job; this room
-     * doesn't know or care whether it's being used for Local Multiplayer, Host Online, or
-     * anything else.
+     * Generic entry point used by {@link DeckSourceSelectRoom}'s "Draft a Deck" option — drafts for {@code player},
+     * then hands the finished deck to {@code onComplete}. Storing it in {@code DeckManager} and picking the next room
+     * is entirely the caller's job; this room doesn't know or care whether it's being used for Local Multiplayer,
+     * Host Online, or anything else.
      */
     public static DraftRoom forPlayer(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onComplete) {
-        return new DraftRoom(player, isLocalMultiplayer, onComplete);
+        return new DraftRoom(player, isLocalMultiplayer, onComplete, STARTING_DECK, 0);
     }
 }

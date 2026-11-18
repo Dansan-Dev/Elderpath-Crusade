@@ -22,11 +22,8 @@ import java.util.Random;
  * Drafts a fresh run's starting deck before the map is generated (ELDER-004) — replaces the old
  * fixed starting deck. {@link #BASE_DECK} plus {@value #DRAFT_PICKS} picks of
  * {@value #CARDS_PER_PICK} random {@link CardCatalog#getDraftableNames} options each, same
- * shape as the existing (Demo/LocalMatch) {@code DraftRoom}'s pick-4-of-3 — but a plain
- * button-list UI like {@code DifficultySelectRoom}/{@code UpgradeOfferRoom} rather than
- * rendered {@code Card}s: this sandbox can't verify a GL-dependent draft screen any better than
- * a simpler one, and the existing {@code DraftRoom} is tightly coupled to Demo/LocalMatch's own
- * transition targets. Each pick goes through {@link RoomManager}'s own {@code gotoRoom} (a
+ * shape as the existing (Demo/LocalMatch) {@code DraftRoom}'s pick-4-of-3, with the options drawn as real cards
+ * by the shared {@link CardPicker} (UI-011). Each pick goes through {@link RoomManager}'s own {@code gotoRoom} (a
  * fresh instance per round) so clickables are torn down and rebuilt for free, same as any other
  * room transition — no incremental UI bookkeeping needed.
  * Once the draft completes, starts the run and hands off to {@link ElderPickRoom} to choose the
@@ -36,12 +33,9 @@ public class RunDraftRoom extends Room {
     static final List<String> BASE_DECK = List.of("Wolf", "Wolf", "Wolf Cub", "Wolf Cub");
     private static final int DRAFT_PICKS = 4;
     private static final int CARDS_PER_PICK = 3;
-    private static final int BUTTON_WIDTH = 220;
-    private static final int BUTTON_HEIGHT = 60;
-    private static final int BUTTON_SPACING = 70;
 
     private final Text header;
-    private final ButtonList buttonList;
+    private final CardPicker picker;
 
     private RunDraftRoom(RunDifficulty difficulty, List<String> draftedSoFar, int picksSoFar) {
         super();
@@ -51,13 +45,14 @@ public class RunDraftRoom extends Room {
                 .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
-        buttonList = new ButtonList();
+        List<CardPicker.Option> options = new ArrayList<>();
         List<String> pool = new ArrayList<>(CardCatalog.getDraftableNames());
         Collections.shuffle(pool, new Random());
         for (int i = 0; i < CARDS_PER_PICK && i < pool.size(); i++) {
             String cardName = pool.get(i);
-            addOption(cardName, () -> onPicked(difficulty, draftedSoFar, picksSoFar, cardName));
+            options.add(new CardPicker.Option(cardName, null, cardName, () -> onPicked(difficulty, draftedSoFar, picksSoFar, cardName)));
         }
+        picker = new CardPicker(this::addContent, options);
 
         layoutContents();
     }
@@ -74,21 +69,9 @@ public class RunDraftRoom extends Room {
         }
     }
 
-    private void addOption(String label, Runnable onClick) {
-        Button button = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), label, FontType.SILKSCREEN,
-                FontSize.BUTTON_DEFAULT.getSize(), 0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 0)
-                .withOnClick((e) -> onClick.run(), ClickableEffectData.getImmediate())
-                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        buttonList.addButton(button);
-        addContent(button);
-    }
-
     private void layoutContents() {
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         MenuLayout.centerHeader(header, 100);
-        buttonList.alignButtonsAcrossYAxis(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
+        picker.layout(150);
     }
 
     @Override

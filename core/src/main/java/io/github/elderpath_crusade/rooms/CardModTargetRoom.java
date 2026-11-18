@@ -15,6 +15,7 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,12 +30,9 @@ import java.util.List;
  * the Elder loop needs no equivalent filter.
  */
 public class CardModTargetRoom extends Room {
-    private static final int BUTTON_WIDTH = 260;
-    private static final int BUTTON_HEIGHT = 60;
-    private static final int BUTTON_SPACING = 70;
 
     private final Text header;
-    private final ButtonList buttonList;
+    private final CardPicker picker;
 
     private CardModTargetRoom(CardModificationCatalog.Entry chosenMod) {
         super();
@@ -45,42 +43,31 @@ public class CardModTargetRoom extends Room {
                 .withFontSize(FontSize.TITLE_MEDIUM);
         addContent(header);
 
-        buttonList = new ButtonList();
+        List<CardPicker.Option> options = new ArrayList<>();
         for (RunCardInstance instance : runManager.getRunState().deck()) {
             if (!CardCatalog.isSummon(instance.cardName())) continue; // BUG-045 — a spell has no stats to modify
-            addCardOption(runManager, chosenMod, instance, false);
+            options.add(cardOption(runManager, chosenMod, instance, false));
         }
         for (RunCardInstance instance : runManager.getRunState().elders()) {
-            addCardOption(runManager, chosenMod, instance, true);
+            options.add(cardOption(runManager, chosenMod, instance, true));
         }
+        picker = new CardPicker(this::addContent, options);
 
         layoutContents();
     }
 
-    private void addCardOption(RunManager runManager, CardModificationCatalog.Entry chosenMod, RunCardInstance instance, boolean isElder) {
+    private static CardPicker.Option cardOption(RunManager runManager, CardModificationCatalog.Entry chosenMod, RunCardInstance instance, boolean isElder) {
         String instanceId = instance.instanceId();
         String label = instance.cardName() + (instance.isModified() ? " (modified)" : "") + (isElder ? " (Elder)" : "");
-        addOption(label, () -> {
+        return new CardPicker.Option(label, isElder ? "Elder" : null, CardPicker.cardNameFor(instance), () -> {
             runManager.upgradeCard(instanceId, chosenMod.delta());
             GameContext.get().getRoomManager().gotoRoom(RunRoom::get);
         });
     }
 
-    private void addOption(String label, Runnable onClick) {
-        Button button = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), label, FontType.SILKSCREEN,
-                FontSize.BUTTON_DEFAULT.getSize(), 0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 0)
-                .withOnClick((e) -> onClick.run(), ClickableEffectData.getImmediate())
-                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
-                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
-                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
-        buttonList.addButton(button);
-        addContent(button);
-    }
-
     private void layoutContents() {
-        int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         MenuLayout.centerHeader(header, 100);
-        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
+        picker.layout(150);
     }
 
     @Override

@@ -16,6 +16,7 @@ import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -51,6 +52,8 @@ public class UpgradeOfferRoom extends Room {
     private final RunManager runManager;
     private final Text header;
     private final ButtonList buttonList;
+    /** Set only for the "choose a new card" reward; relic and upgrade rewards stay plain buttons. */
+    private CardPicker picker;
     private final Button skipButton;
 
     private UpgradeOfferRoom(RunNodeType clearedNodeType) {
@@ -91,12 +94,14 @@ public class UpgradeOfferRoom extends Room {
 
         List<String> cardChoices = runManager.offerNewCardChoices(3);
         if (!cardChoices.isEmpty()) {
+            List<CardPicker.Option> options = new ArrayList<>();
             for (String cardName : cardChoices) {
-                addOption(cardName, () -> {
+                options.add(new CardPicker.Option(cardName, null, cardName, () -> {
                     runManager.grantNewCard(cardName);
                     continueRun();
-                });
+                }));
             }
+            picker = new CardPicker(this::addContent, options); // UI-011: show the cards, not just their names
             return;
         }
 
@@ -153,9 +158,13 @@ public class UpgradeOfferRoom extends Room {
         int screenCenterY = screenCenter[1];
 
         MenuLayout.centerHeader(header, 100);
-        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenterX, screenCenterY);
-
         skipButton.getBounds().setX(screenCenterX - skipButton.getBounds().getWidth() / 2);
+        if (picker != null) {
+            picker.layout(150);
+            skipButton.getBounds().setY(24);
+            return;
+        }
+        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenterX, screenCenterY);
         skipButton.getBounds().setY(screenCenterY - (buttonList.getRenderables().size() * BUTTON_SPACING) / 2 - 60);
     }
 
