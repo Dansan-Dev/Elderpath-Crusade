@@ -188,10 +188,12 @@ class AssetBundle {
                 else if (Files.isRegularFile(dest) && sha256(dest) == e.sha256) unchanged++
                 else toReplace << e
             }
-            if (!toReplace.isEmpty() && !force) {
+            if (!toReplace.isEmpty() && (!force || dryRun)) {
                 println "These ${toReplace.size()} file(s) already exist with different content:"
                 toReplace.take(20).each { println "  ${it.path}" }
                 if (toReplace.size() > 20) println "  ... and ${toReplace.size() - 20} more"
+            }
+            if (!toReplace.isEmpty() && !force && !dryRun) {
                 throw new GradleException('Nothing was written. Re-run with -Pforce=true to replace them (the old files are ' +
                     "kept in ${backupDir}), or -PdryRun=true to only look.")
             }

@@ -35,6 +35,7 @@ diff -r "$SRC/assets/data" "$DST/assets/data" >/dev/null && cmp -s "$SRC/assets/
 gw importAssets -PassetsRoot="$DST" -Pzip="$WORK/a.zip" | grep -q "0 new, 4 already identical"; check "second import changes nothing" $?
 
 echo mine > "$DST/assets/extra.txt"; echo edited > "$DST/assets/images/wolf.png"
+gw importAssets -PassetsRoot="$DST" -Pzip="$WORK/a.zip" -PdryRun=true | grep -q "assets/images/wolf.png"; check "dry run lists a differing file and still succeeds" $?
 expect_fail "a differing existing file is refused" gw importAssets -PassetsRoot="$DST" -Pzip="$WORK/a.zip"
 [ "$(cat "$DST/assets/images/wolf.png")" = "edited" ]; check "refused import wrote nothing" $?
 gw importAssets -PassetsRoot="$DST" -Pzip="$WORK/a.zip" -Pforce=true >/dev/null; check "force replaces it" $?
