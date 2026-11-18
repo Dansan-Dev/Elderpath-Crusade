@@ -69,7 +69,7 @@ public class HostLobbyRoom extends Room {
             case FAILED -> connection.getFailure();
             default -> "Not connected";
         };
-        OnlineUi.show(connectionStatus, text, OnlineUi.centerY() + 250);
+        OnlineUi.showUnderHeader(connectionStatus, text, header);
     }
 
     private void createClicked() {
@@ -91,7 +91,7 @@ public class HostLobbyRoom extends Room {
     private void layoutContents() {
         int cy = OnlineUi.centerY();
         MenuLayout.centerHeader(header, 100);
-        OnlineUi.show(connectionStatus, connectionStatus.getText(), cy + 250);
+        OnlineUi.showUnderHeader(connectionStatus, connectionStatus.getText(), header);
         OnlineUi.show(nameLabel, "Lobby name", cy + 190);
         OnlineUi.place(nameField, cy + 130);
         OnlineUi.show(passwordLabel, "Password (optional)", cy + 90);

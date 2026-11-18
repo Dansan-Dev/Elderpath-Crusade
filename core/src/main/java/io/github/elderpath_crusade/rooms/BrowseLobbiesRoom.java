@@ -83,7 +83,7 @@ public class BrowseLobbiesRoom extends Room {
             case FAILED -> connection.getFailure();
             default -> "Not connected";
         };
-        OnlineUi.show(connectionStatus, text, OnlineUi.centerY() + 270);
+        OnlineUi.showUnderHeader(connectionStatus, text, header);
         if (client == null || !client.isWelcomed()) return;
 
         sinceRefresh += delta;
@@ -132,7 +132,7 @@ public class BrowseLobbiesRoom extends Room {
     private void layoutContents() {
         int cy = OnlineUi.centerY();
         MenuLayout.centerHeader(header, 100);
-        OnlineUi.show(connectionStatus, connectionStatus.getText(), cy + 270);
+        OnlineUi.showUnderHeader(connectionStatus, connectionStatus.getText(), header);
         showRows(shown);
         OnlineUi.show(passwordLabel, "Password for a protected lobby", cy - 150);
         OnlineUi.place(passwordField, cy - 210);

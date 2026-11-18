@@ -45,6 +45,19 @@ final class OnlineUi {
         button.getBounds().setY(y);
     }
 
+    /**
+     * The connection-state line, centered directly under the screen title. It used to sit at a fixed height
+     * above the screen's centre, which put it on top of the title in a 720-pixel-high window (UI-013).
+     */
+    static void showUnderHeader(Text text, String value, Text header) {
+        if (!value.equals(text.getText())) {
+            text.setText(value);
+            text.update();
+        }
+        text.getBounds().setX(centerX() - text.getBounds().getWidth() / 2);
+        text.getBounds().setY(header.getBounds().getY() - 12 - text.getBounds().getHeight());
+    }
+
     /** Sets a line's text and keeps it horizontally centered at y. */
     static void show(Text text, String value, int y) {
         if (!value.equals(text.getText())) {
