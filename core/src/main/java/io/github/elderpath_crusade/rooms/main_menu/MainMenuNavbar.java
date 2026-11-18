@@ -23,6 +23,12 @@ import java.util.List;
 
 public class MainMenuNavbar extends HigherOrderUI {
     private static final int[] NAVBAR_IMAGE_SIZE = { 551, 831 };
+    // Four buttons must sit inside the frame art's oak border, not on it (UI-009). The frame is 204x307 on
+    // screen; its border takes roughly 18-20 px on every side, so the old 4 x 60 + 3 x 10 = 270 px stack
+    // touched the top and bottom border and could pass it at other window scales.
+    private static final int BUTTON_WIDTH = 132;
+    private static final int BUTTON_HEIGHT = 52;
+    private static final int BUTTON_SPACING = 8;
 
     private SpriteObject navbarBg;
     private ButtonList buttonList;
@@ -50,21 +56,20 @@ public class MainMenuNavbar extends HigherOrderUI {
             0
         );
 
-        // Build buttons (width increased from 100 to 120 for better appearance)
-        int buttonWidth = 140;
-        gameModeButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Game Mode", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+        int buttonWidth = BUTTON_WIDTH;
+        gameModeButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Game Mode", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
             .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(GameModeRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        collectionButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Collection", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+        collectionButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Collection", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
             .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(CollectionRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
             .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+        settingsButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Settings", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
             .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(SettingsRoom::get), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
@@ -72,14 +77,14 @@ public class MainMenuNavbar extends HigherOrderUI {
 //
 //        infoButton = Button
 //                .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Info", FontType.SILKSCREEN,
-//                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+//                        FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
 //                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(InformationSelectionRoom::get),
 //                        ClickableEffectData.getImmediate())
 //                .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
 //                .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
 //                .withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
 
-        exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, 60, 0)
+        exitButton = Button.fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Exit", FontType.SILKSCREEN, FontSize.BUTTON_DEFAULT.getSize(), 0, 0, buttonWidth, BUTTON_HEIGHT, 0)
             .withOnClick((e) -> Gdx.app.exit(), ClickableEffectData.getImmediate())
             .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
             .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
@@ -119,15 +124,15 @@ public class MainMenuNavbar extends HigherOrderUI {
         if (navbarBg != null) navbarBg.setBounds(new Box(0, 0, navW, navH));
 
         // Button layout within navbar via ButtonList
-        int buttonHeight = 60;
-        int spacing = 10;
+        int buttonHeight = BUTTON_HEIGHT;
+        int spacing = BUTTON_SPACING;
         // Ensure button sizes
         if (buttonList != null) {
             buttonList.getRenderables().forEach(r -> {
                 Button b = (Button) r;
                 Box bb = b.getBounds();
                 // Keep existing width, only set height (update default width to match buttonWidth)
-                if (bb.getWidth() == 0) bb.setWidth(140);
+                if (bb.getWidth() == 0) bb.setWidth(BUTTON_WIDTH);
                 bb.setHeight(buttonHeight);
             });
             int offset = buttonHeight + spacing;
