@@ -33,6 +33,7 @@ import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.interfaces.UIRenderable;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.*;
+import io.github.elderpath_crusade.utils.ColorSettings;
 import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 
@@ -112,8 +113,9 @@ public abstract class BattleRoom extends Room {
         // 5. UI: Pass Turn Button
         int screenW = GameContext.get().getSettingsManager().screenSize.getScreenWidth();
         int screenH = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        // Same stone-button look as every other button (it used to be a flat dark grey one, UI-006).
         passTurn = PassTurnButton.fromColor(
-            Color.WHITE.cpy().mul(0.2f, 0.2f, 0.2f, 1f),
+            ColorSettings.BUTTON_PRIMARY.getColor(),
             "Pass Turn",
             FontType.SILKSCREEN,
             (int) FontSize.BODY_MEDIUM.getSize(),
@@ -122,6 +124,9 @@ public abstract class BattleRoom extends Room {
             2
         );
         passTurn.withTextColors(Color.WHITE, Color.WHITE, Color.WHITE);
+        passTurn.withHoverColor(ColorSettings.BUTTON_HOVER.getColor());
+        passTurn.withBorderColor(ColorSettings.BUTTON_BORDER.getColor());
+        passTurn.withHoverBorderColor(ColorSettings.BUTTON_BORDER_HOVER.getColor());
         passTurn.withOnClick((e) -> onPassTurnClicked(), ClickableEffectData.getImmediate());
         addUI(passTurn);
 
@@ -165,7 +170,7 @@ public abstract class BattleRoom extends Room {
         addContent(deckP2);
 
         // 9. HUDs
-        addUI(new ManaHud());
+        addUI(new ManaHud(this::viewerAlignment));
         addUI(new TurnHud());
         addUI(new AbilityPopup());
         addUI(new CardPreviewPanel());

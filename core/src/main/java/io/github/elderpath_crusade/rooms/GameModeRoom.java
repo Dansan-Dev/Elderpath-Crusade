@@ -27,6 +27,7 @@ public class GameModeRoom extends Room {
 
     private final Text header;
     private final ButtonList buttonList;
+    private static final int BACK_GAP = 30;
     private final Button backButton;
 
     private GameModeRoom() {
@@ -92,7 +93,13 @@ public class GameModeRoom extends Room {
         buttonList.alignButtonsAcrossYAxis(BUTTON_SPACING, screenCenterX, screenCenterY);
 
         backButton.getBounds().setX(screenCenterX - backButton.getBounds().getWidth() / 2);
-        backButton.getBounds().setY(screenCenterY - (buttonList.getRenderables().size() * BUTTON_SPACING) / 2 - 60);
+        // Below the lowest option with a clear gap, whatever the number of options (the old formula assumed the
+        // longer list of practice modes, so with two options Back sat tight under the last one — UI-006).
+        int lowestOptionY = Integer.MAX_VALUE;
+        for (var renderable : buttonList.getRenderables()) {
+            lowestOptionY = Math.min(lowestOptionY, ((Button) renderable).getBounds().getY());
+        }
+        backButton.getBounds().setY(lowestOptionY - BACK_GAP - backButton.getBounds().getHeight());
     }
 
     @Override
