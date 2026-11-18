@@ -200,6 +200,53 @@ public final class LobbyServer {
         }
     }
 
+    // --- event log (OPS-001) ---
+    // One short line per lobby event: who (name@address, the address being what the connection limits use, so
+    // with --proxy-protocol it shows whether the real client address got through), what, which lobby. Never a
+    // password, a token or a deck. Capped so a flood of events cannot flood the log: at most LOG_LINES_PER_WINDOW
+    // lines per LOG_WINDOW, then one "suppressed" line when the window ends.
+    private static final int LOG_LINES_PER_WINDOW = 60;
+    private static final long LOG_WINDOW_NANOS = 10L * 1_000_000_000L;
+    private long logWindowStart = Long.MIN_VALUE;
+    private int logLinesInWindow;
+    private int logSuppressed;
+
+    private void event(String message) {
+        long now = nanoClock.getAsLong();
+        if (logWindowStart == Long.MIN_VALUE || now - logWindowStart >= LOG_WINDOW_NANOS) {
+            if (logSuppressed > 0) Logger.log("Lobby", logSuppressed + " more event(s) not logged (log cap)");
+            logWindowStart = now;
+            logLinesInWindow = 0;
+            logSuppressed = 0;
+        }
+        if (logLinesInWindow >= LOG_LINES_PER_WINDOW) {
+            logSuppressed++;
+            return;
+        }
+        logLinesInWindow++;
+        Logger.log("Lobby", message);
+    }
+
+    /** User-supplied text made safe for a log line: no control characters, at most 40 characters. */
+    static String safe(String text) {
+        if (text == null) return "?";
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < text.length() && out.length() < 40; i++) {
+            char c = text.charAt(i);
+            out.append(c < 0x20 || c == 0x7f ? '?' : c);
+        }
+        return out.toString();
+    }
+
+    private static String who(Conn conn) {
+        String peer = conn.link.peerAddress();
+        return safe(conn.playerName) + "@" + (peer != null ? peer : "local");
+    }
+
+    private static String lobbyTag(Lobby lobby) {
+        return "lobby " + lobby.id + " '" + safe(lobby.name) + "'";
+    }
+
     public int lobbyCount() {
         return lobbies.size();
     }
@@ -281,6 +328,7 @@ public final class LobbyServer {
         if (conn.playerName != null) {
             error(conn, Code.BAD_MESSAGE, "Already said hello");
         } else if (hello.protocolVersion() != LobbyCodec.LOBBY_PROTOCOL_VERSION) {
+            event("refused hello from " + addressKey(conn) + ": protocol " + hello.protocolVersion());
             send(conn, new LobbyServerMessage.LobbyError(Code.VERSION_MISMATCH,
                     "Server speaks lobby protocol " + LobbyCodec.LOBBY_PROTOCOL_VERSION));
             conn.link.close();
@@ -289,6 +337,7 @@ public final class LobbyServer {
             conn.link.close();
         } else {
             conn.playerName = hello.playerName().strip();
+            event("hello " + who(conn));
             send(conn, new LobbyServerMessage.LobbyWelcome(LobbyCodec.LOBBY_PROTOCOL_VERSION));
         }
     }
@@ -311,6 +360,7 @@ public final class LobbyServer {
             Lobby lobby = new Lobby(create.name().strip(), conn, List.copyOf(create.deck()), salt, hash, now);
             lobbies.put(lobby.id, lobby);
             conn.lobby = lobby;
+            event(who(conn) + " created " + lobbyTag(lobby) + (hasPassword ? " (password)" : ""));
             send(conn, new LobbyServerMessage.LobbyJoined(view(lobby), true));
         }
     }
@@ -332,6 +382,7 @@ public final class LobbyServer {
         } else if (lobby.passwordProtected() && !passwordMatches(lobby, join.password())) {
             addressFailures.recordFailure(addressKey(conn), now);
             lobbyFailures.recordFailure("lobby:" + lobby.id, now);
+            event("wrong password for " + lobbyTag(lobby) + " from " + who(conn));
             if (++conn.wrongPasswords >= MAX_PASSWORD_ATTEMPTS) {
                 error(conn, Code.TOO_MANY_ATTEMPTS, "Too many wrong passwords");
                 conn.link.close();
@@ -343,6 +394,7 @@ public final class LobbyServer {
                 addressFailures.recordSuccess(addressKey(conn));
                 lobbyFailures.recordSuccess("lobby:" + lobby.id);
             }
+            event(who(conn) + " joined " + lobbyTag(lobby));
             lobby.guest = conn;
             lobby.guestDeck = List.copyOf(join.deck());
             lobby.lastActivityNanos = now;
@@ -366,6 +418,7 @@ public final class LobbyServer {
         if (conn == lobby.host) {
             closeLobby(lobby, "The host left");
         } else {
+            event(who(conn) + " left " + lobbyTag(lobby));
             lobby.guest = null;
             lobby.guestDeck = null;
             conn.lobby = null;
@@ -384,8 +437,10 @@ public final class LobbyServer {
         } else if (lobby.guest == null) {
             error(conn, Code.NEED_TWO_PLAYERS, "Wait for another player");
         } else if (activeMatches() >= maxMatches) {
+            event("start refused in " + lobbyTag(lobby) + ": " + activeMatches() + " matches already running");
             error(conn, Code.SERVER_BUSY, "The server is running as many matches as it can, try again shortly");
         } else {
+            event("starting match in " + lobbyTag(lobby) + " (" + who(lobby.host) + " vs " + who(lobby.guest) + ")");
             lobby.state = LobbyState.STARTING;
             lobby.launchDeadlineNanos = now + LAUNCH_TIMEOUT_NANOS;
             try {
@@ -444,9 +499,11 @@ public final class LobbyServer {
         send(lobby.guest, new LobbyServerMessage.MatchStarting("P2", lobby.slots[1].rejoinToken));
         lobby.host.upstream = hostUp;
         lobby.guest.upstream = guestUp;
+        event("match running in " + lobbyTag(lobby));
     }
 
     private void launchFailed(Lobby lobby, String message) {
+        event("match launch failed in " + lobbyTag(lobby) + ": " + message);
         lobby.state = LobbyState.OPEN;
         lobby.launch = null;
         lobby.lastActivityNanos = nanoClock.getAsLong();
@@ -499,6 +556,9 @@ public final class LobbyServer {
             lobbies.remove(lobby.id);
             closeLateEndpoint(lobby);
         } else if (lobby.state == LobbyState.IN_MATCH) {
+            if (!lobby.matchEnded && !conn.leftMatch) {
+                event(who(conn) + " dropped from the match in " + lobbyTag(lobby) + " (seat held for rejoin)");
+            }
             conn.lobby = null;
             long now = nanoClock.getAsLong();
             for (SeatSlot slot : lobby.slots) {
@@ -521,6 +581,7 @@ public final class LobbyServer {
     }
 
     private void endMatch(Lobby lobby) {
+        event("match ended in " + lobbyTag(lobby));
         if (lobby.endpoint != null) lobby.endpoint.close();
         lobby.host.lobby = null;
         if (lobby.guest != null) lobby.guest.lobby = null;
@@ -548,6 +609,7 @@ public final class LobbyServer {
     /** A player said Leave: the other wins at once and the match server is stopped. */
     private void forfeit(Lobby lobby, Conn leaver) {
         if (lobby.state != LobbyState.IN_MATCH) return;
+        event(who(leaver) + " left the match in " + lobbyTag(lobby) + (lobby.matchEnded ? " (already over)" : " (forfeit)"));
         if (!lobby.matchEnded) {
             for (SeatSlot slot : lobby.slots) if (slot.conn != null && slot.conn != leaver) declareWinner(slot);
         }
@@ -603,6 +665,7 @@ public final class LobbyServer {
         }
         if (slot == null) {
             addressFailures.recordFailure(key, now);
+            event("rejoin refused for " + who(conn));
             error(conn, Code.REJOIN_REFUSED, "There is no match to rejoin");
             return;
         }
@@ -625,6 +688,7 @@ public final class LobbyServer {
             if (old.upstream != null) old.upstream.close();
             slot.vacantSince = now;
         }
+        event(who(conn) + " rejoining " + lobbyTag(lobby) + (takeover ? " (replacing a stale connection)" : ""));
         slot.pending = conn;
         slot.pendingAttachNanos = takeover ? now + TAKEOVER_DELAY_NANOS : now;
         conn.lobby = lobby;
@@ -672,6 +736,7 @@ public final class LobbyServer {
     }
 
     private void closeLobby(Lobby lobby, String reason) {
+        event(lobbyTag(lobby) + " closed: " + safe(reason));
         lobbies.remove(lobby.id);
         for (Conn member : lobby.members()) {
             if (member.lobby == lobby) {
@@ -719,6 +784,7 @@ public final class LobbyServer {
         long wait = Math.max(addressFailures.secondsLeft(addressKey(conn), now),
                 lobbyFailures.secondsLeft("lobby:" + lobby.id, now));
         if (wait <= 0) return false;
+        event("guesses locked for " + lobbyTag(lobby) + ", " + who(conn) + " must wait " + wait + " s");
         error(conn, Code.TOO_MANY_ATTEMPTS, "Too many wrong passwords, try again in " + wait + " s");
         return true;
     }
