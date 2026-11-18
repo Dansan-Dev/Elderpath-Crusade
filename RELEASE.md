@@ -18,6 +18,8 @@ Related: `deploy/README.md` (the server), `.claude/plans/steam-release-plan.md` 
   build on the machine that holds them. `assets/` is packed into the game jar (`lwjgl3/build.gradle` adds it
   to the resources), so nothing else has to be shipped beside the game.
 - Nothing from `.claude/` is needed to build.
+- **Measuring minimum specs** for the store page: `tools/spec-measure/README.md` (Linux sampler tested; the Windows
+  PowerShell one was written blind).
 - **Moving the gitignored files to another machine** (a second checkout, a CI box): on the machine that has
   them run `./gradlew exportAssets` (writes `build/asset-bundles/elderpath-assets-<time>.zip`, or choose the file
   with `-Pout=<file>`), copy the zip over, then in the other checkout `./gradlew importAssets -Pzip=<file>`.
