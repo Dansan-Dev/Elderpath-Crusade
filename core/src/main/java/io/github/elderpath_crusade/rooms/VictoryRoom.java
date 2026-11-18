@@ -16,7 +16,8 @@ import io.github.elderpath_crusade.ui_objects.Text;
 import io.github.elderpath_crusade.utils.FontSize;
 
 /**
- * Simple victory/defeat screen. For every other mode: two actions, Play Again and Main Menu.
+ * Simple victory/defeat screen. For every other mode except an online match: two actions, Play Again and Main Menu
+ * (an online match offers only Main Menu).
  * The screen text reflects whether the local perspective (P1 human) won or lost, but we show
  * both winner and loser labels to satisfy the 2-way trigger requirement.
  *
@@ -76,6 +77,16 @@ public class VictoryRoom extends Room {
                 };
                 mainMenu = mainMenuButton(screenW, screenH, "Continue", next);
             }
+            addUI(mainMenu);
+            layout();
+            return;
+        }
+
+        // An online match has no "Play Again": a rematch would need the same two players and a new lobby
+        // round, and the old button sent the player into a local Draft instead (UI-017).
+        if (mode == GameMode.ONLINE_MATCH) {
+            playAgain = null;
+            mainMenu = mainMenuButton(screenW, screenH, "Main Menu", MainMenuRoom::get);
             addUI(mainMenu);
             layout();
             return;
