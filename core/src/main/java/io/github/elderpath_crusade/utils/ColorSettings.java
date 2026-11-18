@@ -11,6 +11,9 @@ public enum ColorSettings {
     TEXT_CLICK(Color.BLUE),
     /** Rejected-action feedback (FEAT-015/B3) — a distinct "something didn't work" color. */
     TEXT_WARNING(Color.valueOf("#e35d5d")),
+    /** Main-menu title lettering on the carved banner (UI-007): wheat/cream, with a dark outline. */
+    TITLE_TEXT(Color.valueOf("#f4e9c8")),
+    TITLE_OUTLINE(Color.valueOf("#20100a")),
 
     // UI Buttons (Main menu, settings)
     BUTTON_PRIMARY(Color.valueOf("#81cce3")),

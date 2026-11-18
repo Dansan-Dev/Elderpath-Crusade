@@ -8,6 +8,7 @@ import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
+import io.github.elderpath_crusade.ui_objects.TitleBanner;
 import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.SpriteBoxPos;
 import io.github.elderpath_crusade.game_objects.sprites.SpriteObject;
@@ -24,6 +25,7 @@ public class MainMenuRoom extends Room {
     private SpriteObject background;
     private MainMenuNavbar navbar;
     private Text title;
+    private TitleBanner titleBanner;
     private Button howToPlayButton;
     private Text versionText;
 
@@ -33,6 +35,12 @@ public class MainMenuRoom extends Room {
     private static final int HOW_TO_PLAY_BUTTON_HEIGHT = 50;
     private static final int HOW_TO_PLAY_BUTTON_MARGIN = 20;
     private static final int VERSION_MARGIN = 12;
+    /** UI-007: gap between the window's top edge and the title banner, at the 1280x720 scale (grows with the banner). */
+    private static final int BANNER_TOP_MARGIN = 24;
+    /** The title lettering may fill this share of the banner's width (the brass-and-laurel ends stay clear). */
+    private static final float TITLE_WIDTH_SHARE = 0.82f;
+    /** Outline width in screen pixels per banner scale step (2 = one art pixel at 1280x720). */
+    private static final int TITLE_OUTLINE_PER_SCALE = 1;
 
     private MainMenuRoom() {
         super();
@@ -63,8 +71,18 @@ public class MainMenuRoom extends Room {
         addUI(navbar);
 
         // Title remains as content
-        title = new Text(io.github.elderpath_crusade.utils.GameName.current(), FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
-            .withFontSize(FontSize.BODY_LARGE);
+        // The title comes from GameName (single source of truth). On the carved banner (UI-007) it is wheat
+        // lettering with a dark outline, sized to fit the plaque; without the banner art it stays plain white text.
+        titleBanner = new TitleBanner();
+        if (titleBanner.isAvailable()) {
+            addContent(titleBanner);
+            title = new Text(io.github.elderpath_crusade.utils.GameName.current(), FontType.SILKSCREEN, 0, 0, 0,
+                ColorSettings.TITLE_TEXT.getColor())
+                .withFontSize(FontSize.BODY_LARGE);
+        } else {
+            title = new Text(io.github.elderpath_crusade.utils.GameName.current(), FontType.SILKSCREEN, 0, 0, 0, Color.WHITE)
+                .withFontSize(FontSize.BODY_LARGE);
+        }
         addContent(title);
 
         // How to Play (D1, FEAT-015) — a corner button rather than a 5th navbar slot, since the
@@ -96,8 +114,7 @@ public class MainMenuRoom extends Room {
         // Background covers full screen
         background.setBounds(new Box(0, 0, screen_width, screen_height));
 
-        // Title position via shared helper
-        MenuLayout.centerHeader(title, 120);
+        layoutTitle(screen_center[0], screen_width, screen_height);
 
         // Top-right corner, clear of the title and the bottom-center navbar.
         howToPlayButton.getBounds().setX(screen_width - HOW_TO_PLAY_BUTTON_WIDTH - HOW_TO_PLAY_BUTTON_MARGIN);
@@ -114,6 +131,29 @@ public class MainMenuRoom extends Room {
         int navY = screen_center[1] - 210; // ScreenCenterX=360 | 360-150 = 210
         navbar.setBounds(new Box(navX, navY, navW, navH));
 
+    }
+
+    private void layoutTitle(int centerX, int screenWidth, int screenHeight) {
+        if (!titleBanner.isAvailable()) {
+            MenuLayout.centerHeader(title, 120);
+            return;
+        }
+        int scale = TitleBanner.scaleFor(screenWidth);
+        int bannerW = TitleBanner.NATIVE_WIDTH * scale;
+        int bannerH = TitleBanner.NATIVE_HEIGHT * scale;
+        int bannerX = centerX - bannerW / 2;
+        int bannerY = screenHeight - BANNER_TOP_MARGIN * scale / 2 - bannerH;
+        titleBanner.setRect(bannerX, bannerY, bannerW, bannerH);
+
+        // Size the lettering to the plaque: label width is linear in font size, so measure at a probe size and rescale.
+        float probe = 20f;
+        title.withFontSize(probe);
+        float width = title.getLabel().getWidth();
+        if (width > 0f) title.withFontSize(probe * (bannerW * TITLE_WIDTH_SHARE) / width);
+        title.withOutline(ColorSettings.TITLE_OUTLINE.getColor(), TITLE_OUTLINE_PER_SCALE * scale);
+        title.update();
+        title.getBounds().setX(centerX - (int) (title.getLabel().getWidth() / 2));
+        title.getBounds().setY(bannerY + (bannerH - (int) title.getLabel().getHeight()) / 2);
     }
 
     @Override

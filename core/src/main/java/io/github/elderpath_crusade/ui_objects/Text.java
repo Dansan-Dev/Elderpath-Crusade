@@ -31,6 +31,10 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
     private Color color;
     private Color hoverColor = null;
     private Color clickColor = null;
+    // Optional outline: the label is first drawn in outlineColor at every offset in outlineOffsets
+    // (a filled disc of the requested radius), then once normally on top. Computed once, never per frame.
+    private Color outlineColor = null;
+    private int[][] outlineOffsets = null;
 
     private OnClick onClick = null;
     private ClickableEffectData clickableEffectData = null;
@@ -68,6 +72,38 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
 
         setBounds(new Box(x, y, 0, 0));
         update();
+    }
+
+    /**
+     * Draw a solid border {@code widthPx} pixels wide around the lettering, in {@code color}. Works for any
+     * text and font size; costs {@code ~widthPx^2 * 3} extra label draws, so use it for headings, not body text.
+     * {@code widthPx <= 0} or a null color removes it.
+     */
+    public Text withOutline(Color color, int widthPx) {
+        if (color == null || widthPx <= 0) {
+            outlineColor = null;
+            outlineOffsets = null;
+            return this;
+        }
+        outlineColor = color;
+        java.util.List<int[]> offsets = new java.util.ArrayList<>();
+        for (int dx = -widthPx; dx <= widthPx; dx++) {
+            for (int dy = -widthPx; dy <= widthPx; dy++) {
+                if ((dx != 0 || dy != 0) && dx * dx + dy * dy <= widthPx * widthPx + 1) offsets.add(new int[]{dx, dy});
+            }
+        }
+        outlineOffsets = offsets.toArray(new int[0][]);
+        return this;
+    }
+
+    private void drawOutline(SpriteBatch batch, float x, float y) {
+        if (outlineOffsets == null) return;
+        label.setColor(outlineColor);
+        for (int[] o : outlineOffsets) {
+            label.setPosition(x + o[0], y + o[1]);
+            label.draw(batch, 1);
+        }
+        label.setPosition(x, y);
     }
 
     public Text withHoverColor(Color hoverColor) {
@@ -333,6 +369,8 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         // Keep label in sync with bounds without reallocating style/label on every frame
         if (label != null) {
             label.setPosition(getBounds().getX(), getBounds().getY());
+            drawOutline(batch, getBounds().getX(), getBounds().getY());
+            label.setColor(color);
         }
         if (isHovered(0, 0)) {
             if (hoverColor != null) label.setColor(hoverColor);
@@ -347,6 +385,8 @@ public class Text extends LowestOrderTexture implements Renderable, UIRenderable
         if (zLevel != z) return;
         if (isPaused) return;
         label.setPosition(x, y);
+        drawOutline(batch, x, y);
+        label.setColor(color);
         if (isHovered(x, y)) {
             if (hoverColor != null) label.setColor(hoverColor);
             if (isClicked() && clickColor != null) label.setColor(clickColor);

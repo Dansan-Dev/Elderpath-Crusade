@@ -6,6 +6,8 @@ import lombok.Getter;
 public enum ImagePathBackgroundAndUI {
     HOME_NAVBAR("home_navbar.png"),
     HOME_BACKGROUND("home_screen_background.png"),
+    /** UI-007: carved-oak title plaque with an empty centre, 576x144 (every art pixel 2x2); the title text is drawn on it in code. */
+    TITLE_BANNER("title_banner.png"),
     /**
      * ART-005: light-grey stone plates behind every color button, drawn as a nine-patch tinted by
      * the button's color. Five near-identical variants (different cracks/chips); each button keeps
