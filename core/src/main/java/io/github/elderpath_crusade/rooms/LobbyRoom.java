@@ -5,6 +5,7 @@ import io.github.elderpath_crusade.client.ClientMatchSession;
 import io.github.elderpath_crusade.lobby.LobbyClient;
 import io.github.elderpath_crusade.lobby.LobbyConnection;
 import io.github.elderpath_crusade.lobby.RejoinTicket;
+import io.github.elderpath_crusade.lobby.LobbyServerMessage.LobbyError;
 import io.github.elderpath_crusade.lobby.LobbyServerMessage.LobbyView;
 import io.github.elderpath_crusade.net.protocol.SeatRequest;
 import io.github.elderpath_crusade.supers.Room;
@@ -28,6 +29,7 @@ public class LobbyRoom extends Room {
     private final Mode mode;
     private final String lobbyIdOrName;
     private final String password;
+    private final String lobbyName; // the lobby's name when joining (for a password retry), else null
     private final List<String> deck;
 
     private final Text header;
@@ -39,12 +41,13 @@ public class LobbyRoom extends Room {
     private boolean requested;
     private boolean transitioning;
 
-    private LobbyRoom(Mode mode, String lobbyIdOrName, String password, List<String> deck) {
+    private LobbyRoom(Mode mode, String lobbyIdOrName, String password, List<String> deck, String lobbyName) {
         super();
         GameContext.get().getInputManager().stopTextEditing();
         this.mode = mode;
         this.lobbyIdOrName = lobbyIdOrName;
         this.password = password;
+        this.lobbyName = lobbyName;
         this.deck = List.copyOf(deck);
 
         header = OnlineUi.line(mode == Mode.HOST ? lobbyIdOrName : "Lobby", FontSize.TITLE_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
@@ -66,11 +69,16 @@ public class LobbyRoom extends Room {
     }
 
     public static Room hosting(String lobbyName, String password, List<String> deck) {
-        return new LobbyRoom(Mode.HOST, lobbyName, password, deck);
+        return new LobbyRoom(Mode.HOST, lobbyName, password, deck, null);
     }
 
     public static Room joining(String lobbyId, String password, List<String> deck) {
-        return new LobbyRoom(Mode.JOIN, lobbyId, password, deck);
+        return joining(lobbyId, password, deck, null);
+    }
+
+    /** {@code lobbyName} is only used to ask for the password again after a refusal (ONLINE-002). */
+    public static Room joining(String lobbyId, String password, List<String> deck, String lobbyName) {
+        return new LobbyRoom(Mode.JOIN, lobbyId, password, deck, lobbyName);
     }
 
     private void tick() {
@@ -96,6 +104,15 @@ public class LobbyRoom extends Room {
             return;
         }
         LobbyView lobby = client.getLobby();
+        if (lobby == null && mode == Mode.JOIN && client.getLastError() != null
+                && client.getLastError().code() == LobbyError.Code.WRONG_PASSWORD) {
+            // The server refused the password: back to the password screen, deck kept, to try again.
+            transitioning = true;
+            String name = lobbyName != null ? lobbyName : "this lobby";
+            String message = client.getLastError().message();
+            GameContext.get().getRoomManager().gotoRoom(() -> LobbyPasswordRoom.retry(lobbyIdOrName, name, deck, message));
+            return;
+        }
         if (lobby == null) {
             String message = client.getClosedReason() != null ? "The lobby closed: " + client.getClosedReason()
                     : client.getLastError() != null ? client.getLastError().message() : "Entering the lobby...";
