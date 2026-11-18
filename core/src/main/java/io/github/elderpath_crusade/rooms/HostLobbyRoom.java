@@ -4,6 +4,7 @@ import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.input.TextEntry;
 import io.github.elderpath_crusade.lobby.LobbyConnection;
+import io.github.elderpath_crusade.lobby.LobbyDeckSource;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
 import io.github.elderpath_crusade.ui_objects.Text;
@@ -13,9 +14,9 @@ import io.github.elderpath_crusade.utils.FontSize;
 import io.github.elderpath_crusade.utils.MenuLayout;
 
 /**
- * Host a lobby: a name, an optional password, then the host's deck (Draft or Collection, the same
- * chooser as every other mode) — only then is the lobby created on the server, so it never
- * exists without a deck behind it. The connection started by OnlineMenuRoom shows its progress here.
+ * Host a lobby: a name, an optional password and the lobby's deck rule — Draft or Collection (ONLINE-001), which every
+ * player of the lobby follows. "Create Lobby" then builds the host's own deck by that rule, and only then is the lobby
+ * created on the server, so it never exists without a deck behind it. The connection started by OnlineMenuRoom shows its progress here.
  */
 public class HostLobbyRoom extends Room {
     private static final int MAX_LOBBY_NAME = 32;
@@ -29,6 +30,8 @@ public class HostLobbyRoom extends Room {
     private final TextField nameField;
     private final TextField passwordField;
     private final Button createButton;
+    private final Button deckSourceButton;
+    private LobbyDeckSource deckSource = LobbyDeckSource.DRAFT;
     private final Button backButton;
 
     private HostLobbyRoom() {
@@ -44,7 +47,8 @@ public class HostLobbyRoom extends Room {
                 0, 0, OnlineUi.FIELD_WIDTH, OnlineUi.FIELD_HEIGHT, 0);
         passwordField = TextField.create(new TextEntry(MAX_PASSWORD, true), "No password", null,
                 0, 0, OnlineUi.FIELD_WIDTH, OnlineUi.FIELD_HEIGHT, 0);
-        createButton = OnlineUi.button("Choose Deck & Create", 360, this::createClicked);
+        deckSourceButton = OnlineUi.button(deckSourceLabel(), 360, this::toggleDeckSource);
+        createButton = OnlineUi.button("Create Lobby", 360, this::createClicked);
         backButton = OnlineUi.button("Back", 120, () -> GameContext.get().getRoomManager().gotoRoom(OnlineMenuRoom::get));
 
         addContent(header);
@@ -54,6 +58,7 @@ public class HostLobbyRoom extends Room {
         addContent(status);
         addContent(nameField);
         addContent(passwordField);
+        addContent(deckSourceButton);
         addContent(createButton);
         addContent(backButton);
         addContent(new Ticker(delta -> tick()));
@@ -72,6 +77,15 @@ public class HostLobbyRoom extends Room {
         OnlineUi.showUnderHeader(connectionStatus, text, header);
     }
 
+    private String deckSourceLabel() {
+        return "Players' decks: " + (deckSource == LobbyDeckSource.DRAFT ? "Draft" : "Collection");
+    }
+
+    private void toggleDeckSource() {
+        deckSource = deckSource == LobbyDeckSource.DRAFT ? LobbyDeckSource.COLLECTION : LobbyDeckSource.DRAFT;
+        deckSourceButton.setLabel(deckSourceLabel());
+    }
+
     private void createClicked() {
         LobbyConnection connection = GameContext.get().getLobbyConnection();
         if (connection.getPhase() != LobbyConnection.Phase.READY) {
@@ -84,8 +98,10 @@ public class HostLobbyRoom extends Room {
             return;
         }
         String password = passwordField.getEntry().getText();
-        GameContext.get().getRoomManager().gotoRoom(() -> DeckSourceSelectRoom.get(PieceAlignment.P1, false,
-                deck -> GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.hosting(lobbyName, password, deck))));
+        LobbyDeckSource rule = deckSource;
+        GameContext.get().getRoomManager().gotoRoom(() -> DeckSourceSelectRoom.forSource(rule,
+                deck -> GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.hosting(lobbyName, password, deck, rule)),
+                HostLobbyRoom::get));
     }
 
     private void layoutContents() {
@@ -96,8 +112,9 @@ public class HostLobbyRoom extends Room {
         OnlineUi.place(nameField, cy + 130);
         OnlineUi.show(passwordLabel, "Password (optional)", cy + 90);
         OnlineUi.place(passwordField, cy + 30);
-        OnlineUi.place(createButton, cy - 60);
-        OnlineUi.show(status, status.getText(), cy - 160);
+        OnlineUi.place(deckSourceButton, cy - 50);
+        OnlineUi.place(createButton, cy - 130);
+        OnlineUi.show(status, status.getText(), cy - 190);
         OnlineUi.place(backButton, cy - 330);
     }
 

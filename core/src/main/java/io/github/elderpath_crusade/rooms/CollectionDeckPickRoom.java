@@ -48,7 +48,8 @@ public class CollectionDeckPickRoom extends Room {
     private final Button downButton;
     private int scrollOffset = 0;
 
-    private CollectionDeckPickRoom(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onDeckChosen) {
+    private CollectionDeckPickRoom(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onDeckChosen,
+                                   java.util.function.Supplier<Room> backTarget) {
         super();
 
         String title = isLocalMultiplayer
@@ -94,8 +95,8 @@ public class CollectionDeckPickRoom extends Room {
         backButton = Button
                 .fromColor(ColorSettings.BUTTON_PRIMARY.getColor(), "Back", FontType.SILKSCREEN,
                         FontSize.BUTTON_DEFAULT.getSize(), 0, 0, 100, 50, 0)
-                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(
-                                () -> DeckSourceSelectRoom.get(player, isLocalMultiplayer, onDeckChosen)),
+                .withOnClick((e) -> GameContext.get().getRoomManager().gotoRoom(backTarget != null ? backTarget
+                                : () -> DeckSourceSelectRoom.get(player, isLocalMultiplayer, onDeckChosen)),
                         ClickableEffectData.getImmediate())
                 .withHoverColor(ColorSettings.BUTTON_HOVER.getColor())
                 .withBorderColor(ColorSettings.BUTTON_BORDER.getColor())
@@ -221,6 +222,12 @@ public class CollectionDeckPickRoom extends Room {
     }
 
     public static Room get(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onDeckChosen) {
-        return new CollectionDeckPickRoom(player, isLocalMultiplayer, onDeckChosen);
+        return new CollectionDeckPickRoom(player, isLocalMultiplayer, onDeckChosen, null);
+    }
+
+    /** Like {@link #get}, but Back goes to {@code backTarget} instead of the deck-source choice (a lobby with a fixed deck rule, ONLINE-001). */
+    public static Room get(PieceAlignment player, boolean isLocalMultiplayer, Consumer<List<String>> onDeckChosen,
+                           java.util.function.Supplier<Room> backTarget) {
+        return new CollectionDeckPickRoom(player, isLocalMultiplayer, onDeckChosen, backTarget);
     }
 }

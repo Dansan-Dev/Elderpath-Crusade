@@ -118,8 +118,13 @@ public final class LobbyClient implements AutoCloseable {
 
     /** password null or empty = an open lobby. deck is the card names of the deck to play. */
     public void createLobby(String name, String password, List<String> deck) {
+        createLobby(name, password, deck, LobbyDeckSource.DRAFT);
+    }
+
+    /** {@code deckSource} is the lobby's rule for how every player builds their deck (ONLINE-001). */
+    public void createLobby(String name, String password, List<String> deck, LobbyDeckSource deckSource) {
         lastError = null;
-        send(new LobbyClientMessage.CreateLobby(name, password, deck));
+        send(new LobbyClientMessage.CreateLobby(name, password, deck, deckSource));
     }
 
     public void joinLobby(String lobbyId, String password, List<String> deck) {

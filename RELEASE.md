@@ -109,7 +109,7 @@ Unzip it somewhere with no Java installed, then:
 - Linux: tested on the distributions you care about (Steam Deck is Arch-based).
 
 ## 4. The lobby server (do this before publishing the client)
-The client's **Play Online** talks to `elderpath-server.fly.dev` over TLS. The lobby protocol (2) and match
+The client's **Play Online** talks to `elderpath-server.fly.dev` over TLS. The lobby protocol (3) and match
 protocol (4) are incompatible with older clients, so the server and the first public client ship together.
 ```sh
 fly deploy --config deploy/fly/fly.lobby.toml          # from the repo root; REPLACES the running bot-match server

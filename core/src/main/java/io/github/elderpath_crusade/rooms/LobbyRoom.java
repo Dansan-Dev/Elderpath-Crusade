@@ -31,6 +31,7 @@ public class LobbyRoom extends Room {
     private final String password;
     private final String lobbyName; // the lobby's name when joining (for a password retry), else null
     private final List<String> deck;
+    private final io.github.elderpath_crusade.lobby.LobbyDeckSource deckSource;
 
     private final Text header;
     private final Text hostLine;
@@ -41,13 +42,15 @@ public class LobbyRoom extends Room {
     private boolean requested;
     private boolean transitioning;
 
-    private LobbyRoom(Mode mode, String lobbyIdOrName, String password, List<String> deck, String lobbyName) {
+    private LobbyRoom(Mode mode, String lobbyIdOrName, String password, List<String> deck, String lobbyName,
+                      io.github.elderpath_crusade.lobby.LobbyDeckSource deckSource) {
         super();
         GameContext.get().getInputManager().stopTextEditing();
         this.mode = mode;
         this.lobbyIdOrName = lobbyIdOrName;
         this.password = password;
         this.lobbyName = lobbyName;
+        this.deckSource = deckSource;
         this.deck = List.copyOf(deck);
 
         header = OnlineUi.line(mode == Mode.HOST ? lobbyIdOrName : "Lobby", FontSize.TITLE_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
@@ -69,7 +72,13 @@ public class LobbyRoom extends Room {
     }
 
     public static Room hosting(String lobbyName, String password, List<String> deck) {
-        return new LobbyRoom(Mode.HOST, lobbyName, password, deck, null);
+        return hosting(lobbyName, password, deck, io.github.elderpath_crusade.lobby.LobbyDeckSource.DRAFT);
+    }
+
+    /** {@code deckSource} is the lobby's rule (ONLINE-001): every player of the lobby builds their deck that way. */
+    public static Room hosting(String lobbyName, String password, List<String> deck,
+                               io.github.elderpath_crusade.lobby.LobbyDeckSource deckSource) {
+        return new LobbyRoom(Mode.HOST, lobbyName, password, deck, null, deckSource);
     }
 
     public static Room joining(String lobbyId, String password, List<String> deck) {
@@ -78,7 +87,7 @@ public class LobbyRoom extends Room {
 
     /** {@code lobbyName} is only used to ask for the password again after a refusal (ONLINE-002). */
     public static Room joining(String lobbyId, String password, List<String> deck, String lobbyName) {
-        return new LobbyRoom(Mode.JOIN, lobbyId, password, deck, lobbyName);
+        return new LobbyRoom(Mode.JOIN, lobbyId, password, deck, lobbyName, null);
     }
 
     private void tick() {
@@ -95,7 +104,7 @@ public class LobbyRoom extends Room {
         if (!client.isWelcomed()) return;
         if (!requested) {
             requested = true;
-            if (mode == Mode.HOST) client.createLobby(lobbyIdOrName, password, deck);
+            if (mode == Mode.HOST) client.createLobby(lobbyIdOrName, password, deck, deckSource);
             else client.joinLobby(lobbyIdOrName, password, deck);
         }
 

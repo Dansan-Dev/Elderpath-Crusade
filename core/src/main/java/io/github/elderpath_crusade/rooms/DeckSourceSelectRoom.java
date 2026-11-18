@@ -107,6 +107,17 @@ public class DeckSourceSelectRoom extends Room {
         return new DeckSourceSelectRoom(player, isLocalMultiplayer, onDeckChosen);
     }
 
+    /**
+     * The room that builds one deck by a lobby's fixed rule (ONLINE-001) — no choice offered, because the lobby already
+     * decided. {@code backTarget} is where a collection pick's Back button leads (the screen the player came from).
+     */
+    public static Room forSource(io.github.elderpath_crusade.lobby.LobbyDeckSource source, Consumer<List<String>> onDeckChosen,
+                                 java.util.function.Supplier<Room> backTarget) {
+        return source == io.github.elderpath_crusade.lobby.LobbyDeckSource.COLLECTION
+                ? CollectionDeckPickRoom.get(PieceAlignment.P1, false, onDeckChosen, backTarget)
+                : DraftRoom.forPlayer(PieceAlignment.P1, false, onDeckChosen);
+    }
+
     /** Local Multiplayer's whole flow: P1 picks a deck source, then P2, then into LocalMatchRoom. */
     public static Room startLocalMultiplayer() {
         return get(PieceAlignment.P1, true, deck -> onLocalMultiplayerDeckChosen(PieceAlignment.P1, deck));

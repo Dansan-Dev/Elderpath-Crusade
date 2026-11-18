@@ -1,7 +1,7 @@
 package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
-import io.github.elderpath_crusade.enums.PieceAlignment;
+import io.github.elderpath_crusade.lobby.LobbyDeckSource;
 import io.github.elderpath_crusade.input.TextEntry;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -25,6 +25,7 @@ public class LobbyPasswordRoom extends Room {
     private final String lobbyId;
     private final String lobbyName;
     private final List<String> deck; // null until the player has chosen one
+    private final LobbyDeckSource deckSource; // the lobby's deck rule (ONLINE-001)
 
     private final Text header;
     private final Text prompt;
@@ -33,12 +34,13 @@ public class LobbyPasswordRoom extends Room {
     private final Button joinButton;
     private final Button backButton;
 
-    private LobbyPasswordRoom(String lobbyId, String lobbyName, List<String> deck, String message) {
+    private LobbyPasswordRoom(String lobbyId, String lobbyName, LobbyDeckSource deckSource, List<String> deck, String message) {
         super();
         GameContext.get().getInputManager().stopTextEditing();
         this.lobbyId = lobbyId;
         this.lobbyName = lobbyName;
         this.deck = deck;
+        this.deckSource = deckSource == null ? LobbyDeckSource.DRAFT : deckSource;
 
         header = OnlineUi.line("Join Lobby", FontSize.TITLE_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
         prompt = OnlineUi.line("\"" + lobbyName + "\" is password protected", FontSize.BODY_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
@@ -67,8 +69,9 @@ public class LobbyPasswordRoom extends Room {
             GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.joining(lobbyId, password, deck, lobbyName));
             return;
         }
-        GameContext.get().getRoomManager().gotoRoom(() -> DeckSourceSelectRoom.get(PieceAlignment.P1, false,
-                chosen -> GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.joining(lobbyId, password, chosen, lobbyName))));
+        GameContext.get().getRoomManager().gotoRoom(() -> DeckSourceSelectRoom.forSource(deckSource,
+                chosen -> GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.joining(lobbyId, password, chosen, lobbyName)),
+                BrowseLobbiesRoom::get));
     }
 
     private void layoutContents() {
@@ -87,12 +90,12 @@ public class LobbyPasswordRoom extends Room {
     }
 
     /** The first ask: no deck chosen yet. */
-    public static Room get(String lobbyId, String lobbyName) {
-        return new LobbyPasswordRoom(lobbyId, lobbyName, null, null);
+    public static Room get(String lobbyId, String lobbyName, LobbyDeckSource deckSource) {
+        return new LobbyPasswordRoom(lobbyId, lobbyName, deckSource, null, null);
     }
 
     /** After a refusal: the deck is already chosen; {@code message} says why we are back. */
     public static Room retry(String lobbyId, String lobbyName, List<String> deck, String message) {
-        return new LobbyPasswordRoom(lobbyId, lobbyName, deck, message);
+        return new LobbyPasswordRoom(lobbyId, lobbyName, null, deck, message);
     }
 }

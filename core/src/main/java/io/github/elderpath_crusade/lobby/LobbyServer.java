@@ -103,6 +103,7 @@ public final class LobbyServer {
         final String id = newId();
         final String name;
         final Conn host;
+        final LobbyDeckSource deckSource;
         Conn guest;
         final List<String> hostDeck;
         List<String> guestDeck;
@@ -117,9 +118,10 @@ public final class LobbyServer {
         /** The match server said the match is over: nothing to hold or rejoin any more. */
         boolean matchEnded;
 
-        Lobby(String name, Conn host, List<String> hostDeck, byte[] salt, byte[] passwordHash, long now) {
+        Lobby(String name, Conn host, LobbyDeckSource deckSource, List<String> hostDeck, byte[] salt, byte[] passwordHash, long now) {
             this.name = name;
             this.host = host;
+            this.deckSource = deckSource;
             this.hostDeck = hostDeck;
             this.salt = salt;
             this.passwordHash = passwordHash;
@@ -357,10 +359,10 @@ public final class LobbyServer {
             boolean hasPassword = create.password() != null && !create.password().isEmpty();
             byte[] salt = hasPassword ? randomBytes(16) : null;
             byte[] hash = hasPassword ? hashPassword(create.password(), salt) : null;
-            Lobby lobby = new Lobby(create.name().strip(), conn, List.copyOf(create.deck()), salt, hash, now);
+            Lobby lobby = new Lobby(create.name().strip(), conn, create.deckSource(), List.copyOf(create.deck()), salt, hash, now);
             lobbies.put(lobby.id, lobby);
             conn.lobby = lobby;
-            event(who(conn) + " created " + lobbyTag(lobby) + (hasPassword ? " (password)" : ""));
+            event(who(conn) + " created " + lobbyTag(lobby) + (hasPassword ? " (password)" : "") + " decks: " + lobby.deckSource);
             send(conn, new LobbyServerMessage.LobbyJoined(view(lobby), true));
         }
     }
@@ -770,7 +772,7 @@ public final class LobbyServer {
     private static LobbyServerMessage.LobbyView view(Lobby lobby) {
         List<String> names = new ArrayList<>();
         for (Conn member : lobby.members()) names.add(member.playerName);
-        return new LobbyServerMessage.LobbyView(lobby.id, lobby.name, names, lobby.passwordProtected());
+        return new LobbyServerMessage.LobbyView(lobby.id, lobby.name, names, lobby.passwordProtected(), lobby.deckSource);
     }
 
     /** The key per-address limits use: the peer address, or — for links with none — the connection itself. */

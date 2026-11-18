@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public final class LobbyCodec {
     /** Bumped on any incompatible change to lobby messages. */
-    public static final int LOBBY_PROTOCOL_VERSION = 2;
+    public static final int LOBBY_PROTOCOL_VERSION = 3;
 
     private static final int MAX_QUOTED_CHARS = 120;
 

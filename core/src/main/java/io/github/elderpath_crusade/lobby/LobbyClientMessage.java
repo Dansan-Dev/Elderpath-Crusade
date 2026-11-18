@@ -15,8 +15,19 @@ public sealed interface LobbyClientMessage {
     /** Asks for the open lobbies; answered by LobbyList. */
     record ListLobbies() implements LobbyClientMessage {}
 
-    /** Creates a lobby with this player as host. password null or empty = no password. */
-    record CreateLobby(String name, String password, List<String> deck) implements LobbyClientMessage {}
+    /**
+     * Creates a lobby with this player as host. password null or empty = no password. deckSource is the lobby's deck
+     * rule (ONLINE-001, lobby protocol 3); null means DRAFT.
+     */
+    record CreateLobby(String name, String password, List<String> deck, LobbyDeckSource deckSource) implements LobbyClientMessage {
+        public CreateLobby {
+            if (deckSource == null) deckSource = LobbyDeckSource.DRAFT;
+        }
+
+        public CreateLobby(String name, String password, List<String> deck) {
+            this(name, password, deck, LobbyDeckSource.DRAFT);
+        }
+    }
 
     /** Joins an open lobby. password is required exactly when the lobby is password protected. */
     record JoinLobby(String lobbyId, String password, List<String> deck) implements LobbyClientMessage {}

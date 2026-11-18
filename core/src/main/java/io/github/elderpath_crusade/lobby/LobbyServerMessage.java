@@ -7,8 +7,19 @@ public sealed interface LobbyServerMessage {
 
     record LobbyWelcome(int protocolVersion) implements LobbyServerMessage {}
 
-    /** An open lobby as a browsing player sees it. members are player names in seat order (host first). */
-    record LobbyView(String id, String name, List<String> members, boolean passwordProtected) {}
+    /**
+     * An open lobby as a browsing player sees it. members are player names in seat order (host first); deckSource is the
+     * lobby's deck rule (ONLINE-001) — every player of the lobby builds their deck that way.
+     */
+    record LobbyView(String id, String name, List<String> members, boolean passwordProtected, LobbyDeckSource deckSource) {
+        public LobbyView {
+            if (deckSource == null) deckSource = LobbyDeckSource.DRAFT;
+        }
+
+        public LobbyView(String id, String name, List<String> members, boolean passwordProtected) {
+            this(id, name, members, passwordProtected, LobbyDeckSource.DRAFT);
+        }
+    }
 
     record LobbyList(List<LobbyView> lobbies) implements LobbyServerMessage {}
 

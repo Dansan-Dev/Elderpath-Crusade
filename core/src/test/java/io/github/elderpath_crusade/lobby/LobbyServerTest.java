@@ -157,6 +157,24 @@ class LobbyServerTest {
         return host.lastOf(LobbyJoined.class).lobby().id();
     }
 
+    @Test
+    void aLobbyKeepsItsDeckRule_andListsIt() {
+        Client host = hello("host");
+        host.send(new CreateLobby("Cards", null, DECK, LobbyDeckSource.COLLECTION));
+        host.poll();
+        assertEquals(LobbyDeckSource.COLLECTION, host.lastOf(LobbyJoined.class).lobby().deckSource());
+        String draftId = create(hello("host2"), "Draft", null);
+
+        Client browser = hello("browser");
+        browser.send(new ListLobbies());
+        browser.poll();
+        LobbyList list = browser.lastOf(LobbyList.class);
+        assertEquals(2, list.lobbies().size());
+        for (LobbyView view : list.lobbies()) {
+            assertEquals(view.id().equals(draftId) ? LobbyDeckSource.DRAFT : LobbyDeckSource.COLLECTION, view.deckSource(), view.name());
+        }
+    }
+
     private Client joinedGuest(String lobbyId, String password) {
         Client guest = hello("guest");
         guest.send(new JoinLobby(lobbyId, password, DECK));

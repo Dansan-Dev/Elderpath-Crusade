@@ -399,7 +399,7 @@ child match server on the same machine (see `.claude/plans/lobby-plan.md` and `e
   client connects with TLS and verifies the host name (`LobbyClient.connect`).
 - **Not wired to anything**: `deploy/fly/fly.lobby.toml` is a separate file and is applied only by running
   `fly deploy --config deploy/fly/fly.lobby.toml`, which replaces the running app. Deploy it together with
-  the matching game build (match protocol 4, lobby protocol 2). **Its `app = "elderpath-server"` is the live
+  the matching game build (match protocol 4, lobby protocol 3). **Its `app = "elderpath-server"` is the live
   app: always pass `--app <throwaway name>` to try it** (see below). Verified 2026-11-18 on a throwaway app
   (one `shared-cpu-1x`/1 GB machine, TLS on 443 + PROXY v1, a whole match through it, ~170 MB idle and ~280 MB
   during a match); not yet deployed to the real app.

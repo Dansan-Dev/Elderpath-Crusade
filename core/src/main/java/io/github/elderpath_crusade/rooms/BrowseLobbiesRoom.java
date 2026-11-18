@@ -2,9 +2,9 @@ package io.github.elderpath_crusade.rooms;
 
 import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.ClickableEffectData;
-import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.lobby.LobbyClient;
 import io.github.elderpath_crusade.lobby.LobbyConnection;
+import io.github.elderpath_crusade.lobby.LobbyDeckSource;
 import io.github.elderpath_crusade.lobby.LobbyServerMessage.LobbyView;
 import io.github.elderpath_crusade.supers.Room;
 import io.github.elderpath_crusade.ui_objects.Button;
@@ -33,6 +33,7 @@ public class BrowseLobbiesRoom extends Room {
     private final Text[] rows = new Text[ROWS];
     private final String[] rowLobbyIds = new String[ROWS];
     private final String[] rowLobbyNames = new String[ROWS];
+    private final LobbyDeckSource[] rowDeckSources = new LobbyDeckSource[ROWS];
     private final boolean[] rowNeedsPassword = new boolean[ROWS];
     private final Button refreshButton;
     private final Button backButton;
@@ -98,9 +99,11 @@ public class BrowseLobbiesRoom extends Room {
                 LobbyView lobby = joinable.get(i);
                 rowLobbyIds[i] = lobby.id();
                 rowLobbyNames[i] = lobby.name();
+                rowDeckSources[i] = lobby.deckSource();
                 rowNeedsPassword[i] = lobby.passwordProtected();
                 String host = lobby.members().isEmpty() ? "?" : lobby.members().get(0);
-                OnlineUi.show(rows[i], lobby.name() + "  -  host " + host + (lobby.passwordProtected() ? "  [password]" : ""),
+                OnlineUi.show(rows[i], lobby.name() + "  -  host " + host + "  [" + lobby.deckSource().label() + " decks]"
+                                + (lobby.passwordProtected() ? "  [password]" : ""),
                         OnlineUi.centerY() + 150 - i * ROW_SPACING);
             } else {
                 rowLobbyIds[i] = null;
@@ -114,12 +117,15 @@ public class BrowseLobbiesRoom extends Room {
         String id = rowLobbyIds[index];
         if (id == null) return;
         String name = rowLobbyNames[index];
+        LobbyDeckSource rule = rowDeckSources[index];
         if (rowNeedsPassword[index]) {
-            GameContext.get().getRoomManager().gotoRoom(() -> LobbyPasswordRoom.get(id, name));
+            GameContext.get().getRoomManager().gotoRoom(() -> LobbyPasswordRoom.get(id, name, rule));
             return;
         }
-        GameContext.get().getRoomManager().gotoRoom(() -> DeckSourceSelectRoom.get(PieceAlignment.P1, false,
-                deck -> GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.joining(id, "", deck, name))));
+        // The lobby's deck rule decides how this player builds a deck — no choice offered (ONLINE-001).
+        GameContext.get().getRoomManager().gotoRoom(() -> DeckSourceSelectRoom.forSource(rule,
+                deck -> GameContext.get().getRoomManager().gotoRoom(() -> LobbyRoom.joining(id, "", deck, name)),
+                BrowseLobbiesRoom::get));
     }
 
     private void layoutContents() {

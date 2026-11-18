@@ -201,6 +201,15 @@ public class Button extends LowestOrderTexture implements Renderable, Clickable,
         return this;
     }
 
+    /** Changes the label after construction (and re-centers it). */
+    public void setLabel(String label) {
+        setText(label);
+        if (textObj != null) {
+            textObj.setText(label);
+            updateText();
+        }
+    }
+
     private void updateText() {
         // Update to ensure label, size and style are current
         textObj.update();

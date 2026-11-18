@@ -40,6 +40,7 @@ public class PassTurnButton extends Button {
     }
 
     /** Sets the label directly — LocalMatchRoom's hotseat handoff calls this with "Start Turn". */
+    @Override
     public void setLabel(String text) {
         setText(text);
         if (textObj != null) {
