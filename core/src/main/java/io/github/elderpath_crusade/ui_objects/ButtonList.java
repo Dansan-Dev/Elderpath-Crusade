@@ -1,5 +1,6 @@
 package io.github.elderpath_crusade.ui_objects;
 
+import io.github.elderpath_crusade.GameContext;
 import io.github.elderpath_crusade.data_objects.Box;
 import io.github.elderpath_crusade.supers.HigherOrderTexture;
 
@@ -57,5 +58,54 @@ public class ButtonList extends HigherOrderTexture {
             bounds.setX(x);
             bounds.setY(y);
         });
+    }
+
+    /** Clear space kept above a picker list for the room's header and flavour line (they sit 100 and 150 px below the top). */
+    private static final int FITTING_TOP_CLEARANCE = 185;
+    private static final int FITTING_BOTTOM_CLEARANCE = 40;
+    private static final int FITTING_COLUMN_GAP = 20;
+
+    /**
+     * Like {@link #alignButtonsAcrossYAxis} for a list of any length (UI-010): while the buttons fit in one column
+     * below the room's header they are laid out exactly as before; a longer list (a whole deck) is split into as
+     * many columns as it needs, filled top to bottom, so nothing runs off the screen or over the title.
+     */
+    public void alignButtonsFitting(int spacing, int centerX, int centerY) {
+        int size = getRenderables().size();
+        if (size == 0) return;
+        Box first = ((Button) getRenderables().get(0)).getBounds();
+        int screenHeight = GameContext.get().getSettingsManager().screenSize.getScreenHeight();
+        int[][] slots = fittingSlots(size, spacing, first.getWidth(), first.getHeight(), FITTING_COLUMN_GAP, centerX, centerY,
+                screenHeight - FITTING_TOP_CLEARANCE, FITTING_BOTTOM_CLEARANCE);
+        for (int i = 0; i < size; i++) {
+            Box bounds = ((Button) getRenderables().get(i)).getBounds();
+            bounds.setX(slots[i][0]);
+            bounds.setY(slots[i][1]);
+        }
+    }
+
+    /** Bottom-left corner of every button of {@link #alignButtonsFitting}: pure arithmetic, so it is unit-tested. */
+    static int[][] fittingSlots(int count, int spacing, int buttonWidth, int buttonHeight, int columnGap,
+                                int centerX, int centerY, int topY, int bottomY) {
+        int[][] slots = new int[count][2];
+        int rowsThatFit = Math.max(1, (topY - bottomY - buttonHeight) / spacing + 1);
+        if (count <= rowsThatFit) {
+            int startY = Math.min(centerY + (count - 1) * (spacing / 2), topY - buttonHeight / 2);
+            for (int i = 0; i < count; i++) {
+                slots[i][0] = centerX - buttonWidth / 2;
+                slots[i][1] = startY - i * spacing - buttonHeight / 2;
+            }
+            return slots;
+        }
+        int columns = (count + rowsThatFit - 1) / rowsThatFit;
+        int rows = (count + columns - 1) / columns; // balance the columns instead of leaving a stub
+        int columnPitch = buttonWidth + columnGap;
+        int startX = centerX - (columns - 1) * columnPitch / 2;
+        int startY = topY - buttonHeight / 2;
+        for (int i = 0; i < count; i++) {
+            slots[i][0] = startX + (i / rows) * columnPitch - buttonWidth / 2;
+            slots[i][1] = startY - (i % rows) * spacing - buttonHeight / 2;
+        }
+        return slots;
     }
 }

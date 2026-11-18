@@ -153,7 +153,7 @@ public class UpgradeOfferRoom extends Room {
         int screenCenterY = screenCenter[1];
 
         MenuLayout.centerHeader(header, 100);
-        buttonList.alignButtonsAcrossYAxis(BUTTON_SPACING, screenCenterX, screenCenterY);
+        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenterX, screenCenterY);
 
         skipButton.getBounds().setX(screenCenterX - skipButton.getBounds().getWidth() / 2);
         skipButton.getBounds().setY(screenCenterY - (buttonList.getRenderables().size() * BUTTON_SPACING) / 2 - 60);

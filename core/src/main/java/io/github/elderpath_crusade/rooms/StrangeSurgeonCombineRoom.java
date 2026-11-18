@@ -69,7 +69,7 @@ public class StrangeSurgeonCombineRoom extends Room {
         int[] screenCenter = GameContext.get().getSettingsManager().screenSize.getScreenCenter();
         MenuLayout.centerHeader(header, 100);
         MenuLayout.centerHeader(flavor, 150);
-        buttonList.alignButtonsAcrossYAxis(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
+        buttonList.alignButtonsFitting(BUTTON_SPACING, screenCenter[0], screenCenter[1]);
     }
 
     @Override
