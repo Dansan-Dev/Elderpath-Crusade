@@ -47,15 +47,15 @@ public class SettingsRoom extends Room {
     // the first version had this backwards (SECTION_GAP < ROW_SPACING), so "Sfx Volume" and
     // "Display" visually ran together despite being different groups.
     private static final int SECTION_GAP = 75;
-    // The Back button (60 tall) is taller than every row's 50-tall buttons; reusing SECTION_GAP
+    // The Back button (60 tall) is taller than every row's 38-tall buttons (8 px apart at ROW_SPACING 46); reusing SECTION_GAP
     // for the gap above it let it visually overlap "Confirm Selection" — this is sized for its
     // actual height (60) plus the other rows' own hang-below (their buttons sit 10px below the
     // row's y), not just a bigger guess.
     private static final int FOOTER_GAP = 96;
     private static final int BACK_BUTTON_HEIGHT = 60;
-    private static final int STEP_BUTTON_SIZE = 50;
+    private static final int STEP_BUTTON_SIZE = 38;
     private static final int WIDE_BUTTON_WIDTH = 140;
-    private static final int WIDE_BUTTON_HEIGHT = 50;
+    private static final int WIDE_BUTTON_HEIGHT = 38;
     private static final int COLUMN_GAP = 18;
     private static final int VALUE_COLUMN_WIDTH = 280;
 
@@ -228,7 +228,7 @@ public class SettingsRoom extends Room {
             label.getBounds().setY(y);
             if (leftButton != null) {
                 leftButton.getBounds().setX(gridLeftButtonX);
-                leftButton.getBounds().setY(y - 10);
+                leftButton.getBounds().setY(y - 4);
             }
             if (value != null) {
                 value.update();
@@ -236,7 +236,7 @@ public class SettingsRoom extends Room {
                 centerValue(value);
             }
             rightButton.getBounds().setX(gridRightButtonX);
-            rightButton.getBounds().setY(y - 10);
+            rightButton.getBounds().setY(y - 4);
         }
     }
 
