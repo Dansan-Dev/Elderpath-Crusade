@@ -87,6 +87,8 @@ public class GameContext {
     @Getter private final CollectionManager collectionManager;
     @Getter private final RoomManager roomManager;
     @Getter private final SettingsManager settingsManager;
+    /** Where the local player's name/account comes from: local typed name by default, a Steam provider in the Steam build. */
+    @Getter private io.github.elderpath_crusade.identity.PlayerIdentityProvider playerIdentityProvider;
     @Getter private final MusicManager musicManager;
     @Getter private final SoundManager soundManager;
     @Getter private final ShaderManager shaderManager;
@@ -167,6 +169,8 @@ public class GameContext {
         this.collectionManager = new CollectionManager();
         this.roomManager = new RoomManager();
         this.settingsManager = new SettingsManager();
+        this.playerIdentityProvider = new io.github.elderpath_crusade.identity.LocalIdentityProvider(
+                () -> this.settingsManager.getOnlinePlayerName());
         this.musicManager = new MusicManager();
         this.soundManager = new SoundManager();
         this.shaderManager = new ShaderManager();
@@ -220,6 +224,12 @@ public class GameContext {
     }
 
     /** Sets the active board view and its logical grid. */
+    /** Installs where the local identity comes from (the Steam build does this once at startup). */
+    public void setPlayerIdentityProvider(io.github.elderpath_crusade.identity.PlayerIdentityProvider provider) {
+        if (provider == null) throw new IllegalArgumentException("provider required");
+        this.playerIdentityProvider = provider;
+    }
+
     public void setActiveBoard(Board board) {
         this.activeBoard = board;
         this.activeGrid = board != null ? board.getGrid() : null;

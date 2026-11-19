@@ -40,9 +40,13 @@ public class OnlineMenuRoom extends Room {
         LobbyConnection connection = GameContext.get().getLobbyConnection();
         connection.close();
         // What the player used last time (saved in settings.json), else the session's / the defaults.
+        // The name comes from the identity provider: typed (and remembered) locally, or owned by the platform
+        // (a Steam profile name), in which case it is shown but cannot be edited here.
+        io.github.elderpath_crusade.identity.PlayerIdentityProvider identity = GameContext.get().getPlayerIdentityProvider();
         String savedName = GameContext.get().getSettingsManager().getOnlinePlayerName();
         String savedAddress = GameContext.get().getSettingsManager().getOnlineServerAddress();
-        if (savedName != null && !savedName.isBlank()) connection.setPlayerName(savedName);
+        if (!identity.nameEditable()) connection.setPlayerName(identity.current().displayName());
+        else if (savedName != null && !savedName.isBlank()) connection.setPlayerName(savedName);
         if (savedAddress != null && !savedAddress.isBlank()) connection.setServerAddress(savedAddress);
 
         header = OnlineUi.line("Play Online", FontSize.TITLE_MEDIUM, ColorSettings.TEXT_DEFAULT.getColor());
@@ -51,6 +55,7 @@ public class OnlineMenuRoom extends Room {
         status = OnlineUi.line(" ", FontSize.BODY_MEDIUM, ColorSettings.TEXT_WARNING.getColor());
         nameField = TextField.create(new TextEntry(connection.getPlayerName(), MAX_NAME, false), "Your name", null,
                 0, 0, OnlineUi.FIELD_WIDTH, OnlineUi.FIELD_HEIGHT, 0);
+        if (!identity.nameEditable()) nameField.setDisabled(true);
         serverField = TextField.create(new TextEntry(connection.getServerAddress(), MAX_ADDRESS, false), "Server address", null,
                 0, 0, OnlineUi.FIELD_WIDTH, OnlineUi.FIELD_HEIGHT, 0);
         hostButton = OnlineUi.button("Host a Lobby", OnlineUi.BUTTON_WIDTH, () -> connectThen(HostLobbyRoom::get));
