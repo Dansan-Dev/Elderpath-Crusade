@@ -88,6 +88,8 @@ public final class LobbyServer {
     private static final class SeatSlot {
         final String seatName;
         final String rejoinToken = newToken();
+        /** The display name this seat plays under, set when the match starts (kept while its connection is away). */
+        String playerName;
         Conn conn;
         /** A rejoining connection waiting for pendingAttachNanos. */
         Conn pending;
@@ -497,8 +499,10 @@ public final class LobbyServer {
         lobby.state = LobbyState.IN_MATCH;
         lobby.slots[0].conn = lobby.host;
         lobby.slots[1].conn = lobby.guest;
-        send(lobby.host, new LobbyServerMessage.MatchStarting("P1", lobby.slots[0].rejoinToken));
-        send(lobby.guest, new LobbyServerMessage.MatchStarting("P2", lobby.slots[1].rejoinToken));
+        lobby.slots[0].playerName = lobby.host.playerName;
+        lobby.slots[1].playerName = lobby.guest.playerName;
+        send(lobby.host, new LobbyServerMessage.MatchStarting("P1", lobby.slots[0].rejoinToken, lobby.slots[1].playerName));
+        send(lobby.guest, new LobbyServerMessage.MatchStarting("P2", lobby.slots[1].rejoinToken, lobby.slots[0].playerName));
         lobby.host.upstream = hostUp;
         lobby.guest.upstream = guestUp;
         event("match running in " + lobbyTag(lobby));
@@ -715,7 +719,8 @@ public final class LobbyServer {
             endMatch(lobby);
             return false;
         }
-        send(conn, new LobbyServerMessage.MatchStarting(slot.seatName, slot.rejoinToken));
+        SeatSlot opponentSlot = lobby.slots[slot == lobby.slots[0] ? 1 : 0];
+        send(conn, new LobbyServerMessage.MatchStarting(slot.seatName, slot.rejoinToken, opponentSlot.playerName));
         conn.upstream = upstream;
         conn.leftMatch = false;
         slot.conn = conn;

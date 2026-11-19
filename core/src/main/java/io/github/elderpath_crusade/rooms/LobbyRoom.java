@@ -154,8 +154,9 @@ public class LobbyRoom extends Room {
         SeatRequest seat = SeatRequest.valueOf(client.getMatchSeat());
         // Remember how to get back in if this connection drops mid-match (see OnlineMatchRoom / ReconnectRoom).
         connection.setRejoinTicket(new RejoinTicket(connection.getEndpoint(), client.getJoinedLobbyId(),
-                client.getRejoinToken(), client.getMatchSeat(), connection.getPlayerName()));
-        ClientMatchSession session = ClientMatchSession.joinThrough(client.takeMatchConnection(), seat, connection.getPlayerName());
+                client.getRejoinToken(), client.getMatchSeat(), connection.getPlayerName(), client.getOpponentName()));
+        ClientMatchSession session = ClientMatchSession.joinThrough(client.takeMatchConnection(), seat,
+                connection.getPlayerName(), null, client.getOpponentName());
         connection.release();
         GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.through(session));
     }

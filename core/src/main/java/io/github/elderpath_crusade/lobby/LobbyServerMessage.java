@@ -36,11 +36,17 @@ public sealed interface LobbyServerMessage {
      * The match is ready (or, answering RejoinMatch, resumed): from the next line on this
      * connection carries the match protocol, so send the match Hello for the seat ("P1" or "P2")
      * now. No more lobby messages either way. rejoinToken is the secret to present in a
-     * RejoinMatch if this connection drops while the match is still running.
+     * RejoinMatch if this connection drops while the match is still running. opponentName is the other
+     * player's display name as the lobby service knows it (the lobby, not the match server, is where a
+     * player's identity is established — later a verified Steam name); null from older senders.
      */
-    record MatchStarting(String seat, String rejoinToken) implements LobbyServerMessage {
+    record MatchStarting(String seat, String rejoinToken, String opponentName) implements LobbyServerMessage {
+        public MatchStarting(String seat, String rejoinToken) {
+            this(seat, rejoinToken, null);
+        }
+
         public MatchStarting(String seat) {
-            this(seat, null);
+            this(seat, null, null);
         }
     }
 

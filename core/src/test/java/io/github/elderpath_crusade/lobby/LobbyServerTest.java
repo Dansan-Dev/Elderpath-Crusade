@@ -424,6 +424,9 @@ class LobbyServerTest {
         assertEquals(DECK, launcher.specs.get(0).p2Deck());
         assertEquals("P1", host.lastOf(MatchStarting.class).seat());
         assertEquals("P2", guest.lastOf(MatchStarting.class).seat());
+        // each side is told who the other is (the lobby knows both names; the match server only gets Hello names)
+        assertEquals("guest", host.lastOf(MatchStarting.class).opponentName());
+        assertEquals("host", guest.lastOf(MatchStarting.class).opponentName());
         assertEquals(2, launcher.matchSideLinks.size());
 
         // the bridge carries match lines both ways, unread
@@ -722,6 +725,7 @@ class LobbyServerTest {
         back.poll();
         assertEquals("P2", back.lastOf(MatchStarting.class).seat());
         assertEquals(m.guestToken, back.lastOf(MatchStarting.class).rejoinToken(), "the same token keeps working");
+        assertEquals("host", back.lastOf(MatchStarting.class).opponentName(), "a rejoin is told who it is playing against");
         assertEquals(3, launcher.matchSideLinks.size(), "a fresh connection to the match server");
         LineLink newMatchSide = launcher.matchSideLinks.get(2);
         back.link.send("hello again");

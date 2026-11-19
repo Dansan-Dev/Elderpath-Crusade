@@ -39,6 +39,7 @@ class LobbyCodecTest {
                 new LobbyClosed("The host left"),
                 new MatchStarting("P2"),
                 new MatchStarting("P1", "0123abcd"),
+                new MatchStarting("P2", "0123abcd", "Yxaria"),
                 new LobbyError(LobbyError.Code.WRONG_PASSWORD, "Wrong password"));
         for (LobbyServerMessage m : messages) assertEquals(m, LobbyCodec.decodeServer(LobbyCodec.encode(m)));
     }

@@ -62,7 +62,7 @@ public class ReconnectRoom extends Room {
             case SUCCEEDED -> {
                 transitioning = true;
                 ClientMatchSession session = ClientMatchSession.joinThrough(reconnector.takeConnection(),
-                        SeatRequest.valueOf(ticket.seat()), ticket.playerName(), matchToken);
+                        SeatRequest.valueOf(ticket.seat()), ticket.playerName(), matchToken, ticket.opponentName());
                 GameContext.get().getRoomManager().gotoRoom(() -> OnlineMatchRoom.through(session));
             }
             case GAVE_UP -> {

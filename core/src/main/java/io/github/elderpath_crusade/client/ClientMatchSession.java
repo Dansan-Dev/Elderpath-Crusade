@@ -88,6 +88,8 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
     private int port = -1;
     /** The match server's token for taking back a seat (joinThrough after a drop); null on a first join. */
     private String reconnectToken;
+    /** The other human's display name as the lobby service reported it (online matches only); null otherwise. */
+    private String opponentName;
 
     private ClientMatchSession(String playerName, List<SeatRequest> seatRequests, boolean launchesServer) {
         this.playerName = playerName;
@@ -137,8 +139,15 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
      */
     public static ClientMatchSession joinThrough(ServerConnection connection, SeatRequest seat, String playerName,
                                                  String matchReconnectToken) {
+        return joinThrough(connection, seat, playerName, matchReconnectToken, null);
+    }
+
+    /** As above, also remembering the opponent's display name (from the lobby's MatchStarting) for the result screen. */
+    public static ClientMatchSession joinThrough(ServerConnection connection, SeatRequest seat, String playerName,
+                                                 String matchReconnectToken, String opponentName) {
         ClientMatchSession session = new ClientMatchSession(playerName, List.of(seat), false);
         session.reconnectToken = matchReconnectToken;
+        session.opponentName = opponentName;
         synchronized (session) {
             session.connecting = true;
             session.pendingConnections = List.of(connection);
@@ -311,6 +320,30 @@ public final class ClientMatchSession implements ClientCommands, AutoCloseable {
     }
 
     /** The sides this screen plays, in seat order, once the server has seated them. */
+    /** The name this player plays under (what the lobby/server was told). */
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public String getOpponentName() {
+        return opponentName;
+    }
+
+    /**
+     * The display name of whoever plays side, or null when it isn't known (a bot, a local/hotseat seat, or an
+     * online match whose lobby sent no name): callers fall back to "P1"/"P2". A seat this screen controls is
+     * the local player; in an online match the other seat is the opponent.
+     */
+    public String displayNameOf(PieceAlignment side) {
+        if (side == null) return null;
+        if (getControlledSeats().contains(side)) return controlsOnlyOneSeat() ? playerName : null;
+        return opponentName;
+    }
+
+    private boolean controlsOnlyOneSeat() {
+        return seatRequests.size() == 1;
+    }
+
     public List<PieceAlignment> getControlledSeats() {
         List<PieceAlignment> out = new ArrayList<>();
         for (Seat seat : seats) {

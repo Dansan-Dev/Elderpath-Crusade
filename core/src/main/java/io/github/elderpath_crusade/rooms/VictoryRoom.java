@@ -8,6 +8,8 @@ import io.github.elderpath_crusade.enums.FontType;
 import io.github.elderpath_crusade.enums.PieceAlignment;
 import io.github.elderpath_crusade.enums.GameMode;
 import io.github.elderpath_crusade.client.ClientMatchSession;
+import io.github.elderpath_crusade.client.MatchResultText;
+import io.github.elderpath_crusade.utils.DisplayName;
 import io.github.elderpath_crusade.game.RunManager;
 import io.github.elderpath_crusade.run.RunNodeType;
 import io.github.elderpath_crusade.supers.Room;
@@ -33,7 +35,10 @@ import io.github.elderpath_crusade.utils.FontSize;
  * nothing and continues straight back to {@link RunRoom}.
  */
 public class VictoryRoom extends Room {
+    private static final int MAX_NAME_CHARS = 20;
     private final Text title;
+    /** Second line under the title (online loss: "You lose"); null when there is none. */
+    private Text subtitle;
     private final Button playAgain;
     private final Button mainMenu;
 
@@ -56,14 +61,28 @@ public class VictoryRoom extends Room {
             }
         }
 
-        // Title depends on game mode
-        String titleText = switch (mode) {
-            case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
-            case DEMO, ROUGELIKE_RUN -> (winner == localPlayer()) ? "Victory!" : "Game Over!";
-        };
+        // Title depends on game mode. An online match names the players: "<winner> wins!", and for the loser a
+        // second line "You lose" (names come from the lobby service, later verified Steam profile names).
+        String subtitleText = null;
+        String titleText;
+        if (mode == GameMode.ONLINE_MATCH) {
+            MatchResultText result = onlineResult(winner);
+            titleText = result.headline();
+            subtitleText = result.subline();
+        } else {
+            titleText = switch (mode) {
+                case LOCAL_MATCH, ONLINE_MATCH -> (winner == PieceAlignment.P1) ? "P1 Wins!" : "P2 Wins!";
+                case DEMO, ROUGELIKE_RUN -> (winner == localPlayer()) ? "Victory!" : "Game Over!";
+            };
+        }
         title = new Text(titleText, FontType.SILKSCREEN, 0, 0, 5, Color.WHITE)
             .withFontSize(FontSize.TITLE_LARGE);
         addUI(title);
+        if (subtitleText != null) {
+            subtitle = new Text(subtitleText, FontType.SILKSCREEN, 0, 0, 5, Color.WHITE)
+                .withFontSize(FontSize.TITLE_MEDIUM);
+            addUI(subtitle);
+        }
 
         if (mode == GameMode.ROUGELIKE_RUN) {
             playAgain = null;
@@ -145,6 +164,14 @@ public class VictoryRoom extends Room {
             title.getWidth(),
             title.getHeight()
         ));
+        if (subtitle != null) {
+            subtitle.setBounds(new Box(
+                (screenW - subtitle.getWidth()) / 2,
+                title.getBounds().getY() - subtitle.getHeight() - 16,
+                subtitle.getWidth(),
+                subtitle.getHeight()
+            ));
+        }
         // Buttons already positioned approximately around center
     }
 
@@ -165,6 +192,19 @@ public class VictoryRoom extends Room {
 
     public static VictoryRoom get(PieceAlignment winner) {
         return new VictoryRoom(winner);
+    }
+
+    /** The names the result screen uses: own side's and the other side's, cleaned for the pixel font. */
+    private static MatchResultText onlineResult(PieceAlignment winner) {
+        ClientMatchSession session = GameContext.get().getClientMatchSession();
+        PieceAlignment local = localPlayer();
+        PieceAlignment other = local == PieceAlignment.P1 ? PieceAlignment.P2 : PieceAlignment.P1;
+        String own = session == null ? null : session.displayNameOf(local);
+        String opponent = session == null ? null : session.displayNameOf(other);
+        return MatchResultText.online(
+                own == null ? null : DisplayName.forScreen(own, MAX_NAME_CHARS),
+                opponent == null ? null : DisplayName.forScreen(opponent, MAX_NAME_CHARS),
+                winner == local);
     }
 
     /** The side this screen played as — the first (only, for solo) seat its session controlled. */

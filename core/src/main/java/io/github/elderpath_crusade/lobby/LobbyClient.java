@@ -36,6 +36,7 @@ public final class LobbyClient implements AutoCloseable {
     private String closedReason;
     private String matchSeat;
     private String rejoinToken;
+    private String opponentName;
     private String joinedLobbyId;
     private boolean handedOver;
     private boolean protocolFailed;
@@ -105,6 +106,7 @@ public final class LobbyClient implements AutoCloseable {
         } else if (message instanceof MatchStarting m) {
             matchSeat = m.seat();
             if (m.rejoinToken() != null) rejoinToken = m.rejoinToken();
+            if (m.opponentName() != null) opponentName = m.opponentName();
         } else if (message instanceof LobbyError e) {
             lastError = e;
         }
@@ -195,6 +197,11 @@ public final class LobbyClient implements AutoCloseable {
     /** The secret that brings this player back into the running match after a drop, once MatchStarting arrived; else null. */
     public String getRejoinToken() {
         return rejoinToken;
+    }
+
+    /** The other player's display name as the lobby service reported it with MatchStarting; null before that. */
+    public String getOpponentName() {
+        return opponentName;
     }
 
     /** "P1"/"P2" once the match is starting — then call takeMatchConnection(). */
