@@ -74,7 +74,10 @@ jar {
 // (`:lwjgl3:run` reads assets/ directly, so it is unaffected.)
   exclude('asset_register.yaml', 'assets.txt', 'images_old/**', '**/*Zone.Identifier', '**/*.url',
           '**/Preview.ogg', 'audio/0*_*', 'audio/1*_*', 'audio/2*_*',
-          'music/Floating_Dream.mp3', 'music/Polar_Lights.mp3', 'music/Forgotten_Biomes.mp3', 'music/Sunlight_Through_Leaves.mp3')
+          'music/Floating_Dream.mp3', 'music/Polar_Lights.mp3', 'music/Forgotten_Biomes.mp3', 'music/Sunlight_Through_Leaves.mp3',
+          // LEGAL-001 (2026-11-19): standalone files nothing loads (no code reference; the packed atlas still carries
+          // its own copies of red_square/displace_ability/gobu_*). Files stay on disk, only not packaged.
+          'images/promotional_banner.png', 'images/red_square.png', 'images/displace_ability.png', 'images/pack/**')
 // setting the manifest makes the JAR runnable.
   manifest {
     attributes 'Main-Class': project.mainClassName
