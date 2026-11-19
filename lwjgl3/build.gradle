@@ -77,7 +77,9 @@ jar {
           'music/Floating_Dream.mp3', 'music/Polar_Lights.mp3', 'music/Forgotten_Biomes.mp3', 'music/Sunlight_Through_Leaves.mp3',
           // LEGAL-001 (2026-11-19): standalone files nothing loads (no code reference; the packed atlas still carries
           // its own copies of red_square/displace_ability/gobu_*). Files stay on disk, only not packaged.
-          'images/promotional_banner.png', 'images/red_square.png', 'images/displace_ability.png', 'images/pack/**')
+          'images/promotional_banner.png', 'images/red_square.png', 'images/displace_ability.png', 'images/pack/**',
+          // Scene2D skin + its bitmap fonts: no code loads them any more (FontManager is Silkscreen-only); font PNGs were never present
+          'ui/uiskin.*', 'ui/font*.fnt')
 // setting the manifest makes the JAR runnable.
   manifest {
     attributes 'Main-Class': project.mainClassName

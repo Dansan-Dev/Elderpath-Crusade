@@ -66,7 +66,7 @@ public abstract class CheckerSprite extends CharacterSprite {
         super(x, y, width, height);
         initializeImage(color);
         if (figure != null && addFigure(figure, x, y, width, height)) return;
-        text = new Text(name, FontType.DEFAULT, 0, 0, 2, Color.WHITE);
+        text = new Text(name, FontType.SILKSCREEN, 0, 0, 2, Color.WHITE);
         Box newBounds = new Box(
             width/2 - text.getWidth()/2,
             height/2 - text.getHeight()/2,

@@ -48,7 +48,7 @@ public class BoardOverlayRenderer {
         int fontPx = Math.max(7, (int) (board.getPLOT_HEIGHT() * 0.16f));
 
         if (healthIndicatorText == null) {
-            healthIndicatorText = new Text(label, FontType.WINDOW, 0, 0, zLevel + 3, Color.WHITE);
+            healthIndicatorText = new Text(label, FontType.SILKSCREEN, 0, 0, zLevel + 3, Color.WHITE);
             healthIndicatorText.withFontSize(fontPx);
             hpTexts.put(id, healthIndicatorText);
             hpCache.put(id, cur);

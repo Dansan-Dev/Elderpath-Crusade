@@ -14,7 +14,7 @@ public class BoardIdentifierSymbol extends Text implements UIRenderable {
     public BoardIdentifierSymbol(String text, int x, int y, GridDirection direction, boolean isCentered) {
         super(
             text,
-            FontType.DEFAULT,
+            FontType.SILKSCREEN,
             x,
             y,
             0,
