@@ -175,6 +175,10 @@ public class Board extends HigherOrderTexture implements Updatable {
         return (char) ('A' + n);
     }
 
+    private int identifierFontPx() {
+        return Math.max(8, (int) (PLOT_HEIGHT * 0.2f));
+    }
+
     public void setBoardIdentifierSymbols() {
         IntStream.iterate(0, i -> i + 1).limit(ROWS)
                 .forEach(i -> rowIdentifierSymbols[i] = new BoardIdentifierSymbol(
@@ -182,14 +186,16 @@ public class Board extends HigherOrderTexture implements Updatable {
                         -PLOT_WIDTH / 4,
                         PLOT_HEIGHT / 2 + PLOT_HEIGHT * i,
                         GridDirection.ROW,
-                        true));
+                        true,
+                        identifierFontPx()));
         IntStream.iterate(0, i -> i + 1).limit(COLS)
                 .forEach(i -> colIdentifierSymbols[i] = new BoardIdentifierSymbol(
                         String.valueOf(i + 1),
                         (PLOT_WIDTH) / 2 + PLOT_WIDTH * i,
                         -PLOT_HEIGHT / 4,
                         GridDirection.COLUMN,
-                        true));
+                        true,
+                        identifierFontPx()));
         markDirtyAndNotify();
     }
 

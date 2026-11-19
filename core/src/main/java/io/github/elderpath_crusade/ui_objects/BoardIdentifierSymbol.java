@@ -11,7 +11,7 @@ public class BoardIdentifierSymbol extends Text implements UIRenderable {
     private static final Color ROW_COLOR = ColorSettings.BOARD_IDENTIFIER_SYMBOL_ROW.getColor();
     private static final Color COLUMN_COLOR = ColorSettings.BOARD_IDENTIFIER_SYMBOL_COL.getColor();
 
-    public BoardIdentifierSymbol(String text, int x, int y, GridDirection direction, boolean isCentered) {
+    public BoardIdentifierSymbol(String text, int x, int y, GridDirection direction, boolean isCentered, int fontPx) {
         super(
             text,
             FontType.SILKSCREEN,
@@ -22,6 +22,8 @@ public class BoardIdentifierSymbol extends Text implements UIRenderable {
                 ? ROW_COLOR
                 : COLUMN_COLOR
         );
+        // Silkscreen has no usable native size (unlike the old 12 px skin font): always size by cap height.
+        withFontSize(fontPx);
         if (isCentered) {
             setBounds(new Box(
                 x - getWidth()/2,
