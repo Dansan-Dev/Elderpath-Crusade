@@ -26,3 +26,17 @@ Things that change the numbers (check them before trusting a result):
 - `useVsync(false)` with a frame cap of refresh rate + 1: CPU/GPU use follows the monitor's refresh rate.
 - The online match server runs on a remote server, not on the player's machine, so only a roguelike/solo battle
   starts the extra local process.
+
+## Simulating a weaker machine (Linux) — `constrained-linux.sh`
+You rarely own a truly weak machine. The wrapper runs the game as if on one, and the sampler measures it as usual:
+```
+tools/spec-measure/constrained-linux.sh --cores 2 --mem 2G --heap 1g --software-gl -- \
+    lwjgl3/build/construo/linuxX64/roast/ElderpathCrusade
+```
+- `--cores N` pins to N cores (also the match server); `--heap` caps the Java heap (the game normally takes 1/4 of RAM);
+  `--software-gl` uses Mesa software rendering (harsher than any real integrated GPU); `--mem` / `--cpu-percent` need
+  cgroup v2 with `systemd-run --user` and are skipped with a message if unavailable.
+- Press F3 in a battle: if the frame time stays near 16 ms with these limits, a low minimum spec is honest. Try a few
+  steps (4 cores/4 GB, 2 cores/2 GB, 1 core/1 GB) and write down the weakest one that still felt fine.
+- Tested only for the option handling (cores, env variables, error messages); the `--mem`/`--cpu-percent` path could
+  not be tried in the sandbox it was written in.
